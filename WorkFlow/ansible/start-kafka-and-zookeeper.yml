@@ -1,0 +1,30 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: Start zookeeper
+      shell: "systemctl restart zookeeper.service"
+      register: running_processes
+      loop: "{{ lookup('dict', ids) }}"
+      when:  inventory_hostname == item.value.key
+    - name: Start kafka
+      shell: "systemctl start kafka.service"
+      register: running_processes
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ids:
+      item_1:
+        key: "192.168.1.200"
+        value: 1
+      item_2:
+        key: "192.168.1.201"
+        value: 2
+      item_3:
+        key: "192.168.1.202"
+        value: 3

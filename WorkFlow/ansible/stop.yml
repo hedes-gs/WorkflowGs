@@ -1,0 +1,32 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: load
+      include_vars:
+        file: "{{ PWD }}/prod.properties"
+    - name: Get running processes
+      shell: "ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'"
+      register: running_processes
+    - debug:
+        msg: "found processes : {{ running_processes.stdout_lines }}"
+    - name: Kill running processes
+      shell: "kill {{ item }}"
+      with_items: "{{ running_processes.stdout_lines }}"
+    - wait_for:
+        path: "/proc/{{ item }}/status"
+        state: absent
+      with_items: "{{ running_processes.stdout_lines }}"
+      ignore_errors: yes
+      register: killed_processes
+    - name: Force kill stuck processes
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

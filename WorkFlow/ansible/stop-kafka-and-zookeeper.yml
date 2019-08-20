@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: Stop kafka
+      shell: "systemctl stop kafka.service"
+      register: running_processes
+    - name: Stop zookeeper
+      shell: "systemctl stop zookeeper.service"
+      register: running_processes
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

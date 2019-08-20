@@ -1,0 +1,86 @@
+name: "workflow-topology"
+config:
+  topology.workers: 6
+  topology.max.spout.pending: 1000
+  topology.message.timeout.secs: 30
+
+components:
+  - id: "zkHosts"
+    className: "org.apache.storm.kafka.ZkHosts"
+    constructorArgs:
+       - "${zookeeper.connect}"
+  - id: "keyValueScheme"
+    className: "com.gsphotos.storms.scheme.KeyStringValueArrayByteScheme"
+    
+  - id: "keyValueSchemeAsMultiScheme"
+    className: "org.apache.storm.kafka.KeyValueSchemeAsMultiScheme"
+    constructorArgs:
+      - ref: "keyValueScheme"
+  - id: "spoutConfig"
+    className: "org.apache.storm.kafka.SpoutConfig"
+    constructorArgs:
+      # brokerHosts
+      - ref: "zkHosts"
+      # topic
+      - "${kafka.inputTopic}"
+      # zkRoot
+      - "/kafkaSpout"
+      # id
+      - "kafka-storm-spout"
+    properties:
+      - name: "bufferSizeBytes"
+        value: ${kafka.bufferSizeBytes}
+      - name: "fetchSizeBytes"
+        value: ${kafka.fetchSizeBytes}
+      - name: "startOffsetTime"
+        value: -2
+      - name: "scheme"
+        ref: "keyValueSchemeAsMultiScheme"
+
+
+# spout definitions
+spouts:
+  - id: "kafka-spout"
+    className: "org.apache.storm.kafka.KafkaSpout"
+    parallelism: 1
+
+# bolt definitions
+bolts:
+  - id: "extract-histogram-bolt"
+    className: "com.gsphotos.storms.bolt.ExtractHistogramBolt"
+    parallelism: 4
+  - id: "normalize-image-bolt"
+    className: "com.gsphotos.storms.bolt.NormalizeImageBolt"
+    parallelism: 4
+  - id: "final-image-bolt"
+    className: "com.gsphotos.storms.bolt.FinalImageBolt"
+    parallelism: 4
+    configMethods:
+      - withKafkaBrokers:
+        - args:
+          - "${bootstrap.servers}"
+      - withOutputTopic:
+        - args:
+          - "${kafka.outputTopic}"
+
+streams:
+  - name: "kafka --> extract-histogram-bolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "kafka-spout"
+    to: "extract-histogram-bolt"
+    grouping:
+      type: SHUFFLE
+  - name: "extract-histogram-bolt --> normalize-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "extract-histogram-bolt"
+    to: "normalize-image-bolt"
+    grouping:
+      type: SHUFFLE
+  - name: "extract-histogram-bolt --> final-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "extract-histogram-bolt"
+    to: "final-image-bolt"
+    grouping:
+      type: SHUFFLE
+  - name: "normalize-image-bolt --> final-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "normalize-image-bolt"
+    to: "final-image-bolt"
+    grouping:
+      type: SHUFFLE

@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug: msg="load file "
+    - name: load
+      include_vars:
+        file: prod.properties
+    - name: build config file from template
+      template:
+        src: ../src/main/resources/application.properties.template
+        dest: ~{{user_to_create}}/config/application.properties
+
+    
+       
