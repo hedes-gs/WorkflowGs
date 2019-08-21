@@ -1,0 +1,4 @@
+#!/bin/bash
+export JAR_FILE={{ jar_name }}
+cd ~{{ user_to_create }}
+java -jar lib/${JAR_FILE} -Dlog4j.configuration=config/log4j.xml

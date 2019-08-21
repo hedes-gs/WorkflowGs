@@ -1,0 +1,32 @@
+topic.inputImageNameTopic=topic-image-name
+topic.inputExifTopic=topic-exif
+topic.recordThumbTopic=topic-to-record-thumb
+topic.processedThumbTopic=topic-processed-thumb
+topic.pathNameTopic=topic-path-image
+topic.duplicateImageFoundTopic=topic-duplicate-key-image-found
+topic.uniqueImageFoundTopic=topic-unique-key-image-found
+topic.scan-output=topic-file-found-in-scan
+topic.hashkey-output=topic-hashkey-computed
+topic.topicCopyRawFile=topic-copy-raw-file
+topic.topicCopyOtherFile=topic-copy-other-file
+topic.scan-output-child-parent=topic-scan-output-file-child-with-parent
+
+duplicate.storeName=image-key-store
+copy.group.id=copy-group-transactional
+
+zookeeper.hosts={{zookeeper_hosts}}
+hbase.master={{hbase_master}}
+zookeeper.port={{zookeeper_port}}
+
+bootstrap.servers={{ kafka_bootstrap_servers }}
+kafkaStreamDir.dir={{ kafka_stream_dir }}
+application.id={{ application_id }}_{{ host_id }}
+group.id=group-for-{{ application_id }}
+application.kafkastreams.id={{ application_id }}
+scan.folder={{ application_scannedFolder }}
+copy.repository={{ copy_repository }}
+logging.config=config/log4j.xml
+copy.maxNumberOfFilesInAFolder={{ max_number_of_files_in_a_folder }}
+
+transaction.id={{ transaction_id }}_{{ host_id }}
+transaction.timeout=180000
