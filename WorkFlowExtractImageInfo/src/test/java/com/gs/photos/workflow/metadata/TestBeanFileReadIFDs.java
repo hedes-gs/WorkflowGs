@@ -23,12 +23,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.workflow.IFileMetadataExtractor;
+import com.gs.photo.workflow.impl.BeanFileMetadataExtractor;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = BeanFileMetadataExtractor.class)
 public class TestBeanFileReadIFDs {
-	private Logger LOGGER = LogManager.getLogger(TestBeanFileReadIFDs.class);
+	private Logger LOGGER = LogManager.getLogger(
+		TestBeanFileReadIFDs.class);
 
 	@Autowired
 	protected IFileMetadataExtractor beanFileMetadataExtractor;
@@ -45,40 +47,61 @@ public class TestBeanFileReadIFDs {
 	public void shouldGet204TiffFieldWhenSonyARWIsAnInputFile() {
 		Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
 
-		Collection<IFD> allIfds = beanFileMetadataExtractor.readIFDs(filePath);
-		Collection<TiffField<?>> allTiff = getAllTiffFields(allIfds);
-		assertEquals(204, allTiff.size());
+		Collection<IFD> allIfds = beanFileMetadataExtractor.readIFDs(
+			filePath);
+		Collection<TiffField<?>> allTiff = getAllTiffFields(
+			allIfds);
+		assertEquals(
+			204,
+			allTiff.size());
 	}
 
 	@Test
 	public void shouldGet2JpgFilesWhenSonyARWIsAnInputFile() {
 		Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
 
-		Collection<IFD> allIfds = beanFileMetadataExtractor.readIFDs(filePath);
-		Collection<TiffField<?>> allTiff = getAllTiffFields(allIfds);
-		allTiff.forEach((tif) -> LOGGER.info(tif));
+		Collection<IFD> allIfds = beanFileMetadataExtractor.readIFDs(
+			filePath);
+		Collection<TiffField<?>> allTiff = getAllTiffFields(
+			allIfds);
+		allTiff.forEach(
+			(tif) -> LOGGER.info(
+				tif));
 
-		assertEquals(2, allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).count());
+		assertEquals(
+			2,
+			allIfds.stream().filter(
+				(ifd) -> ifd.imageIsPresent()).count());
 
-		allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).map((ifd) -> ifd.getJpegImage()).forEach((img) -> {
-			LocalDateTime currentTime = LocalDateTime.now();
-			try (FileOutputStream stream = new FileOutputStream(
-					UUID.randomUUID() + "-" + currentTime.toString().replaceAll("\\:", "_") + ".jpg")) {
-				stream.write(img);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+		allIfds.stream().filter(
+			(ifd) -> ifd.imageIsPresent()).map(
+				(ifd) -> ifd.getJpegImage()).forEach(
+					(img) -> {
+						LocalDateTime currentTime = LocalDateTime.now();
+						try (FileOutputStream stream = new FileOutputStream(
+							UUID.randomUUID() + "-" + currentTime.toString().replaceAll(
+								"\\:",
+								"_") + ".jpg")) {
+							stream.write(
+								img);
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					});
 	}
 
 	private Collection<TiffField<?>> getAllTiffFields(Collection<IFD> allIfds) {
 		final Collection<TiffField<?>> retValue = new ArrayList<>();
-		allIfds.forEach((ifd) -> {
-			retValue.addAll(ifd.getFields());
-			retValue.addAll(getAllTiffFields(ifd.getAllChildren()));
-		});
+		allIfds.forEach(
+			(ifd) -> {
+				retValue.addAll(
+					ifd.getFields());
+				retValue.addAll(
+					getAllTiffFields(
+						ifd.getAllChildren()));
+			});
 		return retValue;
 	}
 
