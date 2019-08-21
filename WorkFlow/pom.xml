@@ -27,6 +27,8 @@
 		<module>../WorkFlowDuplicatecheck</module>
 		<module>../WorkFlowCopyFile</module>
 		<module>../WorkFlowExtractImageInfo</module>
+		<module>../WorkflowScan</module>
+
 	</modules>
 	<dependencyManagement>
 		<dependencies>
