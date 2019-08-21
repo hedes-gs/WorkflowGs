@@ -17,10 +17,11 @@ pipeline {
 			agent {
 				docker {
 					image 'pad92/ansible-alpine'
+					args '-v /srv/gitlab/config:/etc/gitlab'
 				}
 			}
 			steps {
-				sh ' cd WorkflowHbase/deployment;  ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
+				sh 'ls -als /etc/gitlab/ ; cd WorkflowHbase/deployment;  ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
 			}
 		}
 	}
