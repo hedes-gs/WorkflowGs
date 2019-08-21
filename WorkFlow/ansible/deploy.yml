@@ -53,8 +53,6 @@
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
-    - name: purge logs
-      shell: "cd ~{{ user_to_create }}/logs ; rm *.gz ; gzip *.log"
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
