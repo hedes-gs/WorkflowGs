@@ -9,7 +9,7 @@ pipeline {
      }       
   }       
   steps {
-       sh 'mvn clean install'
+       sh ' cd WorkFlow ; mvn clean install'
        }
      }
    }
