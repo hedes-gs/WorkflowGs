@@ -21,13 +21,13 @@ pipeline {
 				}
 			}
 			steps {
-				sh 'cd WorkFlowComputeHashKey/deployment;  				ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkFlowDuplicatecheck/deployment;  				ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkFlowCopyFile/deployment;  					ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkFlowExtractImageInfo/deployment;  			ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkflowScan/deployment;  						ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkflowHbase/deployment;  						ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
-				sh 'cd WorkFlowProcessAndPublishForRecord/deployment;  	ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml -v'
+				sh 'cd WorkFlowComputeHashKey/deployment;  				ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkFlowDuplicatecheck/deployment;  				ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkFlowCopyFile/deployment;  					ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkFlowExtractImageInfo/deployment;  			ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkflowScan/deployment;  						ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkflowHbase/deployment;  						ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
+				sh 'cd WorkFlowProcessAndPublishForRecord/deployment;  	ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
 
 			}
 		}
