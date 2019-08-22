@@ -10,7 +10,7 @@ pipeline {
 				}
 			}
 			steps {
-				sh ' cd WorkFlow ; mvn clean install'
+				sh ' cd WorkFlow ; mvn -T 1C clean install'
 			}
 		}
 		stage('Deployment ') {
