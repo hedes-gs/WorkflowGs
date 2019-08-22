@@ -9,7 +9,7 @@
 		<artifactId>WorkFlow</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>WorkFlowHBase</artifactId>
+	<artifactId>WorkFlowHbase</artifactId>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
