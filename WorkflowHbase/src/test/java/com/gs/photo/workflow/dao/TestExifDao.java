@@ -12,7 +12,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.workflow.model.HbaseImageThumbnail;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = { GenericDAO.class, ImageFilterDAO.class })
 public class TestExifDao {
 
 	protected GenericDAO exifDao;
