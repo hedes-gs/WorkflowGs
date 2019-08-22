@@ -54,7 +54,6 @@ public class ProcessAndPublishImages implements IProcessAndPublishImages {
 			builder);
 		KStream<String, FinalImage> thumbImages = streamsHelper.buildKStreamToGetThumbImages(
 			builder);
-		thumbImages.ma
 		KStream<String, ExchangedTiffData> exifOfImageStream = streamsHelper.buildKStreamToGetExifValue(
 			builder);
 
