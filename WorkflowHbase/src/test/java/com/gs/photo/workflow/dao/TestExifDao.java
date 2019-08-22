@@ -4,15 +4,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.workflow.model.HbaseImageThumbnail;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = { GenericDAO.class, ImageFilterDAO.class })
+@Ignore
 public class TestExifDao {
 
 	protected GenericDAO exifDao;
