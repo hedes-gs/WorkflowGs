@@ -29,7 +29,11 @@
 		<module>../WorkFlowExtractImageInfo</module>
 		<module>../WorkflowScan</module>
 		<module>../WorkflowHbase</module>
+<<<<<<< .mine
 		<module>../WorkFlowProcessAndPublishForRecord</module>
+=======
+
+>>>>>>> .theirs
 	</modules>
 	<dependencyManagement>
 		<dependencies>
