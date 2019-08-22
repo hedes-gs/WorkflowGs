@@ -34,6 +34,8 @@
         state: directory
         owner: "{{ user_to_create }}"
     - name: build config file from template
+      vars:
+          host_id: "{{ ids[inventory_hostname].value }}"
       template:
         src: ../src/main/resources/application.properties.template
         dest: ~{{ user_to_create }}/config/application.properties
@@ -75,3 +77,16 @@
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
+    ids:
+      192.168.1.200:
+        value: 1
+      192.168.1.201:
+        value: 2
+      192.168.1.202:
+        value: 3
+      192.168.1.203:
+        value: 4
+      192.168.1.205:
+        value: 5
+      192.168.1.206:
+        value: 6
