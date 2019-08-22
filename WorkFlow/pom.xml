@@ -28,6 +28,7 @@
 		<module>../WorkFlowCopyFile</module>
 		<module>../WorkFlowExtractImageInfo</module>
 		<module>../WorkflowScan</module>
+		<module>../WorkflowHbase</module>
 
 	</modules>
 	<dependencyManagement>
