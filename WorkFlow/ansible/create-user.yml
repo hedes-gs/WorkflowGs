@@ -53,10 +53,6 @@
         dest: ~{{ user_to_create }}/config/log4j.xml
         owner: "{{ user_to_create }}"
         mode: 0744
-    - name: Copy jars
-      copy:
-        src: "{{ PWD }}/../target/{{ jar_name }}"
-        dest: ~{{ user_to_create }}/lib
     - name: Get running processes
       shell: "ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'"
       register: running_processes
