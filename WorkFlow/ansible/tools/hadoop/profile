@@ -1,0 +1,2 @@
+export HADOOP_HOME=/home/hadoop/latest
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
