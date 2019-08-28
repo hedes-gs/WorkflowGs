@@ -1,0 +1,164 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download hadoop "{{ hadoop_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: Download hadoop {{ hadoop_version }}
+      get_url: 
+        url: http://apache.mirrors.tds.net/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
+        dest: "{{ hadoop_install_folder }}"
+        remote_src: true
+    - name: remove symlink /usr/local/kafka to this version
+      file:
+        path: "{{ hadoop_install_folder }}/latest"
+        state: absent
+    - name: Symlink {{ hadoop_install_folder }}/latest to this version
+      file:
+        path: "{{ hadoop_install_folder }}"
+        src: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}"
+        dest: "{{ hadoop_install_folder }}/latest"
+        state: link
+        force: yes
+    - name: Create folder {{ hadoop_install_folder }}/latest/logs
+      file:
+        path: "{{ hadoop_install_folder }}/latest/logs"
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: stop-hdfs
+      shell:  "rm -f {{ hadoop_install_folder }}/latest/logs/*"
+
+    - name: Create folders .~hadoop/.ssh
+      file:
+        path: ~hadoop/.ssh
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: Create folders /data/hadoop
+      file:
+        path: /data/hadoop
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Create folders /data/hadoop/hadoop_tmp/hdfs
+      file:
+        path: /data/hadoop/hadoop_tmp/hdfs
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Create folders /data/hadoop/hadoop_tmp/hdfs/namenode
+      file:
+        path: /data/hadoop/hadoop_tmp/hdfs/namenode
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Create folders {{ hadoop_install_folder }}/tmp
+      file:
+        path: "{{ hadoop_install_folder }}/tmp"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: deploy keys and files
+      template:
+        src: ./tools/hadoop/authorized_keys
+        dest: "~hadoop/.ssh/authorized_keys"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy keys and files
+      template:
+        src: ./tools/hadoop/bashrc.txt
+        dest: "~hadoop/.bashrc"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy keys and files
+      template:
+        src: ./tools/hadoop/profile
+        dest: "~hadoop/.profile"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/hadoop/core-site.xml
+      template:
+        src: ./tools/hadoop/core-site.xml
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600  
+    - name: deploy ./tools/hadoop/yarn-site.xml
+      template:
+        src: ./tools/hadoop/yarn-site.xml
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600  
+    - name: deploy ./tools/hadoop/hdfs-site.xml
+      template:
+        src: ./tools/hadoop/hdfs-site.xml
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/hadoop/hadoop-env.sh
+      template:
+        src: ./tools/hadoop/hadoop-env.sh
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/hadoop/slaves on master
+      template:
+        src: ./tools/hadoop/hadoop-env.sh
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+      when: inventory_hostname == "192.168.1.200"
+    - name: deploy ./tools/hadoop/workers on master
+      template:
+        src: ./tools/hadoop/workers
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+      when: inventory_hostname == "192.168.1.200"
+    - name: deploy ./tools/hadoop/slaves on master
+      template:
+        src: ./tools/hadoop/slaves
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+      when: inventory_hostname == "192.168.1.200"
+    - name: stop-hdfs
+      sudo: true
+      sudo_user: "{{ user_to_create }}"
+      shell:  "{{ hadoop_install_folder }}/latest/sbin/stop-dfs.sh"
+      when: inventory_hostname == "192.168.1.200"
+
+  vars:
+    ansible_become_pass: granada01
+    hadoop_version: 3.2.0
+    user_to_create: hadoop
+    hadoop_install_folder: /home/hadoop
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ids:
+      192.168.1.200:
+        value: 1
+      192.168.1.201:
+        value: 2
+      192.168.1.202:
+        value: 3
+      192.168.1.203:
+        value: 4
+      192.168.1.205:
+        value: 5
+      192.168.1.206:
+        value: 6
