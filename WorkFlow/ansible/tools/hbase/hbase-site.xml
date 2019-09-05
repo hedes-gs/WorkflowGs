@@ -40,7 +40,7 @@
 	</property>
 	<property>
 		<name>hbase.master</name>
-		<value>hbase-master:60000</value>
+		<value>hbase-master:16000</value>
 		<description>The host and port that the HBase master runs at.</description>
 	</property>
 	<property>
@@ -59,15 +59,23 @@
 	</property>
 	<property>
 		<name>hbase.regionserver.port</name>
-		<value>16099</value>
+		<value>16030</value>
 	</property>
+	<property>
+  <name>hbase.regionserver.ipc.address</name>
+  <value>0.0.0.0</value>
+</property>
+<property>
+  <name>hbase.master.ipc.address</name>
+  <value>0.0.0.0</value>
+</property>
 <property> 
 	<name>hbase.regionserver.hostname</name> 
 	<value>{{ hbase_slave_host }}</value>
 </property>
 	<property>
 		<name>hbase.regionserver.info.port</name>
-		<value>16030</value>
+		<value>16050</value>
 	</property>
 
 	<!-- http://hbase-perf-optimization.blogspot.it/2013/03/hbase-configuration-optimization.html -->
@@ -115,4 +123,10 @@
 		<name>hbase.hstore.blockingStoreFiles</name>
 		<value>30</value>
 	</property>
+	<property>
+		<name>hbase.region.replica.replication.enabled</name>
+		<value>true</value>
+	</property>
+	
+	
 </configuration>
