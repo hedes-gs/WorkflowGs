@@ -11,15 +11,17 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.log4j.Logger;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Tuple;
+import org.apache.storm.topology.base.BaseWindowedBolt;
+import org.apache.storm.windowing.TupleWindow;
 
 import com.gs.photos.serializers.FinalImageSerializer;
 import com.workflow.model.storm.FinalImage;
 
-public class FinalImageBolt implements IRichBolt {
+public class FinalImageBolt extends BaseWindowedBolt {
 
+	private static final String IS_NORMALIZED = "isNormalized";
+	private static final String ORIGINAL_IMAGE = "originalImage";
 	protected static final Logger LOGGER = Logger.getLogger(
 		FinalImageBolt.class);
 
@@ -104,32 +106,6 @@ public class FinalImageBolt implements IRichBolt {
 	}
 
 	@Override
-	public void execute(Tuple input) {
-		FinalImage finalImage = null;
-
-		FinalImage currentImage = (FinalImage) input.getValueByField(
-			"originalImage");
-		boolean isNormalized = input.getBooleanByField(
-			"isNormalized");
-		Dim dim = get(
-			currentImage.getCompressedImage());
-
-		finalImage = new FinalImage(
-			currentImage.getId(),
-			isNormalized,
-			dim.getWidth(),
-			dim.getHeight(),
-			currentImage.getCompressedImage());
-		LOGGER.info(
-			" receiving final image input " + finalImage);
-
-		producer.send(
-			new ProducerRecord<String, FinalImage>(outputTopic, finalImage.getId(), finalImage));
-		collector.ack(
-			input);
-	};
-
-	@Override
 	public void cleanup() {
 	}
 
@@ -148,6 +124,40 @@ public class FinalImageBolt implements IRichBolt {
 		super();
 		this.kafkaBrokers = kafkaBrokers;
 		this.outputTopic = outputTopic;
+	}
+
+	@Override
+	public void execute(TupleWindow inputWindow) {
+
+		inputWindow.get().forEach(
+			(input) -> {
+				FinalImage finalImage = null;
+
+				FinalImage currentImage = (FinalImage) input.getValueByField(
+					ORIGINAL_IMAGE);
+				boolean isNormalized = input.getBooleanByField(
+					IS_NORMALIZED);
+				Dim dim = get(
+					currentImage.getCompressedImage());
+
+				finalImage = new FinalImage(
+					currentImage.getId(),
+					isNormalized,
+					dim.getWidth(),
+					dim.getHeight(),
+					currentImage.getCompressedImage());
+				LOGGER.info(
+					" sending final image input " + finalImage);
+				producer.send(
+					new ProducerRecord<String, FinalImage>(outputTopic, finalImage.getId(), finalImage));
+
+			});
+		producer.flush();
+		inputWindow.get().forEach(
+			(input) -> {
+				collector.ack(
+					input);
+			});
 	}
 
 }
