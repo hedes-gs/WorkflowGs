@@ -8,7 +8,7 @@ components:
   - id: "zkHosts"
     className: "org.apache.storm.kafka.ZkHosts"
     constructorArgs:
-       - "${zookeeper.connect}"
+       - {{ zookeeper_connect }}"
   - id: "keyValueScheme"
     className: "com.gsphotos.storms.scheme.KeyStringValueArrayByteScheme"
     
@@ -22,16 +22,16 @@ components:
       # brokerHosts
       - ref: "zkHosts"
       # topic
-      - "${kafka.inputTopic}"
+      - "{{ kafka_inputTopic }}"
       # zkRoot
       - "/kafkaSpout"
       # id
       - "kafka-storm-spout"
     properties:
       - name: "bufferSizeBytes"
-        value: ${kafka.bufferSizeBytes}
+        value: {{ kafka_bufferSizeBytes }}
       - name: "fetchSizeBytes"
-        value: ${kafka.fetchSizeBytes}
+        value: {{ kafka_fetchSizeBytes }}
       - name: "startOffsetTime"
         value: -2
       - name: "scheme"
@@ -42,29 +42,29 @@ components:
 spouts:
   - id: "kafka-spout"
     className: "org.apache.storm.kafka.KafkaSpout"
-    parallelism: 1
+    parallelism: {{ kafka_spout_parallelism }}
 
 # bolt definitions
 bolts:
   - id: "extract-histogram-bolt"
     className: "com.gsphotos.storms.bolt.ExtractHistogramBolt"
-    parallelism: ${bootstrap.servers}
+    parallelism: {{ extract_histogram_bolt_parallelism }}
   - id: "normalize-image-bolt"
     className: "com.gsphotos.storms.bolt.NormalizeImageBolt"
-    parallelism: 8
+    parallelism: {{ normalize_image_bolt_parallelism }}
   - id: "final-image-bolt"
     className: "com.gsphotos.storms.bolt.FinalImageBolt"
-    parallelism: 8
+    parallelism: {{ final_image_bolt_parallelism }}
     configMethods:
       - withWindow:
         - args:
-          - "${finalImage.windowTuple}"
+          - "{{ finalImage_windowTuple }}"
       - withKafkaBrokers:
         - args:
-          - "${bootstrap.servers}"
+          - "{{ kafka_bootstrap_servers }}"
       - withOutputTopic:
         - args:
-          - "${kafka.outputTopic}"
+          - "{{ kafka_outputTopic }}"
 
 streams:
   - name: "kafka --> extract-histogram-bolt" # name isn't used (placeholder for logging, UI, etc.)
