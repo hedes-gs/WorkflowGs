@@ -48,14 +48,17 @@ spouts:
 bolts:
   - id: "extract-histogram-bolt"
     className: "com.gsphotos.storms.bolt.ExtractHistogramBolt"
-    parallelism: 4
+    parallelism: ${bootstrap.servers}
   - id: "normalize-image-bolt"
     className: "com.gsphotos.storms.bolt.NormalizeImageBolt"
-    parallelism: 4
+    parallelism: 8
   - id: "final-image-bolt"
     className: "com.gsphotos.storms.bolt.FinalImageBolt"
-    parallelism: 4
+    parallelism: 8
     configMethods:
+      - withWindow:
+        - args:
+          - "${finalImage.windowTuple}"
       - withKafkaBrokers:
         - args:
           - "${bootstrap.servers}"
