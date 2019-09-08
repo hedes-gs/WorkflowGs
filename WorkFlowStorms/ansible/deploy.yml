@@ -1,0 +1,72 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: load
+      include_vars:
+        file: "{{ PWD }}/prod.properties"
+    - name: Get running processes
+      shell: "ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'"
+      register: running_processes
+    - debug:
+        msg: "found processes : {{ running_processes.stdout_lines }}"
+    - name: Kill running processes
+      shell: "kill {{ item }}"
+      with_items: "{{ running_processes.stdout_lines }}"
+    - wait_for:
+        path: "/proc/{{ item }}/status"
+        state: absent
+      with_items: "{{ running_processes.stdout_lines }}"
+      ignore_errors: yes
+      register: killed_processes
+    - name: Force kill stuck processes
+      shell: "kill -9 {{ item }}"
+      with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+    - debug:
+        msg: "{{ inventory_hostname }} and {{ ids }}"
+    - name: build config file from template
+      vars:
+          host_id: "{{ ids[inventory_hostname].value }}"
+      template:
+        src: ../src/main/resources/application.properties.template
+        dest: ~{{ user_to_create }}/config/application.properties
+        owner: "{{ user_to_create }}"
+        mode: 0666
+    - name: build bin file from template
+      template:
+        src: ../bin/run.sh.template
+        dest: ~{{ user_to_create }}/bin/run.sh
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: build bin file from template
+      template:
+        src: ../config/log4j.xml.template
+        dest: ~{{ user_to_create }}/config/log4j.xml
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: Copy jars
+      copy:
+        src: "{{ PWD }}/../target/{{ jar_name }}"
+        dest: ~{{ user_to_create }}/lib
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ids:
+      192.168.1.200:
+        value: 1
+      192.168.1.201:
+        value: 2
+      192.168.1.202:
+        value: 3
+      192.168.1.203:
+        value: 4
+      192.168.1.205:
+        value: 5
+      192.168.1.206:
+        value: 6
+  
