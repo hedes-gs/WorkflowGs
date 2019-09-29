@@ -163,6 +163,12 @@ public class ApplicationConfig {
 		settings.put(
 			"value.serializer",
 			"org.apache.kafka.common.serialization.StringSerializer");
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Producer<String, String> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
@@ -182,7 +188,12 @@ public class ApplicationConfig {
 		settings.put(
 			ProducerConfig.TRANSACTION_TIMEOUT_CONFIG,
 			transactionTimeout);
-
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		settings.put(
 			"key.serializer",
 			"org.apache.kafka.common.serialization.StringSerializer");
@@ -205,6 +216,12 @@ public class ApplicationConfig {
 		settings.put(
 			"value.serializer",
 			KAFKA_EXCHANGED_DATA_SERIALIZER);
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Producer<String, ExchangedTiffData> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
@@ -221,6 +238,12 @@ public class ApplicationConfig {
 		settings.put(
 			"value.serializer",
 			KAFKA_BYTE_SERIALIZER);
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Producer<String, byte[]> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
@@ -255,6 +278,12 @@ public class ApplicationConfig {
 		settings.put(
 			ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
 			5);
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Consumer<String, String> producer = new KafkaConsumer<>(settings);
 		return producer;
 	}
@@ -295,6 +324,12 @@ public class ApplicationConfig {
 		settings.put(
 			ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
 			5);
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Consumer<String, String> producer = new KafkaConsumer<>(settings);
 		return producer;
 	}
@@ -335,6 +370,12 @@ public class ApplicationConfig {
 		settings.put(
 			ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
 			5);
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Consumer<String, HbaseImageThumbnail> consumer = new KafkaConsumer<>(settings);
 		return consumer;
 

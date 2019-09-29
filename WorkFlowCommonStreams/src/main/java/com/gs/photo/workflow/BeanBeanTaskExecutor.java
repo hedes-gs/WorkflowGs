@@ -18,14 +18,26 @@ public class BeanBeanTaskExecutor implements IBeanTaskExecutor {
 
 	@Override
 	public void execute(Runnable r) {
-		threadPoolTaskExecutor.execute(r);
+		threadPoolTaskExecutor.execute(
+			r);
 	}
 
 	@Override
 	public <V> Collection<Future<V>> execute(Collection<Callable<V>> tasks) {
 		final List<Future<V>> retValue = new ArrayList<>();
-		tasks.forEach((t) -> retValue.add(threadPoolTaskExecutor.submit(t)));
+		tasks.forEach(
+			(t) -> retValue.add(
+				threadPoolTaskExecutor.submit(
+					t)));
 		return retValue;
 	}
 
+	@Override
+	public void executeRunnables(Collection<Runnable> rs) {
+		rs.forEach(
+			(r) -> {
+				execute(
+					r);
+			});
+	}
 }
