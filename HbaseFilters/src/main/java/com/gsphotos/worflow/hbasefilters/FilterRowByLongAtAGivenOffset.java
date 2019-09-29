@@ -1,7 +1,6 @@
 package com.gsphotos.worflow.hbasefilters;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.exceptions.DeserializationException;
@@ -20,13 +19,14 @@ public class FilterRowByLongAtAGivenOffset extends FilterBase {
 	private long firstLong;
 	private long lastLong;
 
-	public FilterRowByLongAtAGivenOffset(long longOffset, long firstLong, long lastLong) {
+	public FilterRowByLongAtAGivenOffset(
+			long longOffset,
+			long firstLong,
+			long lastLong) {
 		super();
 		this.longOffset = longOffset;
 		this.firstLong = firstLong;
 		this.lastLong = lastLong;
-		System.out.println(".... creating FilterRowByLongAtAGivenOffset " + firstLong + " / " + lastLong + " / "
-				+ this.filterOutRow);
 	}
 
 	public FilterRowByLongAtAGivenOffset() {
@@ -48,28 +48,36 @@ public class FilterRowByLongAtAGivenOffset extends FilterBase {
 
 	@Override
 	public boolean filterRowKey(byte[] data, int offset, int length) {
-		long value = Bytes.toLongUnsafe(data, offset + (int) longOffset);
+		long value = Bytes.toLongUnsafe(
+			data,
+			offset + (int) longOffset);
 		this.filterOutRow = !(value >= firstLong && value <= lastLong);
-		System.out.println(".... Comparing value " + value + " to " + firstLong + " / " + lastLong + " / "
-				+ this.filterOutRow + " / " + offset + " / " + longOffset);
-		System.out.println("Arrays.toString(byteArray) " + Arrays.toString(data));
 		return this.filterOutRow;
 	}
 
 	GsFilterProtos.FilterRowByLongAtAGivenOffset convert() {
 		GsFilterProtos.FilterRowByLongAtAGivenOffset.Builder builder = GsFilterProtos.FilterRowByLongAtAGivenOffset
 				.newBuilder();
-		builder.setFirstLong(firstLong);
-		builder.setLastLong(lastLong);
-		builder.setLongOffset(longOffset);
+		builder.setFirstLong(
+			firstLong);
+		builder.setLastLong(
+			lastLong);
+		builder.setLongOffset(
+			longOffset);
 		return builder.build();
 	}
 
 	public static Filter createFilterFromArguments(ArrayList<byte[]> filterArguments) {
 		@SuppressWarnings("rawtypes") // for arguments
-		long longOffset = ParseFilter.convertByteArrayToLong(filterArguments.get(0));
-		long firstLong = ParseFilter.convertByteArrayToLong(filterArguments.get(1));
-		long lastLong = ParseFilter.convertByteArrayToLong(filterArguments.get(2));
+		long longOffset = ParseFilter.convertByteArrayToLong(
+			filterArguments.get(
+				0));
+		long firstLong = ParseFilter.convertByteArrayToLong(
+			filterArguments.get(
+				1));
+		long lastLong = ParseFilter.convertByteArrayToLong(
+			filterArguments.get(
+				2));
 
 		return new FilterRowByLongAtAGivenOffset(longOffset, firstLong, lastLong);
 	}
@@ -81,9 +89,12 @@ public class FilterRowByLongAtAGivenOffset extends FilterBase {
 	public byte[] toByteArray() {
 		GsFilterProtos.FilterRowByLongAtAGivenOffset.Builder builder = GsFilterProtos.FilterRowByLongAtAGivenOffset
 				.newBuilder();
-		builder.setFirstLong(firstLong);
-		builder.setLastLong(lastLong);
-		builder.setLongOffset(longOffset);
+		builder.setFirstLong(
+			firstLong);
+		builder.setLastLong(
+			lastLong);
+		builder.setLongOffset(
+			longOffset);
 		return builder.build().toByteArray();
 	}
 
@@ -97,7 +108,8 @@ public class FilterRowByLongAtAGivenOffset extends FilterBase {
 	public static FilterRowByLongAtAGivenOffset parseFrom(final byte[] pbBytes) throws DeserializationException {
 		GsFilterProtos.FilterRowByLongAtAGivenOffset proto;
 		try {
-			proto = GsFilterProtos.FilterRowByLongAtAGivenOffset.parseFrom(pbBytes);
+			proto = GsFilterProtos.FilterRowByLongAtAGivenOffset.parseFrom(
+				pbBytes);
 		} catch (InvalidProtocolBufferException e) {
 			throw new DeserializationException(e);
 		}
