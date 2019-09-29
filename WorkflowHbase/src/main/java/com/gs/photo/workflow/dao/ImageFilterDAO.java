@@ -38,13 +38,22 @@ public class ImageFilterDAO extends AbstractDAO {
 					tableName))) {
 				Scan scan = new Scan();
 				scan.addColumn(
-					"image_data".getBytes(),
+					"img".getBytes(),
 					"image_name".getBytes());
 				scan.addColumn(
-					"image_data".getBytes(),
+					"img".getBytes(),
 					"thumb_name".getBytes());
 				scan.addColumn(
-					"thumb_data".getBytes(),
+					"img".getBytes(),
+					"path".getBytes());
+				scan.addColumn(
+					"sz".getBytes(),
+					"width".getBytes());
+				scan.addColumn(
+					"sz".getBytes(),
+					"height".getBytes());
+				scan.addColumn(
+					"thb".getBytes(),
 					"thumbnail".getBytes());
 				scan.setFilter(
 					new FilterRowByLongAtAGivenOffset(
@@ -107,5 +116,22 @@ public class ImageFilterDAO extends AbstractDAO {
 	@Override
 	public <T extends HbaseData> void put(T hbaseData, Class<T> cl) {
 
+	}
+
+	@Override
+	public <T extends HbaseData> void put(T[] hbaseData, Class<T> cl) {
+	}
+
+	@Override
+	public <T extends HbaseData> T get(T hbaseData, Class<T> cl) {
+		return null;
+	}
+
+	@Override
+	public <T extends HbaseData> void delete(T hbaseData, Class<T> cl) {
+	}
+
+	@Override
+	public <T extends HbaseData> void delete(T[] hbaseData, Class<T> cl) {
 	}
 }
