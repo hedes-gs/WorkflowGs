@@ -13,14 +13,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.NamespaceNotFoundException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 
 import com.workflow.model.Column;
 import com.workflow.model.HbaseData;
@@ -219,14 +219,19 @@ public abstract class AbstractDAO {
 			tableName);
 		if (!admin.tableExists(
 			hbaseTable)) {
-			HTableDescriptor hTableDescriptor = new HTableDescriptor(hbaseTable);
+
+			TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(
+				hbaseTable);
+
 			values.forEach(
 				(cfName) -> {
-					hTableDescriptor.addFamily(
-						new HColumnDescriptor(cfName));
+					builder.setColumnFamily(
+						ColumnFamilyDescriptorBuilder.of(
+							cfName));
+
 				});
 			admin.createTable(
-				hTableDescriptor);
+				builder.build());
 		}
 		return hbaseTable;
 	}
@@ -241,7 +246,7 @@ public abstract class AbstractDAO {
 		return true;
 	}
 
-	protected static byte[] getKey(List<byte[]> keysElements, int length) {
+	protected static byte[] buildKey(List<byte[]> keysElements, int length) {
 		byte[] buffer = new byte[length];
 		int destPos = 0;
 		for (byte[] b : keysElements) {
@@ -267,10 +272,25 @@ public abstract class AbstractDAO {
 			hbaseTable);
 	}
 
+	protected static Table getTable(Connection connection, String tableName) throws IOException {
+		TableName hbaseTable = TableName.valueOf(
+			tableName);
+		return connection.getTable(
+			hbaseTable);
+	}
+
 	public AbstractDAO() {
 		super();
 	}
 
 	public abstract <T extends HbaseData> void put(T hbaseData, Class<T> cl);
+
+	public abstract <T extends HbaseData> void put(T[] hbaseData, Class<T> cl);
+
+	public abstract <T extends HbaseData> T get(T hbaseData, Class<T> cl);
+
+	public abstract <T extends HbaseData> void delete(T hbaseData, Class<T> cl);
+
+	public abstract <T extends HbaseData> void delete(T[] hbaseData, Class<T> cl);
 
 }

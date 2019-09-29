@@ -6,11 +6,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -34,11 +34,6 @@ public class TestImageGenericDao {
 
 	@Before
 	public void init() {
-	}
-
-	@After
-	public void delete() {
-
 	}
 
 	@Test
@@ -287,7 +282,7 @@ public class TestImageGenericDao {
 
 	@Test
 	public void test015_shouldReturn1000DataAfterBulkRecord() {
-		HbaseImageThumbnail[] data = new HbaseImageThumbnail[10000];
+		HbaseImageThumbnail[] data = new HbaseImageThumbnail[1000];
 		int nbOfDataFromHbase = 0;
 		for (int k = 0; k < data.length; k++) {
 			HbaseImageThumbnail hbaseData = new HbaseImageThumbnail();
@@ -307,14 +302,14 @@ public class TestImageGenericDao {
 			}
 		}
 		assertEquals(
-			10000,
+			1000,
 			nbOfDataFromHbase);
 
 	}
 
 	@Test
 	public void test016_shouldDelete1000DataAfterBulkDelete() {
-		HbaseImageThumbnail[] data = new HbaseImageThumbnail[10000];
+		HbaseImageThumbnail[] data = new HbaseImageThumbnail[1000];
 		for (int k = 0; k < data.length; k++) {
 			HbaseImageThumbnail hbaseData = new HbaseImageThumbnail();
 			hbaseData.setCreationDate(
@@ -359,9 +354,33 @@ public class TestImageGenericDao {
 	}
 
 	@Test
-	@Ignore
-	public void shouldGetRecordedData() {
-		imageFilterDAO.getThumbNailsByDate(
+	public void test018_shouldReturn1RecordWhenUsingFilter() {
+		HbaseImageThumbnail hbaseData = new HbaseImageThumbnail();
+		hbaseData.setCreationDate(
+			LocalDateTime.now().toInstant(
+				ZoneOffset.ofTotalSeconds(
+					0)).toEpochMilli());
+
+		hbaseData.setImageId(
+			"ABCDEF");
+		hbaseData.setImageName(
+			"Mon Image");
+		hbaseData.setPath(
+			"Mon path");
+		hbaseData.setThumbName(
+			"Thumbnail.jpg");
+		byte[] b = { 0, 1, 2, 3 };
+		hbaseData.setThumbnail(
+			b);
+		hbaseData.setWidth(
+			1024);
+		hbaseData.setHeight(
+			512);
+		exifDao.put(
+			hbaseData,
+			HbaseImageThumbnail.class);
+
+		List<HbaseImageThumbnail> scanValue = imageFilterDAO.getThumbNailsByDate(
 			LocalDateTime.now().minusDays(
 				2),
 			LocalDateTime.now().plusDays(
@@ -369,5 +388,12 @@ public class TestImageGenericDao {
 			0,
 			0,
 			HbaseImageThumbnail.class);
+		assertEquals(
+			1,
+			scanValue.size());
+		exifDao.delete(
+			hbaseData,
+			HbaseImageThumbnail.class);
+
 	}
 }

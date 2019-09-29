@@ -10,38 +10,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.HbaseExifData;
 
 @Component
-public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<HbaseImageThumbnail>
-		implements IConsumerForRecordHbaseImage {
+public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<HbaseExifData>
+		implements IConsumerForRecordHbaseExif {
 
 	private static Logger LOGGER = LogManager.getLogger(
-		ConsumerForRecordHbaseImage.class);
+		ConsumerForRecordHbaseExif.class);
 
 	@Value("${topic.exifData}")
 	protected String topic;
 
 	@Autowired
-	protected Consumer<String, HbaseImageThumbnail> consumerToRecordHbaseImage;
+	protected Consumer<String, HbaseExifData> consumerToRecordExifData;
 
 	@Override
 	public void recordIncomingMessageInHbase() {
 		try {
 			LOGGER.info(
-				"Start ConsumerForRecordHbaseImage.recordIncomingMessageInHbase");
-			consumerToRecordHbaseImage.subscribe(
+				"Start ConsumerForRecordHbaseExif.recordIncomingMessageInHbase");
+			consumerToRecordExifData.subscribe(
 				Arrays.asList(
 					topic));
 			processMessagesFromTopic(
-				consumerToRecordHbaseImage,
-				HbaseImageThumbnail.class);
+				consumerToRecordExifData,
+				HbaseExifData.class);
 		} catch (WakeupException e) {
 			LOGGER.warn(
 				"Error ",
 				e);
 		} finally {
-			consumerToRecordHbaseImage.close();
+			consumerToRecordExifData.close();
 		}
 	}
 
