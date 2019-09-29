@@ -1,9 +1,7 @@
 package com.workflow.model;
 
-import java.io.Serializable;
-
 @HbaseTableName("image_thumbnail")
-public class HbaseImageThumbnail extends HbaseData implements Serializable, Cloneable {
+public class HbaseImageThumbnail extends HbaseData {
 
 	private static final long serialVersionUID = 1L;
 
@@ -12,23 +10,23 @@ public class HbaseImageThumbnail extends HbaseData implements Serializable, Clon
 	protected long creationDate;
 	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
 	protected String imageId;
-	@Column(hbaseName = "original", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteBoolean.class, columnFamily = "thumb_data", fixedWidth = ModelConstants.FIXED_WIDTH_BOOLEAN)
+	@Column(hbaseName = "original", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteBoolean.class, fixedWidth = ModelConstants.FIXED_WIDTH_BOOLEAN)
 	protected boolean orignal = false;
-	@Column(hbaseName = "path", isPartOfRowkey = true, rowKeyNumber = 3, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_PATH)
-	protected String path = "";
-	@Column(hbaseName = "width", isPartOfRowkey = true, rowKeyNumber = 4, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
-	protected long width;
-	@Column(hbaseName = "height", isPartOfRowkey = true, rowKeyNumber = 5, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
-	protected long height;
 
 	// Data
 
-	@Column(hbaseName = "image_name", toByte = ToByteString.class, columnFamily = "image_data", rowKeyNumber = 100)
+	@Column(hbaseName = "image_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 100)
 	protected String imageName = "";
-	@Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "image_data", rowKeyNumber = 101)
+	@Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 101)
 	protected String thumbName = "";
-	@Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thumb_data", rowKeyNumber = 102)
+	@Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 102)
 	protected byte[] thumbnail = {};
+	@Column(hbaseName = "path", rowKeyNumber = 103, toByte = ToByteString.class, columnFamily = "img")
+	protected String path = "";
+	@Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
+	protected long width;
+	@Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
+	protected long height;
 
 	public String getImageId() {
 		return imageId;
@@ -105,8 +103,15 @@ public class HbaseImageThumbnail extends HbaseData implements Serializable, Clon
 	public HbaseImageThumbnail() {
 	}
 
-	public HbaseImageThumbnail(long creationDate, String imageId, String path, long width, long height,
-			String imageName, String thumbName, byte[] thumbnail) {
+	public HbaseImageThumbnail(
+			long creationDate,
+			String imageId,
+			String path,
+			long width,
+			long height,
+			String imageName,
+			String thumbName,
+			byte[] thumbnail) {
 		super();
 		this.creationDate = creationDate;
 		this.imageId = imageId;
@@ -163,12 +168,14 @@ public class HbaseImageThumbnail extends HbaseData implements Serializable, Clon
 		if (imageId == null) {
 			if (other.imageId != null)
 				return false;
-		} else if (!imageId.equals(other.imageId))
+		} else if (!imageId.equals(
+			other.imageId))
 			return false;
 		if (imageName == null) {
 			if (other.imageName != null)
 				return false;
-		} else if (!imageName.equals(other.imageName))
+		} else if (!imageName.equals(
+			other.imageName))
 			return false;
 		if (orignal != other.orignal)
 			return false;
