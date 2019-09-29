@@ -26,13 +26,26 @@
 			</Policies>
 			<DefaultRolloverStrategy max="20" />
 		</RollingFile>
-
+		<RollingFile name="RollingFileJson"
+			filename="logs/json_{{ application_id }}.log"
+			filepattern="${logPath}/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
+			<JsonLayout compact="true" locationInfo="true"
+				complete="false" includeStacktrace="true" stacktraceAsString="true"
+				eventEol="true">
+				<KeyValuePair key="application"
+					value="{{ application_id }}" />
+			</JsonLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="100 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="20" />
+		</RollingFile>
 	</Appenders>
 	<Loggers>
 		<Root level="info">
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
-			<AppenderRef ref="gelf" />
+			<AppenderRef ref="RollingFileJson" />
 
 		</Root>
 	</Loggers>
