@@ -1,0 +1,164 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download storm "{{ storm_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name : stop service nimbus
+      sudo: yes
+      service:
+        name: nimbus
+        state: stopped
+      when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
+    - name : stop service nimbusui
+      sudo: yes
+      service:
+        name: nimbusui
+        state: stopped
+      when: inventory_hostname == "192.168.1.200"
+    - name : stop service supervisor
+      sudo: yes
+      service:
+        name: supervisor 
+        state: stopped
+      ignore_errors: yes
+    - name: Download storm {{ storm_version }}
+      get_url:
+        url: http://mirrors.standaloneinstaller.com/apache/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ storm_install_folder }}/storm-{{ storm_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ storm_install_folder }}/storm-{{ storm_version }}.tgz"
+        dest: "{{ storm_install_folder }}"
+        remote_src: true
+    - name: remove symlink /usr/local/kafka to this version
+      file:
+        path: "{{ storm_install_folder }}/latest"
+        state: absent
+
+    - name: Symlink {{ storm_install_folder }}/latest to this version
+      file:
+        path: "{{ storm_install_folder }}"
+        src: "{{ storm_install_folder }}/apache-storm-{{ storm_version }}"
+        dest: "{{ storm_install_folder }}/latest"
+        state: link
+        owner: "{{ user_to_create }}"
+        force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ storm_install_folder }}/apache-storm-{{ storm_version }} "
+
+    - name: Create folder {{ storm_install_folder }}/local
+      file:
+        path: "{{ storm_install_folder }}/local"
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: stop-hdfs
+      shell:  "rm -f {{ storm_install_folder }}/latest/logs/*"
+    - name: Create folders .~storm/latest/logs
+      file:
+        path: ~storm/latest/logs
+        state: directory
+        mode: 0766
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: Create folders .~storm/.ssh
+      file:
+        path: ~storm/.ssh
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: deploy keys and files
+      template:
+        src: ./tools/storm/authorized_keys
+        dest: "~storm/.ssh/authorized_keys"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0744
+    - name: deploy env file
+      template:
+        src: ./tools/storm/storm-env.sh
+        dest: "~storm/latest/conf/storm-env.sh"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0744
+    - name: deploy storm.yaml
+      template:
+        src: ./tools/storm/storm.yaml
+        dest: "~storm/latest/conf/storm.yaml"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0644
+    - name: deploy client_jaas.conf
+      template:
+        src: ./tools/storm/client_jaas.conf
+        dest: "~storm/latest/conf/client_jaas.conf"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0644
+    - name: deploy storm.keytab
+      copy:
+        src: ./tools/storm/storm.keytab
+        dest: "~storm/latest/conf/storm.keytab"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0644
+    - name: deploy ./tools/storm/nimbus.service
+      template:
+        src: ./tools/storm/nimbus.service
+        dest: "/etc/systemd/system/nimbus.service"
+      when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
+    - name: deploy ./tools/storm/nimbusui.service
+      template:
+        src: ./tools/storm/nimbusui.service
+        dest: "/etc/systemd/system/nimbusui.service"
+      when: inventory_hostname == "192.168.1.200"
+    - name: deploy ./tools/storm/supervisor.service
+      template:
+        src: ./tools/storm/supervisor.service
+        dest: "/etc/systemd/system/supervisor.service"
+    - name: reload systemd/system/nimbus
+      sudo: yes
+      command: systemctl daemon-reload
+    - name : start service nimbus
+      sudo: yes
+      service:
+        name: nimbus
+        state: started
+      when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
+    - name : start service nimbusui
+      sudo: yes
+      service:
+        name: nimbusui
+        state: started
+      when: inventory_hostname == "192.168.1.200"
+    - name : stop service supervisor
+      sudo: yes
+      service:
+        name: supervisor 
+        state: started
+  
+  vars:
+    ansible_become_pass: granada01
+    storm_version: 2.0.0
+    user_to_create: storm
+    storm_install_folder: /home/storm
+    PWD: "{{ lookup('env', 'PWD') }}"
+    slaves_ids:
+      192.168.1.200:
+        value: "storm-slave-0"
+      192.168.1.201:
+        value: "storm-slave-1"
+      192.168.1.202:
+        value: "storm-slave-2"
+      192.168.1.203:
+        value: "storm-slave-3"
+      192.168.1.205:
+        value: "storm-slave-4"
+      192.168.1.206:
+        value: "storm-slave-5"

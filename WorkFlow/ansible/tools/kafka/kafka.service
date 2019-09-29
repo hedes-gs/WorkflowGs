@@ -3,7 +3,7 @@ Description=High-available, distributed message broker
 After=network.target
 [Service]
 User=kafka
-ExecStart=/opt/kafka/latest/bin/kafka-server-start.sh /opt/kafka/latest/config/server.properties
+ExecStart=/opt/kafka/latest/bin/run.sh
 ExecStop=/opt/kafka/latest/bin/kafka-server-stop.sh
 StandardOutput=syslog
 StandardError=syslog

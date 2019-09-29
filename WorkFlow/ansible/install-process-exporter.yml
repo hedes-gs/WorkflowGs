@@ -1,0 +1,55 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download processexporter "{{ processexporter_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: Download processexporter {{ processexporter_version }}
+      get_url: 
+        url: https://github.com/ncabatoff/process-exporter/releases/download/v{{ processexporter_version }}/process-exporter-{{ processexporter_version }}.linux-amd64.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ processexporter_install_folder }}/process_exporter-{{ processexporter_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ processexporter_install_folder }}/process_exporter-{{ processexporter_version }}.tgz"
+        dest: "{{ processexporter_install_folder }}"
+        remote_src: true
+    - name: remove symlink {{ processexporter_install_folder }}/latest to this version
+      file:
+        path: "{{ processexporter_install_folder }}/latest"
+        state: absent
+    - name: Symlink {{ processexporter_install_folder }}/latest to this version
+      file:
+        path: "{{ processexporter_install_folder }}"
+        src: "{{ processexporter_install_folder }}/process-exporter-{{ processexporter_version }}.linux-amd64"
+        dest: "{{ processexporter_install_folder }}/latest"
+        owner: "{{ user_to_create }}"
+        state: link
+        force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ processexporter_install_folder }}/process-exporter-{{ processexporter_version }}.linux-amd64"
+    - name: deploy prometheus process_exporter.service
+      copy:
+        src: ./tools/prometheus/process_exporter.service
+        dest: "/etc/systemd/system/process_exporter.service"
+        mode: 0644
+    - name: deploy prometheus config_process_exporter.yml
+      copy:
+        src: ./tools/prometheus/config_process_exporter.yml
+        dest: "{{ processexporter_install_folder }}/latest/config_process_exporter.yml"
+        mode: 0644
+    - name: reload processexporter
+      shell: " systemctl daemon-reload"
+    - name: restart processexporter
+      shell: " systemctl restart process_exporter.service"
+    - name: enable processexporter
+      shell: " systemctl enable process_exporter.service"
+  vars:
+    ansible_become_pass: granada01
+    user_to_create: processexporter
+    PWD: "{{ lookup('env', 'PWD') }}"
+    processexporter_install_folder: /home/processexporter
+    processexporter_version: 0.5.0
+

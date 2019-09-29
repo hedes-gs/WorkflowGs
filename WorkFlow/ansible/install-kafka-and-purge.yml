@@ -2,7 +2,7 @@
   become: true
   tasks:
     - debug:
-        msg: INSTALL  Kafka "{{ kafka_version }}"
+        msg: Download Kafka "{{ kafka_version }} {{ zookeeper_ids }}"
     - user: name="{{ user_to_create }}" group=nogroup
     - name: stop kafka service
       shell: systemctl stop kafka.service 
@@ -30,6 +30,14 @@
         path: /var/lib/kafka/data
         state: directory
         owner: "{{ user_to_create }}"
+    - name: purge kafka
+      shell: "rm -rf /var/lib/kafka/data ; mkdir /var/lib/kafka/data ; chmod 777 /var/lib/kafka/data ; chown -R kafka:nogroup /var/lib/kafka/data"
+    - name: Purge zookeeper
+      shell: "rm -rf /var/lib/zookeeper; mkdir /var/lib/zookeeper; chown -R zookeeper:zookeeper /var/lib/zookeeper ; chmod 777 /var/lib/zookeeper"
+    - name: Set Zookeeper Id
+      shell: "echo {{ item.value.value }} > /var/lib/zookeeper/myid; chown -R zookeeper:zookeeper /var/lib/zookeeper/myid"
+      loop: "{{ lookup('dict', zookeeper_ids) }}"
+      when:  inventory_hostname == item.value.key
     - name: Create folder  {{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}
       file:
         path: "{{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}"
@@ -48,17 +56,11 @@
         path: "{{ kafka_install_folder }}/latest/logs"
         state: directory
         owner: "{{ user_to_create }}"
-    - name: Create folder  {{ kafka_install_folder }}/latest/monitor
-      file:
-        path: "{{ kafka_install_folder }}/latest/monitor"
-        state: directory
-        owner: "{{ user_to_create }}"
     - name: Purge logs
       shell: "rm -f {{ kafka_install_folder }}/latest/logs/*"
     - name: build config file from template
       vars:
-          broker_id: "{{ borker_ids[inventory_hostname].value }}"
-          broker_host: "{{ ids[inventory_hostname].value }}"
+          broker_id: "{{ ids[inventory_hostname].value }}"
       template:
         src: ./tools/kafka/server.properties
         dest: "{{ kafka_install_folder }}/latest/config/server.properties"
@@ -76,44 +78,6 @@
         dest: /etc/rsyslog.d/kafka.conf
         owner: root
         mode: 0666
-    - name: build kafka.keytab from template
-      vars:
-        Broker_host: "{{ ids[inventory_hostname].value }}"
-      copy:
-        src: ./tools/kafka/kafka_all.keytab
-        dest: "{{ kafka_install_folder }}/latest/config/kafka.keytab"
-        owner: kafka
-        mode: 0600
-    - name: deploy prometheus jars.
-      copy:
-        src: ./tools/kafka/config_prometheus.yml
-        dest: "{{ kafka_install_folder }}/latest/monitor/config_prometheus.yml"
-        owner: kafka
-        mode: 0666
-    - name: deploy prometheus jars.
-      copy:
-        src: ./tools/kafka/jmx_prometheus_javaagent-0.12.0.jar
-        dest: "{{ kafka_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
-        owner: kafka
-        mode: 0666        
-        
-        
-    - name: build client_jaas.conf from template
-      vars:
-        broker_host: "{{ ids[inventory_hostname].value }}"
-      template:
-        src: ./tools/kafka/client_jaas.conf
-        dest: "{{ kafka_install_folder }}/latest/config/client_jaas.conf"
-        owner: root
-        mode: 0666
-    - name: build run.sh from template
-      copy:
-        src: ./tools/kafka/run.sh
-        dest: "{{ kafka_install_folder }}/latest/bin/run.sh"
-        owner: root
-        mode: 0755
-    - name: reload daemon
-      shell: systemctl  daemon-reload    
     - name: restart zookeeper
       shell: systemctl restart zookeeper
       loop: "{{ lookup('dict', zookeeper_ids) }}"
@@ -142,19 +106,6 @@
         key: "192.168.1.202"
         value: 3
     ids:
-      192.168.1.200:
-        value: ipc0
-      192.168.1.201:
-        value: ipc1
-      192.168.1.202:
-        value: ipc2
-      192.168.1.203:
-        value: ipc3
-      192.168.1.205:
-        value: ipc5
-      192.168.1.206:
-        value: ipc6
-    borker_ids:
       192.168.1.200:
         value: 1
       192.168.1.201:

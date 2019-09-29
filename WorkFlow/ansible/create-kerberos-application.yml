@@ -1,0 +1,74 @@
+- hosts: 192.168.1.206
+  become: true
+  tasks:
+    - debug:
+        msg: create kerberos
+    - name: del princip
+      shell: kadmin.local -q 'delprinc -force {{ item }}@GS.COM' 
+      loop:
+        - wf_cmp_hashkey
+        - wf_copy_files
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_extr_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_storm
+    - name: add princip
+      shell: kadmin.local -q 'addprinc -pw {{ item }} {{ item }}@GS.COM' 
+      loop:
+        - wf_cmp_hashkey
+        - wf_copy_files
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_extr_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_storm
+    
+    - name: rm keytab
+      shell: rm -f /home/user/keytabs/{{ item }}.keytab
+      loop:
+        - wf_cmp_hashkey
+        - wf_copy_files
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_extr_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_storm
+    - name: create keytabs 
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/{{item}}.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  {{item}}@GS.COM'
+      loop:
+        - wf_cmp_hashkey
+        - wf_copy_files
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_extr_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_storm
+        
+
+    - name: get keytab hbase@GS.COM
+      fetch:
+        src: /home/user/keytabs/{{item}}.keytab
+        dest: ./tools/application/keytabs/
+        flat: yes
+      loop:
+        - wf_cmp_hashkey
+        - wf_copy_files
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_extr_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_storm
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

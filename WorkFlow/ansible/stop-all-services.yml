@@ -1,0 +1,45 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: stop kafka service
+      shell: systemctl stop kafka.service 
+    - name: stop zookeeper service
+      shell: systemctl stop zookeeper 
+      loop: "{{ lookup('dict', zookeeper_ids) }}"
+      when:  inventory_hostname == item.value.key
+    - name : stop service nimbus
+      service:
+        name: nimbus
+        state: stopped
+      when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
+    - name : stop service nimbusui
+      service:
+        name: nimbusui
+        state: stopped
+      when: inventory_hostname == "192.168.1.200"
+    - name : stop service supervisor
+      service:
+        name: supervisor 
+        state: stopped
+      ignore_errors: yes
+    - name: stop-hdfs
+      shell:  "/home/hadoop/latest/sbin/stop-dfs.sh"
+      when: inventory_hostname == "192.168.1.200"
+    - name: stop-hbase.sh
+      shell:  "/home/hbase/latest/bin/stop-hbase.sh"
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"
+    zookeeper_ids:
+      item_1:
+        key: "192.168.1.200"
+        value: 1
+      item_2:
+        key: "192.168.1.201"
+        value: 2
+      item_3:
+        key: "192.168.1.202"
+        value: 3
