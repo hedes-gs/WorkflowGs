@@ -1,6 +1,7 @@
 package com.gsphotos.storms.bolt;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -58,6 +59,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	protected Producer<String, FinalImage> producer;
 	protected String kafkaBrokers;
 	protected String outputTopic;
+	protected int windowLength;
 
 	protected Dim get(byte[] jpeg_thumbnail) {
 		ByteBuffer buffer = ByteBuffer.wrap(
@@ -103,6 +105,9 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			"value.serializer",
 			FinalImageSerializer.class.getName());
 		producer = new KafkaProducer<>(settings);
+		super.withWindow(
+			Count.of(
+				windowLength));
 	}
 
 	@Override
@@ -115,7 +120,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
-		return null;
+		return new HashMap<String, Object>();
 	}
 
 	public FinalImageBolt(
@@ -124,6 +129,9 @@ public class FinalImageBolt extends BaseWindowedBolt {
 		super();
 		this.kafkaBrokers = kafkaBrokers;
 		this.outputTopic = outputTopic;
+	}
+
+	public FinalImageBolt() {
 	}
 
 	@Override
@@ -158,6 +166,30 @@ public class FinalImageBolt extends BaseWindowedBolt {
 				collector.ack(
 					input);
 			});
+	}
+
+	public String getKafkaBrokers() {
+		return kafkaBrokers;
+	}
+
+	public void setKafkaBrokers(String kafkaBrokers) {
+		this.kafkaBrokers = kafkaBrokers;
+	}
+
+	public String getOutputTopic() {
+		return outputTopic;
+	}
+
+	public void setOutputTopic(String outputTopic) {
+		this.outputTopic = outputTopic;
+	}
+
+	public int getWindowLength() {
+		return windowLength;
+	}
+
+	public void setWindowLength(int windowLength) {
+		this.windowLength = windowLength;
 	}
 
 }
