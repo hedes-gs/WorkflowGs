@@ -1,0 +1,44 @@
+- hosts: 192.168.1.200,192.168.1.201,192.168.1.202
+  become: true
+  tasks:
+    - debug:
+        msg: Install ZOOKEEPER
+    - name: stop zookeeper service
+      shell: systemctl stop zookeeper 
+    - name: copy zoo.cfg
+      copy:
+        src: ./tools/zookeeper/zoo.cfg
+        dest: /etc/zookeeper/conf_example/zoo.cfg
+        mode: 0644
+    - name: copy client_jaas.conf
+      vars:
+        Zookeeper_host: "ipc6"
+      template:
+        src: ./tools/zookeeper/client_jaas.conf
+        dest: /etc/zookeeper/conf_example/client_jaas.conf
+        mode: 0644
+    - name: copy environment
+      copy:
+        src: ./tools/zookeeper/environment
+        dest: /etc/zookeeper/conf_example/environment
+        mode: 0644
+    - name: copy zookeeper.keytab
+      copy:
+        owner: zookeeper
+        src: ./tools/zookeeper/zookeeper_all.keytab
+        dest: /etc/zookeeper/conf_example/zookeeper.keytab
+        mode: 0600
+    - name: restart zookeeper
+      shell: systemctl restart zookeeper
+ 
+  vars:
+    ansible_become_pass: granada01
+    user_to_create: zookeeper
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ids:
+      192.168.1.200:
+        value: IPC0
+      192.168.1.201:
+        value: IPC1
+      192.168.1.202:
+        value: IPC2

@@ -41,11 +41,15 @@ export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
 # Below are what we set by default.  May only work with SUN JVM.
 # For more on why as well as other possible settings,
 # see http://wiki.apache.org/hadoop/PerformanceTuning
-export HBASE_OPTS="-XX:+UseConcMarkSweepGC"
+export HBASE_OPTS="-server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=45 -XX:+ExplicitGCInvokesConcurrent"
+
+
+export HBASE_OPTS="$HBASE_OPTS -Djava.security.auth.login.config=/home/hbase/latest/conf/client_jaas.conf "
+export HBASE_MANAGES_ZK=false
 
 # Configure PermSize. Only needed in JDK7. You can safely remove it for JDK8+
-export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m"
-export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m"
+export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7001:/home/hbase/latest/monitor/config_prometheus.yml"
+export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7002:/home/hbase/latest/monitor/config_prometheus.yml"
 
 # Uncomment one of the below three options to enable java garbage collection logging for the server-side processes.
 
@@ -118,7 +122,7 @@ export HBASE_LOG_DIR=${HBASE_HOME}/logs
 # export HBASE_NICENESS=10
 
 # The directory where pid files are stored. /tmp by default.
-# export HBASE_PID_DIR=/var/hadoop/pids
+export HBASE_PID_DIR=/home/hbase/latest/pids
 
 # Seconds to sleep between slave commands.  Unset by default.  This
 # can be useful in large clusters, where, e.g., slave rsyncs can

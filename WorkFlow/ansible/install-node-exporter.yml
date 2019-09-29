@@ -1,0 +1,54 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download nodeexporter "{{ nodeexporter_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: rm
+      file:
+        path: "{{ nodeexporter_install_folder }}/lnodeexporter-0.18.1.tgz"
+        state: absent
+        force: yes
+
+    - name: Download nodeexporter {{ nodeexporter_version }}
+      get_url: 
+        url: https://github.com/prometheus/node_exporter/releases/download/v{{ nodeexporter_version }}/node_exporter-{{ nodeexporter_version }}.linux-amd64.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ nodeexporter_install_folder }}/node_exporter-{{ nodeexporter_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ nodeexporter_install_folder }}/node_exporter-{{ nodeexporter_version }}.tgz"
+        dest: "{{ nodeexporter_install_folder }}"
+        remote_src: true
+    - name: remove symlink {{ nodeexporter_install_folder }}/latest to this version
+      file:
+        path: "{{ nodeexporter_install_folder }}/latest"
+        state: absent
+    - name: Symlink {{ nodeexporter_install_folder }}/latest to this version
+      file:
+        path: "{{ nodeexporter_install_folder }}"
+        src: "{{ nodeexporter_install_folder }}/node_exporter-{{ nodeexporter_version }}.linux-amd64"
+        dest: "{{ nodeexporter_install_folder }}/latest"
+        owner: "{{ user_to_create }}"
+        state: link
+        force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ nodeexporter_install_folder }}/node_exporter-{{ nodeexporter_version }}.linux-amd64"
+    - name: deploy prometheus node_exporter.service
+      copy:
+        src: ./tools/prometheus/node_exporter.service
+        dest: "/etc/systemd/system/node_exporter.service"
+        mode: 0644
+    - name: restart nodeexporter
+      shell: " systemctl restart node_exporter.service"
+    - name: restart nodeexporter
+      shell: " systemctl enable node_exporter.service"
+  vars:
+    ansible_become_pass: granada01
+    user_to_create: nodeexporter
+    PWD: "{{ lookup('env', 'PWD') }}"
+    nodeexporter_install_folder: /home/nodeexporter
+    nodeexporter_version: 0.18.1
+

@@ -1,4 +1,3 @@
 export HBASE_HOME=/home/hbase/latest
 export HBASE_CONF_DIR=$HBASE_HOME/conf
 export PATH=$PATH:$HBASE_HOME/bin
-export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64

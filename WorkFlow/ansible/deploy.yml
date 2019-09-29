@@ -49,6 +49,18 @@
         dest: ~{{ user_to_create }}/config/log4j.xml
         owner: "{{ user_to_create }}"
         mode: 0744
+    - name: Deploy jaas file
+      template:
+        src: ../config/client_jaas.conf.template
+        dest: ~{{ user_to_create }}/config/client_jaas.conf
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: Deploy key tab file
+      copy:
+        src: ../../WorkFlow/ansible/tools/application/keytabs/{{ user_to_create }}.keytab
+        dest: ~{{ user_to_create }}/config/{{ user_to_create }}.keytab
+        owner: "{{ user_to_create }}"
+        mode: 0600
     - name: Copy jars
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
