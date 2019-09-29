@@ -3,10 +3,25 @@
   tasks:
     - debug:
         msg: Download hbase "{{ hbase_version }}"
-    - user: name="{{ user_to_create }}" group=nogroup
+    - user: name="{{ user_to_create }}" group=nogroup shell=/bin/bash
+    - name: deploy keys and files
+      template:
+        src: ./tools/hbase/bash_profile
+        dest: "~hbase/.bash_profile"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+
+    - name: deploy run.sh
+      template:
+        src: ./tools/hbase/run.sh
+        dest: "~hbase/run.sh"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0755
     - name: Download hbase {{ hbase_version }}
       get_url: 
-        url: http://www-eu.apache.org/dist/hbase/stable/hbase-{{ hbase_version }}-bin.tar.gz
+        url: http://www-eu.apache.org/dist/hbase/{{ hbase_version }}/hbase-{{ hbase_version }}-bin.tar.gz
         owner: "{{ user_to_create }}"
         dest: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
         mode: 0644
@@ -16,6 +31,12 @@
         src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
         dest: "{{ hbase_install_folder }}"
         remote_src: true
+    - name: stop hbase
+      shell: " {{ hbase_install_folder }}/run.sh stop master"
+      args:
+        executable: /bin/bash
+      when:  inventory_hostname == '192.168.1.200'
+
     - name: remove symlink /usr/local/kafka to this version
       file:
         path: "{{ hbase_install_folder }}/latest"
@@ -25,8 +46,11 @@
         path: "{{ hbase_install_folder }}"
         src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}"
         dest: "{{ hbase_install_folder }}/latest"
+        owner: "{{ user_to_create }}"
         state: link
         force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ hbase_install_folder }}/hbase-{{ hbase_version }}"
     - name: Create folder {{ hbase_install_folder }}/latest/logs
       file:
         path: "{{ hbase_install_folder }}/latest/logs"
@@ -34,7 +58,14 @@
         mode: 0700
         owner: "{{ user_to_create }}"
         group: nogroup
-    - name: stop-hdfs
+    - name: Create folder {{ hbase_install_folder }}/latest/pids
+      file:
+        path: "{{ hbase_install_folder }}/latest/pids"
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: rm all logs
       shell:  "rm -f {{ hbase_install_folder }}/latest/logs/*"
 
     - name: Create folders .~hbase/.ssh
@@ -81,23 +112,72 @@
         owner: "{{ user_to_create }}"
         group: nogroup
         mode: 0600
+    - name: deploy keys and files
+      vars:
+        hbase_host: "{{ slaves_ids[inventory_hostname].value }}"
+      template:
+        src: ./tools/hbase/client_jaas.conf
+        dest: "~hbase/latest/conf"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy keys and files
+      copy:
+        src: ./tools/hbase/keytabs/hbase_all.keytab
+        dest: "~hbase/latest/conf/"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600 
+    - name: deploy hadoop config file core-site
+      copy:
+        src: ./tools/hadoop/core-site.xml
+        dest: "~hbase/latest/conf/"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
  
+    - name: deploy hadoop config file hdfs-site
+      copy:
+        src: ./tools/hadoop/hdfs-site.xml
+        dest: "~hbase/latest/conf/"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: Create folder  {{ hbase_install_folder }}/latest/monitor
+      file:
+        path: "{{ hbase_install_folder }}/latest/monitor"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: deploy prometheus jars.
+      copy:
+        src: ./tools/hbase/config_prometheus.yml
+        dest: "{{ hbase_install_folder }}/latest/monitor/config_prometheus.yml"
+        owner: kafka
+        mode: 0666
+    - name: deploy prometheus jars.
+      copy:
+        src: ./tools/kafka/jmx_prometheus_javaagent-0.12.0.jar
+        dest: "{{ hbase_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
+        owner: kafka
+        mode: 0666        
+        
+  
   vars:
     ansible_become_pass: granada01
-    hbase_version: 1.4.10
+    hbase_version: 2.2.0
     user_to_create: hbase
     hbase_install_folder: /home/hbase
     PWD: "{{ lookup('env', 'PWD') }}"
     slaves_ids:
       192.168.1.200:
-        value: "hbase-slave-0"
+        value: "ipc0"
       192.168.1.201:
-        value: "hbase-slave-1"
+        value: "ipc1"
       192.168.1.202:
-        value: "hbase-slave-2"
+        value: "ipc2"
       192.168.1.203:
-        value: "hbase-slave-3"
+        value: "ipc3"
       192.168.1.205:
-        value: "hbase-slave-4"
+        value: "ipc5"
       192.168.1.206:
-        value: "hbase-slave-5"
+        value: "ipc6"

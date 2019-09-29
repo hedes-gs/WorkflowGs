@@ -40,4 +40,12 @@
 			<name>dfs.blocksize</name>
 			<value>24657920</value>
 		</property>
+		<property>
+			<name>dfs.block.access.token.enable</name>
+			<value>true</value>
+		</property>
+			<property>
+		<name>dfs.http.policy</name>
+		<value>HTTPS_ONLY</value>
+	</property>
 </configuration>

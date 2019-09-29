@@ -1,0 +1,39 @@
+- hosts: 192.168.1.206
+  become: true
+  tasks:
+    - debug:
+        msg: Download prometheus "{{ prometheus_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: Download prometheus {{ prometheus_version }}
+      get_url: 
+        url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ prometheus_install_folder }}/prometheus-{{ prometheus_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ prometheus_install_folder }}/prometheus-{{ prometheus_version }}.tgz"
+        dest: "{{ prometheus_install_folder }}"
+        remote_src: true
+    - name: remove symlink /usr/local/kafka to this version
+      file:
+        path: "{{ prometheus_install_folder }}/latest"
+        state: absent
+    - name: Symlink {{ prometheus_install_folder }}/latest to this version
+      file:
+        path: "{{ prometheus_install_folder }}"
+        src: "{{ prometheus_install_folder }}/prometheus-{{ prometheus_version }}"
+        dest: "{{ prometheus_install_folder }}/latest"
+        owner: "{{ user_to_create }}"
+        state: link
+        force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ prometheus_install_folder }}/prometheus-{{ prometheus_version }}"
+  vars:
+    ansible_become_pass: granada01
+    user_to_create: zookeepe
+    PWD: "{{ lookup('env', 'PWD') }}"
+    prometheus_install_folder: /home/prometheus
+    prometheus_version: 2.12.0
+
