@@ -1,19 +1,29 @@
 package com.gs.photo.workflow.impl;
 
+import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.StreamSupport;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +40,39 @@ import com.workflow.model.ExchangedTiffData;
 @Component
 public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
-	private static final int FORK_JOIN_PARALLELISM = 10;
+	public static final int NB_OF_THREADS_TO_RECORD_IN_HBASE = 3;
 
 	protected static Logger LOGGER = LoggerFactory.getLogger(
 		IProcessIncomingFiles.class);
+	protected ExecutorService[] services;
+
+	protected final class DbTask implements Callable<Map<TopicPartition, OffsetAndMetadata>> {
+		protected ConsumerRecord<String, String>[] records;
+		protected TopicPartition partition;
+		protected long lastOffset;
+
+		public DbTask(
+				ConsumerRecord<String, String>[] records,
+				TopicPartition partition,
+				long offsetToCommit) {
+			super();
+			this.records = records;
+			this.partition = partition;
+			this.lastOffset = offsetToCommit + 1;
+		}
+
+		@Override
+		public Map<TopicPartition, OffsetAndMetadata> call() throws Exception {
+			for (ConsumerRecord<String, String> record : records) {
+				processIncomingRecord(
+					record);
+			}
+
+			return Collections.singletonMap(
+				partition,
+				new OffsetAndMetadata(lastOffset + 1));
+		}
+	}
 
 	@Autowired
 	protected IBeanTaskExecutor beanTaskExecutor;
@@ -64,6 +103,11 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
 	@PostConstruct
 	public void init() {
+		services = new ExecutorService[NB_OF_THREADS_TO_RECORD_IN_HBASE];
+		for (int k = 0; k < NB_OF_THREADS_TO_RECORD_IN_HBASE; k++) {
+			services[k] = Executors.newFixedThreadPool(
+				1);
+		}
 		beanTaskExecutor.execute(
 			() -> processInputFile());
 	}
@@ -72,23 +116,53 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 		consumerForTopicWithStringKey.subscribe(
 			Collections.singleton(
 				topicCopyFile));
-		ForkJoinPool pool = new ForkJoinPool(FORK_JOIN_PARALLELISM);
 		LOGGER.info(
 			"Starting process input file...");
+		List<Future<Map<TopicPartition, OffsetAndMetadata>>> futuresList = new ArrayList<>();
+
 		while (true) {
 			try {
+				futuresList.clear();
 				ConsumerRecords<String, String> records = consumerForTopicWithStringKey.poll(
 					500);
+				for (TopicPartition partition : records.partitions()) {
+					List<ConsumerRecord<String, String>> partitionRecords = records.records(
+						partition);
+					List<ConsumerRecord<String, String>> foundRecords = new ArrayList<>();
+					for (ConsumerRecord<String, String> record : partitionRecords) {
+						foundRecords.add(
+							record);
+					}
+					ConsumerRecord<String, String>[] hit = (ConsumerRecord<String, String>[]) Array.newInstance(
+						ConsumerRecord.class,
+						foundRecords.size());
+					foundRecords.toArray(
+						hit);
+					Future<Map<TopicPartition, OffsetAndMetadata>> f = services[partition.partition()
+							% NB_OF_THREADS_TO_RECORD_IN_HBASE].submit(
+								new DbTask(
+									hit,
+									partition,
+									partitionRecords.get(
+										partitionRecords.size() - 1).offset()));
+					futuresList.add(
+						f);
+				}
+				futuresList.forEach(
+					(f) -> {
+						try {
+							consumerForTopicWithStringKey.commitSync(
+								f.get());
+						} catch (CommitFailedException | InterruptedException | ExecutionException e) {
+							LOGGER.warn(
+								"Error whil commiting ",
+								e);
+						}
+					});
 				LOGGER.info(
 					"Starting process {} records...",
 					records.count());
 
-				pool.submit(
-					() -> StreamSupport.stream(
-						records.spliterator(),
-						true).parallel().forEach(
-							(rec) -> processIncomingRecord(
-								rec)));
 			} catch (Exception e) {
 				LOGGER.error(
 					"error in processInputFile ",
