@@ -11,20 +11,20 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 	// Row key
 	@Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
 	protected long exifTag;
-	@Column(hbaseName = "exif_value", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteIdempotent.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_VALUE)
-	protected byte[] exifValue;
-	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
 	protected String imageId;
 
 	// Data
 
-	@Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "image_data", rowKeyNumber = 101)
+	@Column(hbaseName = "exif_value", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
+	protected byte[] exifValue;
+	@Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 101)
 	protected String thumbName = "";
-	@Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "image_data", rowKeyNumber = 102)
+	@Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 102)
 	protected String creationDate = "";
-	@Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "image_data", rowKeyNumber = 103)
+	@Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 103)
 	protected long width;
-	@Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "image_data", rowKeyNumber = 104)
+	@Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 104)
 	protected long height;
 
 	public long getExifTag() {
