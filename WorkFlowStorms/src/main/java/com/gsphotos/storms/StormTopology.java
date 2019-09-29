@@ -1,28 +1,16 @@
 package com.gsphotos.storms;
 
-import java.nio.ByteBuffer;
-import java.util.List;
-
 import javax.annotation.PostConstruct;
 
-import org.apache.kafka.common.utils.Utils;
 import org.apache.storm.Config;
 import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.AlreadyAliveException;
 import org.apache.storm.generated.AuthorizationException;
 import org.apache.storm.generated.InvalidTopologyException;
-import org.apache.storm.kafka.BrokerHosts;
-import org.apache.storm.kafka.KafkaSpout;
-import org.apache.storm.kafka.KeyValueScheme;
-import org.apache.storm.kafka.KeyValueSchemeAsMultiScheme;
-import org.apache.storm.kafka.SpoutConfig;
-import org.apache.storm.kafka.StringScheme;
-import org.apache.storm.kafka.ZkHosts;
+import org.apache.storm.kafka.spout.KafkaSpout;
+import org.apache.storm.kafka.spout.KafkaSpoutConfig;
 import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Values;
 
-import com.google.common.collect.ImmutableMap;
 import com.gsphotos.storms.bolt.ExtractHistogramBolt;
 import com.gsphotos.storms.bolt.FinalImageBolt;
 import com.gsphotos.storms.bolt.NormalizeImageBolt;
@@ -64,36 +52,27 @@ public class StormTopology implements IStormTopology {
 
 		String zkConnString = zookeeperConnect;
 		String topic = kafkaInputTopic;
-		BrokerHosts hosts = new ZkHosts(zkConnString);
+		// BrokerHosts hosts = new ZkHosts(zkConnString);
 
-		SpoutConfig kafkaSpoutConfig = new SpoutConfig(hosts, topic, "storm-client", "/" + topic, "kafka-storm-spout");
-		kafkaSpoutConfig.bufferSizeBytes = kafkaSpoutConfigBufferSizeBytes;
-		kafkaSpoutConfig.fetchSizeBytes = kafkaSpoutConfigFetchSizeBytes;
-		kafkaSpoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
-		kafkaSpoutConfig.scheme = new KeyValueSchemeAsMultiScheme(new KeyValueScheme() {
-
-			@Override
-			public Fields getOutputFields() {
-				return new Fields("KEY", "VALUE");
-			}
-
-			@Override
-			public List<Object> deserialize(ByteBuffer ser) {
-				return null;
-			}
-
-			@Override
-			public List<Object> deserializeKeyAndValue(ByteBuffer key, ByteBuffer value) {
-				String keyString = StringScheme.deserializeString(
-					key);
-				byte[] valueAsByte = Utils.toArray(
-					value);
-				return new Values(
-					ImmutableMap.of(
-						keyString,
-						valueAsByte));
-			}
-		});
+		KafkaSpoutConfig kafkaSpoutConfig = new KafkaSpoutConfig(null);
+		/*
+		 * kafkaSpoutConfig.bufferSizeBytes = kafkaSpoutConfigBufferSizeBytes;
+		 * kafkaSpoutConfig.fetchSizeBytes = kafkaSpoutConfigFetchSizeBytes;
+		 * kafkaSpoutConfig.startOffsetTime = kafka.api.OffsetRequest.LatestTime();
+		 *
+		 * kafkaSpoutConfig.scheme = new KeyValueSchemeAsMultiScheme(new
+		 * KeyValueScheme() {
+		 *
+		 * @Override public Fields getOutputFields() { return new Fields("KEY",
+		 * "VALUE"); }
+		 *
+		 * @Override public List<Object> deserialize(ByteBuffer ser) { return null; }
+		 *
+		 * @Override public List<Object> deserializeKeyAndValue(ByteBuffer key,
+		 * ByteBuffer value) { String keyString = StringScheme.deserializeString( key);
+		 * byte[] valueAsByte = Utils.toArray( value); return new Values(
+		 * ImmutableMap.of( keyString, valueAsByte)); } });
+		 */
 
 		TopologyBuilder builder = new TopologyBuilder();
 		builder.setSpout(

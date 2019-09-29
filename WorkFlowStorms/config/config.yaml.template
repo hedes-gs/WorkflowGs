@@ -1,48 +1,43 @@
 name: "workflow-topology"
+
 config:
   topology.workers: 6
   topology.max.spout.pending: 1000
   topology.message.timeout.secs: 30
 
 components:
-  - id: "zkHosts"
-    className: "org.apache.storm.kafka.ZkHosts"
-    constructorArgs:
-       - {{ zookeeper_connect }}"
-  - id: "keyValueScheme"
-    className: "com.gsphotos.storms.scheme.KeyStringValueArrayByteScheme"
-    
-  - id: "keyValueSchemeAsMultiScheme"
-    className: "org.apache.storm.kafka.KeyValueSchemeAsMultiScheme"
-    constructorArgs:
-      - ref: "keyValueScheme"
-  - id: "spoutConfig"
-    className: "org.apache.storm.kafka.SpoutConfig"
-    constructorArgs:
-      # brokerHosts
-      - ref: "zkHosts"
-      # topic
-      - "{{ kafka_inputTopic }}"
-      # zkRoot
-      - "/kafkaSpout"
-      # id
-      - "kafka-storm-spout"
-    properties:
-      - name: "bufferSizeBytes"
-        value: {{ kafka_bufferSizeBytes }}
-      - name: "fetchSizeBytes"
-        value: {{ kafka_fetchSizeBytes }}
-      - name: "startOffsetTime"
-        value: -2
-      - name: "scheme"
-        ref: "keyValueSchemeAsMultiScheme"
+  - id: "keyValueTranslator"
+    className: "com.gsphotos.storms.translator.KeyValueTranslator"
 
+  - id: "spoutConfigBuilder"
+    className: "org.apache.storm.kafka.spout.KafkaSpoutConfig$Builder"
+    constructorArgs:
+      - "{{ kafka_bootstrap_servers }}"
+      - ["{{ kafka_inputTopic }}"]
+    properties:
+      - name: "firstPollOffsetStrategy"
+        value: EARLIEST
+      - name: "recordTranslator"
+        ref: "keyValueTranslator"
+    configMethods:
+      - name: "setProp"
+        args:
+          - {
+              "key.deserializer" : "org.apache.kafka.common.serialization.StringDeserializer",
+              "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer"
+            }   
+  - id: "spoutConfig"
+    className: "org.apache.storm.kafka.spout.KafkaSpoutConfig"
+    constructorArgs:
+      - ref: "spoutConfigBuilder"
 
 # spout definitions
 spouts:
   - id: "kafka-spout"
-    className: "org.apache.storm.kafka.KafkaSpout"
+    className: "org.apache.storm.kafka.spout.KafkaSpout"
     parallelism: {{ kafka_spout_parallelism }}
+    constructorArgs:
+      - ref: "spoutConfig"
 
 # bolt definitions
 bolts:
@@ -55,16 +50,13 @@ bolts:
   - id: "final-image-bolt"
     className: "com.gsphotos.storms.bolt.FinalImageBolt"
     parallelism: {{ final_image_bolt_parallelism }}
-    configMethods:
-      - withWindow:
-        - args:
-          - "{{ finalImage_windowTuple }}"
-      - withKafkaBrokers:
-        - args:
-          - "{{ kafka_bootstrap_servers }}"
-      - withOutputTopic:
-        - args:
-          - "{{ kafka_outputTopic }}"
+    properties:
+      - name: "windowLength"
+        value: {{ finalImage_windowTuple }}
+      - name: "kafkaBrokers"
+        value: "{{ kafka_bootstrap_servers }}"
+      - name: "outputTopic"
+        value: "{{ kafka_outputTopic }}"
 
 streams:
   - name: "kafka --> extract-histogram-bolt" # name isn't used (placeholder for logging, UI, etc.)
