@@ -1,4 +1,4 @@
 #!/bin/bash
 export JAR_FILE={{ jar_name }}
 cd /home/{{ user_to_create }}
-java -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -jar lib/${JAR_FILE} 
+java -Xmx512m -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -jar lib/${JAR_FILE} 
