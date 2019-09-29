@@ -1,0 +1,4 @@
+#!/bin/bash
+export JAR_FILE={{ jar_name }}
+cd ~{{ user_to_create }}
+~storm/latest/bin/storm jar lib/${JAR_FILE} org.apache.storm.flux.Flux config/config.yaml
