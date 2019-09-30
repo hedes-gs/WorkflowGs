@@ -101,7 +101,7 @@
             </property>
             <property>
               <name>java.security.krb5.kdc</name>
-              <value>ipc6</value>
+              <value>IPC6</value>
             </property>
           </systemProperties>
         </configuration>
