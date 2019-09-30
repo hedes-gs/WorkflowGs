@@ -17,7 +17,7 @@ pipeline {
 			agent {
 				docker {
 					image 'pad92/ansible-alpine'
-					args '-v /srv/gitlab/config:/etc/gitlab'
+					args '-v /srv/gitlab/config:/etc/gitlab --network=host'
 				}
 			}
 			steps {
