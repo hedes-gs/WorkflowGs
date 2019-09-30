@@ -1,5 +1,6 @@
 package com.gs.photo.workflow;
 
+import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -10,9 +11,12 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.requests.IsolationLevel;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -20,25 +24,31 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.gs.photos.serializers.ExchangedDataSerializer;
 import com.workflow.model.ExchangedTiffData;
-import com.workflow.model.HbaseImageThumbnail;
 
 @Configuration
 @PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig {
 	private static final String KAFKA_EXCHANGED_DATA_SERIALIZER = ExchangedDataSerializer.class.getName();
-	final static String KAFKA_STRING_DESERIALIZER = org.apache.kafka.common.serialization.StringDeserializer.class
+	public final static String KAFKA_STRING_DESERIALIZER = org.apache.kafka.common.serialization.StringDeserializer.class
 			.getName();
-	final static String KAFKA_STRING_SERIALIZER = org.apache.kafka.common.serialization.StringSerializer.class
+	public final static String KAFKA_STRING_SERIALIZER = org.apache.kafka.common.serialization.StringSerializer.class
 			.getName();
-	final static String KAFKA_BYTES_DESERIALIZER = org.apache.kafka.common.serialization.ByteArrayDeserializer.class
+	public final static String KAFKA_BYTES_DESERIALIZER = org.apache.kafka.common.serialization.ByteArrayDeserializer.class
 			.getName();
-	final static String KAFKA_BYTE_SERIALIZER = org.apache.kafka.common.serialization.ByteArraySerializer.class
+	public final static String KAFKA_BYTE_SERIALIZER = org.apache.kafka.common.serialization.ByteArraySerializer.class
 			.getName();
-	final static String HBASE_IMAGE_THUMBNAIL_SERIALIZER = com.gs.photos.serializers.HbaseImageThumbnailSerializer.class
+	public final static String HBASE_IMAGE_THUMBNAIL_SERIALIZER = com.gs.photos.serializers.HbaseImageThumbnailSerializer.class
 			.getName();
-	final static String HBASE_IMAGE_THUMBNAIL_DESERIALIZER = com.gs.photos.serializers.HbaseImageThumbnailDeserializer.class
+	public final static String HBASE_IMAGE_THUMBNAIL_DESERIALIZER = com.gs.photos.serializers.HbaseImageThumbnailDeserializer.class
 			.getName();
-
+	public final static String HBASE_IMAGE_EXIF_DATA_DESERIALIZER = com.gs.photos.serializers.HbaseExifDataDeserializer.class
+			.getName();
+	public final static String HBASE_IMAGE_EXIF_DATA_SERIALIZER = com.gs.photos.serializers.HbaseExifDataSerializer.class
+			.getName();
+	public final static String HBASE_IMAGE_EXIF_DATA_OF_IMAGES_DESERIALIZER = com.gs.photos.serializers.HbaseExifDataOfImagesDeserializer.class
+			.getName();
+	public final static String HBASE_IMAGE_EXIF_DATA_OF_IMAGES_SERIALIZER = com.gs.photos.serializers.HbaseExifDataOfImagesSerializer.class
+			.getName();
 	@Value("${application.id}")
 	protected String applicationId;
 
@@ -132,6 +142,25 @@ public class ApplicationConfig {
 		hBaseConfig.setInt(
 			"hbase.zookeeper.property.clientPort",
 			zookeeperPort);
+		hBaseConfig.set(
+			"hadoop.security.authentication",
+			"kerberos");
+		hBaseConfig.set(
+			"hbase.security.authentication",
+			"kerberos");
+		hBaseConfig.set(
+			"hbase.cluster.distributed",
+			"true");
+		hBaseConfig.set(
+			"hbase.rpc.protection",
+			"authentication"); // check this setting on HBase side
+		hBaseConfig.set(
+			"hbase.regionserver.kerberos.principal",
+			"hbase/_HOST@GS.COM"); // what principal the master/region. servers use.
+		hBaseConfig.set(
+			"hbase.master.kerberos.principal",
+			"hbase/_HOST@GS.COM"); // this is needed even if you connect over rpc/zookeeper
+
 		return hBaseConfig;
 	}
 
@@ -152,6 +181,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "producer.string.string", havingValue = "true")
 	public Producer<String, String> producerForPublishingOnStringTopic() {
 		Properties settings = new Properties();
 		settings.put(
@@ -174,6 +204,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean("producerForPublishingInModeTransactionalOnStringTopic")
+	@ConditionalOnProperty(name = "producer.string.string.transactional", havingValue = "true")
 	public Producer<String, String> producerForPublishingInModeTransactionalOnStringTopic() {
 		Properties settings = new Properties();
 		settings.put(
@@ -205,6 +236,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean(name = "producerForPublishingOnExifTopic")
+	@ConditionalOnProperty(name = "producer.string.exchangedData", havingValue = "true")
 	public Producer<String, ExchangedTiffData> producerForPublishingOnExifTopic() {
 		Properties settings = new Properties();
 		settings.put(
@@ -227,6 +259,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean(name = "producerForPublishingOnJpegImageTopic")
+	@ConditionalOnProperty(name = "producer.string.exchangedData", havingValue = "true")
 	public Producer<String, byte[]> producerForPublishingOnJpegImageTopic() {
 		Properties settings = new Properties();
 		settings.put(
@@ -249,6 +282,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean(name = "consumerForTopicWithStringKey")
+	@ConditionalOnProperty(name = "consumer.string.string", havingValue = "true")
 	public Consumer<String, String> consumerForTopicWithStringKey() {
 		Properties settings = new Properties();
 		settings.put(
@@ -289,6 +323,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean(name = "consumerForTransactionalCopyForTopicWithStringKey")
+	@ConditionalOnProperty(name = "consumer.string.string.transactional", havingValue = "true")
 	public Consumer<String, String> consumerForTransactionalCopyForTopicWithStringKey() {
 		Properties settings = new Properties();
 		settings.put(
@@ -334,27 +369,12 @@ public class ApplicationConfig {
 		return producer;
 	}
 
-	@Bean(name = "consumerForRecordingImageFromTopic")
-	public Consumer<String, HbaseImageThumbnail> consumerForRecordingImageFromTopic() {
+	protected Properties buildConsumerCommonKafkaProperties() {
 		Properties settings = new Properties();
 		settings.put(
 			CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
 			bootstrapServers);
-		settings.put(
-			"key.serializer",
-			KAFKA_STRING_SERIALIZER);
-		settings.put(
-			"key.deserializer",
-			KAFKA_STRING_DESERIALIZER);
-		settings.put(
-			"value.serializer",
-			HBASE_IMAGE_THUMBNAIL_SERIALIZER);
-		settings.put(
-			"value.deserializer",
-			HBASE_IMAGE_THUMBNAIL_DESERIALIZER);
-		settings.put(
-			ConsumerConfig.CLIENT_ID_CONFIG,
-			"tr-" + applicationId);
+
 		settings.put(
 			ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
 			"earliest");
@@ -362,23 +382,22 @@ public class ApplicationConfig {
 			ConsumerConfig.GROUP_ID_CONFIG,
 			copyGroupId);
 		settings.put(
-			"enable.auto.commit",
+			ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
 			"false");
 		settings.put(
-			"isolation.level",
-			"read_committed");
+			ConsumerConfig.ISOLATION_LEVEL_CONFIG,
+			IsolationLevel.READ_COMMITTED.toString().toLowerCase(
+				Locale.ROOT));
 		settings.put(
 			ConsumerConfig.MAX_POLL_RECORDS_CONFIG,
 			5);
 		settings.put(
 			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
-			"SASL_PLAINTEXT");
+			SecurityProtocol.SASL_PLAINTEXT.name);
 		settings.put(
 			"sasl.kerberos.service.name",
 			"kafka");
-		Consumer<String, HbaseImageThumbnail> consumer = new KafkaConsumer<>(settings);
-		return consumer;
-
+		return settings;
 	}
 
 	@Bean
