@@ -6,11 +6,11 @@ pipeline {
 			agent {
 				docker {
 					image 'maven:3.5.0'
-					args '-v $HOME/.m2:/root/.m2'
+					args '-v $HOME/.m2:/root/.m2  --network=host'
 				}
 			}
 			steps {
-				sh ' cd WorkFlow ; mvn -T 1C clean install'
+				sh ' cat /etc/hosts ; cd WorkFlow ; mvn -T 1C clean install'
 			}
 		}
 		stage('Deployment ') {
