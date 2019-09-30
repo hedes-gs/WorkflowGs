@@ -8,11 +8,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.workflow.model.HbaseExifData;
 
 @Component
+@ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<HbaseExifData>
 		implements IConsumerForRecordHbaseExif {
 
@@ -23,25 +25,25 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
 	protected String topic;
 
 	@Autowired
-	protected Consumer<String, HbaseExifData> consumerToRecordExifData;
+	protected Consumer<String, HbaseExifData> consumerForRecordingExifDataFromTopic;
 
 	@Override
 	public void recordIncomingMessageInHbase() {
 		try {
 			LOGGER.info(
 				"Start ConsumerForRecordHbaseExif.recordIncomingMessageInHbase");
-			consumerToRecordExifData.subscribe(
+			consumerForRecordingExifDataFromTopic.subscribe(
 				Arrays.asList(
 					topic));
 			processMessagesFromTopic(
-				consumerToRecordExifData,
+				consumerForRecordingExifDataFromTopic,
 				HbaseExifData.class);
 		} catch (WakeupException e) {
 			LOGGER.warn(
 				"Error ",
 				e);
 		} finally {
-			consumerToRecordExifData.close();
+			consumerForRecordingExifDataFromTopic.close();
 		}
 	}
 

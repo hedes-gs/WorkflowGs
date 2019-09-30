@@ -6,6 +6,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.workflow.IBeanScheduleRecordMessageInHbase;
@@ -15,6 +16,7 @@ import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseImage;
 import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseImageExif;
 
 @Component
+@ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class BeanScheduleRecordMessageInHbase implements IBeanScheduleRecordMessageInHbase {
 
 	protected static final Logger LOGGER = Logger.getLogger(

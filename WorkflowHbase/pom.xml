@@ -91,6 +91,18 @@
               <name>user.home</name>
               <value>./src/test/resources</value>
             </property>
+            <property>
+              <name>java.security.auth.login.config</name>
+              <value>./src/test/resources/config/client_jaas.conf</value>
+            </property>
+            <property>
+              <name>java.security.krb5.realm</name>
+              <value>GS.COM</value>
+            </property>
+            <property>
+              <name>java.security.krb5.kdc</name>
+              <value>ipc6</value>
+            </property>
           </systemProperties>
         </configuration>
       </plugin>

@@ -2,6 +2,7 @@ package com.gs.photo.workflow.dao;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,6 +24,7 @@ import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +41,29 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 
 	@PostConstruct
 	protected void init() throws IOException {
-		this.connection = ConnectionFactory.createConnection(
+		// Now you need to login/authenticate using keytab:
+		UserGroupInformation.setConfiguration(
 			hbaseConfiguration);
+		UserGroupInformation.loginUserFromKeytab(
+			"wf_hbase@GS.COM",
+			"src/test/resources/config/wf_hbase.keytab");
+		UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+
+		PrivilegedAction<Connection> action = new PrivilegedAction<Connection>() {
+
+			@Override
+			public Connection run() {
+				try {
+					return ConnectionFactory.createConnection(
+						hbaseConfiguration);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		};
+		this.connection = ugi.doAs(
+			action);
 	}
 
 	@Override
@@ -407,7 +430,7 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 		T[] a = (T[]) Array.newInstance(
 			cl,
 			1);
-
+		a[0] = hbaseData;
 		delete(
 			a,
 			cl);
