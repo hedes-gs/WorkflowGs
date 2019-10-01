@@ -36,3 +36,8 @@ transaction.timeout=180000
 application.gs.principal={{ application_gs_principal }}
 application.gs.keytab={{ application_gs_keytab }}
 hbase.table.prefix=prod
+
+
+#Configuration
+consumer.string.string={{ consumer_string_string }}
+producer.string.string={{ producer_string_string }}
