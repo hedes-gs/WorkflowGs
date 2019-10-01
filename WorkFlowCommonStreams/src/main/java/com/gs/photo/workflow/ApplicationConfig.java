@@ -140,6 +140,7 @@ public class ApplicationConfig {
 	}
 
 	@Bean
+	@ConditionalOnProperty(name = "producer.string.string", havingValue = "true")
 	public Producer<String, String> producerForPublishingOnImageTopic() {
 		Properties settings = new Properties();
 		settings.put(
@@ -154,6 +155,9 @@ public class ApplicationConfig {
 		settings.put(
 			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
 			"SASL_PLAINTEXT");
+		settings.put(
+			"sasl.kerberos.service.name",
+			"kafka");
 		Producer<String, String> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
