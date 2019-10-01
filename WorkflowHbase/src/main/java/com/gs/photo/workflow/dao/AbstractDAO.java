@@ -19,14 +19,16 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 
 import com.workflow.model.Column;
 import com.workflow.model.HbaseData;
+import com.workflow.model.HbaseTableName;
 import com.workflow.model.ToByte;
 
-public abstract class AbstractDAO {
+public abstract class AbstractDAO<T extends HbaseData> {
 
 	public static class HbaseDataFieldInformation implements Comparable<HbaseDataFieldInformation> {
 		protected Field field;
@@ -98,16 +100,194 @@ public abstract class AbstractDAO {
 
 	}
 
-	public static class HbaseDataInformation {
+	public static class HbaseDataInformation<T extends HbaseData> {
+		private final Set<HbaseDataFieldInformation> keyFieldsData;
+		private final Set<String> columnFamily;
 		private final Set<HbaseDataFieldInformation> fieldsData;
+		private int keyLength = 0;
+		private final String tableName;
+		private TableName table;
+		private Class<T> hbaseDataClass;
+		private final String nameSpace;
 
-		public Set<HbaseDataFieldInformation> getFieldsData() {
-			return fieldsData;
+		public int getKeyLength() {
+			return keyLength;
 		}
 
-		public HbaseDataInformation() {
+		public void setKeyLength(int keyLength) {
+			this.keyLength = keyLength;
+		}
+
+		public String getTableName() {
+			return tableName;
+		}
+
+		public void addField(HbaseDataFieldInformation hdfi) {
+
+			if (hdfi.partOfRowKey) {
+				keyLength = keyLength + hdfi.fixedWidth;
+				keyFieldsData.add(
+					hdfi);
+			} else {
+				String cf = hdfi.columnFamily;
+				columnFamily.add(
+					cf);
+				fieldsData.add(
+					hdfi);
+			}
+		}
+
+		public HbaseDataInformation(
+				Class<T> cl,
+				String prefix) {
 			fieldsData = new TreeSet<>();
+			keyFieldsData = new TreeSet<>();
+			columnFamily = new TreeSet<>();
+			tableName = prefix + ":" + cl.getAnnotation(
+				HbaseTableName.class).value();
+			this.hbaseDataClass = cl;
+			this.nameSpace = prefix;
 		}
+
+		public void endOfInit() {
+			int offset = 0;
+			for (HbaseDataFieldInformation v : keyFieldsData) {
+				v.offset = offset;
+				offset = offset + v.fixedWidth;
+			}
+		}
+
+		public Map<String, ColumnFamily> buildValue(T hbaseData) {
+			Map<String, ColumnFamily> cfList = new HashMap<>();
+
+			fieldsData.forEach(
+				(hdfi) -> {
+					try {
+						hdfi.field.setAccessible(
+							true);
+						Object valueToConvert = hdfi.field.get(
+							hbaseData);
+						byte[] convertedValue = hdfi.toByte(
+							valueToConvert);
+						String cf = hdfi.columnFamily;
+						ColumnFamily value = cfList.get(
+							cf);
+						if (value == null) {
+							value = new ColumnFamily(cf);
+							cfList.put(
+								cf,
+								value);
+						}
+						value.addColumn(
+							hdfi.hbaseName,
+							convertedValue);
+					} catch (SecurityException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalArgumentException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				});
+			return cfList;
+
+		}
+
+		public void buildKey(T hbaseData, byte[] keyValue) {
+			Arrays.fill(
+				keyValue,
+				(byte) 0x20);
+			keyFieldsData.forEach(
+				(hdfi) -> {
+					try {
+						hdfi.field.setAccessible(
+							true);
+						Object valueToConvert = hdfi.field.get(
+							hbaseData);
+						byte[] convertedValue = hdfi.toByte(
+							valueToConvert);
+						System.arraycopy(
+							convertedValue,
+							0,
+							keyValue,
+							hdfi.offset,
+							convertedValue.length);
+					} catch (SecurityException e) {
+
+						e.printStackTrace();
+					} catch (IllegalArgumentException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				});
+		}
+
+		public Collection<String> getFamilies() {
+			return columnFamily;
+		}
+
+		public void build(T instance, Result res) {
+			byte[] row = res.getRow();
+			keyFieldsData.forEach(
+				(hdfi) -> {
+					Object v = null;
+					if (hdfi.partOfRowKey) {
+						v = hdfi.fromByte(
+							row,
+							hdfi.offset,
+							hdfi.fixedWidth);
+					}
+					try {
+						hdfi.field.set(
+							instance,
+							v);
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						e.printStackTrace();
+					}
+				});
+			fieldsData.forEach(
+				(hdfi) -> {
+					Object v = null;
+					byte[] value = res.getValue(
+						hdfi.columnFamily.getBytes(),
+						hdfi.hbaseName.getBytes());
+					v = hdfi.fromByte(
+						value,
+						0,
+						value.length);
+					try {
+						hdfi.field.set(
+							instance,
+							v);
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						e.printStackTrace();
+					}
+				});
+		}
+
+		public TableName getTable() {
+			return table;
+		}
+
+		public void setTable(TableName table) {
+			this.table = table;
+		}
+
+		public Class<T> getHbaseDataClass() {
+			// TODO Auto-generated method stub
+			return hbaseDataClass;
+		}
+
+		public String getNameSpace() {
+			return nameSpace;
+		}
+
 	}
 
 	public static final ThreadLocal<Map<Class<? extends HbaseData>, HbaseDataInformation>> HBASE_DATA_THREAD_LOCAL = new ThreadLocal<Map<Class<? extends HbaseData>, HbaseDataInformation>>() {
@@ -118,11 +298,11 @@ public abstract class AbstractDAO {
 		}
 	};
 
-	public static <T extends HbaseData> HbaseDataInformation getHbaseDataInformation(Class<T> cl) {
-		HbaseDataInformation hbaseDataInformation = HBASE_DATA_THREAD_LOCAL.get().get(
+	public static <T extends HbaseData> HbaseDataInformation<T> getHbaseDataInformation(Class<T> cl) {
+		HbaseDataInformation<T> hbaseDataInformation = HBASE_DATA_THREAD_LOCAL.get().get(
 			cl);
 		if (hbaseDataInformation == null) {
-			hbaseDataInformation = new HbaseDataInformation();
+			hbaseDataInformation = new HbaseDataInformation<>(cl, null);
 			buildHbaseDataInformation(
 				cl,
 				hbaseDataInformation);
@@ -133,8 +313,8 @@ public abstract class AbstractDAO {
 		return hbaseDataInformation;
 	}
 
-	private static <T extends HbaseData> void buildHbaseDataInformation(Class<T> cl,
-			HbaseDataInformation hbaseDataInformation) {
+	protected static <T extends HbaseData> void buildHbaseDataInformation(Class<T> cl,
+			HbaseDataInformation<T> hbaseDataInformation) {
 		Arrays.asList(
 			cl.getDeclaredFields()).forEach(
 				(field) -> {
@@ -170,7 +350,7 @@ public abstract class AbstractDAO {
 
 								});
 							HbaseDataFieldInformation value = new HbaseDataFieldInformation(field, transformClass, cv);
-							hbaseDataInformation.getFieldsData().add(
+							hbaseDataInformation.addField(
 								value);
 						} catch (IllegalArgumentException | SecurityException e) {
 							e.printStackTrace();
@@ -178,10 +358,8 @@ public abstract class AbstractDAO {
 					}
 				});
 		int offset = 0;
-		for (HbaseDataFieldInformation v : hbaseDataInformation.getFieldsData()) {
-			v.offset = offset;
-			offset = offset + v.fixedWidth;
-		}
+		hbaseDataInformation.endOfInit();
+
 	}
 
 	protected static final String MY_NAMESPACE_NAME = "myTestNamespace";
@@ -206,15 +384,8 @@ public abstract class AbstractDAO {
 
 	protected static TableName createTableIfNeeded(final Admin admin, String tableName, Collection<String> values)
 			throws IOException {
-		if (!namespaceExists(
-			admin,
-			MY_NAMESPACE_NAME)) {
-			System.out.println(
-				"Creating Namespace [" + MY_NAMESPACE_NAME + "].");
-			admin.createNamespace(
-				NamespaceDescriptor.create(
-					MY_NAMESPACE_NAME).build());
-		}
+		createNameSpaceIFNeeded(
+			admin);
 		TableName hbaseTable = TableName.valueOf(
 			tableName);
 		if (!admin.tableExists(
@@ -234,6 +405,26 @@ public abstract class AbstractDAO {
 				builder.build());
 		}
 		return hbaseTable;
+	}
+
+	protected static void createNameSpaceIFNeeded(final Admin admin) throws IOException {
+		if (!namespaceExists(
+			admin,
+			MY_NAMESPACE_NAME)) {
+			admin.createNamespace(
+				NamespaceDescriptor.create(
+					MY_NAMESPACE_NAME).build());
+		}
+	}
+
+	protected static void createNameSpaceIFNeeded(final Admin admin, String nameSpace) throws IOException {
+		if (!namespaceExists(
+			admin,
+			nameSpace)) {
+			admin.createNamespace(
+				NamespaceDescriptor.create(
+					nameSpace).build());
+		}
 	}
 
 	protected static boolean namespaceExists(final Admin admin, final String namespaceName) throws IOException {
@@ -272,9 +463,16 @@ public abstract class AbstractDAO {
 			hbaseTable);
 	}
 
-	protected static Table getTable(Connection connection, String tableName) throws IOException {
+	protected static Table getTable(Connection connection, String value) throws IOException {
 		TableName hbaseTable = TableName.valueOf(
-			tableName);
+			value);
+
+		return connection.getTable(
+			hbaseTable);
+	}
+
+	protected static Table getTable(Connection connection, TableName hbaseTable) throws IOException {
+
 		return connection.getTable(
 			hbaseTable);
 	}
@@ -282,15 +480,4 @@ public abstract class AbstractDAO {
 	public AbstractDAO() {
 		super();
 	}
-
-	public abstract <T extends HbaseData> void put(T hbaseData, Class<T> cl);
-
-	public abstract <T extends HbaseData> void put(T[] hbaseData, Class<T> cl);
-
-	public abstract <T extends HbaseData> T get(T hbaseData, Class<T> cl);
-
-	public abstract <T extends HbaseData> void delete(T hbaseData, Class<T> cl);
-
-	public abstract <T extends HbaseData> void delete(T[] hbaseData, Class<T> cl);
-
 }
