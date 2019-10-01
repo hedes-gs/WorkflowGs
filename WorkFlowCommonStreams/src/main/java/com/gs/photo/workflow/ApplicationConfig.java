@@ -14,6 +14,7 @@ import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +28,10 @@ import com.workflow.model.ExchangedTiffData;
 @Configuration
 @PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig {
+
+	protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(
+		ApplicationConfig.class);
+
 	private static final String KAFKA_EXCHANGED_DATA_SERIALIZER = ExchangedDataSerializer.class.getName();
 	public final static String KAFKA_STRING_DESERIALIZER = org.apache.kafka.common.serialization.StringDeserializer.class
 			.getName();
@@ -146,6 +151,9 @@ public class ApplicationConfig {
 		settings.put(
 			"value.serializer",
 			"org.apache.kafka.common.serialization.StringSerializer");
+		settings.put(
+			CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
 		Producer<String, String> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
@@ -169,6 +177,9 @@ public class ApplicationConfig {
 		settings.put(
 			"sasl.kerberos.service.name",
 			"kafka");
+		LOGGER.info(
+			"creating producer string string with config {} ",
+			settings.toString());
 		Producer<String, String> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
