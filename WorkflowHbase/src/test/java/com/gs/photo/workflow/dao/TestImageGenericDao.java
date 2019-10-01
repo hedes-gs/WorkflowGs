@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -27,22 +28,19 @@ import com.workflow.model.HbaseImageThumbnail;
 public class TestImageGenericDao {
 
 	@Autowired
-	protected GenericDAO exifDao;
-
-	@Autowired
-	protected ImageFilterDAO imageFilterDAO;
+	protected HbaseImageThumbnailDAO hbaseImageThumbnailDAO;
 
 	@Before
 	public void init() {
 	}
 
+	@After
+	public void clean() {
+	}
+
 	@Test
 	public void test001_shouldRecordInHbase() {
 		HbaseImageThumbnail hbaseData = new HbaseImageThumbnail();
-		// hbaseData.setCreationDate(
-		// LocalDateTime.now().toInstant(
-		// ZoneOffset.ofTotalSeconds(
-		// 0)).toEpochMilli());
 
 		hbaseData.setCreationDate(
 			1);
@@ -61,9 +59,10 @@ public class TestImageGenericDao {
 			1024);
 		hbaseData.setHeight(
 			512);
-		exifDao.put(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.put(
+			hbaseData);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 	}
 
 	@Test
@@ -88,9 +87,8 @@ public class TestImageGenericDao {
 			2048);
 		hbaseData.setHeight(
 			1024);
-		exifDao.put(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.put(
+			hbaseData);
 	}
 
 	@Test
@@ -102,9 +100,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			true);
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			"Thumbnail_true.jpg",
 			hbaseData.getThumbName());
@@ -117,9 +114,8 @@ public class TestImageGenericDao {
 			1);
 		hbaseData.setImageId(
 			"ABCDEF");
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			"Thumbnail.jpg",
 			hbaseData.getThumbName());
@@ -132,9 +128,8 @@ public class TestImageGenericDao {
 			1);
 		hbaseData.setImageId(
 			"ABCDEF");
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			1024,
 			hbaseData.getWidth());
@@ -147,9 +142,8 @@ public class TestImageGenericDao {
 			1);
 		hbaseData.setImageId(
 			"ABCDEF");
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			512,
 			hbaseData.getHeight());
@@ -164,9 +158,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			true);
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			1024,
 			hbaseData.getHeight());
@@ -181,9 +174,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			true);
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertArrayEquals(
 			new byte[] { 0, 1, 2, 3, 4 },
 			hbaseData.getThumbnail());
@@ -196,9 +188,8 @@ public class TestImageGenericDao {
 			1);
 		hbaseData.setImageId(
 			"ABCDEF");
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertEquals(
 			false,
 			hbaseData.isOrignal());
@@ -211,9 +202,8 @@ public class TestImageGenericDao {
 			1);
 		hbaseData.setImageId(
 			"ABCDEF");
-		exifDao.delete(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.delete(
+			hbaseData);
 	}
 
 	@Test
@@ -225,9 +215,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			true);
-		exifDao.delete(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.delete(
+			hbaseData);
 	}
 
 	@Test
@@ -239,9 +228,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			true);
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertNull(
 			hbaseData);
 	}
@@ -255,9 +243,8 @@ public class TestImageGenericDao {
 			"ABCDEF");
 		hbaseData.setOrignal(
 			false);
-		hbaseData = exifDao.get(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseData = hbaseImageThumbnailDAO.get(
+			hbaseData);
 		assertNull(
 			hbaseData);
 	}
@@ -275,9 +262,8 @@ public class TestImageGenericDao {
 				true);
 			data[k] = hbaseData;
 		}
-		exifDao.put(
-			data,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.put(
+			data);
 	}
 
 	@Test
@@ -292,9 +278,8 @@ public class TestImageGenericDao {
 				"ABCDEF");
 			hbaseData.setOrignal(
 				true);
-			hbaseData = exifDao.get(
-				hbaseData,
-				HbaseImageThumbnail.class);
+			hbaseData = hbaseImageThumbnailDAO.get(
+				hbaseData);
 			assertNotNull(
 				hbaseData);
 			if (hbaseData != null) {
@@ -320,9 +305,8 @@ public class TestImageGenericDao {
 				true);
 			data[k] = hbaseData;
 		}
-		exifDao.delete(
-			data,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.delete(
+			data);
 	}
 
 	@Test
@@ -337,9 +321,8 @@ public class TestImageGenericDao {
 				"ABCDEF");
 			hbaseData.setOrignal(
 				true);
-			hbaseData = exifDao.get(
-				hbaseData,
-				HbaseImageThumbnail.class);
+			hbaseData = hbaseImageThumbnailDAO.get(
+				hbaseData);
 
 			if (hbaseData != null) {
 				nbOfDataFromHbase++;
@@ -376,24 +359,26 @@ public class TestImageGenericDao {
 			1024);
 		hbaseData.setHeight(
 			512);
-		exifDao.put(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.put(
+			hbaseData);
 
-		List<HbaseImageThumbnail> scanValue = imageFilterDAO.getThumbNailsByDate(
+		List<HbaseImageThumbnail> scanValue = hbaseImageThumbnailDAO.getThumbNailsByDate(
 			LocalDateTime.now().minusDays(
 				2),
 			LocalDateTime.now().plusDays(
 				2),
 			0,
-			0,
-			HbaseImageThumbnail.class);
+			0);
 		assertEquals(
 			1,
 			scanValue.size());
-		exifDao.delete(
-			hbaseData,
-			HbaseImageThumbnail.class);
+		hbaseImageThumbnailDAO.delete(
+			hbaseData);
+
+	}
+
+	@Test
+	public void test019_shouldReturn0RecordWhenTruncatingTable() {
 
 	}
 }
