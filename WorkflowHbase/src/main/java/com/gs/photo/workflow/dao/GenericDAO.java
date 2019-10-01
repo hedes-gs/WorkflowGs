@@ -2,102 +2,55 @@ package com.gs.photo.workflow.dao;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-
-import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseTableName;
 
-@Component
-public class GenericDAO extends AbstractDAO implements IGenericDAO {
+public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> implements IGenericDAO<T> {
 
 	@Autowired
-	protected Configuration hbaseConfiguration;
-
 	protected Connection connection;
 
-	@PostConstruct
-	protected void init() throws IOException {
-		// Now you need to login/authenticate using keytab:
-		UserGroupInformation.setConfiguration(
-			hbaseConfiguration);
-		UserGroupInformation.loginUserFromKeytab(
-			"wf_hbase@GS.COM",
-			"src/test/resources/config/wf_hbase.keytab");
-		UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-
-		PrivilegedAction<Connection> action = new PrivilegedAction<Connection>() {
-
-			@Override
-			public Connection run() {
-				try {
-					return ConnectionFactory.createConnection(
-						hbaseConfiguration);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				return null;
-			}
-		};
-		this.connection = ugi.doAs(
-			action);
+	protected TableName createTableIfNeeded(HbaseDataInformation<T> hdi) throws IOException {
+		Admin admin = connection.getAdmin();
+		createNameSpaceIFNeeded(
+			admin,
+			hdi.getNameSpace());
+		return createTableIfNeeded(
+			admin,
+			hdi.getTableName(),
+			hdi.getFamilies());
 	}
 
-	@Override
-	public <T extends HbaseData> void put(T[] hbaseData, Class<T> cl) {
-		List<byte[]> keysElements = new ArrayList<byte[]>();
-		Map<String, ColumnFamily> cfList = new HashMap<>();
-		int[] length = { 0 };
-		Collection<String> familiesList = extractColumnFamilies(
-			cl);
-
+	protected void put(T[] hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
 		try {
-			Admin admin = connection.getAdmin();
 			try (Table table = getTable(
 				connection,
-				admin,
-				cl.getAnnotation(
-					HbaseTableName.class).value(),
-				familiesList)) {
+				hbaseDataInformation.getTable())) {
 				List<Put> puts = Arrays.stream(
 					hbaseData).map(
 						(hb) -> {
-							keysElements.clear();
-							cfList.clear();
-							length[0] = 0;
-							retrieve(
-								hb,
-								cl,
-								keysElements,
-								cfList,
-								length);
 							Put put = createHbasePut(
-								keysElements,
-								cfList,
-								length);
+								getKey(
+									hb,
+									hbaseDataInformation),
+								getCfList(
+									hb,
+									hbaseDataInformation));
 							return put;
 						}).collect(
 							Collectors.toList());
@@ -111,37 +64,50 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 	}
 
 	@Override
-	public <T extends HbaseData> void delete(T[] hbaseData, Class<T> cl) {
-		List<byte[]> keysElements = new ArrayList<byte[]>();
-		Map<String, ColumnFamily> cfList = new HashMap<>();
-		int[] length = { 0 };
-		Collection<String> familiesList = extractColumnFamilies(
+	public void put(T[] hbaseData, Class<T> cl) {
+		HbaseDataInformation<T> hbaseDataInformation = getHbaseDataInformation(
 			cl);
-
 		try {
-			Admin admin = connection.getAdmin();
 			try (Table table = getTable(
 				connection,
-				admin,
-				cl.getAnnotation(
-					HbaseTableName.class).value(),
-				familiesList)) {
+				hbaseDataInformation.getTable())) {
+				List<Put> puts = Arrays.stream(
+					hbaseData).map(
+						(hb) -> {
+							Put put = createHbasePut(
+								getKey(
+									hb,
+									hbaseDataInformation),
+								getCfList(
+									hb,
+									hbaseDataInformation));
+							return put;
+						}).collect(
+							Collectors.toList());
+				table.put(
+					puts);
+				puts.clear();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void delete(T[] hbaseData, Class<T> cl) {
+		HbaseDataInformation<T> hbaseDataInformation = getHbaseDataInformation(
+			cl);
+		try {
+			try (Table table = getTable(
+				connection,
+				hbaseDataInformation.getTable())) {
 				List<Delete> dels = Arrays.stream(
 					hbaseData).map(
 						(hb) -> {
-							keysElements.clear();
-							cfList.clear();
-							length[0] = 0;
-							retrieve(
-								hb,
-								cl,
-								keysElements,
-								cfList,
-								length);
 							Delete delete = createHbaseDelete(
-								keysElements,
-								cfList,
-								length);
+								getKey(
+									hb,
+									hbaseDataInformation));
 							return delete;
 						}).collect(
 							Collectors.toList());
@@ -154,56 +120,89 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 		}
 	}
 
-	private <T extends HbaseData> Set<String> extractColumnFamilies(Class<T> cl) {
-		Set<String> retValue = new TreeSet<>();
-		HbaseDataInformation hbaseDataInformation = getHbaseDataInformation(
-			cl);
-		hbaseDataInformation.getFieldsData().forEach(
-			(hdfi) -> {
-				try {
-					hdfi.field.setAccessible(
-						true);
-					if (!hdfi.partOfRowKey) {
-						String cf = hdfi.columnFamily;
-						retValue.add(
-							cf);
-					}
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				}
-			});
-		return retValue;
+	public void delete(T[] hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+		try {
+			try (Table table = getTable(
+				connection,
+				hbaseDataInformation.getTable())) {
+				List<Delete> dels = Arrays.stream(
+					hbaseData).map(
+						(hb) -> {
+							Delete delete = createHbaseDelete(
+								getKey(
+									hb,
+									hbaseDataInformation));
+							return delete;
+						}).collect(
+							Collectors.toList());
+				table.delete(
+					dels);
+				dels.clear();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void delete(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+		try {
+			try (Table table = getTable(
+				connection,
+				hbaseDataInformation.getTable())) {
+				Delete delete = createHbaseDelete(
+					getKey(
+						hbaseData,
+						hbaseDataInformation));
+				table.delete(
+					delete);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
-	public <T extends HbaseData> void put(T hbaseData, Class<T> cl) {
-
-		List<byte[]> keysElements = new ArrayList<byte[]>();
-		Map<String, ColumnFamily> cfList = new HashMap<>();
-		int[] length = { 0 };
-		Collection<String> familiesList = extractColumnFamilies(
+	public void put(T hbaseData, Class<T> cl) {
+		HbaseDataInformation<T> hbaseDataInformation = getHbaseDataInformation(
 			cl);
-		retrieve(
-			hbaseData,
-			cl,
-			keysElements,
-			cfList,
-			length);
-
 		try {
-			Admin admin = connection.getAdmin();
-
 			try (Table table = getTable(
 				connection,
-				admin,
 				cl.getAnnotation(
-					HbaseTableName.class).value(),
-				familiesList)) {
-				recordInHbase(
-					keysElements,
-					cfList,
-					length,
-					table);
+					HbaseTableName.class).value())) {
+				Put put = createHbasePut(
+					getKey(
+						hbaseData,
+						hbaseDataInformation),
+					getCfList(
+						hbaseData,
+						hbaseDataInformation));
+				table.put(
+					put);
+
+			}
+
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+	}
+
+	public void put(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+
+		try {
+			try (Table table = getTable(
+				connection,
+				hbaseDataInformation.getTable())) {
+				Put put = createHbasePut(
+					getKey(
+						hbaseData,
+						hbaseDataInformation),
+					getCfList(
+						hbaseData,
+						hbaseDataInformation));
+				table.put(
+					put);
 
 			}
 
@@ -228,24 +227,7 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 		return sb.toString();
 	}
 
-	public void recordInHbase(List<byte[]> keysElements, Map<String, ColumnFamily> cfList, int[] length, Table table) {
-		Put put = createHbasePut(
-			keysElements,
-			cfList,
-			length);
-
-		try {
-			table.put(
-				put);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	protected Put createHbasePut(List<byte[]> keysElements, Map<String, ColumnFamily> cfList, int[] length) {
-		byte[] rowKey = buildKey(
-			keysElements,
-			length[0]);
+	protected Put createHbasePut(byte[] rowKey, Map<String, ColumnFamily> cfList) {
 		Put put = new Put(rowKey);
 		cfList.entrySet().forEach(
 			(cf) -> {
@@ -261,110 +243,33 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 		return put;
 	}
 
-	protected Delete createHbaseDelete(List<byte[]> keysElements, Map<String, ColumnFamily> cfList, int[] length) {
-		byte[] rowKey = buildKey(
-			keysElements,
-			length[0]);
+	protected Delete createHbaseDelete(byte[] rowKey) {
 		Delete delete = new Delete(rowKey);
 		return delete;
 	}
 
-	protected <T extends HbaseData> void getKeys(T hbaseData, Class<T> cl, List<byte[]> keysElements, int[] length) {
-		HbaseDataInformation hbaseDataInformation = getHbaseDataInformation(
-			cl);
-		hbaseDataInformation.getFieldsData().forEach(
-			(hdfi) -> {
-				try {
+	protected byte[] getKey(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
 
-					if (hdfi.partOfRowKey) {
-						hdfi.field.setAccessible(
-							true);
-						Object valueToConvert = hdfi.field.get(
-							hbaseData);
-						byte[] convertedValue = hdfi.toByte(
-							valueToConvert);
-						byte[] keyPadded = new byte[hdfi.fixedWidth];
-						Arrays.fill(
-							keyPadded,
-							(byte) 0x20);
-						System.arraycopy(
-							convertedValue,
-							0,
-							keyPadded,
-							0,
-							convertedValue.length);
-						keysElements.add(
-							hdfi.rowKeyNumber,
-							keyPadded);
-						length[0] = length[0] + hdfi.fixedWidth;
-					}
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					e.printStackTrace();
-				}
-			});
+		byte[] keyValue = new byte[hbaseDataInformation.getKeyLength()];
+		hbaseDataInformation.buildKey(
+			hbaseData,
+			keyValue);
+		return keyValue;
 	}
 
-	protected <T extends HbaseData> void retrieve(T hbaseData, Class<T> cl, List<byte[]> keysElements,
-			Map<String, ColumnFamily> cfList, int[] length) {
-		HbaseDataInformation hbaseDataInformation = getHbaseDataInformation(
-			cl);
-		hbaseDataInformation.getFieldsData().forEach(
-			(hdfi) -> {
-				try {
-					hdfi.field.setAccessible(
-						true);
-					Object valueToConvert = hdfi.field.get(
-						hbaseData);
-					byte[] convertedValue = hdfi.toByte(
-						valueToConvert);
-					if (hdfi.partOfRowKey) {
-						byte[] keyPadded = new byte[hdfi.fixedWidth];
-						Arrays.fill(
-							keyPadded,
-							(byte) 0x20);
-						System.arraycopy(
-							convertedValue,
-							0,
-							keyPadded,
-							0,
-							convertedValue.length);
-						keysElements.add(
-							hdfi.rowKeyNumber,
-							keyPadded);
-						length[0] = length[0] + hdfi.fixedWidth;
-					} else {
-						String cf = hdfi.columnFamily;
-						ColumnFamily value = cfList.get(
-							cf);
-						if (value == null) {
-							value = new ColumnFamily(cf);
-							cfList.put(
-								cf,
-								value);
-						}
-						value.addColumn(
-							hdfi.hbaseName,
-							convertedValue);
-					}
-				} catch (IllegalArgumentException | IllegalAccessException e) {
-					e.printStackTrace();
-				}
-			});
+	protected Map<String, ColumnFamily> getCfList(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+		return hbaseDataInformation.buildValue(
+			hbaseData);
 	}
 
 	@Override
-	public <T extends HbaseData> T get(T hbaseData, Class<T> cl) {
+	public T get(T hbaseData, Class<T> cl) {
+		HbaseDataInformation<T> hbaseDataInformation = getHbaseDataInformation(
+			cl);
 		Get get;
-		List<byte[]> keysElements = new ArrayList<byte[]>();
-		int[] length = { 0 };
-		getKeys(
+		byte[] key = getKey(
 			hbaseData,
-			cl,
-			keysElements,
-			length);
-		byte[] key = buildKey(
-			keysElements,
-			length[0]);
+			hbaseDataInformation);
 		get = new Get(key);
 		try {
 			try (Table table = getTable(
@@ -375,7 +280,7 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 					get);
 				if (result != null && !result.isEmpty()) {
 					T retValue = toResult(
-						cl,
+						hbaseDataInformation,
 						result);
 					return retValue;
 				}
@@ -386,37 +291,39 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 		return null;
 	}
 
-	protected <T extends HbaseData> T toResult(Class<T> cl, Result res) {
+	public T get(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+
+		Get get;
+		byte[] key = getKey(
+			hbaseData,
+			hbaseDataInformation);
+		get = new Get(key);
 		try {
-			T instance = cl.newInstance();
-			byte[] row = res.getRow();
-			HbaseDataInformation hbaseDataInformation = getHbaseDataInformation(
-				cl);
-			hbaseDataInformation.getFieldsData().forEach(
-				(hdfi) -> {
-					Object v = null;
-					if (hdfi.partOfRowKey) {
-						v = hdfi.fromByte(
-							row,
-							hdfi.offset,
-							hdfi.fixedWidth);
-					} else {
-						byte[] value = res.getValue(
-							hdfi.columnFamily.getBytes(),
-							hdfi.hbaseName.getBytes());
-						v = hdfi.fromByte(
-							value,
-							0,
-							value.length);
-					}
-					try {
-						hdfi.field.set(
-							instance,
-							v);
-					} catch (IllegalArgumentException | IllegalAccessException e) {
-						e.printStackTrace();
-					}
-				});
+			try (Table table = getTable(
+				connection,
+				hbaseDataInformation.getTable())) {
+				Result result = table.get(
+					get);
+				if (result != null && !result.isEmpty()) {
+					T retValue = toResult(
+						hbaseDataInformation,
+						result);
+					return retValue;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	protected T toResult(HbaseDataInformation<T> hbaseDataInformation, Result res) {
+		try {
+			T instance = hbaseDataInformation.getHbaseDataClass().newInstance();
+			hbaseDataInformation.build(
+				instance,
+				res);
+
 			return instance;
 		} catch (InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
@@ -425,7 +332,7 @@ public class GenericDAO extends AbstractDAO implements IGenericDAO {
 	}
 
 	@Override
-	public <T extends HbaseData> void delete(T hbaseData, Class<T> cl) {
+	public void delete(T hbaseData, Class<T> cl) {
 		@SuppressWarnings("unchecked")
 		T[] a = (T[]) Array.newInstance(
 			cl,
