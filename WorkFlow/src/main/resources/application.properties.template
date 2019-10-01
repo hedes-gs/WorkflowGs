@@ -32,3 +32,7 @@ copy.maxNumberOfFilesInAFolder={{ max_number_of_files_in_a_folder }}
 
 transaction.id={{ transaction_id }}_{{ host_id }}
 transaction.timeout=180000
+
+hbase.gs.principal={{ hbase_gs_principal }}
+hbase.gs.keytab={{ hbase_gs_keytab }}
+hbase.table.prefix=prod
