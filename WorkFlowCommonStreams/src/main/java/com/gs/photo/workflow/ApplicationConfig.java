@@ -3,7 +3,6 @@ package com.gs.photo.workflow;
 import java.util.Locale;
 import java.util.Properties;
 
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -127,41 +126,6 @@ public class ApplicationConfig {
 			0);
 
 		return config;
-	}
-
-	@Bean
-	public org.apache.hadoop.conf.Configuration hbaseConfiguration() {
-
-		org.apache.hadoop.conf.Configuration hBaseConfig = HBaseConfiguration.create();
-		hBaseConfig.setInt(
-			"timeout",
-			120000);
-		hBaseConfig.set(
-			"hbase.zookeeper.quorum",
-			zookeeperHosts);
-		hBaseConfig.setInt(
-			"hbase.zookeeper.property.clientPort",
-			zookeeperPort);
-		hBaseConfig.set(
-			"hadoop.security.authentication",
-			"kerberos");
-		hBaseConfig.set(
-			"hbase.security.authentication",
-			"kerberos");
-		hBaseConfig.set(
-			"hbase.cluster.distributed",
-			"true");
-		hBaseConfig.set(
-			"hbase.rpc.protection",
-			"authentication"); // check this setting on HBase side
-		hBaseConfig.set(
-			"hbase.regionserver.kerberos.principal",
-			"hbase/_HOST@GS.COM"); // what principal the master/region. servers use.
-		hBaseConfig.set(
-			"hbase.master.kerberos.principal",
-			"hbase/_HOST@GS.COM"); // this is needed even if you connect over rpc/zookeeper
-
-		return hBaseConfig;
 	}
 
 	@Bean
