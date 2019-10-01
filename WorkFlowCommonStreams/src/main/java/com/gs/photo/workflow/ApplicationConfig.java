@@ -93,6 +93,12 @@ public class ApplicationConfig {
 	@Value("${zookeeper.port}")
 	protected int zookeeperPort;
 
+	@Value("${application.gs.principal}")
+	protected String principal;
+
+	@Value("${application.gs.keytab}")
+	protected String keytab;
+
 	@Bean
 	public Properties kafkaStreamProperties() {
 		Properties config = new Properties();

@@ -16,7 +16,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,11 +40,6 @@ public class HbaseApplicationConfig extends ApplicationConfig {
 
 	private static Logger LOGGER = LogManager.getLogger(
 		HbaseApplicationConfig.class);
-	@Value("${hbase.gs.principal}")
-	protected String principal;
-
-	@Value("${hbase.gs.keytab}")
-	protected String keytab;
 
 	@Bean
 	protected org.apache.hadoop.conf.Configuration hbaseConfiguration() {
