@@ -18,34 +18,46 @@
 
 <configuration>
 
-		<property>
-			<name>dfs.replication</name>
-			<value>2</value>
-		</property>
+	<property>
+		<name>dfs.replication</name>
+		<value>2</value>
+	</property>
 
-		<property>
-			<name>dfs.namenode.name.dir</name>
-			<value>file:/data/hadoop/hadoop_tmp/hdfs/namenode</value>
-		</property>
+	<property>
+		<name>dfs.namenode.name.dir</name>
+		<value>file:/data/hadoop/hadoop_tmp/hdfs/namenode</value>
+	</property>
+	<property>
+		<name>dfs.namenode.num.extra.edits.retained</name>
+		<value>10000</value>
+	</property>
+	<property>
+		<name>dfs.namenode.max.extra.edits.segments.retained</name>
+		<value>10</value>
+	</property>
+	
+	
 
-		<property>
-			<name>dfs.datanode.data.dir</name>
-			<value>file:/data/hadoop/hadoop_tmp/hdfs/datanode</value>
-		</property>
-		<property>
-			<name>dfs.namenode.checkpoint.dir</name>
-			<value>file:/data/hadoop/hadoop_tmp/hdfs/secondarydatanode</value>
-		</property>
-		<property>
-			<name>dfs.blocksize</name>
-			<value>24657920</value>
-		</property>
-		<property>
-			<name>dfs.block.access.token.enable</name>
-			<value>true</value>
-		</property>
-			<property>
+	<property>
+		<name>dfs.datanode.data.dir</name>
+		<value>file:/data/hadoop/hadoop_tmp/hdfs/datanode</value>
+	</property>
+	<property>
+		<name>dfs.namenode.checkpoint.dir</name>
+		<value>file:/data/hadoop/hadoop_tmp/hdfs/secondarydatanode</value>
+	</property>
+	<property>
+		<name>dfs.blocksize</name>
+		<value>24657920</value>
+	</property>
+	<property>
+		<name>dfs.block.access.token.enable</name>
+		<value>true</value>
+	</property>
+	<property>
 		<name>dfs.http.policy</name>
 		<value>HTTPS_ONLY</value>
 	</property>
+	
+	
 </configuration>
