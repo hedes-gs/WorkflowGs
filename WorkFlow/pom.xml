@@ -30,6 +30,8 @@
 		<module>../WorkflowScan</module>
 		<module>../WorkflowHbase</module>
 		<module>../WorkFlowProcessAndPublishForRecord</module>
+		<module>../WorkFlowStorms</module>
+
 	</modules>
 	<dependencyManagement>
 		<dependencies>
