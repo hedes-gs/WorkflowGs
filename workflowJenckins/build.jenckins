@@ -10,7 +10,7 @@ pipeline {
 				}
 			}
 			steps {
-				sh ' cat /etc/hosts ; cd WorkFlow ; mvn -T 1C clean install'
+				sh 'cd WorkFlow ; mvn clean install'
 			}
 		}
 		stage('Deployment ') {
