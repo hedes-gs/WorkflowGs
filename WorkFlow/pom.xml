@@ -18,7 +18,6 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>../HbaseFilters</module>
-		<module>../Kafdrop-master</module>
 		<module>../comparators</module>
 		<module>../Model</module>
 		<module>../serializers</module>
