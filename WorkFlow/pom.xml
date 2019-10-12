@@ -17,9 +17,9 @@
 	</properties>
 	<packaging>pom</packaging>
 	<modules>
+		<module>../Model</module>
 		<module>../HbaseFilters</module>
 		<module>../comparators</module>
-		<module>../Model</module>
 		<module>../serializers</module>
 		<module>../WorkFlowCommonStreams</module>
 		<module>../WorkFlowComputeHashKey</module>
