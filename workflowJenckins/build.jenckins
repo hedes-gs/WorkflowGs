@@ -42,7 +42,7 @@ pipeline {
 					},
 					WorkFlowProcessAndPublishForRecord: {
 						sh 'cd WorkFlowProcessAndPublishForRecord/deployment;  	ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
-					}
+					},
 					workFlowStorm: {
 						sh 'cd WorkFlowStorms/deployment;  	ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../ansible/deploy.yml '
 					}
