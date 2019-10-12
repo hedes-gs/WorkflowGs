@@ -10,6 +10,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.log4j.Logger;
+import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -20,6 +21,8 @@ import com.gs.photos.serializers.FinalImageSerializer;
 import com.workflow.model.storm.FinalImage;
 
 public class FinalImageBolt extends BaseWindowedBolt {
+
+	protected Map<String, Object> windowConfiguration;
 
 	private static final String IS_NORMALIZED = "isNormalized";
 	private static final String ORIGINAL_IMAGE = "originalImage";
@@ -105,9 +108,14 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			"value.serializer",
 			FinalImageSerializer.class.getName());
 		producer = new KafkaProducer<>(settings);
-		super.withWindow(
-			Count.of(
-				windowLength));
+		windowConfiguration = new HashMap<>();
+		windowConfiguration.put(
+			Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
+			windowLength);
+		windowConfiguration.put(
+			Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
+			1);
+
 	}
 
 	@Override
@@ -120,7 +128,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
-		return new HashMap<String, Object>();
+		return windowConfiguration;
 	}
 
 	public FinalImageBolt(
