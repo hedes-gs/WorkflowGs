@@ -48,7 +48,7 @@
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
-        when:  inventory_hostname == "192.168.1.200"
+      when:  inventory_hostname == "192.168.1.200"
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
