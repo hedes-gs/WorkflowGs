@@ -109,13 +109,17 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			FinalImageSerializer.class.getName());
 		producer = new KafkaProducer<>(settings);
 		windowConfiguration = new HashMap<>();
+		buildComponentConfiguration();
+
+	}
+
+	protected void buildComponentConfiguration() {
 		windowConfiguration.put(
 			Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
 			windowLength);
 		windowConfiguration.put(
 			Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
 			1);
-
 	}
 
 	@Override
@@ -128,6 +132,13 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
+		Map<String, Object> retValue = super.getComponentConfiguration();
+		if (retValue == null) {
+			retValue = new HashMap<String, Object>();
+
+		}
+		this.windowConfiguration = retValue;
+		buildComponentConfiguration();
 		return windowConfiguration;
 	}
 
