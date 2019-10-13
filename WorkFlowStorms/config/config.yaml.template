@@ -19,6 +19,11 @@ components:
         value: EARLIEST
       - name: "recordTranslator"
         ref: "keyValueTranslator"
+      - name: "security.protocol"
+        ref: "SASL_PLAINTEXT"
+      - name: "sasl.kerberos.service.name"
+        ref: "kafka"
+
     configMethods:
       - name: "setProp"
         args:
