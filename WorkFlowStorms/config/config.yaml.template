@@ -19,17 +19,16 @@ components:
         value: EARLIEST
       - name: "recordTranslator"
         ref: "keyValueTranslator"
-      - name: "security.protocol"
-        ref: "SASL_PLAINTEXT"
-      - name: "sasl.kerberos.service.name"
-        ref: "kafka"
+
 
     configMethods:
       - name: "setProp"
         args:
           - {
               "key.deserializer" : "org.apache.kafka.common.serialization.StringDeserializer",
-              "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer"
+              "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer",
+              "security.protocol": "SASL_PLAINTEXT",
+              "sasl.kerberos.service.name": "kafka"
             }   
   - id: "spoutConfig"
     className: "org.apache.storm.kafka.spout.KafkaSpoutConfig"
