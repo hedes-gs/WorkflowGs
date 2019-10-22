@@ -1,8 +1,8 @@
 package com.gs.photo.workflow.impl;
 
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.Consumed;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Produced;
@@ -20,11 +20,11 @@ import com.workflow.model.storm.FinalImage;
 @Service
 public class StreamsHelper implements IStreamsHelper {
 
-	@Value("${topic.inputImageNameTopic}")
-	protected String inputImageNameTopic;
+	@Value("${topic.topicDupFilteredFile}")
+	protected String topicDupFilteredFile;
 
-	@Value("${topic.inputExifTopic}")
-	protected String inputExifTopic;
+	@Value("${topic.topicExif}")
+	protected String topicExif;
 
 	@Value("${topic.pathNameTopic}")
 	protected String pathNameTopic;
@@ -44,7 +44,7 @@ public class StreamsHelper implements IStreamsHelper {
 	@Override
 	public KTable<String, String> buildKTableToStoreCreatedImages(StreamsBuilder builder) {
 		return builder.table(
-			inputImageNameTopic,
+			topicDupFilteredFile,
 			Consumed.with(
 				Serdes.String(),
 				Serdes.String()));
@@ -77,7 +77,7 @@ public class StreamsHelper implements IStreamsHelper {
 	@Override
 	public KStream<String, ExchangedTiffData> buildKStreamToGetExifValue(StreamsBuilder streamsBuilder) {
 		KStream<String, ExchangedTiffData> stream = streamsBuilder.stream(
-			inputExifTopic,
+			topicExif,
 			Consumed.with(
 				Serdes.String(),
 				new ExchangedDataSerDe()));
@@ -92,8 +92,8 @@ public class StreamsHelper implements IStreamsHelper {
 	 * kafka.streams.StreamsBuilder)
 	 */
 	@Override
-	public KTable<String, String> buildKTableToGetPathValue(StreamsBuilder streamsBuilder) {
-		KTable<String, String> stream = streamsBuilder.table(
+	public KStream<String, String> buildKTableToGetPathValue(StreamsBuilder streamsBuilder) {
+		KStream<String, String> stream = streamsBuilder.stream(
 			pathNameTopic,
 			Consumed.with(
 				Serdes.String(),

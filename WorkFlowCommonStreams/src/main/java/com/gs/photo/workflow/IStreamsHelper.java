@@ -16,7 +16,7 @@ public interface IStreamsHelper {
 
 	KStream<String, ExchangedTiffData> buildKStreamToGetExifValue(StreamsBuilder streamsBuilder);
 
-	KTable<String, String> buildKTableToGetPathValue(StreamsBuilder streamsBuilder);
+	KStream<String, String> buildKTableToGetPathValue(StreamsBuilder streamsBuilder);
 
 	void publishImageDataInRecordTopic(KStream<String, HbaseImageThumbnail> finalStream);
 
