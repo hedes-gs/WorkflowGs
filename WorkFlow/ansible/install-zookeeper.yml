@@ -3,42 +3,112 @@
   tasks:
     - debug:
         msg: Install ZOOKEEPER
-    - name: stop zookeeper service
-      shell: systemctl stop zookeeper 
+    - user:
+        name: "{{ user_to_create }}"
+        group: nogroup
+        shell: /bin/bash
+        createhome: yes
+        home: /home/zookeeper
+    - name: start zookeeper service
+      shell: "systemctl stop zookeeper"
+    - name: Download zookeeper {{ zookeeper_version }}
+      get_url: 
+        url: https://www-us.apache.org/dist/zookeeper/zookeeper-{{ zookeeper_version }}/zookeeper-{{ zookeeper_version }}.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}.tgz"
+        dest: "{{ zookeeper_install_folder }}"
+        remote_src: true
+    - name: remove symlink {{ zookeeper_install_folder }}/latest to this version
+      file:
+        path: "{{ zookeeper_install_folder }}/latest"
+        state: absent
+    - name: create /home/zookeeper/data
+      file:
+        path: "/home/zookeeper/data"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: copy myid
+      vars:
+        Zookeeper_id: "{{ zk_hosts[inventory_hostname].id }}"
+      template:
+        src: ./tools/zookeeper/myid
+        dest: "/home/zookeeper/data/"
+        mode: 0644
+        owner: "{{ user_to_create }}"
+
+    - name: Symlink {{ zookeeper_install_folder }}/latest to this version
+      file:
+        path: "{{ zookeeper_install_folder }}"
+        src: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}"
+        dest: "{{ zookeeper_install_folder }}/latest"
+        owner: "{{ user_to_create }}"
+        state: link
+        force: yes
+    - name: chown
+      shell: " chown -R {{ user_to_create }}:nogroup {{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}"
     - name: copy zoo.cfg
       copy:
         src: ./tools/zookeeper/zoo.cfg
-        dest: /etc/zookeeper/conf_example/zoo.cfg
+        dest: "{{ zookeeper_install_folder }}/latest/conf/zoo.cfg"
         mode: 0644
     - name: copy client_jaas.conf
       vars:
-        Zookeeper_host: "ipc6"
+        Zookeeper_host: "{{ zk_hosts[inventory_hostname].value }}"
       template:
         src: ./tools/zookeeper/client_jaas.conf
-        dest: /etc/zookeeper/conf_example/client_jaas.conf
+        dest: "{{ zookeeper_install_folder }}/latest/conf/client_jaas.conf"
         mode: 0644
     - name: copy environment
       copy:
-        src: ./tools/zookeeper/environment
-        dest: /etc/zookeeper/conf_example/environment
+        src: ./tools/zookeeper/zookeeper-env.sh
+        dest: "{{ zookeeper_install_folder }}/latest/conf/zookeeper-env.sh"
         mode: 0644
+    - name: copy log4j
+      copy:
+        src: ./tools/zookeeper/log4j.properties
+        dest: "{{ zookeeper_install_folder }}/latest/conf/log4j.properties"
+        mode: 0644
+
     - name: copy zookeeper.keytab
       copy:
         owner: zookeeper
         src: ./tools/zookeeper/zookeeper_all.keytab
-        dest: /etc/zookeeper/conf_example/zookeeper.keytab
+        dest: "{{ zookeeper_install_folder }}/latest/conf/zookeeper.keytab"
         mode: 0600
-    - name: restart zookeeper
-      shell: systemctl restart zookeeper
- 
+    - name: copy zookeeper.service
+      copy:
+        owner: zookeeper
+        src: ./tools/zookeeper/zookeeper.service
+        dest: "/etc/systemd/system/zookeeper.service"
+        mode: 0644
+    - name: reload zookeeper.service   
+      command: systemctl daemon-reload 
+    - name: start zookeeper service
+      shell: "systemctl start zookeeper"
+    - name: start zookeeper service
+      shell: "systemctl enable zookeeper"
+
   vars:
     ansible_become_pass: granada01
     user_to_create: zookeeper
     PWD: "{{ lookup('env', 'PWD') }}"
-    ids:
+    zookeeper_install_folder: /home/zookeeper
+    zookeeper_version: 3.4.14
+    
+    
+    PWD: "{{ lookup('env', 'PWD') }}"
+    zk_hosts:
       192.168.1.200:
-        value: IPC0
+        value: ipc0
+        id: 1
       192.168.1.201:
-        value: IPC1
+        value: ipc1
+        id: 2
       192.168.1.202:
-        value: IPC2
+        value: ipc2
+        id: 3

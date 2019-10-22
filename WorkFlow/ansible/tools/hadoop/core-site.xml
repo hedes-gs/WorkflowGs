@@ -46,7 +46,7 @@
 	<property>
 		<name>hadoop.security.auth_to_local</name>
 		<value>
-			RULE:[2:$1/$2@$0]([ndj]n/.*@GS.COM)s/.*/hdfs/
+			RULE:[2:$1/$2@$0]([ndj]n/.*@GS.COM)s/.*/hadoop/
 			RULE:[2:$1/$2@$0]([rn]m/.*@GS.COM)s/.*/yarn/
 			RULE:[2:$1/$2@$0](jhs/.*@GS.COM)s/.*/mapred/
 			DEFAULT
