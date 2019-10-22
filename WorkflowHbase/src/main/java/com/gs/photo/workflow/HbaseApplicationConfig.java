@@ -27,7 +27,7 @@ import com.workflow.model.HbaseImageThumbnail;
 
 @Configuration
 @PropertySource("file:${user.home}/config/application.properties")
-public class HbaseApplicationConfig extends ApplicationConfig {
+public class HbaseApplicationConfig extends AbstractApplicationConfig {
 
 	private static final String HBASE_MASTER_KERBEROS_PRINCIPAL = "hbase.master.kerberos.principal";
 	private static final String HBASE_REGIONSERVER_KERBEROS_PRINCIPAL = "hbase.regionserver.kerberos.principal";
