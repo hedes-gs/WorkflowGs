@@ -11,8 +11,14 @@ public class SimpleASCIIField extends SimpleAbstractField<String> {
 
 	protected String data;
 
-	public SimpleASCIIField(int fieldLength, int offset, short type) {
-		super(fieldLength, offset, type);
+	public SimpleASCIIField(
+			int fieldLength,
+			int offset,
+			short type) {
+		super(
+			fieldLength,
+			offset,
+			type);
 	}
 
 	@Override
@@ -23,20 +29,24 @@ public class SimpleASCIIField extends SimpleAbstractField<String> {
 
 	@Override
 	public String getData() {
-		return data;
+		return this.data;
 	}
 
 	@Override
 	public void updateData(FileChannelDataInput rin) {
-		byte[] data = new byte[getFieldLength()];
+		byte[] data = new byte[this.getFieldLength()];
 		try {
 			if (data.length <= 4) {
-				rin.position(offset);
-				rin.readFully(data, 0, data.length);
+				rin.position(this.offset);
+				rin.readFully(data,
+						0,
+						data.length);
 			} else {
-				rin.position(offset);
+				rin.position(this.offset);
 				rin.position(rin.readInt());
-				rin.readFully(data, 0, data.length);
+				rin.readFully(data,
+						0,
+						data.length);
 			}
 			this.data = new String(data, "UTF-8");
 		} catch (IOException e) {
@@ -46,7 +56,7 @@ public class SimpleASCIIField extends SimpleAbstractField<String> {
 
 	@Override
 	public int getNextOffset() {
-		return offset + 4;
+		return this.offset + 4;
 	}
 
 }

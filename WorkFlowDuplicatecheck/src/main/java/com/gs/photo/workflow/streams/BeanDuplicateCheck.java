@@ -36,14 +36,14 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 	@Value("${duplicate.storeName}")
 	protected String storeName;
 
-	@Value("${topic.hashkey-output}")
-	protected String pathNameTopic;
+	@Value("${topic.topicFileHashKey}")
+	protected String topicFileHashKey;
 
 	@Value("${topic.duplicateImageFoundTopic}")
 	protected String duplicateImageFoundTopic;
 
-	@Value("${topic.uniqueImageFoundTopic}")
-	protected String uniqueImageFoundTopic;
+	@Value("${topic.topicDupFilteredFile}")
+	protected String topicDupFilteredFile;
 
 	@Autowired
 	protected IStreamsHelper streamsHelper;
@@ -91,7 +91,7 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 			dedupStoreBuilder);
 
 		KStream<String, String> input = builder.stream(
-			pathNameTopic);
+			topicFileHashKey);
 		Transformer<String, String, KeyValue<String, String>> duplicationTranformer = new DeduplicationTransformer<String, String, String>(
 			maintainDurationPerEventInMs,
 			(key, value) -> key,
@@ -132,7 +132,7 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 				return K.startsWith(
 					"DUP-");
 			}).to(
-				uniqueImageFoundTopic);
+				topicDupFilteredFile);
 
 		KafkaStreams streams = new KafkaStreams(builder.build(), kafkaStreamProperties);
 		return streams;
