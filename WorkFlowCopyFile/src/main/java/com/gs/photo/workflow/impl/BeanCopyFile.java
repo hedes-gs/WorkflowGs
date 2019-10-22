@@ -47,14 +47,11 @@ public class BeanCopyFile implements ICopyFile {
 	@Value("${copy.group.id}")
 	protected String copyGroupId;
 
-	@Value("${topic.uniqueImageFoundTopic}")
-	protected String topicUniqueImage;
-
-	@Value("${topic.topicCopyRawFile}")
-	protected String topicCopyRawFile;
+	@Value("${topic.topicDupDilteredFile}")
+	protected String topicDupDilteredFile;
 
 	@Value("${topic.topicCopyOtherFile}")
-	protected String topicCopyOtherFile;
+	protected String topicFile;
 
 	protected Path repositoryPath;
 
@@ -79,13 +76,12 @@ public class BeanCopyFile implements ICopyFile {
 
 	private Object processInputFile() {
 		LOGGER.info(
-			"Starting to process input messages from {} to {},{}",
-			topicUniqueImage,
-			topicCopyRawFile,
-			topicCopyOtherFile);
+			"Starting to process input messages from {} to {}",
+			topicDupDilteredFile,
+			topicFile);
 		consumerForTransactionalCopyForTopicWithStringKey.subscribe(
 			Collections.singleton(
-				topicUniqueImage));
+				topicDupDilteredFile));
 		producerForPublishingOnStringTopic.initTransactions();
 		while (true) {
 			try {
@@ -94,7 +90,7 @@ public class BeanCopyFile implements ICopyFile {
 				long startTime = System.currentTimeMillis();
 				producerForPublishingOnStringTopic.beginTransaction();
 				LOGGER.debug(
-					"...........Start transaction, for {}",
+					"Start transaction, for {}",
 					records.count());
 				records.forEach(
 					(rec) -> {
@@ -103,21 +99,11 @@ public class BeanCopyFile implements ICopyFile {
 								rec.key(),
 								rec.value());
 							Future<RecordMetadata> result = null;
-							if (dest.getFileName().toString().toUpperCase().endsWith(
-								"ARW")) {
-								result = producerForPublishingOnStringTopic.send(
-									new ProducerRecord<String, String>(
-										topicCopyRawFile,
-										rec.key(),
-										dest.toAbsolutePath().toString()));
-							} else {
-								result = producerForPublishingOnStringTopic.send(
-									new ProducerRecord<String, String>(
-										topicCopyOtherFile,
-										rec.key(),
-										dest.toAbsolutePath().toString()));
-							}
-							producerForPublishingOnStringTopic.flush();
+							result = producerForPublishingOnStringTopic.send(
+								new ProducerRecord<String, String>(
+									topicFile,
+									rec.key(),
+									dest.toAbsolutePath().toString()));
 							RecordMetadata data = result.get();
 							LOGGER.info(
 								"[EVENT][{}] Recorded data at [part={},offset={},topic={},time={}]",

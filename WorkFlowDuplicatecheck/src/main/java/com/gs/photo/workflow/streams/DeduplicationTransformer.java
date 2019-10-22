@@ -9,17 +9,17 @@ import org.apache.kafka.streams.state.WindowStoreIterator;
 
 public class DeduplicationTransformer<K, V, E> implements Transformer<K, V, KeyValue<K, V>> {
 
-	private ProcessorContext context;
+	private ProcessorContext              context;
 
 	/**
 	 * Key: event ID Value: timestamp (event-time) of the corresponding event when
 	 * the event ID was seen for the first time
 	 */
-	private WindowStore<E, Long> eventIdStore;
+	private WindowStore<E, Long>          eventIdStore;
 
-	private final long leftDurationMs;
-	private final long rightDurationMs;
-	private String storeName;
+	private final long                    leftDurationMs;
+	private final long                    rightDurationMs;
+	private String                        storeName;
 	private final KeyValueMapper<K, V, E> idExtractor;
 
 	/**
@@ -34,13 +34,15 @@ public class DeduplicationTransformer<K, V, E> implements Transformer<K, V, KeyV
 	 * @param storeName
 	 *            TODO
 	 */
-	public DeduplicationTransformer(long maintainDurationPerEventInMs, KeyValueMapper<K, V, E> idExtractor,
+	public DeduplicationTransformer(
+			long maintainDurationPerEventInMs,
+			KeyValueMapper<K, V, E> idExtractor,
 			String storeName) {
 		if (maintainDurationPerEventInMs < 1) {
 			throw new IllegalArgumentException("maintain duration per event must be >= 1");
 		}
-		leftDurationMs = maintainDurationPerEventInMs / 2;
-		rightDurationMs = maintainDurationPerEventInMs - leftDurationMs;
+		this.leftDurationMs = maintainDurationPerEventInMs / 2;
+		this.rightDurationMs = maintainDurationPerEventInMs - this.leftDurationMs;
 		this.idExtractor = idExtractor;
 		this.storeName = storeName;
 	}
@@ -49,48 +51,52 @@ public class DeduplicationTransformer<K, V, E> implements Transformer<K, V, KeyV
 	@SuppressWarnings("unchecked")
 	public void init(final ProcessorContext context) {
 		this.context = context;
-		eventIdStore = (WindowStore<E, Long>) context.getStateStore(storeName);
+		this.eventIdStore = (WindowStore<E, Long>) context.getStateStore(this.storeName);
 	}
 
 	@Override
 	public KeyValue<K, V> transform(final K key, final V value) {
-		E eventId = idExtractor.apply(key, value);
+		E eventId = this.idExtractor.apply(key,
+				value);
 		if (eventId == null) {
-			return KeyValue.pair(key, value);
+			return KeyValue.pair(key,
+					value);
 		} else {
 			KeyValue<K, V> output;
-			if (isDuplicate(eventId)) {
+			if (this.isDuplicate(eventId)) {
 				output = null;
-				updateTimestampOfExistingEventToPreventExpiry(eventId, context.timestamp());
+				this.updateTimestampOfExistingEventToPreventExpiry(eventId,
+						this.context.timestamp());
 			} else {
-				output = KeyValue.pair(key, value);
-				rememberNewEvent(eventId, context.timestamp());
+				output = KeyValue.pair(key,
+						value);
+				this.rememberNewEvent(eventId,
+						this.context.timestamp());
 			}
 			return output;
 		}
 	}
 
 	private boolean isDuplicate(final E eventId) {
-		long eventTime = context.timestamp();
-		WindowStoreIterator<Long> timeIterator = eventIdStore.fetch(eventId, eventTime - leftDurationMs,
-				eventTime + rightDurationMs);
+		long eventTime = this.context.timestamp();
+		WindowStoreIterator<Long> timeIterator = this.eventIdStore.fetch(eventId,
+				eventTime - this.leftDurationMs,
+				eventTime + this.rightDurationMs);
 		boolean isDuplicate = timeIterator.hasNext();
 		timeIterator.close();
 		return isDuplicate;
 	}
 
 	private void updateTimestampOfExistingEventToPreventExpiry(final E eventId, long newTimestamp) {
-		eventIdStore.put(eventId, newTimestamp, newTimestamp);
+		this.eventIdStore.put(eventId,
+				newTimestamp,
+				newTimestamp);
 	}
 
 	private void rememberNewEvent(final E eventId, long timestamp) {
-		eventIdStore.put(eventId, timestamp, timestamp);
-	}
-
-	@Override
-	public KeyValue<K, V> punctuate(final long timestamp) {
-		// our windowStore segments are closed automatically
-		return null;
+		this.eventIdStore.put(eventId,
+				timestamp,
+				timestamp);
 	}
 
 	@Override
