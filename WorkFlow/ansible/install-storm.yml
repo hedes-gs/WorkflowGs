@@ -4,6 +4,10 @@
     - debug:
         msg: Download storm "{{ storm_version }}"
     - user: name="{{ user_to_create }}" group=nogroup
+    - name: chown /home/storm to root
+      shell: " chown -R {{ user_to_create }}:nogroup {{ storm_install_folder }}"
+    - name: chown /home/storm to root
+      shell: " chown root:nogroup {{ storm_install_folder }}"
     - name : stop service nimbus
       sudo: yes
       service:
@@ -54,16 +58,16 @@
       file:
         path: "{{ storm_install_folder }}/local"
         state: directory
-        mode: 0700
+        mode: 0776
         owner: "{{ user_to_create }}"
         group: nogroup
-    - name: stop-hdfs
-      shell:  "rm -f {{ storm_install_folder }}/latest/logs/*"
+    - name: clean "{{ storm_install_folder }}/latest/logs/*"
+      shell:  "rm -rf {{ storm_install_folder }}/latest/logs/*"
     - name: Create folders .~storm/latest/logs
       file:
         path: ~storm/latest/logs
         state: directory
-        mode: 0766
+        mode: 0776
         owner: "{{ user_to_create }}"
         group: nogroup
     - name: Create folders .~storm/.ssh
@@ -72,6 +76,13 @@
         state: directory
         mode: 0700
         owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: Create folders "{{ storm_install_folder }}/worker-launch"
+      file:
+        path: "{{ storm_install_folder }}/worker-launch"
+        state: directory
+        mode: 0755
+        owner: "root"
         group: nogroup
     - name: deploy keys and files
       template:
@@ -101,6 +112,8 @@
         owner: "{{ user_to_create }}"
         group: nogroup
         mode: 0644
+      vars:
+        storm_host: "{{ storm_hosts[inventory_hostname].value }}"
     - name: deploy storm.keytab
       copy:
         src: ./tools/storm/storm.keytab
@@ -108,8 +121,22 @@
         owner: "{{ user_to_create }}"
         group: nogroup
         mode: 0644
+    - name: deploy  ./tools/storm/worker-launcher.cfg
+      copy:
+        src: ./tools/storm/worker-launcher.cfg
+        dest: "{{ storm_install_folder }}/worker-launch/worker-launcher.cfg"
+        owner: "root"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/storm/worker-launcher
+      copy:
+        src: ./tools/storm/worker-launcher
+        dest: "{{ storm_install_folder }}/worker-launch/worker-launcher"
+        owner: "root"
+        group: nogroup
+        mode: "6550"
     - name: deploy ./tools/storm/nimbus.service
-      template:
+      copy:
         src: ./tools/storm/nimbus.service
         dest: "/etc/systemd/system/nimbus.service"
       when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
@@ -162,3 +189,16 @@
         value: "storm-slave-4"
       192.168.1.206:
         value: "storm-slave-5"
+    storm_hosts:
+      192.168.1.200:
+        value: "ipc0"
+      192.168.1.201:
+        value: "ipc1"
+      192.168.1.202:
+        value: "ipc2"
+      192.168.1.203:
+        value: "ipc3"
+      192.168.1.205:
+        value: "ipc5"
+      192.168.1.206:
+        value: "ipc6"
