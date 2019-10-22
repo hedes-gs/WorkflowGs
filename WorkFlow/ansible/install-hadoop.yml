@@ -151,7 +151,7 @@
         owner: "{{ user_to_create }}"
         group: hadoop
         mode: 0600
-      when: inventory_hostname == "192.168.1.200"
+      when: inventory_hostname == "192.168.1.205"
     - name: deploy ./tools/hadoop/workers on master
       template:
         src: ./tools/hadoop/workers
@@ -159,7 +159,7 @@
         owner: "{{ user_to_create }}"
         group: hadoop
         mode: 0600
-      when: inventory_hostname == "192.168.1.200"
+      when: inventory_hostname == "192.168.1.205"
     - name: deploy ./tools/hadoop/slaves on master
       template:
         src: ./tools/hadoop/slaves
@@ -167,7 +167,7 @@
         owner: "{{ user_to_create }}"
         group: hadoop
         mode: 0600
-      when: inventory_hostname == "192.168.1.200"
+      when: inventory_hostname == "192.168.1.205"
 
   vars:
     ansible_become_pass: granada01

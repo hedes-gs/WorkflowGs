@@ -16,44 +16,48 @@
 
 ########### These MUST be filled in for a storm configuration
 storm.zookeeper.servers:
- - IPC0
- - IPC1
- - IPC2
+ - ipc0
+ - ipc1
+ - ipc2
  
  
 storm.local.dir: "/home/storm/local"
 storm.log.dir: "/home/storm/latest/logs"
 storm.log4j2.conf.dir: "log4j2"
 
-nimbus.host: IPC0
-# 
-nimbus.seeds: ["IPC0", "IPC1"]
+nimbus.host: ipc0
+nimbus.seeds: ["ipc0", "ipc1"]
 
 nimbus.thrift.port: 49627
 supervisor.slots.ports:
 - 6700
-- 6701
-- 6702
-- 6703
+
 
 ui.host: 0.0.0.0
 ui.port: 8085
 logviewer.port: 8086
+nimbus.thrift.max_buffer_size: 104857600
+
 supervisor.childopts: "-Xmx256m"
 supervisor.run.worker.as.user: true
+supervisor.worker.launcher: /home/storm/worker-launch/worker-launcher
 topology.submitter.user: wf_storm
 nimbus.supervisor.users: ["storm","wf_storm"]
 nimbus.admins: ["storm"]
 storm.principal.tolocal: "org.apache.storm.security.auth.KerberosPrincipalToLocal"
 storm.thrift.transport: "org.apache.storm.security.auth.kerberos.KerberosSaslTransportPlugin"
+supervisor.heartbeat.frequency.secs: 60
+worker.heartbeat.frequency.secs: 30
+supervisor.thrift.threads: 4
+
 java.security.auth.login.config: "/home/storm/latest/conf/client_jaas.conf"
-nimbus.childopts: "-Xmx512m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf"
-ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf"
-supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf"
-storm.zookeeper.superACL: "sasl:stormc"
+nimbus.childopts: "-Xmx512m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf  -Dsun.security.krb5.debug=true"
+ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf -Dsun.security.krb5.debug=true"
+supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf -Dsun.security.krb5.debug=true"
+storm.zookeeper.superACL: "sasl:storm"
 
 worker.heap.memory.mb: 512
-worker.childopts: "-Xmx%HEAP-MEM%m -XX:+PrintGCDetails -Xloggc:artifacts/gc.log -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=artifacts/heapdump"
+worker.childopts: "-Djava.security.auth.login.config=/home/wf_storm/config/client_jaas.conf -Dlog4j.configurationFile=/home/wf_storm/config/log4j.xml -Xmx512m -XX:+PrintGCDetails -Xloggc:artifacts/gc.log -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=artifacts/heapdump"
 
 # 
 # 
