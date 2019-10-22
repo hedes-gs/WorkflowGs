@@ -3,6 +3,10 @@ package com.workflow.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import javax.annotation.Generated;
+
+import org.apache.avro.reflect.Nullable;
+
 @HbaseTableName("image_exif")
 public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cloneable {
 
@@ -10,24 +14,49 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
 	// Row key
 	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
-	protected String imageId;
+	protected String          imageId;
 	@Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
-	protected long exifTag;
+	protected long            exifTag;
 
 	// Data
-	@Column(hbaseName = "exif_value", rowKeyNumber = 100, toByte = ToByteIdempotent.class, columnFamily = "exv")
-	protected byte[] exifValue;
+	@Nullable
+	@Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
+	protected byte[]          exifValueAsByte;
+	@Nullable
+	@Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 100)
+	protected int[]           exifValueAsInt;
+	@Nullable
+	@Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 100)
+	protected short[]         exifValueAsShort;
+	@Nullable
 	@Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 101)
-	protected String thumbName = "";
+	protected String          thumbName        = "";
 	@Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 102)
-	protected String creationDate = "";
+	protected String          creationDate     = "";
 	@Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 103)
-	protected long width;
+	protected long            width;
 	@Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 104)
-	protected long height;
+	protected long            height;
+
+	@Generated("SparkTools")
+	private HbaseExifDataOfImages(
+			Builder builder) {
+		this.imageId = builder.imageId;
+		this.exifTag = builder.exifTag;
+		this.exifValueAsByte = builder.exifValueAsByte;
+		this.exifValueAsInt = builder.exifValueAsInt;
+		this.exifValueAsShort = builder.exifValueAsShort;
+		this.thumbName = builder.thumbName;
+		this.creationDate = builder.creationDate;
+		this.width = builder.width;
+		this.height = builder.height;
+	}
+
+	public HbaseExifDataOfImages() {
+	}
 
 	public long getExifTag() {
-		return exifTag;
+		return this.exifTag;
 	}
 
 	public void setExifTag(long exifTag) {
@@ -35,7 +64,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	}
 
 	public String getImageId() {
-		return imageId;
+		return this.imageId;
 	}
 
 	public void setImageId(String imageId) {
@@ -43,7 +72,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	}
 
 	public long getWidth() {
-		return width;
+		return this.width;
 	}
 
 	public void setWidth(long width) {
@@ -51,7 +80,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	}
 
 	public long getHeight() {
-		return height;
+		return this.height;
 	}
 
 	public void setHeight(long height) {
@@ -59,67 +88,262 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	}
 
 	public String getThumbName() {
-		return thumbName;
+		return this.thumbName;
 	}
 
 	public void setThumbName(String thumbName) {
 		this.thumbName = thumbName;
 	}
 
-	public byte[] getExifValue() {
-		return exifValue;
+	public byte[] getExifValueAsByte() {
+		return this.exifValueAsByte;
 	}
 
-	public void setExifValue(byte[] exifValue) {
-		this.exifValue = exifValue;
+	public void setExifValueAsByte(byte[] exifValueAsByte) {
+		this.exifValueAsByte = exifValueAsByte;
+	}
+
+	public int[] getExifValueAsInt() {
+		return this.exifValueAsInt;
+	}
+
+	public void setExifValueAsInt(int[] exifValueAsInt) {
+		this.exifValueAsInt = exifValueAsInt;
+	}
+
+	public short[] getExifValueAsShort() {
+		return this.exifValueAsShort;
+	}
+
+	public void setExifValueAsShort(short[] exifValueAsShort) {
+		this.exifValueAsShort = exifValueAsShort;
+	}
+
+	public String getCreationDate() {
+		return this.creationDate;
+	}
+
+	public void setCreationDate(String creationDate) {
+		this.creationDate = creationDate;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (int) (exifTag ^ (exifTag >>> 32));
-		result = prime * result + Arrays.hashCode(
-			exifValue);
-		result = prime * result + (int) (height ^ (height >>> 32));
-		result = prime * result + ((imageId == null) ? 0 : imageId.hashCode());
-		result = prime * result + ((thumbName == null) ? 0 : thumbName.hashCode());
-		result = prime * result + (int) (width ^ (width >>> 32));
+		result = (prime * result) + ((this.creationDate == null) ? 0 : this.creationDate.hashCode());
+		result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
+		result = (prime * result) + Arrays.hashCode(this.exifValueAsByte);
+		result = (prime * result) + Arrays.hashCode(this.exifValueAsInt);
+		result = (prime * result) + Arrays.hashCode(this.exifValueAsShort);
+		result = (prime * result) + (int) (this.height ^ (this.height >>> 32));
+		result = (prime * result) + ((this.imageId == null) ? 0 : this.imageId.hashCode());
+		result = (prime * result) + ((this.thumbName == null) ? 0 : this.thumbName.hashCode());
+		result = (prime * result) + (int) (this.width ^ (this.width >>> 32));
 		return result;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (this.getClass() != obj.getClass()) {
 			return false;
+		}
 		HbaseExifDataOfImages other = (HbaseExifDataOfImages) obj;
-		if (exifTag != other.exifTag)
-			return false;
-		if (!Arrays.equals(
-			exifValue,
-			other.exifValue))
-			return false;
-		if (height != other.height)
-			return false;
-		if (imageId == null) {
-			if (other.imageId != null)
+		if (this.creationDate == null) {
+			if (other.creationDate != null) {
 				return false;
-		} else if (!imageId.equals(
-			other.imageId))
+			}
+		} else if (!this.creationDate.equals(other.creationDate)) {
 			return false;
-		if (thumbName == null) {
-			if (other.thumbName != null)
+		}
+		if (this.exifTag != other.exifTag) {
+			return false;
+		}
+		if (!Arrays.equals(this.exifValueAsByte,
+				other.exifValueAsByte)) {
+			return false;
+		}
+		if (!Arrays.equals(this.exifValueAsInt,
+				other.exifValueAsInt)) {
+			return false;
+		}
+		if (!Arrays.equals(this.exifValueAsShort,
+				other.exifValueAsShort)) {
+			return false;
+		}
+		if (this.height != other.height) {
+			return false;
+		}
+		if (this.imageId == null) {
+			if (other.imageId != null) {
 				return false;
-		} else if (!thumbName.equals(
-			other.thumbName))
+			}
+		} else if (!this.imageId.equals(other.imageId)) {
 			return false;
-		if (width != other.width)
+		}
+		if (this.thumbName == null) {
+			if (other.thumbName != null) {
+				return false;
+			}
+		} else if (!this.thumbName.equals(other.thumbName)) {
 			return false;
+		}
+		if (this.width != other.width) {
+			return false;
+		}
 		return true;
+	}
+
+	/**
+	 * Creates builder to build {@link HbaseExifDataOfImages}.
+	 *
+	 * @return created builder
+	 */
+	@Generated("SparkTools")
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder to build {@link HbaseExifDataOfImages}.
+	 */
+	@Generated("SparkTools")
+	public static final class Builder {
+		private String  imageId;
+		private long    exifTag;
+		private byte[]  exifValueAsByte;
+		private int[]   exifValueAsInt;
+		private short[] exifValueAsShort;
+		private String  thumbName;
+		private String  creationDate;
+		private long    width;
+		private long    height;
+
+		private Builder() {
+		}
+
+		/**
+		 * Builder method for imageId parameter.
+		 *
+		 * @param imageId
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withImageId(String imageId) {
+			this.imageId = imageId;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifTag parameter.
+		 *
+		 * @param exifTag
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifTag(long exifTag) {
+			this.exifTag = exifTag;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifValueAsByte parameter.
+		 *
+		 * @param exifValueAsByte
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifValueAsByte(byte[] exifValueAsByte) {
+			this.exifValueAsByte = exifValueAsByte;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifValueAsInt parameter.
+		 *
+		 * @param exifValueAsInt
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifValueAsInt(int[] exifValueAsInt) {
+			this.exifValueAsInt = exifValueAsInt;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifValueAsShort parameter.
+		 *
+		 * @param exifValueAsShort
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifValueAsShort(short[] exifValueAsShort) {
+			this.exifValueAsShort = exifValueAsShort;
+			return this;
+		}
+
+		/**
+		 * Builder method for thumbName parameter.
+		 *
+		 * @param thumbName
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withThumbName(String thumbName) {
+			this.thumbName = thumbName;
+			return this;
+		}
+
+		/**
+		 * Builder method for creationDate parameter.
+		 *
+		 * @param creationDate
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withCreationDate(String creationDate) {
+			this.creationDate = creationDate;
+			return this;
+		}
+
+		/**
+		 * Builder method for width parameter.
+		 *
+		 * @param width
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withWidth(long width) {
+			this.width = width;
+			return this;
+		}
+
+		/**
+		 * Builder method for height parameter.
+		 *
+		 * @param height
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withHeight(long height) {
+			this.height = height;
+			return this;
+		}
+
+		/**
+		 * Builder method of the builder.
+		 *
+		 * @return built class
+		 */
+		public HbaseExifDataOfImages build() {
+			return new HbaseExifDataOfImages(this);
+		}
 	}
 
 }
