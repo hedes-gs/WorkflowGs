@@ -3,6 +3,8 @@ package com.gs.photo.workflow;
 import java.util.Locale;
 import java.util.Properties;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -18,6 +20,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.gs.photos.serializers.ExchangedDataSerializer;
@@ -27,6 +31,10 @@ import com.workflow.model.ExchangedTiffData;
 @PropertySource("file:${user.home}/config/application.properties")
 public abstract class AbstractApplicationConfig {
 
+	private static final String             IGNITE_SPRING_BEAN                           = "ignite-spring-bean";
+
+	private static final String             CONFIG_CLUSTER_CLIENT_XML                    = "config/cluster-client.xml";
+
 	protected static final org.slf4j.Logger LOGGER                                       = LoggerFactory
 			.getLogger(AbstractApplicationConfig.class);
 
@@ -35,6 +43,8 @@ public abstract class AbstractApplicationConfig {
 	public final static String              KAFKA_STRING_DESERIALIZER                    = org.apache.kafka.common.serialization.StringDeserializer.class
 			.getName();
 	public final static String              KAFKA_STRING_SERIALIZER                      = org.apache.kafka.common.serialization.StringSerializer.class
+			.getName();
+	public final static String              KAFKA_LONG_SERIALIZER                        = org.apache.kafka.common.serialization.LongSerializer.class
 			.getName();
 	public final static String              KAFKA_BYTES_DESERIALIZER                     = org.apache.kafka.common.serialization.ByteArrayDeserializer.class
 			.getName();
@@ -52,6 +62,11 @@ public abstract class AbstractApplicationConfig {
 			.getName();
 	public final static String              HBASE_IMAGE_EXIF_DATA_OF_IMAGES_SERIALIZER   = com.gs.photos.serializers.HbaseExifDataOfImagesSerializer.class
 			.getName();
+	public final static String              HBASE_DATA_OF_IMAGES_DESERIALIZER            = com.gs.photos.serializers.HbaseDataDeserializer.class
+			.getName();
+	public final static String              HBASE_DATA_OF_IMAGES_SERIALIZER              = com.gs.photos.serializers.HbaseDataSerializer.class
+			.getName();
+	public final static String              CACHE_NAME                                   = "start-raw-files";
 	@Value("${application.id}")
 	protected String                        applicationId;
 
@@ -163,10 +178,34 @@ public abstract class AbstractApplicationConfig {
 				"SASL_PLAINTEXT");
 		settings.put("sasl.kerberos.service.name",
 				"kafka");
-		settings.put("key.serializer",
-				"org.apache.kafka.common.serialization.StringSerializer");
-		settings.put("value.serializer",
-				"org.apache.kafka.common.serialization.StringSerializer");
+		settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+				AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
+		settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+				AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER);
+		Producer<String, String> producer = new KafkaProducer<>(settings);
+		return producer;
+	}
+
+	@Bean("producerForPublishingInModeTransactionalOnLongTopic")
+	@ConditionalOnProperty(name = "producer.string.long.transactional", havingValue = "true")
+	public Producer<String, String> producerForPublishingInModeTransactionalOnLongTopic() {
+		Properties settings = new Properties();
+		settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+				this.bootstrapServers);
+		settings.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG,
+				this.transactionId);
+		settings.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,
+				"true");
+		settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG,
+				this.transactionTimeout);
+		settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+				"SASL_PLAINTEXT");
+		settings.put("sasl.kerberos.service.name",
+				"kafka");
+		settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+				AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
+		settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+				AbstractApplicationConfig.KAFKA_LONG_SERIALIZER);
 		Producer<String, String> producer = new KafkaProducer<>(settings);
 		return producer;
 	}
@@ -303,4 +342,17 @@ public abstract class AbstractApplicationConfig {
 		threadPoolTaskExecutor.initialize();
 		return threadPoolTaskExecutor;
 	}
+
+	@Bean
+	@ConditionalOnProperty(name = "ignite.is.used", havingValue = "true")
+	public IgniteCache<String, byte[]> clientCache() {
+		try (
+				AbstractApplicationContext ctx = new FileSystemXmlApplicationContext(
+					AbstractApplicationConfig.CONFIG_CLUSTER_CLIENT_XML)) {
+			ctx.registerShutdownHook();
+			Ignite ignite = (Ignite) ctx.getBean(AbstractApplicationConfig.IGNITE_SPRING_BEAN);
+			return ignite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
+		}
+	}
+
 }

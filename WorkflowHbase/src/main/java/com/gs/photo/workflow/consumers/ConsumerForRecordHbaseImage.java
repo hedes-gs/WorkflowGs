@@ -18,11 +18,10 @@ import com.workflow.model.HbaseImageThumbnail;
 public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<HbaseImageThumbnail>
 		implements IConsumerForRecordHbaseImage {
 
-	private static Logger LOGGER = LogManager.getLogger(
-		ConsumerForRecordHbaseImage.class);
+	private static Logger                           LOGGER = LogManager.getLogger(ConsumerForRecordHbaseImage.class);
 
-	@Value("${topic.exifData}")
-	protected String topic;
+	@Value("${topic.topicImageDataToPersist}")
+	protected String                                topicImageDataToPersist;
 
 	@Autowired
 	protected Consumer<String, HbaseImageThumbnail> consumerToRecordHbaseImage;
@@ -30,20 +29,14 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
 	@Override
 	public void recordIncomingMessageInHbase() {
 		try {
-			LOGGER.info(
-				"Start ConsumerForRecordHbaseImage.recordIncomingMessageInHbase");
-			consumerToRecordHbaseImage.subscribe(
-				Arrays.asList(
-					topic));
-			processMessagesFromTopic(
-				consumerToRecordHbaseImage,
-				HbaseImageThumbnail.class);
+			ConsumerForRecordHbaseImage.LOGGER.info("Start ConsumerForRecordHbaseImage.recordIncomingMessageInHbase");
+			this.consumerToRecordHbaseImage.subscribe(Arrays.asList(this.topicImageDataToPersist));
+			this.processMessagesFromTopic(this.consumerToRecordHbaseImage);
 		} catch (WakeupException e) {
-			LOGGER.warn(
-				"Error ",
-				e);
+			ConsumerForRecordHbaseImage.LOGGER.warn("Error ",
+					e);
 		} finally {
-			consumerToRecordHbaseImage.close();
+			this.consumerToRecordHbaseImage.close();
 		}
 	}
 
