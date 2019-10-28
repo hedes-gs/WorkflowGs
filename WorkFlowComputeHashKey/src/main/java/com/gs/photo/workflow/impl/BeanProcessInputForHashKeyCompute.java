@@ -1,8 +1,13 @@
 package com.gs.photo.workflow.impl;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
@@ -25,13 +30,12 @@ import com.gs.photo.workflow.IProcessInputForHashKeyCompute;
 @Service
 public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
 
-	protected final Logger LOGGER = LoggerFactory.getLogger(
-		IProcessInputForHashKeyCompute.class);
+	protected final Logger             LOGGER = LoggerFactory.getLogger(IProcessInputForHashKeyCompute.class);
 	@Value("${topic.scan-output}")
-	protected String topicScanOutput;
+	protected String                   topicScanOutput;
 
-	@Value("${topic.hashkey-output}")
-	protected String topicHashKeyOutput;
+	@Value("${topic.topicFileHashKey}")
+	protected String                   topicHashKeyOutput;
 
 	@Autowired
 	@Qualifier("consumerForTopicWithStringKey")
@@ -41,61 +45,64 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 	protected Producer<String, String> producerForPublishingOnStringTopic;
 
 	@Autowired
-	protected IBeanTaskExecutor beanTaskExecutor;
+	protected IIgniteDAO               igniteDAO;
 
 	@Autowired
-	protected IBeanImageFileHelper beanImageFileHelper;
+	protected IBeanTaskExecutor        beanTaskExecutor;
+
+	@Autowired
+	protected IBeanImageFileHelper     beanImageFileHelper;
 
 	@PostConstruct
 	public void init() {
-		beanTaskExecutor.execute(
-			() -> processIncomingFile());
+		this.beanTaskExecutor.execute(() -> this.processIncomingFile());
 	}
 
 	protected void processIncomingFile() {
-		LOGGER.debug(
-			"Starting processing key ");
-		consumerForTopicWithStringKey.subscribe(
-			Arrays.asList(
-				topicScanOutput));
-		LOGGER.debug(
-			"Subscribing done on topic {}",
-			topicScanOutput);
+		this.LOGGER.debug("Starting processing key ");
+		this.consumerForTopicWithStringKey.subscribe(Arrays.asList(this.topicScanOutput));
+		this.LOGGER.debug("Subscribing done on topic {}",
+				this.topicScanOutput);
+		Map<String, Path> metrics = new HashMap<String, Path>();
+
 		while (true) {
 			try {
-				ConsumerRecords<String, String> records = consumerForTopicWithStringKey.poll(
-					100);
-				records.forEach(
-					(r) -> {
-						try {
-							String key = beanImageFileHelper.computeHashKey(
-								Paths.get(
-									r.key()));
-							LOGGER.info(
-								"[EVENT][{}] Compute hashkey {}",
-								r.key(),
-								key);
-							producerForPublishingOnStringTopic.send(
-								new ProducerRecord<String, String>(topicHashKeyOutput, key, r.value()));
-						} catch (IOException e) {
-							LOGGER.error(
-								"[EVENT][{}] Error when processing key",
+				metrics.clear();
+				ConsumerRecords<String, String> records = this.consumerForTopicWithStringKey
+						.poll(Duration.ofMillis(500));
+				records.forEach((r) -> {
+					try {
+						final Path path = Paths.get(r.key());
+						ByteBuffer rawFile = this.beanImageFileHelper.readFirstBytesOfFile(path);
+						String key = this.beanImageFileHelper.computeHashKey(rawFile);
+						this.igniteDAO.save(key,
+								rawFile);
+						this.producerForPublishingOnStringTopic
+								.send(new ProducerRecord<String, String>(this.topicHashKeyOutput, key, r.value()));
+						metrics.put(key,
+								path);
+
+					} catch (IOException e) {
+						this.LOGGER.error("[EVENT][{}] Error when processing key",
 								r.key(),
 								e);
-						}
-					});
-				producerForPublishingOnStringTopic.flush();
-				consumerForTopicWithStringKey.commitSync();
+					}
+				});
+				this.producerForPublishingOnStringTopic.flush();
+				this.consumerForTopicWithStringKey.commitSync();
+				metrics.entrySet().forEach((e) -> {
+					this.LOGGER.info("[EVENT][{}] Compute hashkey for path {}",
+							e.getKey(),
+							e.getValue());
+				});
 
 			} catch (InterruptException e) {
-				LOGGER.error(
-					"[EVENT][{}] Error when processing ",
-					e);
+				this.LOGGER.error("[EVENT][{}] Error when processing ",
+						e);
 				break;
 			} catch (Exception e) {
-				LOGGER.error(
-					"[EVENT][{}] Error when processing ",
-					e);
+				this.LOGGER.error("[EVENT][{}] Error when processing ",
+						e);
 
 			}
 		}

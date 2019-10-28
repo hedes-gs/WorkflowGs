@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -21,110 +22,87 @@ import com.workflow.model.HbaseImageThumbnail;
 @Component
 public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> {
 
-	private static final byte[] FAMILY_THB_BYTES = "thb".getBytes();
-	private static final byte[] FAMILY_SZ_BYTES = "sz".getBytes();
-	private static final byte[] FAMILY_IMG_BYTES = "img".getBytes();
+	private static final byte[]                         FAMILY_THB_BYTES = "thb".getBytes();
+	private static final byte[]                         FAMILY_SZ_BYTES  = "sz".getBytes();
+	private static final byte[]                         FAMILY_IMG_BYTES = "img".getBytes();
 
-	private static final byte[] HEIGHT_BYTES = "height".getBytes();
-	private static final byte[] WIDTH_BYTES = "width".getBytes();
-	private static final byte[] PATH_BYTES = "path".getBytes();
-	private static final byte[] TUMB_NAME_BYTES = "thumb_name".getBytes();
-	private static final byte[] IMAGE_NAME_BYTES = "image_name".getBytes();
-	private static final byte[] TUMBNAIL_BYTES = "thumbnail".getBytes();
+	private static final byte[]                         HEIGHT_BYTES     = "height".getBytes();
+	private static final byte[]                         WIDTH_BYTES      = "width".getBytes();
+	private static final byte[]                         PATH_BYTES       = "path".getBytes();
+	private static final byte[]                         TUMB_NAME_BYTES  = "thumb_name".getBytes();
+	private static final byte[]                         IMAGE_NAME_BYTES = "image_name".getBytes();
+	private static final byte[]                         TUMBNAIL_BYTES   = "thumbnail".getBytes();
 
 	@Value("${hbase.table.prefix}")
-	protected String tablePrefix;
+	protected String                                    tablePrefix;
 
 	protected HbaseDataInformation<HbaseImageThumbnail> hbaseDataInformation;
-	protected TableName tableName;
+	protected TableName                                 tableName;
 
 	@PostConstruct
 	protected void init() throws IOException {
-		this.hbaseDataInformation = new HbaseDataInformation<>(HbaseImageThumbnail.class, tablePrefix);
-		buildHbaseDataInformation(
-			HbaseImageThumbnail.class,
-			hbaseDataInformation);
-		tableName = createTableIfNeeded(
-			hbaseDataInformation);
-		hbaseDataInformation.setTable(
-			tableName);
+		this.hbaseDataInformation = new HbaseDataInformation<>(HbaseImageThumbnail.class, this.tablePrefix);
+		AbstractDAO.buildHbaseDataInformation(HbaseImageThumbnail.class,
+				this.hbaseDataInformation);
+		this.tableName = this.createTableIfNeeded(this.hbaseDataInformation);
+		this.hbaseDataInformation.setTable(this.tableName);
 	}
 
-	public void put(HbaseImageThumbnail[] hbaseData) {
-		super.put(
-			hbaseData,
-			hbaseDataInformation);
+	public void put(Collection<HbaseImageThumbnail> hbaseData) {
+		super.put(hbaseData,
+				this.hbaseDataInformation);
 	}
 
 	public void put(HbaseImageThumbnail hbaseData) {
-		super.put(
-			hbaseData,
-			hbaseDataInformation);
+		super.put(hbaseData,
+				this.hbaseDataInformation);
 	}
 
 	public void delete(HbaseImageThumbnail[] hbaseData) {
-		super.delete(
-			hbaseData,
-			hbaseDataInformation);
+		super.delete(hbaseData,
+				this.hbaseDataInformation);
 	}
 
 	public void delete(HbaseImageThumbnail hbaseData) {
-		super.delete(
-			hbaseData,
-			hbaseDataInformation);
+		super.delete(hbaseData,
+				this.hbaseDataInformation);
 	}
 
 	public HbaseImageThumbnail get(HbaseImageThumbnail hbaseData) {
-		return super.get(
-			hbaseData,
-			hbaseDataInformation);
+		return super.get(hbaseData,
+				this.hbaseDataInformation);
 	}
 
 	public List<HbaseImageThumbnail> getThumbNailsByDate(LocalDateTime firstDate, LocalDateTime lastDate, long minWidth,
 			long minHeight) {
 		List<HbaseImageThumbnail> retValue = new ArrayList<>();
-		final long firstDateEpochMillis = firstDate.toInstant(
-			ZoneOffset.ofTotalSeconds(
-				0)).toEpochMilli();
-		final long mastDateEpochMilli = lastDate.toInstant(
-			ZoneOffset.ofTotalSeconds(
-				0)).toEpochMilli();
-		try (Table table = connection.getTable(
-			hbaseDataInformation.getTable())) {
+		final long firstDateEpochMillis = firstDate.toInstant(ZoneOffset.ofTotalSeconds(0)).toEpochMilli();
+		final long mastDateEpochMilli = lastDate.toInstant(ZoneOffset.ofTotalSeconds(0)).toEpochMilli();
+		try (
+				Table table = this.connection.getTable(this.hbaseDataInformation.getTable())) {
 			Scan scan = new Scan();
-			scan.addColumn(
-				FAMILY_IMG_BYTES,
-				IMAGE_NAME_BYTES);
-			scan.addColumn(
-				FAMILY_IMG_BYTES,
-				TUMB_NAME_BYTES);
-			scan.addColumn(
-				FAMILY_IMG_BYTES,
-				PATH_BYTES);
-			scan.addColumn(
-				FAMILY_SZ_BYTES,
-				WIDTH_BYTES);
-			scan.addColumn(
-				FAMILY_SZ_BYTES,
-				HEIGHT_BYTES);
-			scan.addColumn(
-				FAMILY_THB_BYTES,
-				TUMBNAIL_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
+					HbaseImageThumbnailDAO.IMAGE_NAME_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
+					HbaseImageThumbnailDAO.TUMB_NAME_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
+					HbaseImageThumbnailDAO.PATH_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES,
+					HbaseImageThumbnailDAO.WIDTH_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES,
+					HbaseImageThumbnailDAO.HEIGHT_BYTES);
+			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_THB_BYTES,
+					HbaseImageThumbnailDAO.TUMBNAIL_BYTES);
 
-			scan.setFilter(
-				new FilterRowByLongAtAGivenOffset(0, firstDateEpochMillis, mastDateEpochMilli));
-			ResultScanner rs = table.getScanner(
-				scan);
-			rs.forEach(
-				(t) -> {
+			scan.setFilter(new FilterRowByLongAtAGivenOffset(0, firstDateEpochMillis, mastDateEpochMilli));
+			ResultScanner rs = table.getScanner(scan);
+			rs.forEach((t) -> {
 
-					HbaseImageThumbnail instance = new HbaseImageThumbnail();
-					retValue.add(
-						instance);
-					hbaseDataInformation.build(
-						instance,
+				HbaseImageThumbnail instance = new HbaseImageThumbnail();
+				retValue.add(instance);
+				this.hbaseDataInformation.build(instance,
 						t);
-				});
+			});
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}

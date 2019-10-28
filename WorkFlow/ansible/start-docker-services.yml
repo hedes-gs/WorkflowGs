@@ -1,0 +1,36 @@
+###########################################################################################################################
+# DO Community Playbooks
+# Playbook: Installing Docker and Creating Containers on Ubuntu 18.04
+# Based on: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04
+# Guide: https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-18-04
+###########################################################################################################################
+
+---
+- hosts: 192.168.1.206
+  become: true
+  vars:
+    ansible_become_pass: granada01
+
+  tasks:
+
+    - name: run jenkins
+      shell: "docker run  --network=host -u root   --rm   -d   -p 8080:8080   -p 50000:50000   -v jenkins-data:/var/jenkins_home   -v /var/run/docker.sock:/var/run/docker.sock   jenkinsci/blueocean"
+      ignore_errors: yes
+
+    - name: run git
+      shell: "docker run --detach   --hostname 192.168.1.206  --publish 8443:443 --publish 8082:80 --publish 8022:22   --name gitlab-linode   --restart always   --volume /srv/gitlab/config:/etc/gitlab   --volume /srv/gitlab/logs:/var/log/gitlab   --volume /srv/gitlab/data:/var/opt/gitlab   --env GITLAB_OMNIBUS_CONFIG=\"external_url 'https://192.168.1.206/';\"   gitlab/gitlab-ee:latest"
+      ignore_errors: yes
+
+    - name: prometheus
+      shell: "docker run -p 9090:9090 -v /home/prometheus:/etc/prometheus   prom/prometheus --config.file=/etc/prometheus/prometheus.yml"
+      ignore_errors: yes
+
+    - name: nexus"
+      shell: "docker run -d -p 8081:8081 –name nexus sonatype/nexus:oss"
+      ignore_errors: yes
+      
+    - name: "grafana"
+      shell: "docker run -d -p 3000:3000 grafana/grafana"
+      ignore_errors: yes
+    
+      

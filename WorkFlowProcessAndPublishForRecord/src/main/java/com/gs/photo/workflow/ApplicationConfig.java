@@ -2,7 +2,6 @@ package com.gs.photo.workflow;
 
 import java.io.UnsupportedEncodingException;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -37,13 +36,17 @@ import com.workflow.model.storm.FinalImage;
 @PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-	private static final Logger     LOGGER                      = LoggerFactory.getLogger(ApplicationConfig.class);
-	public static final int         JOIN_WINDOW_TIME            = 86400;
-	public static final short       EXIF_CREATION_DATE_ID       = (short) 0x9003;
-	private final DateTimeFormatter FORMATTER_FOR_CREATION_DATE = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");
+	private static final byte[] EMPTY_ARRAY_BYTE      = new byte[] {};
+	private static final String NOT_SET               = "<not set>";
+	private static final Logger LOGGER                = LoggerFactory.getLogger(ApplicationConfig.class);
+	public static final int     JOIN_WINDOW_TIME      = 86400;
+	public static final short   EXIF_CREATION_DATE_ID = (short) 0x9003;
 
 	@Value("${topic.topicDupFilteredFile}")
-	protected String                topicDupFilteredFile;
+	protected String            topicDupFilteredFile;
+
+	@Value("${topic.topicCountOfImagesPerDate}")
+	protected String            topicCountOfImagesPerDate;
 
 	@Bean
 	public Properties kafkaStreamProperties() {
@@ -84,7 +87,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 					boolean b = exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID;
 					return b;
 				}).map((k, v) -> {
-					return new KeyValue<String, ExchangedTiffData>(k, v);
+					String key = k.substring(0,
+							k.indexOf("-EXIF"));
+					return new KeyValue<String, ExchangedTiffData>(key, v);
 				});
 
 		KStream<String, HbaseImageThumbnail> jointureToFindTheCreationDate = filteredImageKStreamForCreationDate.join(
@@ -101,7 +106,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 			return this.splitCreationDateToYearMonthDayAndHour(value);
 		});
 
-		imageCountsStream.to(this.topicImageDate,
+		imageCountsStream.to(this.topicCountOfImagesPerDate,
 				Produced.with(Serdes.String(),
 						Serdes.Long()));
 
@@ -118,6 +123,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 		KStream<String, HbaseImageThumbnail> final2Stream = finalStream.join(pathOfImageKStream,
 				(v_hbaseImageThumbnail, v_path) -> {
 					v_hbaseImageThumbnail.setPath(v_path);
+					final String imageName = v_path.substring(v_path.lastIndexOf("/"));
+					v_hbaseImageThumbnail.setImageName(imageName);
+					v_hbaseImageThumbnail.setThumbName(imageName);
 					return v_hbaseImageThumbnail;
 				},
 				JoinWindows.of(ApplicationConfig.JOIN_WINDOW_TIME),
@@ -147,7 +155,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	private HbaseImageThumbnail buildHBaseImageThumbnail(ExchangedTiffData key, String value) {
 		HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
 		try {
-			builder.withImageId(key.getImageId())
+			builder.withImageName(ApplicationConfig.NOT_SET).withPath(ApplicationConfig.NOT_SET)
+					.withThumbnail(ApplicationConfig.EMPTY_ARRAY_BYTE).withThumbName(ApplicationConfig.NOT_SET)
+					.withImageId(key.getImageId())
 					.withCreationDate(DateTimeHelper.toEpochMillis(new String(key.getDataAsByte(), "UTF-8").trim()));
 		} catch (UnsupportedEncodingException e) {
 			ApplicationConfig.LOGGER.error("unsupported charset ",
@@ -192,7 +202,12 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	protected KStream<String, FinalImage> buildKStreamToGetThumbImages(StreamsBuilder streamsBuilder) {
 		KStream<String, FinalImage> stream = streamsBuilder.stream(this.topicTransformedThumb,
 				Consumed.with(Serdes.String(),
-						new FinalImageSerDe()));
+						new FinalImageSerDe()))
+				.map((k_string, v_finalImage) -> {
+					String newKey = k_string.substring(0,
+							k_string.indexOf("-IMG-"));
+					return new KeyValue<String, FinalImage>(newKey, v_finalImage);
+				});
 		return stream;
 	}
 

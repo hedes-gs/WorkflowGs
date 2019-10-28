@@ -57,7 +57,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
 	private static final int                HEIGHT          = 768;
 	private static final int                WIDTH           = 1024;
 	private static final byte[]             COMPRESSED_DATA = new byte[] { 0, 1, 2, 3, 4 };
-	private static final String             EXIF_DATE       = "2019-10-16 22:12:00.123";
+	private static final String             EXIF_DATE       = "2019:10:16 22:12:00";
 	protected Properties                    props           = new Properties();;
 
 	@Autowired
@@ -75,7 +75,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
 	@Value("${topic.topicTransformedThumb}")
 	protected String                        topicTransformedThumb;
 
-	@Value("${topic.topicImageDate}")
+	@Value("${topic.topicCountOfImagesPerDate}")
 	protected String                        topicImageDate;
 
 	public static void setUpBeforeClass() throws Exception {
@@ -598,10 +598,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
 		FinalImage.Builder builder = FinalImage.builder();
 		builder.withHeight(TestWfProcessAndPublishExifDataOfImages.HEIGHT)
 				.withWidth(TestWfProcessAndPublishExifDataOfImages.WIDTH)
-				.withCompressedData(TestWfProcessAndPublishExifDataOfImages.COMPRESSED_DATA).withOriginal(true);
+				.withCompressedData(TestWfProcessAndPublishExifDataOfImages.COMPRESSED_DATA).withOriginal(true)
+				.withId("id");
 		FinalImage finalImage = builder.build();
 		ConsumerRecord<byte[], byte[]> inputDupFilteredFile = factoryForFinalImage.create(this.topicTransformedThumb,
-				key,
+				key + "-IMG-" + "xxx",
 				finalImage);
 		return inputDupFilteredFile;
 	}
@@ -619,11 +620,12 @@ public class TestWfProcessAndPublishExifDataOfImages {
 			ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData, final String key) {
 		ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
 		builder.withDataAsByte(TestWfProcessAndPublishExifDataOfImages.EXIF_DATE.getBytes(Charset.forName("UTF-8")))
-				.withFieldType(FieldType.IFD).withId("<id>").withImageId(key).withIntId(1).withKey("<key>")
-				.withLength(1234).withTag(ApplicationConfig.EXIF_CREATION_DATE_ID).withTotal(150);
+				.withFieldType(FieldType.IFD).withId("<id>").withImageId(key).withIntId(1)
+				.withKey(key + "-EXIF-" + "xxx").withLength(1234).withTag(ApplicationConfig.EXIF_CREATION_DATE_ID)
+				.withTotal(150);
 		final ExchangedTiffData exchangedTiffData = builder.build();
 		ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData.create(this.topicExif,
-				key,
+				key + "-EXIF-" + "xxx",
 				exchangedTiffData);
 		return inputExchangedTiffData;
 	}

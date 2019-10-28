@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.log4j.Logger;
 import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
@@ -24,10 +24,9 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	protected Map<String, Object> windowConfiguration;
 
-	private static final String IS_NORMALIZED = "isNormalized";
-	private static final String ORIGINAL_IMAGE = "originalImage";
-	protected static final Logger LOGGER = Logger.getLogger(
-		FinalImageBolt.class);
+	private static final String   IS_NORMALIZED  = "isNormalized";
+	private static final String   ORIGINAL_IMAGE = "originalImage";
+	protected static final Logger LOGGER         = Logger.getLogger(FinalImageBolt.class);
 
 	public static class Dim {
 		protected final short width;
@@ -42,31 +41,30 @@ public class FinalImageBolt extends BaseWindowedBolt {
 		}
 
 		public short getWidth() {
-			return width;
+			return this.width;
 		}
 
 		public short getHeight() {
-			return height;
+			return this.height;
 		}
 
 		@Override
 		public String toString() {
-			return "Dim [width=" + width + ", height=" + height + "]";
+			return "Dim [width=" + this.width + ", height=" + this.height + "]";
 		}
 
 	}
 
-	private static final long serialVersionUID = 1;
-	private OutputCollector collector;
-	protected Properties settings = new Properties();
+	private static final long              serialVersionUID = 1;
+	private OutputCollector                collector;
+	protected Properties                   settings         = new Properties();
 	protected Producer<String, FinalImage> producer;
-	protected String kafkaBrokers;
-	protected String outputTopic;
-	protected int windowLength;
+	protected String                       kafkaBrokers;
+	protected String                       outputTopic;
+	protected int                          windowLength;
 
 	protected Dim get(byte[] jpeg_thumbnail) {
-		ByteBuffer buffer = ByteBuffer.wrap(
-			jpeg_thumbnail);
+		ByteBuffer buffer = ByteBuffer.wrap(jpeg_thumbnail);
 		short imgHeight = 0;
 		short imgWidth = 0;
 		short SOIThumbnail = buffer.getShort();
@@ -76,11 +74,10 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			while (!finished) {
 				short marker = buffer.getShort();
 				found = marker == (short) 0xffc0;
-				finished = found || buffer.position() >= jpeg_thumbnail.length;
+				finished = found || (buffer.position() >= jpeg_thumbnail.length);
 				if (!finished) {
 					short lengthOfMarker = buffer.getShort();
-					buffer.position(
-						buffer.position() + lengthOfMarker - 2);
+					buffer.position((buffer.position() + lengthOfMarker) - 2);
 				}
 			}
 			if (found) {
@@ -98,28 +95,23 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
 
-		settings.put(
-			StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-			kafkaBrokers);
-		settings.put(
-			"key.serializer",
-			"org.apache.kafka.common.serialization.StringSerializer");
-		settings.put(
-			"value.serializer",
-			FinalImageSerializer.class.getName());
-		producer = new KafkaProducer<>(settings);
-		windowConfiguration = new HashMap<>();
-		buildComponentConfiguration();
+		this.settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
+				this.kafkaBrokers);
+		this.settings.put("key.serializer",
+				"org.apache.kafka.common.serialization.StringSerializer");
+		this.settings.put("value.serializer",
+				FinalImageSerializer.class.getName());
+		this.producer = new KafkaProducer<>(this.settings);
+		this.windowConfiguration = new HashMap<>();
+		this.buildComponentConfiguration();
 
 	}
 
 	protected void buildComponentConfiguration() {
-		windowConfiguration.put(
-			Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
-			windowLength);
-		windowConfiguration.put(
-			Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
-			1);
+		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
+				this.windowLength);
+		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
+				1);
 	}
 
 	@Override
@@ -138,8 +130,8 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 		}
 		this.windowConfiguration = retValue;
-		buildComponentConfiguration();
-		return windowConfiguration;
+		this.buildComponentConfiguration();
+		return this.windowConfiguration;
 	}
 
 	public FinalImageBolt(
@@ -156,39 +148,29 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	@Override
 	public void execute(TupleWindow inputWindow) {
 
-		inputWindow.get().forEach(
-			(input) -> {
-				FinalImage finalImage = null;
+		inputWindow.get().forEach((input) -> {
+			FinalImage finalImage = null;
 
-				FinalImage currentImage = (FinalImage) input.getValueByField(
-					ORIGINAL_IMAGE);
-				boolean isNormalized = input.getBooleanByField(
-					IS_NORMALIZED);
-				Dim dim = get(
-					currentImage.getCompressedImage());
+			FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.ORIGINAL_IMAGE);
+			boolean isNormalized = input.getBooleanByField(FinalImageBolt.IS_NORMALIZED);
+			Dim dim = this.get(currentImage.getCompressedImage());
+			FinalImage.Builder builder = FinalImage.builder();
+			builder.withCompressedData(currentImage.getCompressedImage()).withHeight(dim.getHeight())
+					.withWidth(dim.getWidth()).withOriginal(isNormalized).withId(currentImage.getId());
+			finalImage = builder.build();
+			FinalImageBolt.LOGGER.info(" sending final image input " + finalImage);
+			this.producer
+					.send(new ProducerRecord<String, FinalImage>(this.outputTopic, finalImage.getId(), finalImage));
 
-				finalImage = new FinalImage(
-					currentImage.getId(),
-					isNormalized,
-					dim.getWidth(),
-					dim.getHeight(),
-					currentImage.getCompressedImage());
-				LOGGER.info(
-					" sending final image input " + finalImage);
-				producer.send(
-					new ProducerRecord<String, FinalImage>(outputTopic, finalImage.getId(), finalImage));
-
-			});
-		producer.flush();
-		inputWindow.get().forEach(
-			(input) -> {
-				collector.ack(
-					input);
-			});
+		});
+		this.producer.flush();
+		inputWindow.get().forEach((input) -> {
+			this.collector.ack(input);
+		});
 	}
 
 	public String getKafkaBrokers() {
-		return kafkaBrokers;
+		return this.kafkaBrokers;
 	}
 
 	public void setKafkaBrokers(String kafkaBrokers) {
@@ -196,7 +178,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	}
 
 	public String getOutputTopic() {
-		return outputTopic;
+		return this.outputTopic;
 	}
 
 	public void setOutputTopic(String outputTopic) {
@@ -204,7 +186,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	}
 
 	public int getWindowLength() {
-		return windowLength;
+		return this.windowLength;
 	}
 
 	public void setWindowLength(int windowLength) {

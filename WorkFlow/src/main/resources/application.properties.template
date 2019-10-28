@@ -14,6 +14,10 @@ topic.topicImageDate=topic-topic-image-date
 topic.topicDupDilteredFile=topic-dup-filtered-file
 topic.topicCopyOtherFile=topic-copy-other-file
 topic.scan-output-child-parent=topic-scan-output-file-child-with-parent
+topic.topicTransformedThumb=topic-transformed-thumb
+topic.topicImageDataToPersist=topic-image-data-to-persist
+topic.topicExifImageDataToPersist=topic-exif-image-data-to-persist
+
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
 
@@ -23,7 +27,6 @@ copy.group.id=copy-group-transactional
 zookeeper.hosts={{zookeeper_hosts}}
 hbase.master={{hbase_master}}
 zookeeper.port={{zookeeper_port}}
-
 bootstrap.servers={{ kafka_bootstrap_servers }}
 kafkaStreamDir.dir={{ kafka_stream_dir }}
 application.id={{ application_id }}_{{ host_id }}
@@ -45,3 +48,4 @@ hbase.table.prefix=prod
 #Configuration
 consumer.string.string={{ consumer_string_string }}
 producer.string.string={{ producer_string_string }}
+ignite.is.used={{ignite_is_used}}

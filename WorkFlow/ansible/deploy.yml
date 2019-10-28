@@ -61,6 +61,12 @@
         dest: ~{{ user_to_create }}/config/{{ user_to_create }}.keytab
         owner: "{{ user_to_create }}"
         mode: 0600
+    - name: Deploy cluster-client.xml
+      copy:
+        src: ../../WorkFlow/ansible/tools/ignite/cluster-client.xml
+        dest: ~{{ user_to_create }}/config/cluster-client.xml
+        owner: "{{ user_to_create }}"
+        mode: 0644
     - name: Copy jars
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
