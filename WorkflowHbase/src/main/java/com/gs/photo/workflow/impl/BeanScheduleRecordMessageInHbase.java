@@ -13,39 +13,29 @@ import com.gs.photo.workflow.IBeanScheduleRecordMessageInHbase;
 import com.gs.photo.workflow.IBeanTaskExecutor;
 import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseExif;
 import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseImage;
-import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseImageExif;
 
 @Component
 @ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class BeanScheduleRecordMessageInHbase implements IBeanScheduleRecordMessageInHbase {
 
-	protected static final Logger LOGGER = Logger.getLogger(
-		BeanScheduleRecordMessageInHbase.class);
+	protected static final Logger          LOGGER = Logger.getLogger(BeanScheduleRecordMessageInHbase.class);
 
 	@Autowired
 	protected IConsumerForRecordHbaseImage consumerForRecordHbaseImage;
 
 	@Autowired
-	protected IConsumerForRecordHbaseExif consumerForRecordHbaseExif;
+	protected IConsumerForRecordHbaseExif  consumerForRecordHbaseExif;
 
 	@Autowired
-	protected IConsumerForRecordHbaseImageExif consumerForRecordHbaseImageExif;
-
-	@Autowired
-	protected IBeanTaskExecutor beanTaskExecutor;
+	protected IBeanTaskExecutor            beanTaskExecutor;
 
 	@PostConstruct
 	public void init() {
-		beanTaskExecutor.executeRunnables(
-			Arrays.asList(
+		this.beanTaskExecutor.executeRunnables(Arrays.asList(() -> {
+			this.consumerForRecordHbaseImage.recordIncomingMessageInHbase();
+		},
 				() -> {
-					consumerForRecordHbaseImage.recordIncomingMessageInHbase();
-				},
-				() -> {
-					consumerForRecordHbaseImageExif.recordIncomingMessageInHbase();
-				},
-				() -> {
-					consumerForRecordHbaseExif.recordIncomingMessageInHbase();
+					this.consumerForRecordHbaseExif.recordIncomingMessageInHbase();
 				}));
 	}
 

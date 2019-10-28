@@ -26,9 +26,9 @@ import com.gs.photo.workflow.IBeanImageFileHelper;
 @Component
 public class BeanImageFileHelper implements IBeanImageFileHelper {
 
-	protected static final Logger LOGGER = LoggerFactory.getLogger(
-		BeanImageFileHelper.class);
-	private static final int NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
+	protected static final Logger LOGGER                               = LoggerFactory
+			.getLogger(BeanImageFileHelper.class);
+	private static final int      NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
 
 	@Override
 	public void waitForCopyComplete(Path filePath) {
@@ -37,63 +37,52 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
 		do {
 			k = f.length();
 			try {
-				Thread.sleep(
-					10);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 			}
 		} while (k != f.length());
 	}
 
 	@Override
-	public String computeHashKey(Path filePath) throws IOException {
-		try {
-			FileChannel fileChannel = FileChannel.open(
-				filePath,
-				StandardOpenOption.READ);
-			ByteBuffer byteBuffer = ByteBuffer.allocate(
-				NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
-			fileChannel.read(
-				byteBuffer);
-			final String key = Hashing.sha512().newHasher().putBytes(
-				byteBuffer.array()).hash().toString();
-			byteBuffer.clear();
-			byteBuffer = null;
-			return key;
+	public ByteBuffer readFirstBytesOfFile(Path filePath) throws IOException {
+		try (
+				FileChannel fileChannel = FileChannel.open(filePath,
+						StandardOpenOption.READ)) {
+			ByteBuffer byteBuffer = ByteBuffer.allocate(BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+			fileChannel.read(byteBuffer);
+			return byteBuffer;
 		} catch (IOException e) {
-			LOGGER.error(
-				"unable to compute hash key for " + filePath,
-				e);
+			BeanImageFileHelper.LOGGER.error("unable to compute hash key for " + filePath,
+					e);
 			throw e;
 		}
+
+	}
+
+	@Override
+	public String computeHashKey(ByteBuffer byteBuffer) {
+		final String key = Hashing.sha512().newHasher().putBytes(byteBuffer.array()).hash().toString();
+		byteBuffer.clear();
+		byteBuffer = null;
+		return key;
 	}
 
 	@Override
 	public String getFullPathName(Path filePath) {
 		try {
 			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-			List<NetworkInterface> niList = Collections.list(
-				interfaces);
-			String addresses = niList.stream().flatMap(
-				(ni) -> {
-					List<InetAddress> addressesList = Collections.list(
-						ni.getInetAddresses());
-					String adressList = addressesList.stream().flatMap(
-						(ia) -> !Strings.isNullOrEmpty(
-							ia.getHostAddress()) ? Stream.of(
-								ia.getHostAddress()) : null)
-							.collect(
-								Collectors.joining(
-									","));
-					return adressList.length() > 0 ? Stream.of(
-						adressList) : null;
-				}).collect(
-					Collectors.joining(
-						","));
+			List<NetworkInterface> niList = Collections.list(interfaces);
+			String addresses = niList.stream().flatMap((ni) -> {
+				List<InetAddress> addressesList = Collections.list(ni.getInetAddresses());
+				String adressList = addressesList.stream().flatMap(
+						(ia) -> !Strings.isNullOrEmpty(ia.getHostAddress()) ? Stream.of(ia.getHostAddress()) : null)
+						.collect(Collectors.joining(","));
+				return adressList.length() > 0 ? Stream.of(adressList) : null;
+			}).collect(Collectors.joining(","));
 			return "[" + addresses + "]@" + filePath.toAbsolutePath();
 		} catch (SocketException e) {
-			LOGGER.error(
-				"unable to getFullPathName for " + filePath,
-				e);
+			BeanImageFileHelper.LOGGER.error("unable to getFullPathName for " + filePath,
+					e);
 			throw new RuntimeException("unable to getFullPathName for " + filePath, e);
 		}
 	}
