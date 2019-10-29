@@ -1,7 +1,6 @@
 package com.gs.photo.workflow;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 public interface IBeanImageFileHelper {
@@ -10,8 +9,8 @@ public interface IBeanImageFileHelper {
 
 	public String getFullPathName(Path filePath);
 
-	String computeHashKey(ByteBuffer byteBuffer) throws IOException;
+	String computeHashKey(byte[] byteBuffer) throws IOException;
 
-	ByteBuffer readFirstBytesOfFile(Path filePath) throws IOException;
+	byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException;
 
 }
