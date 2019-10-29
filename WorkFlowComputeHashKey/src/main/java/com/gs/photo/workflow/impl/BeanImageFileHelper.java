@@ -5,10 +5,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -19,6 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
+import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
+import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
+import com.emc.ecs.nfsclient.rpc.CredentialUnix;
 import com.google.common.base.Strings;
 import com.google.common.hash.Hashing;
 import com.gs.photo.workflow.IBeanImageFileHelper;
@@ -44,26 +45,26 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
 	}
 
 	@Override
-	public ByteBuffer readFirstBytesOfFile(Path filePath) throws IOException {
+	public byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException {
+		byte[] retValue = new byte[BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
+		Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
+		Nfs3File file = new Nfs3File(nfs3, filePath);
 		try (
-				FileChannel fileChannel = FileChannel.open(filePath,
-						StandardOpenOption.READ)) {
-			ByteBuffer byteBuffer = ByteBuffer.allocate(BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
-			fileChannel.read(byteBuffer);
-			return byteBuffer;
+				NfsFileInputStream inputStream = new NfsFileInputStream(
+					file,
+					BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
+			inputStream.read(retValue);
 		} catch (IOException e) {
 			BeanImageFileHelper.LOGGER.error("unable to compute hash key for " + filePath,
 					e);
 			throw e;
 		}
-
+		return retValue;
 	}
 
 	@Override
-	public String computeHashKey(ByteBuffer byteBuffer) {
-		final String key = Hashing.sha512().newHasher().putBytes(byteBuffer.array()).hash().toString();
-		byteBuffer.clear();
-		byteBuffer = null;
+	public String computeHashKey(byte[] byteBuffer) {
+		final String key = Hashing.sha512().newHasher().putBytes(byteBuffer).hash().toString();
 		return key;
 	}
 

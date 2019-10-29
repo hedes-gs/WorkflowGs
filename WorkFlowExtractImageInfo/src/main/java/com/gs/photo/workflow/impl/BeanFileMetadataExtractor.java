@@ -1,17 +1,16 @@
 package com.gs.photo.workflow.impl;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.gs.photo.workflow.IFileMetadataExtractor;
+import com.gs.photo.workflow.IIgniteDAO;
 import com.gs.photos.workflow.metadata.AbstractTemplateTag;
 import com.gs.photos.workflow.metadata.FileChannelDataInput;
 import com.gs.photos.workflow.metadata.IFD;
@@ -25,24 +24,29 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
 	public static final int STREAM_HEAD = 0x00;
 
-	private static Logger LOGGER = LoggerFactory.getLogger(IFileMetadataExtractor.class);
+	private static Logger   LOGGER      = LoggerFactory.getLogger(IFileMetadataExtractor.class);
+
+	@Autowired
+	protected IIgniteDAO    iIgniteDAO;
 
 	@Override
-	public Collection<IFD> readIFDs(Path filePath) {
+	public Collection<IFD> readIFDs(String key) {
 		Collection<IFD> allIfds = new ArrayList<>();
-		try (FileChannelDataInput fcdi = new FileChannelDataInput()) {
-			FileChannel fileChannel = FileChannel.open(filePath, StandardOpenOption.READ);
-			fcdi.setFileChannel(fileChannel);
-			int offset = readHeader(fcdi);
+		try (
+				FileChannelDataInput fcdi = new FileChannelDataInput(this.iIgniteDAO.get(key))) {
+
+			int offset = this.readHeader(fcdi);
 			do {
 				AbstractTemplateTag dtp = TemplateTagFactory.create();
-				offset = dtp.createSimpleTiffFields(fcdi, offset);
+				offset = dtp.createSimpleTiffFields(fcdi,
+						offset);
 				allIfds.addAll(dtp.getAllIfds());
 			} while (offset != 0);
-			Collection<IFD> allIFD = getAllIFDs(allIfds);
+			Collection<IFD> allIFD = this.getAllIFDs(allIfds);
 			return allIFD;
 		} catch (IOException e) {
-			LOGGER.error("Error...", e);
+			BeanFileMetadataExtractor.LOGGER.error("Error...",
+					e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -51,14 +55,14 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 		final Collection<IFD> retValue = new ArrayList<>();
 		allIfds.forEach((ifd) -> {
 			retValue.add(ifd);
-			retValue.addAll(getAllIFDs(ifd.getAllChildren()));
+			retValue.addAll(this.getAllIFDs(ifd.getAllChildren()));
 		});
 		return retValue;
 	}
 
 	private int readHeader(FileChannelDataInput rin) throws IOException {
 		int offset = 0;
-		rin.position(STREAM_HEAD);
+		rin.position(BeanFileMetadataExtractor.STREAM_HEAD);
 		short endian = rin.readShort();
 		offset += 2;
 		if (endian == IOUtils.BIG_ENDIAN) {
