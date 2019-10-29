@@ -143,8 +143,10 @@ public class BeanScan implements IScan {
 		BeanScan.LOGGER.info("[EVENT][{}] publish main file from {}",
 				mainFile,
 				this.hostname);
-		this.producerForPublishingOnStringTopic.send(
-				new ProducerRecord<String, String>(this.outputTopic, mainFile, this.hostname + ":" + this.folder));
+		this.producerForPublishingOnStringTopic.send(new ProducerRecord<String, String>(
+			this.outputTopic,
+			mainFile.substring(mainFile.indexOf(this.folder)),
+			this.hostname + ":" + this.folder));
 		this.producerForPublishingOnStringTopic.flush();
 	}
 

@@ -46,6 +46,9 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
 
 	@Override
 	public byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException {
+		BeanImageFileHelper.LOGGER.debug(" readFirstBytesOfFile of {}, {}",
+				filePath,
+				coordinates);
 		byte[] retValue = new byte[BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
 		Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
 		Nfs3File file = new Nfs3File(nfs3, filePath);
