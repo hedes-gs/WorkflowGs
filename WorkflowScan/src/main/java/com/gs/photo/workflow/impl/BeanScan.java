@@ -2,6 +2,7 @@ package com.gs.photo.workflow.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +24,17 @@ import com.gs.photo.workflow.IScan;
 @Component
 public class BeanScan implements IScan {
 
-	protected static final org.slf4j.Logger LOGGER     = LoggerFactory.getLogger(IScan.class);
+	private static final String             EXTENSION_ARW_COMASK   = ".ARW.COMASK";
+
+	private static final String             EXTENSION_ARW_COS      = ".ARW.COS";
+
+	private static final String             EXTENSION_ARW_COP      = ".ARW.COP";
+
+	private static final String             EXTENSION_FILE_ARW_COF = ".ARW.COF";
+
+	private static final String             EXTENSION_FILE_ARW     = ".ARW";
+
+	protected static final org.slf4j.Logger LOGGER                 = LoggerFactory.getLogger(IScan.class);
 
 	@Value("${topic.scan-output}")
 	protected String                        outputTopic;
@@ -37,13 +48,24 @@ public class BeanScan implements IScan {
 	@Autowired
 	protected Producer<String, String>      producerForPublishingOnStringTopic;
 
-	protected Map<String, String>           mapOfFiles = new HashMap<>();
+	protected Map<String, String>           mapOfFiles             = new HashMap<>();
+
+	protected String                        hostname;
 
 	@PostConstruct
 	protected void init() {
-		BeanScan.LOGGER.info("Starting scan at  {}",
-				this.folder);
 		try {
+			String[] splitFolder = this.folder.split("\\:");
+			if ((splitFolder != null) && (splitFolder.length == 2)) {
+				this.hostname = splitFolder[0];
+				this.folder = splitFolder[1];
+			} else {
+				InetAddress ip = InetAddress.getLocalHost();
+				this.hostname = ip.getHostName();
+			}
+			BeanScan.LOGGER.info("Starting scan at  {}",
+					this.folder);
+
 			this.listFiles(Paths.get(this.folder));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -79,7 +101,7 @@ public class BeanScan implements IScan {
 		String extension = currentFileName.substring(currentFileName.indexOf('.'),
 				currentFileName.length());
 		switch (extension.toUpperCase()) {
-		case ".ARW": {
+		case BeanScan.EXTENSION_FILE_ARW: {
 			final String absolutePathOfCurrentFile = entry.toAbsolutePath().toString();
 			final String fileName = entry.toAbsolutePath().getFileName().toString();
 			this.publishMainFile(absolutePathOfCurrentFile);
@@ -87,16 +109,16 @@ public class BeanScan implements IScan {
 					fileName);
 			break;
 		}
-		case ".ARW.COF":
-		case ".ARW.COP": {
+		case BeanScan.EXTENSION_FILE_ARW_COF:
+		case BeanScan.EXTENSION_ARW_COP: {
 			Path parentPath = path.getParent().getParent().getParent();
 			this.publishIfThereIsAMainFile(entry,
 					currentFileName,
 					parentPath);
 			break;
 		}
-		case ".ARW.COS":
-		case ".ARW.COMASK": {
+		case BeanScan.EXTENSION_ARW_COS:
+		case BeanScan.EXTENSION_ARW_COMASK: {
 			Path parentPath = path.getParent().getParent();
 			this.publishIfThereIsAMainFile(entry,
 					currentFileName,
@@ -110,7 +132,7 @@ public class BeanScan implements IScan {
 		String parentFileName = parentPath.toAbsolutePath().toString() + File.separatorChar
 				+ currentFileName.substring(0,
 						currentFileName.indexOf('.'))
-				+ ".ARW";
+				+ BeanScan.EXTENSION_FILE_ARW;
 		if (this.mapOfFiles.containsKey(parentFileName.toUpperCase())) {
 			this.publishSubFile(parentFileName,
 					entry.toAbsolutePath().toString());
@@ -118,10 +140,11 @@ public class BeanScan implements IScan {
 	}
 
 	private void publishMainFile(String mainFile) {
-		BeanScan.LOGGER.info("[EVENT][{}] publish main file ",
-				mainFile);
-		this.producerForPublishingOnStringTopic
-				.send(new ProducerRecord<String, String>(this.outputTopic, mainFile, mainFile));
+		BeanScan.LOGGER.info("[EVENT][{}] publish main file from {}",
+				mainFile,
+				this.hostname);
+		this.producerForPublishingOnStringTopic.send(
+				new ProducerRecord<String, String>(this.outputTopic, mainFile, this.hostname + ":" + this.folder));
 		this.producerForPublishingOnStringTopic.flush();
 	}
 

@@ -1,9 +1,6 @@
 package com.gs.photo.workflow.impl;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import com.gs.photo.workflow.IBeanImageFileHelper;
 import com.gs.photo.workflow.IBeanTaskExecutor;
+import com.gs.photo.workflow.IIgniteDAO;
 import com.gs.photo.workflow.IProcessInputForHashKeyCompute;
 
 @Service
@@ -63,7 +61,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 		this.consumerForTopicWithStringKey.subscribe(Arrays.asList(this.topicScanOutput));
 		this.LOGGER.debug("Subscribing done on topic {}",
 				this.topicScanOutput);
-		Map<String, Path> metrics = new HashMap<String, Path>();
+		Map<String, String> metrics = new HashMap<String, String>();
 
 		while (true) {
 			try {
@@ -72,16 +70,21 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 						.poll(Duration.ofMillis(500));
 				records.forEach((r) -> {
 					try {
-						final Path path = Paths.get(r.key());
-						ByteBuffer rawFile = this.beanImageFileHelper.readFirstBytesOfFile(path);
+						byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(r.key(),
+								r.value());
+						this.LOGGER.info("[EVENT][{}] getting bytes to compute hash key, length is ",
+								r.key(),
+								rawFile.length);
 						String key = this.beanImageFileHelper.computeHashKey(rawFile);
 						this.igniteDAO.save(key,
 								rawFile);
+						this.LOGGER.info("[EVENT][{}] saved in ignite {} ",
+								key,
+								r.value() + "@" + r.key());
 						this.producerForPublishingOnStringTopic
 								.send(new ProducerRecord<String, String>(this.topicHashKeyOutput, key, r.value()));
 						metrics.put(key,
-								path);
-
+								r.key());
 					} catch (IOException e) {
 						this.LOGGER.error("[EVENT][{}] Error when processing key",
 								r.key(),

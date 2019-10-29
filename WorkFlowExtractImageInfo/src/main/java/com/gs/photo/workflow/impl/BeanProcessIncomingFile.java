@@ -1,8 +1,6 @@
 package com.gs.photo.workflow.impl;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -268,7 +266,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
 	protected void processIncomingRecord(ConsumerRecord<String, String> rec,
 			Table<String, String, Object> objectsToSend, Map<String, Integer> metrics) {
-		Path path = Paths.get(rec.value());
 		try {
 
 			BeanProcessIncomingFile.LOGGER.info(
@@ -277,8 +274,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 					rec.topic(),
 					rec.offset(),
 					rec.timestamp(),
-					path.toAbsolutePath());
-			Collection<IFD> metaData = this.beanFileMetadataExtractor.readIFDs(path);
+					rec.key());
+			Collection<IFD> metaData = this.beanFileMetadataExtractor.readIFDs(rec.key());
 			final int nbOfTiffFields = metaData.stream().mapToInt((e) -> e.getTotalNumberOfTiffFields()).sum();
 			final IfdContext context = new IfdContext(nbOfTiffFields);
 			metaData.forEach((ifd) -> this.buildObjectsToSend(rec.key(),
@@ -294,8 +291,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 					context.getCurrentTiffId(),
 					context.getNbOfTiffFields());
 		} catch (Exception e) {
-			BeanProcessIncomingFile.LOGGER.error(
-					"[EVENT][{}] error when processing incoming record " + path.toAbsolutePath(),
+			BeanProcessIncomingFile.LOGGER.error("[EVENT][{}] error when processing incoming record ",
 					rec.key(),
 					e);
 
