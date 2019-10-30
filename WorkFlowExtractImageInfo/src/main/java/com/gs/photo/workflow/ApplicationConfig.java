@@ -7,9 +7,15 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.PropertySource;
 
 import com.gs.photos.serializers.HbaseExifOrImageSerializer;
 
+@Configuration
+@ImportResource("file:${user.home}/config/cluster-client.xml")
+@PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig extends AbstractApplicationConfig {
 
 	public static final String KAFKA_EXIF_OR_IMAGE_SERIALIZER = HbaseExifOrImageSerializer.class.getName();
