@@ -17,6 +17,7 @@ import org.apache.kafka.streams.state.WindowStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -27,28 +28,28 @@ import com.gs.photo.workflow.IStreamsHelper;
 @Component
 public class BeanDuplicateCheck extends AbstractStream implements IDuplicateCheck {
 
-	protected static Logger LOGGER = LoggerFactory.getLogger(
-		IDuplicateCheck.class);
+	protected static Logger  LOGGER = LoggerFactory.getLogger(IDuplicateCheck.class);
 
 	@Autowired
-	protected Properties kafkaStreamProperties;
+	@Qualifier("kafkaStreamProperties")
+	protected Properties     kafkaStreamProperties;
 
 	@Value("${duplicate.storeName}")
-	protected String storeName;
+	protected String         storeName;
 
 	@Value("${topic.topicFileHashKey}")
-	protected String topicFileHashKey;
+	protected String         topicFileHashKey;
 
 	@Value("${topic.duplicateImageFoundTopic}")
-	protected String duplicateImageFoundTopic;
+	protected String         duplicateImageFoundTopic;
 
 	@Value("${topic.topicDupFilteredFile}")
-	protected String topicDupFilteredFile;
+	protected String         topicDupFilteredFile;
 
 	@Autowired
 	protected IStreamsHelper streamsHelper;
 
-	protected KafkaStreams streams;
+	protected KafkaStreams   streams;
 
 	@Override
 	public KafkaStreams buildKafkaStreamsTopology() {
@@ -61,8 +62,7 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 		// decrease the size to purge old windows more frequently at the cost of
 		// potentially missing out
 		// on de-duplicating late-arriving records.
-		long maintainDurationPerEventInMs = TimeUnit.DAYS.toMillis(
-			30);
+		long maintainDurationPerEventInMs = TimeUnit.DAYS.toMillis(30);
 
 		// The number of segments has no impact on "correctness".
 		// Using more segments implies larger overhead but allows for more fined grained
@@ -78,70 +78,56 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 		StreamsBuilder builder = new StreamsBuilder();
 
 		StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
-			Stores.persistentWindowStore(
-				storeName,
-				retentionPeriod,
-				numberOfSegments,
-				maintainDurationPerEventInMs,
-				false),
-			Serdes.String(),
-			Serdes.Long());
+				Stores.persistentWindowStore(this.storeName,
+						retentionPeriod,
+						numberOfSegments,
+						maintainDurationPerEventInMs,
+						false),
+				Serdes.String(),
+				Serdes.Long());
 
-		builder.addStateStore(
-			dedupStoreBuilder);
+		builder.addStateStore(dedupStoreBuilder);
 
-		KStream<String, String> input = builder.stream(
-			topicFileHashKey);
+		KStream<String, String> input = builder.stream(this.topicFileHashKey);
 		Transformer<String, String, KeyValue<String, String>> duplicationTranformer = new DeduplicationTransformer<String, String, String>(
 			maintainDurationPerEventInMs,
 			(key, value) -> key,
-			storeName) {
+			this.storeName) {
 			@Override
 			public KeyValue<String, String> transform(final String key, final String value) {
-				KeyValue<String, String> output = super.transform(
-					key,
-					value);
+				KeyValue<String, String> output = super.transform(key,
+						value);
 				if (output == null) {
-					LOGGER.info(
-						"[EVENT][{}]!!! Duplicate value found : {}",
-						key,
-						value);
-					output = KeyValue.pair(
-						"DUP-" + key,
-						value);
+					BeanDuplicateCheck.LOGGER.info("[EVENT][{}]!!! Duplicate value found : {}",
+							key,
+							value);
+					output = KeyValue.pair("DUP-" + key,
+							value);
 				} else {
-					LOGGER.info(
-						"Unique value found for key {} and value {}",
-						key,
-						value);
+					BeanDuplicateCheck.LOGGER.info("Unique value found for key {} and value {}",
+							key,
+							value);
 				}
 				return output;
 			}
 		};
-		KStream<String, String> deduplicated = input.transform(
-			() -> duplicationTranformer,
-			storeName);
-		deduplicated.filter(
-			(K, V) -> {
-				return K.startsWith(
-					"DUP-");
-			}).to(
-				duplicateImageFoundTopic);
-		deduplicated.filterNot(
-			(K, V) -> {
-				return K.startsWith(
-					"DUP-");
-			}).to(
-				topicDupFilteredFile);
+		KStream<String, String> deduplicated = input.transform(() -> duplicationTranformer,
+				this.storeName);
+		deduplicated.filter((K, V) -> {
+			return K.startsWith("DUP-");
+		}).to(this.duplicateImageFoundTopic);
+		deduplicated.filterNot((K, V) -> {
+			return K.startsWith("DUP-");
+		}).to(this.topicDupFilteredFile);
 
-		KafkaStreams streams = new KafkaStreams(builder.build(), kafkaStreamProperties);
+		KafkaStreams streams = new KafkaStreams(builder.build(), this.kafkaStreamProperties);
 		return streams;
 	}
 
 	@PostConstruct
 	public void init() {
-		streams = buildKafkaStreamsTopology();
-		streams.start();
+		this.streams = this.buildKafkaStreamsTopology();
+		this.streams.start();
 	}
 
 }
