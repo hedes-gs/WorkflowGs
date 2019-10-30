@@ -2,6 +2,7 @@ package com.gs.photo.workflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableAsync;
 
@@ -10,9 +11,9 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class WorkFlowComputeHashKey {
 	public static void main(String[] args) {
-		SpringApplication.run(
-			WorkFlowComputeHashKey.class,
-			args);
+		ApplicationContext ac = SpringApplication.run(WorkFlowComputeHashKey.class,
+				args);
+		ac.getBean(IProcessInputForHashKeyCompute.class).init();
 		try {
 			synchronized (SpringApplication.class) {
 				SpringApplication.class.wait();
