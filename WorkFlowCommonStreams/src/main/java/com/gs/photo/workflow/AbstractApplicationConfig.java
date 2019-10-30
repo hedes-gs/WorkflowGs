@@ -15,7 +15,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -123,10 +122,6 @@ public abstract class AbstractApplicationConfig {
 
 	@Value("${application.gs.keytab}")
 	protected String                        keytab;
-
-	@Autowired
-	@Qualifier(AbstractApplicationConfig.IGNITE_SPRING_BEAN)
-	protected Ignite                        beanIgnite;
 
 	@Bean
 	@ConditionalOnProperty(name = "producer.string.string", havingValue = "true")
@@ -349,8 +344,9 @@ public abstract class AbstractApplicationConfig {
 
 	@Bean
 	@ConditionalOnProperty(name = "ignite.is.used", havingValue = "true")
-	public IgniteCache<String, byte[]> clientCache() {
-		return this.beanIgnite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
+	public IgniteCache<String, byte[]> clientCache(
+			@Qualifier(AbstractApplicationConfig.IGNITE_SPRING_BEAN) Ignite beanIgnite) {
+		return beanIgnite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
 	}
 
 }
