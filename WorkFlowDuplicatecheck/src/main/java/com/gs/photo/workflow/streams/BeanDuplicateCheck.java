@@ -10,7 +10,6 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.WindowStore;
@@ -89,7 +88,23 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 		builder.addStateStore(dedupStoreBuilder);
 
 		KStream<String, String> input = builder.stream(this.topicFileHashKey);
-		Transformer<String, String, KeyValue<String, String>> duplicationTranformer = new DeduplicationTransformer<String, String, String>(
+		KStream<String, String> deduplicated = input.transform(
+				() -> this.buildDedupTransformer(maintainDurationPerEventInMs),
+				this.storeName);
+		deduplicated.filter((K, V) -> {
+			return K.startsWith("DUP-");
+		}).to(this.duplicateImageFoundTopic);
+		deduplicated.filterNot((K, V) -> {
+			return K.startsWith("DUP-");
+		}).to(this.topicDupFilteredFile);
+
+		KafkaStreams streams = new KafkaStreams(builder.build(), this.kafkaStreamProperties);
+		return streams;
+	}
+
+	protected DeduplicationTransformer<String, String, String> buildDedupTransformer(
+			long maintainDurationPerEventInMs) {
+		return new DeduplicationTransformer<String, String, String>(
 			maintainDurationPerEventInMs,
 			(key, value) -> key,
 			this.storeName) {
@@ -111,17 +126,6 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 				return output;
 			}
 		};
-		KStream<String, String> deduplicated = input.transform(() -> duplicationTranformer,
-				this.storeName);
-		deduplicated.filter((K, V) -> {
-			return K.startsWith("DUP-");
-		}).to(this.duplicateImageFoundTopic);
-		deduplicated.filterNot((K, V) -> {
-			return K.startsWith("DUP-");
-		}).to(this.topicDupFilteredFile);
-
-		KafkaStreams streams = new KafkaStreams(builder.build(), this.kafkaStreamProperties);
-		return streams;
 	}
 
 	@PostConstruct
