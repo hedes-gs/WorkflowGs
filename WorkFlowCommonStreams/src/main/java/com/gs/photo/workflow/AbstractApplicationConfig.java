@@ -15,13 +15,13 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.context.support.FileSystemXmlApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.gs.photos.serializers.ExchangedDataSerializer;
@@ -123,6 +123,10 @@ public abstract class AbstractApplicationConfig {
 
 	@Value("${application.gs.keytab}")
 	protected String                        keytab;
+
+	@Autowired
+	@Qualifier(AbstractApplicationConfig.IGNITE_SPRING_BEAN)
+	protected Ignite                        beanIgnite;
 
 	@Bean
 	@ConditionalOnProperty(name = "producer.string.string", havingValue = "true")
@@ -346,13 +350,7 @@ public abstract class AbstractApplicationConfig {
 	@Bean
 	@ConditionalOnProperty(name = "ignite.is.used", havingValue = "true")
 	public IgniteCache<String, byte[]> clientCache() {
-		try (
-				AbstractApplicationContext ctx = new FileSystemXmlApplicationContext(
-					AbstractApplicationConfig.CONFIG_CLUSTER_CLIENT_XML)) {
-			ctx.registerShutdownHook();
-			Ignite ignite = (Ignite) ctx.getBean(AbstractApplicationConfig.IGNITE_SPRING_BEAN);
-			return ignite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
-		}
+		return this.beanIgnite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
 	}
 
 }
