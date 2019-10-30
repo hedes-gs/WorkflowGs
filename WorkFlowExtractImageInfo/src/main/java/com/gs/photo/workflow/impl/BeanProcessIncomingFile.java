@@ -154,7 +154,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 	@Autowired
 	protected IBeanTaskExecutor        beanTaskExecutor;
 
-	@Value("${topic.topicDupFilteredFileFile}")
+	@Value("${topic.topicDupFilteredFile}")
 	protected String                   topicDupFilteredFile;
 
 	@Value("${topic.topicExif}")
