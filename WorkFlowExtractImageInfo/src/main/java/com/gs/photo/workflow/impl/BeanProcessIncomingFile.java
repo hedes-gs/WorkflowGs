@@ -14,8 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -177,7 +175,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 	@Qualifier("producerForTransactionPublishingOnExifOrImageTopic")
 	protected Producer<String, Object> producerForTransactionPublishingOnExifOrImageTopic;
 
-	@PostConstruct
+	@Override
 	public void init() {
 		this.services = new ExecutorService[BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE];
 		for (

@@ -2,6 +2,7 @@ package com.gs.photo.workflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.EnableAsync;
 
@@ -10,9 +11,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class WorkflowExtractImageInfo {
 
+	private static ApplicationContext applicationContext;
+
 	public static void main(String[] args) {
-		SpringApplication.run(
-			WorkflowExtractImageInfo.class,
-			args);
+		WorkflowExtractImageInfo.applicationContext = SpringApplication.run(WorkflowExtractImageInfo.class,
+				args);
+		IProcessIncomingFiles iprocessIncomingFiles = WorkflowExtractImageInfo.applicationContext
+				.getBean(IProcessIncomingFiles.class);
+		iprocessIncomingFiles.init();
 	}
 }
