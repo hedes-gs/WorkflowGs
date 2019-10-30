@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.Producer;
@@ -51,7 +49,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 	@Autowired
 	protected IBeanImageFileHelper     beanImageFileHelper;
 
-	@PostConstruct
+	@Override
 	public void init() {
 		this.beanTaskExecutor.execute(() -> this.processIncomingFile());
 	}
