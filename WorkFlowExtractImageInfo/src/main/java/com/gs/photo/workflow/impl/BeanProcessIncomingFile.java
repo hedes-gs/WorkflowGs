@@ -154,8 +154,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 	@Autowired
 	protected IBeanTaskExecutor        beanTaskExecutor;
 
-	@Value("${topic.topicFile}")
-	protected String                   topicFile;
+	@Value("${topic.topicDupFilteredFileFile}")
+	protected String                   topicDupFilteredFile;
 
 	@Value("${topic.topicExif}")
 	protected String                   topicExif;
@@ -190,7 +190,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 	}
 
 	protected void processInputFile() {
-		this.consumerForTopicWithStringKey.subscribe(Collections.singleton(this.topicFile));
+		this.consumerForTopicWithStringKey.subscribe(Collections.singleton(this.topicDupFilteredFile));
 		BeanProcessIncomingFile.LOGGER.info("Starting process input file...");
 		Collection<Future<DbTaskResult>> futuresList = new ArrayList<>();
 		this.producerForTransactionPublishingOnExifOrImageTopic.initTransactions();

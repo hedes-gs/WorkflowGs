@@ -2,6 +2,7 @@ package com.gs.photo.workflow;
 
 import java.util.Properties;
 
+import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsConfig;
@@ -34,7 +35,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 				"earliest");
 		config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG,
 				0);
-
+		config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+				"SASL_PLAINTEXT");
+		config.put("sasl.kerberos.service.name",
+				"kafka");
 		return config;
 	}
 }
