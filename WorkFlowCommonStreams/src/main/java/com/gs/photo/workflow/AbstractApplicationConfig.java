@@ -346,7 +346,7 @@ public abstract class AbstractApplicationConfig {
 	@ConditionalOnProperty(name = "ignite.is.used", havingValue = "true")
 	public IgniteCache<String, byte[]> clientCache(
 			@Qualifier(AbstractApplicationConfig.IGNITE_SPRING_BEAN) Ignite beanIgnite) {
-		return beanIgnite.getOrCreateCache(AbstractApplicationConfig.CACHE_NAME);
+		return new IgniteWrapper(beanIgnite);
 	}
 
 }
