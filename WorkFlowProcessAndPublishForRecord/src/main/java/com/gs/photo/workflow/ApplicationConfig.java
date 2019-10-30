@@ -52,7 +52,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	public Properties kafkaStreamProperties() {
 		Properties config = new Properties();
 		config.put(StreamsConfig.APPLICATION_ID_CONFIG,
-				this.applicationGroupId + "-duplicate-streams");
+				this.applicationGroupId + "-streams");
 		config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
 				this.bootstrapServers);
 		config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
