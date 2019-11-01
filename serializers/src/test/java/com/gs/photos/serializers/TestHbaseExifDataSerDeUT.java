@@ -11,15 +11,16 @@ public class TestHbaseExifDataSerDeUT {
 	public void test001_shouldSerializeAndDeserializeSuccessWithDefaultPojo() {
 		HbaseExifDataSerializer ser = new HbaseExifDataSerializer();
 		final HbaseExifData.Builder builder = HbaseExifData.builder();
-		builder.withImageId("<imgId>");
+		builder.withImageId("<imgId>").withExifPath(new short[] {});
+
 		final HbaseExifData data = builder.build();
 		byte[] results = ser.serialize(null,
-				data);
+			data);
 
 		HbaseExifDataDeserializer deser = new HbaseExifDataDeserializer();
 
 		HbaseExifData hit = deser.deserialize(null,
-				results);
+			results);
 
 		Assert.assertNotNull(hit);
 
@@ -29,18 +30,25 @@ public class TestHbaseExifDataSerDeUT {
 	public void test002_shouldSerializeAndDeserializeSuccessWithValuedPojo() {
 		HbaseExifDataSerializer ser = new HbaseExifDataSerializer();
 		final HbaseExifData.Builder builder = HbaseExifData.builder();
-		HbaseExifData hbaseExifData = builder.withCreationDate(100).withHeight(768).withWidth(1024).withImageId("<img>")
-				.withExifTag(25).withExifValueAsByte(new byte[] { 0, 1, 2 }).withThumbName("img-1").build();
+		HbaseExifData hbaseExifData = builder.withCreationDate(100)
+			.withHeight(768)
+			.withWidth(1024)
+			.withImageId("<img>")
+			.withExifTag(25)
+			.withExifValueAsByte(new byte[] { 0, 1, 2 })
+			.withThumbName("img-1")
+			.withExifPath(new short[] { 0, 1, 2, 3, 4 })
+			.build();
 		byte[] results = ser.serialize(null,
-				hbaseExifData);
+			hbaseExifData);
 
 		HbaseExifDataDeserializer deser = new HbaseExifDataDeserializer();
 
 		HbaseExifData hit = deser.deserialize(null,
-				results);
+			results);
 
 		Assert.assertEquals(hbaseExifData,
-				hit);
+			hit);
 	}
 
 }

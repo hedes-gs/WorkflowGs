@@ -11,27 +11,27 @@ public class FinalImage extends HbaseData implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	protected String          id;
-	protected boolean         original;
+	protected short           version;
 	protected int             width;
 	protected int             height;
 	protected byte[]          compressedData;
 
 	@Generated("SparkTools")
 	private FinalImage(
-			Builder builder) {
+		Builder builder) {
 		this.id = builder.id;
-		this.original = builder.original;
+		this.version = builder.version;
 		this.width = builder.width;
 		this.height = builder.height;
 		this.compressedData = builder.compressedData;
 	}
 
-	public boolean isOriginal() {
-		return this.original;
+	public short getVersion() {
+		return this.version;
 	}
 
-	public void setOriginal(boolean original) {
-		this.original = original;
+	public byte[] getCompressedData() {
+		return this.compressedData;
 	}
 
 	public int getWidth() {
@@ -73,7 +73,7 @@ public class FinalImage extends HbaseData implements Serializable {
 		result = (prime * result) + Arrays.hashCode(this.compressedData);
 		result = (prime * result) + this.height;
 		result = (prime * result) + ((this.id == null) ? 0 : this.id.hashCode());
-		result = (prime * result) + (this.original ? 1231 : 1237);
+		result = (prime * result) + this.version;
 		result = (prime * result) + this.width;
 		return result;
 	}
@@ -91,7 +91,7 @@ public class FinalImage extends HbaseData implements Serializable {
 		}
 		FinalImage other = (FinalImage) obj;
 		if (!Arrays.equals(this.compressedData,
-				other.compressedData)) {
+			other.compressedData)) {
 			return false;
 		}
 		if (this.height != other.height) {
@@ -104,7 +104,7 @@ public class FinalImage extends HbaseData implements Serializable {
 		} else if (!this.id.equals(other.id)) {
 			return false;
 		}
-		if (this.original != other.original) {
+		if (this.version != other.version) {
 			return false;
 		}
 		if (this.width != other.width) {
@@ -115,8 +115,8 @@ public class FinalImage extends HbaseData implements Serializable {
 
 	@Override
 	public String toString() {
-		return "FinalImage [id=" + this.id + ", original=" + this.original + ", width=" + this.width + ", height="
-				+ this.height + ", length : " + (this.compressedData != null ? this.compressedData.length : -1) + "]";
+		return "FinalImage [id=" + this.id + ", version=" + this.version + ", width=" + this.width + ", height="
+			+ this.height + ", compressedData=" + Arrays.toString(this.compressedData) + "]";
 	}
 
 	public FinalImage() {
@@ -137,11 +137,11 @@ public class FinalImage extends HbaseData implements Serializable {
 	 */
 	@Generated("SparkTools")
 	public static final class Builder {
-		private String  id;
-		private boolean original;
-		private int     width;
-		private int     height;
-		private byte[]  compressedData;
+		private String id;
+		private short  version;
+		private int    width;
+		private int    height;
+		private byte[] compressedData;
 
 		private Builder() {
 		}
@@ -159,14 +159,14 @@ public class FinalImage extends HbaseData implements Serializable {
 		}
 
 		/**
-		 * Builder method for original parameter.
+		 * Builder method for version parameter.
 		 *
-		 * @param original
+		 * @param version
 		 *            field to set
 		 * @return builder
 		 */
-		public Builder withOriginal(boolean original) {
-			this.original = original;
+		public Builder withVersion(short version) {
+			this.version = version;
 			return this;
 		}
 

@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.gs.photos.workflow.metadata.exif.RootTiffTag;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 public class TestDefaultTagTemplate {
@@ -52,7 +53,7 @@ public class TestDefaultTagTemplate {
 		try {
 			int offset = this.readHeader(this.fcdi);
 			do {
-				AbstractTemplateTag dtp = TemplateTagFactory.create();
+				AbstractTemplateTag dtp = TemplateTagFactory.create(RootTiffTag.ROOT_TIFF);
 				offset = dtp.createSimpleTiffFields(this.fcdi,
 						offset);
 				allIfds.addAll(dtp.getAllIfds());
