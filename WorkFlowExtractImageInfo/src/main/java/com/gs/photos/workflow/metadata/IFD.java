@@ -10,93 +10,90 @@ import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 public class IFD {
 
-	private Map<Tag, IFD> children = new HashMap<Tag, IFD>();
-	private Map<Tag, TiffField<?>> tiffFields = new HashMap<Tag, TiffField<?>>();
-	private int jpegImageLength = -1;
-	private int jpegImagePosition = -1;
-	private byte[] jpegImage;
-
-	private int endOffset;
-	private int startOffset;
+	private Map<Tag, IFD>          children          = new HashMap<Tag, IFD>();
+	private Map<Tag, TiffField<?>> tiffFields        = new HashMap<Tag, TiffField<?>>();
+	private int                    jpegImageLength   = -1;
+	private int                    jpegImagePosition = -1;
+	private byte[]                 jpegImage;
+	private Tag                    tag;
+	private int                    endOffset;
+	private int                    startOffset;
 
 	public IFD() {
+
+	}
+
+	public IFD(
+			Tag tag) {
+		this.tag = tag;
 	}
 
 	public int getTotalNumberOfTiffFields() {
-		int nbOfTiffFields = tiffFields.size();
-		int nbOFChildren = children.entrySet().stream().mapToInt(
-			(e) -> e.getValue().getTotalNumberOfTiffFields()).sum();
+		int nbOfTiffFields = this.tiffFields.size();
+		int nbOFChildren = this.children.entrySet().stream().mapToInt((e) -> e.getValue().getTotalNumberOfTiffFields())
+				.sum();
 		return nbOfTiffFields + nbOFChildren;
 	}
 
 	public void addChild(Tag tag, IFD child) {
-		children.put(
-			tag,
-			child);
+		this.children.put(tag,
+				child);
 	}
 
 	public void addField(TiffField<?> tiffField) {
 		if (tiffField.getTag() == TiffTag.JPEG_INTERCHANGE_FORMAT) {
-			jpegImagePosition = ((int[]) tiffField.getData())[0];
+			this.jpegImagePosition = ((int[]) tiffField.getData())[0];
 		}
 		if (tiffField.getTag() == TiffTag.JPEG_INTERCHANGE_FORMAT_LENGTH) {
-			jpegImageLength = ((int[]) tiffField.getData())[0];
+			this.jpegImageLength = ((int[]) tiffField.getData())[0];
 		}
-		if (jpegImageLength != -1 && jpegImagePosition != -1 && jpegImage == null) {
-			System.out.println(
-				"... Found image at " + jpegImagePosition);
-			jpegImage = new byte[jpegImageLength];
+		if ((this.jpegImageLength != -1) && (this.jpegImagePosition != -1) && (this.jpegImage == null)) {
+			this.jpegImage = new byte[this.jpegImageLength];
 		}
-		tiffFields.put(
-			tiffField.getTag(),
-			tiffField);
+		this.tiffFields.put(tiffField.getTag(),
+				tiffField);
 	}
 
 	public void addFields(Collection<TiffField<?>> tiffFields) {
 		for (TiffField<?> field : tiffFields) {
-			addField(
-				field);
+			this.addField(field);
 		}
 	}
 
 	public IFD getChild(Tag tag) {
-		return children.get(
-			tag);
+		return this.children.get(tag);
 	}
 
 	public Map<Tag, IFD> getChildren() {
-		return Collections.unmodifiableMap(
-			children);
+		return Collections.unmodifiableMap(this.children);
 	}
 
 	public int getEndOffset() {
-		return endOffset;
+		return this.endOffset;
 	}
 
 	public TiffField<?> getField(Tag tag) {
-		return tiffFields.get(
-			tag.getValue());
+		return this.tiffFields.get(tag.getValue());
 	}
 
 	public Collection<IFD> getAllChildren() {
-		return Collections.unmodifiableCollection(
-			children.values());
+		return Collections.unmodifiableCollection(this.children.values());
 	}
 
 	public boolean imageIsPresent() {
-		return jpegImage != null;
+		return this.jpegImage != null;
 	}
 
 	public int getJpegImageLength() {
-		return jpegImageLength;
+		return this.jpegImageLength;
 	}
 
 	public int getJpegImagePosition() {
-		return jpegImagePosition;
+		return this.jpegImagePosition;
 	}
 
 	public byte[] getJpegImage() {
-		return jpegImage;
+		return this.jpegImage;
 	}
 
 	/**
@@ -107,8 +104,7 @@ public class IFD {
 	 * @return a String representation of the field
 	 */
 	public String getFieldAsString(Tag tag) {
-		TiffField<?> field = tiffFields.get(
-			tag);
+		TiffField<?> field = this.tiffFields.get(tag);
 
 		if (field != null) {
 			return field.getDataAsString();
@@ -119,32 +115,38 @@ public class IFD {
 
 	/** Get all the fields for this IFD from the internal map. */
 	public Collection<TiffField<?>> getFields() {
-		return Collections.unmodifiableCollection(
-			tiffFields.values());
+		return Collections.unmodifiableCollection(this.tiffFields.values());
 	}
 
 	public int getSize() {
-		return tiffFields.size();
+		return this.tiffFields.size();
 	}
 
 	public int getStartOffset() {
-		return startOffset;
+		return this.startOffset;
 	}
 
 	/** Remove all the entries from the IDF fields map */
 	public void removeAllFields() {
-		tiffFields.clear();
+		this.tiffFields.clear();
 	}
 
 	public IFD removeChild(Tag tag) {
-		return children.remove(
-			tag);
+		return this.children.remove(tag);
 	}
 
 	/** Remove a specific field associated with the given tag */
 	public TiffField<?> removeField(Tag tag) {
-		return tiffFields.remove(
-			tag.getValue());
+		return this.tiffFields.remove(tag.getValue());
+	}
+
+	@Override
+	public String toString() {
+		return "IFD [tag=" + this.tag + "]";
+	}
+
+	public Tag getTag() {
+		return this.tag;
 	}
 
 }

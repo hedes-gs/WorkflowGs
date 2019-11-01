@@ -4,12 +4,19 @@ import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 public class DefaultTagTemplate extends AbstractTemplateTag {
 
-	public DefaultTagTemplate(Tag tag, IFD parent) {
-		super(tag, new IFD());
+	public DefaultTagTemplate(
+			Tag tag,
+			IFD parent) {
+		super(
+			tag,
+			new IFD(tag));
 	}
 
-	public DefaultTagTemplate(Tag tag) {
-		super(tag, new IFD());
+	public DefaultTagTemplate(
+			Tag tag) {
+		super(
+			tag,
+			new IFD(tag));
 	}
 
 	@Override

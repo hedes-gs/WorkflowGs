@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -93,11 +94,48 @@ public class TestBeanFileReadIFDs {
 		});
 	}
 
+	@Test
+	public void shouldGetAllFilesWhenSonyARWIsAnInputFile() {
+
+		Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
+		Collection<String> allTiff = this.getAllTiffFields(allIfds,
+				"/");
+		allTiff.forEach((tif) -> this.LOGGER.info(tif));
+
+		Assert.assertEquals(2,
+				allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).count());
+
+		allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).map((ifd) -> ifd.getJpegImage()).forEach((img) -> {
+			LocalDateTime currentTime = LocalDateTime.now();
+			try (
+					FileOutputStream stream = new FileOutputStream(
+						UUID.randomUUID() + "-" + currentTime.toString().replaceAll("\\:",
+								"_") + ".jpg")) {
+				stream.write(img);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
 	private Collection<TiffField<?>> getAllTiffFields(Collection<IFD> allIfds) {
 		final Collection<TiffField<?>> retValue = new ArrayList<>();
 		allIfds.forEach((ifd) -> {
 			retValue.addAll(ifd.getFields());
 			retValue.addAll(this.getAllTiffFields(ifd.getAllChildren()));
+		});
+		return retValue;
+	}
+
+	private Collection<String> getAllTiffFields(Collection<IFD> allIfds, String path) {
+		final Collection<String> retValue = new ArrayList<>();
+		allIfds.forEach((ifd) -> {
+			retValue.addAll(ifd.getFields().stream().map((t) -> path + ifd.toString() + "/" + t.toString())
+					.collect(Collectors.toList()));
+			retValue.addAll(this.getAllTiffFields(ifd.getAllChildren(),
+					path + ifd.toString() + "/"));
 		});
 		return retValue;
 	}

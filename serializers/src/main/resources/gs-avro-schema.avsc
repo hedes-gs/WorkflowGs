@@ -25,6 +25,16 @@
     "name" : "length",
     "type" : "int"
   }, {
+    "name" : "path",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "int",
+        "java-class" : "java.lang.Short"
+      },
+      "java-class" : "[S"
+    }
+  }, {
     "name" : "dataAsInt",
     "type" : [ "null", {
       "type" : "array",
@@ -106,6 +116,16 @@
     "name" : "exifTag",
     "type" : "long"
   }, {
+    "name" : "exifPath",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "int",
+        "java-class" : "java.lang.Short"
+      },
+      "java-class" : "[S"
+    }
+  }, {
     "name" : "imageId",
     "type" : "string"
   }, {
@@ -158,6 +178,16 @@
   }, {
     "name" : "exifTag",
     "type" : "long"
+  }, {
+    "name" : "exifPath",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "int",
+        "java-class" : "java.lang.Short"
+      },
+      "java-class" : "[S"
+    }
   }, {
     "name" : "exifValueAsByte",
     "type" : [ "null", {
@@ -316,8 +346,11 @@
     "name" : "imageId",
     "type" : "string"
   }, {
-    "name" : "orignal",
-    "type" : "boolean"
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageName",
     "type" : "string"
@@ -348,8 +381,11 @@
     "name" : "id",
     "type" : "string"
   }, {
-    "name" : "original",
-    "type" : "boolean"
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "width",
     "type" : "int"

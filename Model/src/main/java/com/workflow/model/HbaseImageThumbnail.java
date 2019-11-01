@@ -14,8 +14,8 @@ public class HbaseImageThumbnail extends HbaseData {
 	protected long            creationDate;
 	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
 	protected String          imageId;
-	@Column(hbaseName = "original", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteBoolean.class, fixedWidth = ModelConstants.FIXED_WIDTH_BOOLEAN)
-	protected boolean         orignal          = false;
+	@Column(hbaseName = "version", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+	protected short           version;
 
 	// Data
 
@@ -34,10 +34,10 @@ public class HbaseImageThumbnail extends HbaseData {
 
 	@Generated("SparkTools")
 	private HbaseImageThumbnail(
-			Builder builder) {
+		Builder builder) {
 		this.creationDate = builder.creationDate;
 		this.imageId = builder.imageId;
-		this.orignal = builder.orignal;
+		this.version = builder.version;
 		this.imageName = builder.imageName;
 		this.thumbName = builder.thumbName;
 		this.thumbnail = builder.thumbnail;
@@ -58,6 +58,14 @@ public class HbaseImageThumbnail extends HbaseData {
 		return this.creationDate;
 	}
 
+	public short getVersion() {
+		return this.version;
+	}
+
+	public void setVersion(short version) {
+		this.version = version;
+	}
+
 	public void setCreationDate(long creationDate) {
 		this.creationDate = creationDate;
 	}
@@ -68,14 +76,6 @@ public class HbaseImageThumbnail extends HbaseData {
 
 	public void setThumbnail(byte[] thumbnail) {
 		this.thumbnail = thumbnail;
-	}
-
-	public boolean isOrignal() {
-		return this.orignal;
-	}
-
-	public void setOrignal(boolean orignal) {
-		this.orignal = orignal;
 	}
 
 	public String getPath() {
@@ -138,10 +138,10 @@ public class HbaseImageThumbnail extends HbaseData {
 		result = (prime * result) + (int) (this.height ^ (this.height >>> 32));
 		result = (prime * result) + ((this.imageId == null) ? 0 : this.imageId.hashCode());
 		result = (prime * result) + ((this.imageName == null) ? 0 : this.imageName.hashCode());
-		result = (prime * result) + (this.orignal ? 1231 : 1237);
 		result = (prime * result) + ((this.path == null) ? 0 : this.path.hashCode());
 		result = (prime * result) + ((this.thumbName == null) ? 0 : this.thumbName.hashCode());
 		result = (prime * result) + Arrays.hashCode(this.thumbnail);
+		result = (prime * result) + this.version;
 		result = (prime * result) + (int) (this.width ^ (this.width >>> 32));
 		return result;
 	}
@@ -178,9 +178,6 @@ public class HbaseImageThumbnail extends HbaseData {
 		} else if (!this.imageName.equals(other.imageName)) {
 			return false;
 		}
-		if (this.orignal != other.orignal) {
-			return false;
-		}
 		if (this.path == null) {
 			if (other.path != null) {
 				return false;
@@ -196,7 +193,10 @@ public class HbaseImageThumbnail extends HbaseData {
 			return false;
 		}
 		if (!Arrays.equals(this.thumbnail,
-				other.thumbnail)) {
+			other.thumbnail)) {
+			return false;
+		}
+		if (this.version != other.version) {
 			return false;
 		}
 		if (this.width != other.width) {
@@ -207,10 +207,10 @@ public class HbaseImageThumbnail extends HbaseData {
 
 	@Override
 	public String toString() {
-		return "HbaseImageThumbnail [creationDate=" + this.creationDate + ", imageId=" + this.imageId + ", orignal="
-				+ this.orignal + ", imageName=" + this.imageName + ", thumbName=" + this.thumbName + ", thumbnail="
-				+ Arrays.toString(this.thumbnail) + ", path=" + this.path + ", width=" + this.width + ", height="
-				+ this.height + "]";
+		return "HbaseImageThumbnail [creationDate=" + this.creationDate + ", imageId=" + this.imageId + ", version="
+			+ this.version + ", imageName=" + this.imageName + ", thumbName=" + this.thumbName + ", thumbnail="
+			+ Arrays.toString(this.thumbnail) + ", path=" + this.path + ", width=" + this.width + ", height="
+			+ this.height + "]";
 	}
 
 	/**
@@ -228,15 +228,15 @@ public class HbaseImageThumbnail extends HbaseData {
 	 */
 	@Generated("SparkTools")
 	public static final class Builder {
-		private long    creationDate;
-		private String  imageId;
-		private boolean orignal;
-		private String  imageName;
-		private String  thumbName;
-		private byte[]  thumbnail;
-		private String  path;
-		private long    width;
-		private long    height;
+		private long   creationDate;
+		private String imageId;
+		private short  version;
+		private String imageName;
+		private String thumbName;
+		private byte[] thumbnail;
+		private String path;
+		private long   width;
+		private long   height;
 
 		private Builder() {
 		}
@@ -266,14 +266,14 @@ public class HbaseImageThumbnail extends HbaseData {
 		}
 
 		/**
-		 * Builder method for orignal parameter.
+		 * Builder method for version parameter.
 		 *
-		 * @param orignal
+		 * @param version
 		 *            field to set
 		 * @return builder
 		 */
-		public Builder withOrignal(boolean orignal) {
-			this.orignal = orignal;
+		public Builder withVersion(short version) {
+			this.version = version;
 			return this;
 		}
 

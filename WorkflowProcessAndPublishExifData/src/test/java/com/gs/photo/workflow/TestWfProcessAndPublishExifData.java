@@ -41,6 +41,8 @@ import com.workflow.model.HbaseImageThumbnail;
 @SpringBootTest(classes = ApplicationConfig.class)
 public class TestWfProcessAndPublishExifData {
 
+	private static final short[]            PATH2                       = new short[] { 1, 5, 8 };
+
 	private static final short              EXIF_ID                     = (short) 0x9008;
 
 	private static final long               CREATION_DATE               = 123456789;
@@ -64,12 +66,12 @@ public class TestWfProcessAndPublishExifData {
 	private static final String             DATE_5                      = "Y:2019/M:10/D:16/H:22/Mn:12";
 	private static final String             DATE_6                      = "Y:2019/M:10/D:16/H:22/Mn:12/S:0";
 	private static final Collection<String> DATES                       = ImmutableSet.of(
-			TestWfProcessAndPublishExifData.DATE_1,
-			TestWfProcessAndPublishExifData.DATE_2,
-			TestWfProcessAndPublishExifData.DATE_3,
-			TestWfProcessAndPublishExifData.DATE_4,
-			TestWfProcessAndPublishExifData.DATE_5,
-			TestWfProcessAndPublishExifData.DATE_6);
+		TestWfProcessAndPublishExifData.DATE_1,
+		TestWfProcessAndPublishExifData.DATE_2,
+		TestWfProcessAndPublishExifData.DATE_3,
+		TestWfProcessAndPublishExifData.DATE_4,
+		TestWfProcessAndPublishExifData.DATE_5,
+		TestWfProcessAndPublishExifData.DATE_6);
 
 	private static final String             IMAGE_KEY                   = "1234-5678-ABCD";
 	private static final String             PATH                        = "/tmp/image/1234.ARW";
@@ -78,7 +80,7 @@ public class TestWfProcessAndPublishExifData {
 	private static final byte[]             COMPRESSED_DATA             = new byte[] { 0, 1, 2, 3, 4 };
 	private static final String             EXIF_DATE                   = "2019:10:16 22:12:00";
 	private static final DateTimeFormatter  FORMATTER_FOR_CREATION_DATE = DateTimeFormatter
-			.ofPattern("yyyy:MM:dd HH:mm:ss");
+		.ofPattern("yyyy:MM:dd HH:mm:ss");
 	protected Properties                    props                       = new Properties();;
 
 	@Autowired
@@ -103,27 +105,27 @@ public class TestWfProcessAndPublishExifData {
 			this.deleteDirectory(directoryToBeDeleted);
 		}
 		this.props.put(StreamsConfig.STATE_DIR_CONFIG,
-				"./tmp/test-kafkastreams");
+			"./tmp/test-kafkastreams");
 		this.props.put(StreamsConfig.APPLICATION_ID_CONFIG,
-				"test");
+			"test");
 		this.props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-				"dummy:1234");
+			"dummy:1234");
 	}
 
 	@Test
 	public void test001_shouldRetrieveTwoHbaseDatalWhenOneExifAndOneThumOneArePublished() {
 		try (
-				TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
+			TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
-					@Override
-					public void close() {
-						try {
-							super.close();
-						} catch (Exception e) {
-						}
+				@Override
+				public void close() {
+					try {
+						super.close();
+					} catch (Exception e) {
 					}
+				}
 
-				}) {
+			}) {
 			final String key = TestWfProcessAndPublishExifData.IMAGE_KEY;
 
 			ConsumerRecordFactory<String, HbaseData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
@@ -136,24 +138,24 @@ public class TestWfProcessAndPublishExifData {
 				new HbaseImageThumbnailSerializer());
 
 			ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
-					factoryForExchangedTiffData,
-					key);
+				factoryForExchangedTiffData,
+				key);
 			ConsumerRecord<byte[], byte[]> inputFinalImage = this.createConsumerRecordFortopicImageDataToPersist(
-					factoryForHbaseImageThumbnail,
-					key);
+				factoryForHbaseImageThumbnail,
+				key);
 
 			testDriver.pipeInput(inputExchangedTiffData);
 			testDriver.pipeInput(inputFinalImage);
 
 			ProducerRecord<String, HbaseData> outputRecord = testDriver.readOutput(this.topicExifImageDataToPerist,
-					Serdes.String().deserializer(),
-					new HbaseDataSerDe().deserializer());
+				Serdes.String().deserializer(),
+				new HbaseDataSerDe().deserializer());
 			Assert.assertNotNull(outputRecord);
 			Assert.assertEquals(TestWfProcessAndPublishExifData.IMAGE_KEY,
-					outputRecord.key());
+				outputRecord.key());
 			outputRecord = testDriver.readOutput(this.topicExifImageDataToPerist,
-					Serdes.String().deserializer(),
-					new HbaseDataSerDe().deserializer());
+				Serdes.String().deserializer(),
+				new HbaseDataSerDe().deserializer());
 			Assert.assertNotNull(outputRecord);
 		}
 	}
@@ -161,17 +163,17 @@ public class TestWfProcessAndPublishExifData {
 	@Test
 	public void test002_shouldRetrieveTwoValidHbaseWhenExifAndOneThumbImageArePublished() {
 		try (
-				TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
+			TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
-					@Override
-					public void close() {
-						try {
-							super.close();
-						} catch (Exception e) {
-						}
+				@Override
+				public void close() {
+					try {
+						super.close();
+					} catch (Exception e) {
 					}
+				}
 
-				}) {
+			}) {
 			final String key = TestWfProcessAndPublishExifData.IMAGE_KEY;
 
 			ConsumerRecordFactory<String, HbaseData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
@@ -184,62 +186,62 @@ public class TestWfProcessAndPublishExifData {
 				new HbaseImageThumbnailSerializer());
 
 			ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
-					factoryForExchangedTiffData,
-					key);
+				factoryForExchangedTiffData,
+				key);
 			ConsumerRecord<byte[], byte[]> inputFinalImage = this.createConsumerRecordFortopicImageDataToPersist(
-					factoryForHbaseImageThumbnail,
-					key);
+				factoryForHbaseImageThumbnail,
+				key);
 
 			testDriver.pipeInput(inputExchangedTiffData);
 			testDriver.pipeInput(inputFinalImage);
 			ProducerRecord<String, HbaseExifData> outputRecordHbaseExifData = testDriver.readOutput(
-					this.topicExifImageDataToPerist,
-					Serdes.String().deserializer(),
-					new HbaseExifDataDeserializer());
+				this.topicExifImageDataToPerist,
+				Serdes.String().deserializer(),
+				new HbaseExifDataDeserializer());
 			HbaseExifData hbe = outputRecordHbaseExifData.value();
 			Assert.assertEquals(TestWfProcessAndPublishExifData.CREATION_DATE,
-					hbe.getCreationDate());
+				hbe.getCreationDate());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.EXIF_ID,
-					hbe.getExifTag());
+				hbe.getExifTag());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_BYTE,
-					hbe.getExifValueAsByte());
+				hbe.getExifValueAsByte());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_INT,
-					hbe.getExifValueAsInt());
+				hbe.getExifValueAsInt());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_SHORT,
-					hbe.getExifValueAsShort());
+				hbe.getExifValueAsShort());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.HEIGHT,
-					hbe.getHeight());
+				hbe.getHeight());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.WIDTH,
-					hbe.getWidth());
+				hbe.getWidth());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.IMGID,
-					hbe.getImageId());
+				hbe.getImageId());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.THUMB_NAME,
-					hbe.getThumbName());
+				hbe.getThumbName());
 
 			ProducerRecord<String, HbaseExifDataOfImages> outputRecordHbaseExifDataOfImages = testDriver.readOutput(
-					this.topicExifImageDataToPerist,
-					Serdes.String().deserializer(),
-					new HbaseExifDataOfImagesDeserializer());
+				this.topicExifImageDataToPerist,
+				Serdes.String().deserializer(),
+				new HbaseExifDataOfImagesDeserializer());
 			HbaseExifDataOfImages hedi = outputRecordHbaseExifDataOfImages.value();
 
 			Assert.assertEquals(this.arround(TestWfProcessAndPublishExifData.CREATION_DATE),
-					DateTimeHelper.toEpochMillis(hedi.getCreationDate()));
+				DateTimeHelper.toEpochMillis(hedi.getCreationDate()));
 			Assert.assertEquals(TestWfProcessAndPublishExifData.EXIF_ID,
-					hedi.getExifTag());
+				hedi.getExifTag());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_BYTE,
-					hedi.getExifValueAsByte());
+				hedi.getExifValueAsByte());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_INT,
-					hedi.getExifValueAsInt());
+				hedi.getExifValueAsInt());
 			Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_SHORT,
-					hedi.getExifValueAsShort());
+				hedi.getExifValueAsShort());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.HEIGHT,
-					hedi.getHeight());
+				hedi.getHeight());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.WIDTH,
-					hedi.getWidth());
+				hedi.getWidth());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.IMGID,
-					hedi.getImageId());
+				hedi.getImageId());
 			Assert.assertEquals(TestWfProcessAndPublishExifData.THUMB_NAME,
-					hedi.getThumbName());
+				hedi.getThumbName());
 
 		}
 	}
@@ -251,17 +253,17 @@ public class TestWfProcessAndPublishExifData {
 	@Test
 	public void test003_shouldRetrieveNullFromOutputTopicWhenTopicExifIsEmpty() {
 		try (
-				TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
+			TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
-					@Override
-					public void close() {
-						try {
-							super.close();
-						} catch (Exception e) {
-						}
+				@Override
+				public void close() {
+					try {
+						super.close();
+					} catch (Exception e) {
 					}
+				}
 
-				}) {
+			}) {
 			final String key = TestWfProcessAndPublishExifData.IMAGE_KEY;
 
 			Assert.assertNull(null);
@@ -271,17 +273,17 @@ public class TestWfProcessAndPublishExifData {
 	@Test
 	public void test005_shouldRetrieveNullFromOutputTopicWhenTopicImageDataIsEmpty() {
 		try (
-				TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
+			TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
-					@Override
-					public void close() {
-						try {
-							super.close();
-						} catch (Exception e) {
-						}
+				@Override
+				public void close() {
+					try {
+						super.close();
+					} catch (Exception e) {
 					}
+				}
 
-				}) {
+			}) {
 			final String key = TestWfProcessAndPublishExifData.IMAGE_KEY;
 
 			Assert.assertNull(null);
@@ -292,17 +294,17 @@ public class TestWfProcessAndPublishExifData {
 	@Test
 	public void test006_shouldRetrieveOneHbaseDatalWhenTwoExifAndOneThumOneArePublished() {
 		try (
-				TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
+			TopologyTestDriver testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
-					@Override
-					public void close() {
-						try {
-							super.close();
-						} catch (Exception e) {
-						}
+				@Override
+				public void close() {
+					try {
+						super.close();
+					} catch (Exception e) {
 					}
+				}
 
-				}) {
+			}) {
 			final String key = TestWfProcessAndPublishExifData.IMAGE_KEY;
 			Assert.assertNull(null);
 
@@ -310,38 +312,45 @@ public class TestWfProcessAndPublishExifData {
 	}
 
 	protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
-			ConsumerRecordFactory<String, HbaseData> factoryForExchangedTiffData, final String key) {
+		ConsumerRecordFactory<String, HbaseData> factoryForExchangedTiffData, final String key) {
 		ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
 		builder.withDataAsByte(TestWfProcessAndPublishExifData.DATA_AS_BYTE)
-				.withDataAsInt(TestWfProcessAndPublishExifData.DATA_AS_INT)
-				.withDataAsShort(TestWfProcessAndPublishExifData.DATA_AS_SHORT)
-				.withFieldType(TestWfProcessAndPublishExifData.FIELD_TYPE_DOUBLE)
-				.withId(TestWfProcessAndPublishExifData.ID).withImageId(TestWfProcessAndPublishExifData.IMGID)
-				.withIntId(0).withKey(TestWfProcessAndPublishExifData.KEY2).withLength(1260)
-				.withTag(TestWfProcessAndPublishExifData.EXIF_ID).withTotal(12678);
+			.withDataAsInt(TestWfProcessAndPublishExifData.DATA_AS_INT)
+			.withDataAsShort(TestWfProcessAndPublishExifData.DATA_AS_SHORT)
+			.withFieldType(TestWfProcessAndPublishExifData.FIELD_TYPE_DOUBLE)
+			.withId(TestWfProcessAndPublishExifData.ID)
+			.withImageId(TestWfProcessAndPublishExifData.IMGID)
+			.withIntId(0)
+			.withKey(TestWfProcessAndPublishExifData.KEY2)
+			.withLength(1260)
+			.withTag(TestWfProcessAndPublishExifData.EXIF_ID)
+			.withPath(TestWfProcessAndPublishExifData.PATH2)
+			.withTotal(12678);
 
 		final ExchangedTiffData exchangedTiffData = builder.build();
 		ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData.create(this.topicExif,
-				key,
-				exchangedTiffData);
+			key,
+			exchangedTiffData);
 		return inputExchangedTiffData;
 	}
 
 	private ConsumerRecord<byte[], byte[]> createConsumerRecordFortopicImageDataToPersist(
-			ConsumerRecordFactory<String, HbaseImageThumbnail> factoryForHbaseImageThumbnail, String key) {
+		ConsumerRecordFactory<String, HbaseImageThumbnail> factoryForHbaseImageThumbnail, String key) {
 		HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
 		builder.withCreationDate(TestWfProcessAndPublishExifData.CREATION_DATE)
-				.withHeight(TestWfProcessAndPublishExifData.HEIGHT).withWidth(TestWfProcessAndPublishExifData.WIDTH)
-				.withImageId(TestWfProcessAndPublishExifData.IMGID)
-				.withImageName(TestWfProcessAndPublishExifData.IMG_NAME).withOrignal(true)
-				.withPath(TestWfProcessAndPublishExifData.IMG_PATH)
-				.withThumbnail(TestWfProcessAndPublishExifData.THUMBNAIL)
-				.withThumbName(TestWfProcessAndPublishExifData.THUMB_NAME);
+			.withHeight(TestWfProcessAndPublishExifData.HEIGHT)
+			.withWidth(TestWfProcessAndPublishExifData.WIDTH)
+			.withImageId(TestWfProcessAndPublishExifData.IMGID)
+			.withImageName(TestWfProcessAndPublishExifData.IMG_NAME)
+			.withVersion((short) 1)
+			.withPath(TestWfProcessAndPublishExifData.IMG_PATH)
+			.withThumbnail(TestWfProcessAndPublishExifData.THUMBNAIL)
+			.withThumbName(TestWfProcessAndPublishExifData.THUMB_NAME);
 		HbaseImageThumbnail hbit = builder.build();
 		ConsumerRecord<byte[], byte[]> outputHbaseImageThumbnail = factoryForHbaseImageThumbnail.create(
-				this.topicImageDataToPersist,
-				key,
-				hbit);
+			this.topicImageDataToPersist,
+			key,
+			hbit);
 		return outputHbaseImageThumbnail;
 	}
 

@@ -43,14 +43,16 @@ import com.workflow.model.FieldType;
 public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
 	static private class IfdContext {
-		protected final int nbOfTiffFields;
-		protected int       currentNbOfImages;
-		protected int       currentTiffId;
+		protected final int   nbOfTiffFields;
+		protected int         currentNbOfImages;
+		protected int         currentTiffId;
+		protected List<Short> currentIFDStack;
 
 		IfdContext(
-				int nbOfTiffFields) {
+			int nbOfTiffFields) {
 			super();
 			this.nbOfTiffFields = nbOfTiffFields;
+			this.currentIFDStack = new ArrayList<>(5);
 		}
 
 		public void incNbOfImages() {
@@ -71,6 +73,25 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
 		public void incNbOfTiff() {
 			this.currentTiffId++;
+		}
+
+		public Short pop() {
+			if (this.currentIFDStack.size() > 0) {
+				return this.currentIFDStack.remove(this.currentIFDStack.size());
+			}
+			return 0;
+		}
+
+		public void push(Short tag) {
+			this.currentIFDStack.add(tag);
+		}
+
+		public short[] resolvePath() {
+			short[] retValue = new short[this.currentIFDStack.size()];
+			for (int k = 0; k < this.currentIFDStack.size(); k++) {
+				retValue[k] = this.currentIFDStack.get(k);
+			}
+			return retValue;
 		}
 
 	}
@@ -103,10 +124,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 		}
 
 		public DbTaskResult(
-				TopicPartition partition,
-				OffsetAndMetadata offsetAndMetadata,
-				Table<String, String, Object> objectsToSend,
-				Map<String, Integer> metrics) {
+			TopicPartition partition,
+			OffsetAndMetadata offsetAndMetadata,
+			Table<String, String, Object> objectsToSend,
+			Map<String, Integer> metrics) {
 			super();
 			this.partition = partition;
 			this.offsetAndMetadata = offsetAndMetadata;
@@ -122,9 +143,9 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 		protected long                                 lastOffset;
 
 		public DbTask(
-				List<ConsumerRecord<String, String>> records,
-				TopicPartition partition,
-				long offsetToCommit) {
+			List<ConsumerRecord<String, String>> records,
+			TopicPartition partition,
+			long offsetToCommit) {
 			super();
 			this.records = records;
 			this.partition = partition;
@@ -137,11 +158,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 			Map<String, Integer> metrics = new HashMap<>();
 			for (ConsumerRecord<String, String> record : this.records) {
 				BeanProcessIncomingFile.this.processIncomingRecord(record,
-						objectsToSend,
-						metrics);
+					objectsToSend,
+					metrics);
 			}
-			DbTaskResult result = new DbTaskResult(
-				this.partition,
+			DbTaskResult result = new DbTaskResult(this.partition,
 				new OffsetAndMetadata(this.lastOffset + 1),
 				objectsToSend,
 				metrics);
@@ -178,10 +198,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 	@Override
 	public void init() {
 		this.services = new ExecutorService[BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE];
-		for (
-				int k = 0;
-				k < BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE;
-				k++) {
+		for (int k = 0; k < BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE; k++) {
 			this.services[k] = Executors.newFixedThreadPool(1);
 		}
 		this.beanTaskExecutor.execute(() -> this.processInputFile());
@@ -201,10 +218,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 				futuresList.clear();
 				metrics.clear();
 				ConsumerRecords<String, String> records = this.consumerForTopicWithStringKey
-						.poll(Duration.ofMillis(500));
+					.poll(Duration.ofMillis(500));
 				if (!records.isEmpty()) {
 					BeanProcessIncomingFile.LOGGER.info("Processing {} records",
-							records.count());
+						records.count());
 					this.producerForTransactionPublishingOnExifOrImageTopic.beginTransaction();
 					for (TopicPartition partition : records.partitions()) {
 						List<ConsumerRecord<String, String>> partitionRecords = records.records(partition);
@@ -213,11 +230,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 							foundRecords.add(record);
 						}
 						Future<DbTaskResult> f = this.services[partition.partition()
-								% BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE]
-										.submit(new DbTask(
-											foundRecords,
-											partition,
-											partitionRecords.get(partitionRecords.size() - 1).offset()));
+							% BeanProcessIncomingFile.NB_OF_THREADS_TO_RECORD_IN_HBASE]
+								.submit(new DbTask(foundRecords,
+									partition,
+									partitionRecords.get(partitionRecords.size() - 1).offset()));
 						futuresList.add(f);
 					}
 					Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<TopicPartition, OffsetAndMetadata>();
@@ -225,11 +241,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 						try {
 							DbTaskResult taskResult = f.get();
 							offsets.put(taskResult.getPartition(),
-									taskResult.getOffsetAndMetadata());
+								taskResult.getOffsetAndMetadata());
 							taskResult.getObjectsToSend().rowKeySet().forEach((topic) -> {
 								taskResult.getObjectsToSend().row(topic).entrySet().forEach((e) -> {
-									ProducerRecord<String, Object> producerRecord = new ProducerRecord<>(
-										topic,
+									ProducerRecord<String, Object> producerRecord = new ProducerRecord<>(topic,
 										e.getKey(),
 										e.getValue());
 									this.producerForTransactionPublishingOnExifOrImageTopic.send(producerRecord);
@@ -238,117 +253,123 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 							});
 							metrics.putAll(taskResult.getMetrics());
 						} catch (
-								CommitFailedException |
-								InterruptedException |
-								ExecutionException e) {
+							CommitFailedException |
+							InterruptedException |
+							ExecutionException e) {
 							BeanProcessIncomingFile.LOGGER.warn("Error whil commiting ",
-									e);
+								e);
 						}
 					});
 					this.producerForTransactionPublishingOnExifOrImageTopic.sendOffsetsToTransaction(offsets,
-							this.groupId);
+						this.groupId);
 					this.producerForTransactionPublishingOnExifOrImageTopic.commitTransaction();
 					metrics.entrySet().forEach((e) -> {
 						BeanProcessIncomingFile.LOGGER.info(
-								"[EVENT][{}] processed file of hash key {}, sent {} Exif or image values ",
-								e.getKey(),
-								e.getValue());
+							"[EVENT][{}] processed file of hash key {}, sent {} Exif or image values ",
+							e.getKey(),
+							e.getValue());
 					});
 				}
 			} catch (Exception e) {
 				BeanProcessIncomingFile.LOGGER.error("error in processInputFile ",
-						e);
+					e);
 			}
 		}
 	}
 
 	protected void processIncomingRecord(ConsumerRecord<String, String> rec,
-			Table<String, String, Object> objectsToSend, Map<String, Integer> metrics) {
+		Table<String, String, Object> objectsToSend, Map<String, Integer> metrics) {
 		try {
 
 			BeanProcessIncomingFile.LOGGER.info(
-					"[EVENT][{}] Processing record [ topic: {}, offset: {}, timestamp: {}, path: ]",
-					rec.key(),
-					rec.topic(),
-					rec.offset(),
-					rec.timestamp(),
-					rec.key());
+				"[EVENT][{}] Processing record [ topic: {}, offset: {}, timestamp: {}, path: ]",
+				rec.key(),
+				rec.topic(),
+				rec.offset(),
+				rec.timestamp(),
+				rec.key());
 			Collection<IFD> metaData = this.beanFileMetadataExtractor.readIFDs(rec.key());
 			final int nbOfTiffFields = metaData.stream().mapToInt((e) -> e.getTotalNumberOfTiffFields()).sum();
 			final IfdContext context = new IfdContext(nbOfTiffFields);
-			metaData.forEach((ifd) -> this.buildObjectsToSend(rec.key(),
+			metaData.forEach((ifd) -> {
+				context.push(ifd.getTag().getValue());
+				this.buildObjectsToSend(rec.key(),
 					ifd,
 					context,
 					objectsToSend,
-					metrics));
+					metrics);
+			});
 
 			BeanProcessIncomingFile.LOGGER.info(
-					"[EVENT][{}] End of Processing record : nb of images {}, nb of exifs {} / total nb of exifs {} ",
-					rec.key(),
-					context.getCurrentNbOfImages(),
-					context.getCurrentTiffId(),
-					context.getNbOfTiffFields());
+				"[EVENT][{}] End of Processing record : nb of images {}, nb of exifs {} / total nb of exifs {} ",
+				rec.key(),
+				context.getCurrentNbOfImages(),
+				context.getCurrentTiffId(),
+				context.getNbOfTiffFields());
 		} catch (Exception e) {
 			BeanProcessIncomingFile.LOGGER.error("[EVENT][{}] error when processing incoming record ",
-					rec.key(),
-					e);
+				rec.key(),
+				e);
 
 		}
 	}
 
 	private void buildObjectsToSend(String key, IFD ifd, IfdContext context,
-			Table<String, String, Object> objectsToSend, Map<String, Integer> metrics) {
+		Table<String, String, Object> objectsToSend, Map<String, Integer> metrics) {
+		context.push(ifd.getTag().getValue());
 		if (ifd.imageIsPresent()) {
 			context.incNbOfImages();
 			final String key2 = key + "-IMG-" + context.getCurrentNbOfImages();
 			BeanProcessIncomingFile.LOGGER.info("[EVENT][{}] publishing a found jpeg image ",
-					key2);
+				key2);
 			metrics.merge(key,
-					1,
-					Integer::sum);
+				1,
+				Integer::sum);
 			objectsToSend.put(this.topicThumb,
-					key2,
-					Collections.singleton(ifd.getJpegImage()));
+				key2,
+				Collections.singleton(ifd.getJpegImage()));
 		}
 		ifd.getFields().forEach((f) -> {
 			try {
 				context.incNbOfTiff();
 				ExchangedTiffData etd = this.buildExchangedTiffData(key,
-						context,
-						f);
+					context,
+					f);
 				Object retValue = objectsToSend.put(this.topicExif,
-						etd.getId(),
-						etd);
+					etd.getKey(),
+					etd);
 				if (retValue != null) {
 					BeanProcessIncomingFile.LOGGER.error(
-							"Error double values found for [{}, {}] : {} , previous value is : {}",
-							this.topicExif,
-							etd.getId(),
-							etd,
-							retValue);
+						"Error double values found for [{}, {}] : {} , previous value is : {}",
+						this.topicExif,
+						etd.getId(),
+						etd,
+						retValue);
 				} else {
 					metrics.merge(key,
-							1,
-							Integer::sum);
+						1,
+						Integer::sum);
 				}
 			} catch (UnsupportedEncodingException e) {
 				BeanProcessIncomingFile.LOGGER.error("Error",
-						e);
+					e);
 			}
 		});
-		ifd.getAllChildren().forEach((children) -> this.buildObjectsToSend(key,
+		ifd.getAllChildren()
+			.forEach((children) -> this.buildObjectsToSend(key,
 				children,
 				context,
 				objectsToSend,
 				metrics));
+		context.pop();
 	}
 
 	protected ExchangedTiffData buildExchangedTiffData(String key, IfdContext context, TiffField<?> f)
-			throws UnsupportedEncodingException {
+		throws UnsupportedEncodingException {
 		String tiffKey = key + "-EXIF-" + context.getCurrentTiffId();
 		BeanProcessIncomingFile.LOGGER.debug("[EVENT][{}] publishing an exif {} ",
-				tiffKey,
-				f.getData() != null ? f.getData() : " <null> ");
+			tiffKey,
+			f.getData() != null ? f.getData() : " <null> ");
 		ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
 		Object internalData = f.getData();
 		if (internalData instanceof int[]) {
@@ -362,9 +383,16 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 		} else {
 			throw new IllegalArgumentException();
 		}
-		builder.withImageId(key).withKey(tiffKey).withTag(f.getTag().getValue()).withLength(f.getLength())
-				.withFieldType(FieldType.fromShort(f.getFieldType())).withIntId(context.getCurrentTiffId())
-				.withTotal(context.getNbOfTiffFields()).withId(f.getTag().toString());
+		short[] path = context.resolvePath();
+		builder.withImageId(key)
+			.withKey(tiffKey)
+			.withTag(f.getTag().getValue())
+			.withLength(f.getLength())
+			.withFieldType(FieldType.fromShort(f.getFieldType()))
+			.withIntId(context.getCurrentTiffId())
+			.withTotal(context.getNbOfTiffFields())
+			.withId(f.getTag().toString())
+			.withPath(path);
 		ExchangedTiffData etd = builder.build();
 		return etd;
 	}
