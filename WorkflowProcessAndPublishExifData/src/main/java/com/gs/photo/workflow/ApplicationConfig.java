@@ -1,7 +1,6 @@
 package com.gs.photo.workflow;
 
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
@@ -36,32 +35,30 @@ import com.workflow.model.HbaseImageThumbnail;
 @PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-	public static final int                JOIN_WINDOW_TIME            = 86400;
-	public static final short              EXIF_CREATION_DATE_ID       = (short) 0x9003;
-	private static final DateTimeFormatter FORMATTER_FOR_CREATION_DATE = DateTimeFormatter
-			.ofPattern("yyyy:MM:dd HH:mm:ss");
+	public static final int   JOIN_WINDOW_TIME      = 86400;
+	public static final short EXIF_CREATION_DATE_ID = (short) 0x9003;
 
 	@Bean
 	public Properties kafkaStreamProperties() {
 		Properties config = new Properties();
 		config.put(StreamsConfig.APPLICATION_ID_CONFIG,
-				this.applicationGroupId + "-duplicate-streams");
+			this.applicationGroupId + "-duplicate-streams");
 		config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-				this.bootstrapServers);
+			this.bootstrapServers);
 		config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
-				Serdes.String().getClass());
+			Serdes.String().getClass());
 		config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG,
-				Serdes.String().getClass());
+			Serdes.String().getClass());
 		config.put(StreamsConfig.STATE_DIR_CONFIG,
-				this.kafkaStreamDir);
+			this.kafkaStreamDir);
 		config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
-				StreamsConfig.EXACTLY_ONCE);
+			StreamsConfig.EXACTLY_ONCE);
 		config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
-				"0");
+			"0");
 		config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-				"earliest");
+			"earliest");
 		config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG,
-				0);
+			0);
 
 		return config;
 	}
@@ -70,22 +67,22 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	public Topology kafkaStreamsTopology() {
 		StreamsBuilder builder = new StreamsBuilder();
 		KStream<String, HbaseExifData> exifOfImageStream = this.buildKStreamToGetExifValue(builder)
-				.map((key, v_ExchangedTiffData) -> {
-					return new KeyValue<>(key, this.buildHbaseExifData(v_ExchangedTiffData));
-				});
+			.map((key, v_ExchangedTiffData) -> {
+				return new KeyValue<>(key, this.buildHbaseExifData(v_ExchangedTiffData));
+			});
 		KStream<String, HbaseImageThumbnail> hbaseThumbMailStream = this.buildKStreamToGetHbaseImageThumbNail(builder);
 		KStream<String, HbaseExifData> hbaseExifUpdate = exifOfImageStream.join(hbaseThumbMailStream,
-				(v_HbaseExifData, v_HbaseImageThumbnail) -> {
-					return this.updateHbaseExifData(v_HbaseExifData,
-							v_HbaseImageThumbnail);
-				},
-				JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-				Joined.with(Serdes.String(),
-						new HbaseExifDataSerDe(),
-						new HbaseImageThumbnailSerDe()));
+			(v_HbaseExifData, v_HbaseImageThumbnail) -> {
+				return this.updateHbaseExifData(v_HbaseExifData,
+					v_HbaseImageThumbnail);
+			},
+			JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+			Joined.with(Serdes.String(),
+				new HbaseExifDataSerDe(),
+				new HbaseImageThumbnailSerDe()));
 		KStream<String, HbaseData> finalStream = hbaseExifUpdate.flatMapValues((key, value) -> {
 			final Collection<HbaseData> asList = Arrays.asList(value,
-					this.buildHbaseExifDataOfImages(value));
+				this.buildHbaseExifDataOfImages(value));
 			return asList;
 		});
 		this.publishImageDataInRecordTopic(finalStream);
@@ -95,7 +92,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	}
 
 	private HbaseExifData updateHbaseExifData(HbaseExifData v_HbaseExifData,
-			HbaseImageThumbnail v_HbaseImageThumbnail) {
+		HbaseImageThumbnail v_HbaseImageThumbnail) {
 		v_HbaseExifData.setCreationDate(v_HbaseImageThumbnail.getCreationDate());
 		v_HbaseExifData.setWidth(v_HbaseImageThumbnail.getWidth());
 		v_HbaseExifData.setHeight(v_HbaseImageThumbnail.getHeight());
@@ -107,42 +104,47 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	protected HbaseExifDataOfImages buildHbaseExifDataOfImages(HbaseExifData v_hbaseImageThumbnail) {
 		HbaseExifDataOfImages.Builder builder = HbaseExifDataOfImages.builder();
 		builder.withCreationDate(DateTimeHelper.toDateTimeAsString(v_hbaseImageThumbnail.getCreationDate()))
-				.withExifTag(v_hbaseImageThumbnail.getExifTag())
-				.withExifValueAsByte(v_hbaseImageThumbnail.getExifValueAsByte())
-				.withExifValueAsInt(v_hbaseImageThumbnail.getExifValueAsInt())
-				.withExifValueAsShort(v_hbaseImageThumbnail.getExifValueAsShort())
-				.withHeight(v_hbaseImageThumbnail.getHeight()).withImageId(v_hbaseImageThumbnail.getImageId())
-				.withThumbName(v_hbaseImageThumbnail.getThumbName()).withWidth(v_hbaseImageThumbnail.getWidth());
+			.withExifTag(v_hbaseImageThumbnail.getExifTag())
+			.withExifValueAsByte(v_hbaseImageThumbnail.getExifValueAsByte())
+			.withExifValueAsInt(v_hbaseImageThumbnail.getExifValueAsInt())
+			.withExifValueAsShort(v_hbaseImageThumbnail.getExifValueAsShort())
+			.withHeight(v_hbaseImageThumbnail.getHeight())
+			.withImageId(v_hbaseImageThumbnail.getImageId())
+			.withThumbName(v_hbaseImageThumbnail.getThumbName())
+			.withWidth(v_hbaseImageThumbnail.getWidth())
+			.withExifPath(v_hbaseImageThumbnail.getExifPath());
 		return builder.build();
 	}
 
 	protected HbaseExifData buildHbaseExifData(ExchangedTiffData v_hbaseImageThumbnail) {
 		Builder builder = HbaseExifData.builder();
 		builder.withExifValueAsByte(v_hbaseImageThumbnail.getDataAsByte())
-				.withExifValueAsInt(v_hbaseImageThumbnail.getDataAsInt())
-				.withExifValueAsShort(v_hbaseImageThumbnail.getDataAsShort())
-				.withImageId(v_hbaseImageThumbnail.getImageId()).withExifTag(v_hbaseImageThumbnail.getTag());
+			.withExifValueAsInt(v_hbaseImageThumbnail.getDataAsInt())
+			.withExifValueAsShort(v_hbaseImageThumbnail.getDataAsShort())
+			.withImageId(v_hbaseImageThumbnail.getImageId())
+			.withExifTag(v_hbaseImageThumbnail.getTag())
+			.withExifPath(v_hbaseImageThumbnail.getPath());
 		return builder.build();
 	}
 
 	private KStream<String, HbaseImageThumbnail> buildKStreamToGetHbaseImageThumbNail(StreamsBuilder builder) {
 		KStream<String, HbaseImageThumbnail> stream = builder.stream(this.topicImageDataToPersist,
-				Consumed.with(Serdes.String(),
-						new HbaseImageThumbnailSerDe()));
+			Consumed.with(Serdes.String(),
+				new HbaseImageThumbnailSerDe()));
 		return stream;
 	}
 
 	private KStream<String, ExchangedTiffData> buildKStreamToGetExifValue(StreamsBuilder streamsBuilder) {
 		KStream<String, ExchangedTiffData> stream = streamsBuilder.stream(this.topicExif,
-				Consumed.with(Serdes.String(),
-						new ExchangedDataSerDe()));
+			Consumed.with(Serdes.String(),
+				new ExchangedDataSerDe()));
 		return stream;
 	}
 
 	protected void publishImageDataInRecordTopic(KStream<String, HbaseData> finalStream) {
 		finalStream.to(this.topicExifImageDataToPersist,
-				Produced.with(Serdes.String(),
-						new HbaseDataSerDe()));
+			Produced.with(Serdes.String(),
+				new HbaseDataSerDe()));
 	}
 
 }

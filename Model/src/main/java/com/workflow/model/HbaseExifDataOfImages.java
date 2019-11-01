@@ -17,7 +17,8 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	protected String          imageId;
 	@Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
 	protected long            exifTag;
-
+	@Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
+	protected short[]         exifPath;
 	// Data
 	@Nullable
 	@Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
@@ -40,9 +41,10 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
 	@Generated("SparkTools")
 	private HbaseExifDataOfImages(
-			Builder builder) {
+		Builder builder) {
 		this.imageId = builder.imageId;
 		this.exifTag = builder.exifTag;
+		this.exifPath = builder.exifPath;
 		this.exifValueAsByte = builder.exifValueAsByte;
 		this.exifValueAsInt = builder.exifValueAsInt;
 		this.exifValueAsShort = builder.exifValueAsShort;
@@ -132,6 +134,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 		final int prime = 31;
 		int result = 1;
 		result = (prime * result) + ((this.creationDate == null) ? 0 : this.creationDate.hashCode());
+		result = (prime * result) + Arrays.hashCode(this.exifPath);
 		result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
 		result = (prime * result) + Arrays.hashCode(this.exifValueAsByte);
 		result = (prime * result) + Arrays.hashCode(this.exifValueAsInt);
@@ -162,19 +165,23 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 		} else if (!this.creationDate.equals(other.creationDate)) {
 			return false;
 		}
+		if (!Arrays.equals(this.exifPath,
+			other.exifPath)) {
+			return false;
+		}
 		if (this.exifTag != other.exifTag) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsByte,
-				other.exifValueAsByte)) {
+			other.exifValueAsByte)) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsInt,
-				other.exifValueAsInt)) {
+			other.exifValueAsInt)) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsShort,
-				other.exifValueAsShort)) {
+			other.exifValueAsShort)) {
 			return false;
 		}
 		if (this.height != other.height) {
@@ -217,6 +224,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 	public static final class Builder {
 		private String  imageId;
 		private long    exifTag;
+		private short[] exifPath;
 		private byte[]  exifValueAsByte;
 		private int[]   exifValueAsInt;
 		private short[] exifValueAsShort;
@@ -249,6 +257,18 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 		 */
 		public Builder withExifTag(long exifTag) {
 			this.exifTag = exifTag;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifPath parameter.
+		 *
+		 * @param exifPath
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifPath(short[] exifPath) {
+			this.exifPath = exifPath;
 			return this;
 		}
 

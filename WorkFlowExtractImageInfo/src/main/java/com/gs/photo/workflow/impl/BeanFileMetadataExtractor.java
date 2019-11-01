@@ -18,6 +18,7 @@ import com.gs.photos.workflow.metadata.IOUtils;
 import com.gs.photos.workflow.metadata.ReadStrategyII;
 import com.gs.photos.workflow.metadata.ReadStrategyMM;
 import com.gs.photos.workflow.metadata.TemplateTagFactory;
+import com.gs.photos.workflow.metadata.exif.RootTiffTag;
 
 @Service
 public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
@@ -37,7 +38,7 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
 			int offset = this.readHeader(fcdi);
 			do {
-				AbstractTemplateTag dtp = TemplateTagFactory.create();
+				AbstractTemplateTag dtp = TemplateTagFactory.create(RootTiffTag.ROOT_TIFF);
 				offset = dtp.createSimpleTiffFields(fcdi,
 						offset);
 				allIfds.addAll(dtp.getAllIfds());

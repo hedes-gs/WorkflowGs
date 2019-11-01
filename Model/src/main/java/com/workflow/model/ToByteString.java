@@ -9,7 +9,7 @@ public interface ToByteString extends ToByte<String> {
 
 	@Override
 	public default String fromByte(byte[] parameter, int offset, int length) {
-		return new String(parameter, offset, length);
+		return new String(parameter, offset, length).trim();
 	}
 
 }

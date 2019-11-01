@@ -15,6 +15,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 	protected short           tag;
 	protected FieldType       fieldType;
 	protected int             length;
+	protected short[]         path;
 	@Nullable
 	protected int[]           dataAsInt        = {};
 	@Nullable
@@ -34,6 +35,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 		this.tag = builder.tag;
 		this.fieldType = builder.fieldType;
 		this.length = builder.length;
+		this.path = builder.path;
 		this.dataAsInt = builder.dataAsInt;
 		this.dataAsShort = builder.dataAsShort;
 		this.dataAsByte = builder.dataAsByte;
@@ -96,6 +98,10 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
 	public String getImageId() {
 		return this.imageId;
+	}
+
+	public short[] getPath() {
+		return this.path;
 	}
 
 	public ExchangedTiffData(
@@ -246,6 +252,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 		private short     tag;
 		private FieldType fieldType;
 		private int       length;
+		private short[]   path;
 		private int[]     dataAsInt;
 		private short[]   dataAsShort;
 		private byte[]    dataAsByte;
@@ -313,6 +320,18 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 		 */
 		public Builder withLength(int length) {
 			this.length = length;
+			return this;
+		}
+
+		/**
+		 * Builder method for path parameter.
+		 *
+		 * @param path
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withPath(short[] path) {
+			this.path = path;
 			return this;
 		}
 

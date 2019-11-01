@@ -15,7 +15,9 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 	// Row key
 	@Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
 	protected long            exifTag;
-	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+	@Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
+	protected short[]         exifPath;
+	@Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
 	protected String          imageId;
 
 	// Data
@@ -41,8 +43,9 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
 	@Generated("SparkTools")
 	private HbaseExifData(
-			Builder builder) {
+		Builder builder) {
 		this.exifTag = builder.exifTag;
+		this.exifPath = builder.exifPath;
 		this.imageId = builder.imageId;
 		this.exifValueAsByte = builder.exifValueAsByte;
 		this.exifValueAsInt = builder.exifValueAsInt;
@@ -51,6 +54,10 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 		this.creationDate = builder.creationDate;
 		this.width = builder.width;
 		this.height = builder.height;
+	}
+
+	public short[] getExifPath() {
+		return this.exifPath;
 	}
 
 	public HbaseExifData() {
@@ -121,6 +128,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 		final int prime = 31;
 		int result = 1;
 		result = (prime * result) + (int) (this.creationDate ^ (this.creationDate >>> 32));
+		result = (prime * result) + Arrays.hashCode(this.exifPath);
 		result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
 		result = (prime * result) + Arrays.hashCode(this.exifValueAsByte);
 		result = (prime * result) + Arrays.hashCode(this.exifValueAsInt);
@@ -147,19 +155,23 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 		if (this.creationDate != other.creationDate) {
 			return false;
 		}
+		if (!Arrays.equals(this.exifPath,
+			other.exifPath)) {
+			return false;
+		}
 		if (this.exifTag != other.exifTag) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsByte,
-				other.exifValueAsByte)) {
+			other.exifValueAsByte)) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsInt,
-				other.exifValueAsInt)) {
+			other.exifValueAsInt)) {
 			return false;
 		}
 		if (!Arrays.equals(this.exifValueAsShort,
-				other.exifValueAsShort)) {
+			other.exifValueAsShort)) {
 			return false;
 		}
 		if (this.height != other.height) {
@@ -188,9 +200,9 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 	@Override
 	public String toString() {
 		return "HbaseExifData [exifTag=" + this.exifTag + ", imageId=" + this.imageId + ", exifValueAsByte="
-				+ Arrays.toString(this.exifValueAsByte) + ", exifValueAsInt=" + Arrays.toString(this.exifValueAsInt)
-				+ ", exifValueAsShort=" + Arrays.toString(this.exifValueAsShort) + ", thumbName=" + this.thumbName
-				+ ", creationDate=" + this.creationDate + ", width=" + this.width + ", height=" + this.height + "]";
+			+ Arrays.toString(this.exifValueAsByte) + ", exifValueAsInt=" + Arrays.toString(this.exifValueAsInt)
+			+ ", exifValueAsShort=" + Arrays.toString(this.exifValueAsShort) + ", thumbName=" + this.thumbName
+			+ ", creationDate=" + this.creationDate + ", width=" + this.width + ", height=" + this.height + "]";
 	}
 
 	/**
@@ -209,6 +221,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 	@Generated("SparkTools")
 	public static final class Builder {
 		private long    exifTag;
+		private short[] exifPath;
 		private String  imageId;
 		private byte[]  exifValueAsByte;
 		private int[]   exifValueAsInt;
@@ -230,6 +243,18 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 		 */
 		public Builder withExifTag(long exifTag) {
 			this.exifTag = exifTag;
+			return this;
+		}
+
+		/**
+		 * Builder method for exifPath parameter.
+		 *
+		 * @param exifPath
+		 *            field to set
+		 * @return builder
+		 */
+		public Builder withExifPath(short[] exifPath) {
+			this.exifPath = exifPath;
 			return this;
 		}
 
