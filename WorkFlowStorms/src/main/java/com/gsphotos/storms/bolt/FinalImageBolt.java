@@ -24,7 +24,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	protected Map<String, Object> windowConfiguration;
 
-	private static final String   IS_NORMALIZED  = "isNormalized";
+	private static final String   VERSION        = "version";
 	private static final String   ORIGINAL_IMAGE = "originalImage";
 	protected static final Logger LOGGER         = Logger.getLogger(FinalImageBolt.class);
 
@@ -33,8 +33,8 @@ public class FinalImageBolt extends BaseWindowedBolt {
 		protected final short height;
 
 		public Dim(
-				short width,
-				short height) {
+			short width,
+			short height) {
 			super();
 			this.width = width;
 			this.height = height;
@@ -96,11 +96,11 @@ public class FinalImageBolt extends BaseWindowedBolt {
 		this.collector = collector;
 
 		this.settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
-				this.kafkaBrokers);
+			this.kafkaBrokers);
 		this.settings.put("key.serializer",
-				"org.apache.kafka.common.serialization.StringSerializer");
+			"org.apache.kafka.common.serialization.StringSerializer");
 		this.settings.put("value.serializer",
-				FinalImageSerializer.class.getName());
+			FinalImageSerializer.class.getName());
 		this.producer = new KafkaProducer<>(this.settings);
 		this.windowConfiguration = new HashMap<>();
 		this.buildComponentConfiguration();
@@ -109,9 +109,9 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	protected void buildComponentConfiguration() {
 		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
-				this.windowLength);
+			this.windowLength);
 		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
-				1);
+			1);
 	}
 
 	@Override
@@ -135,8 +135,8 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	}
 
 	public FinalImageBolt(
-			String kafkaBrokers,
-			String outputTopic) {
+		String kafkaBrokers,
+		String outputTopic) {
 		super();
 		this.kafkaBrokers = kafkaBrokers;
 		this.outputTopic = outputTopic;
@@ -152,15 +152,18 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			FinalImage finalImage = null;
 
 			FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.ORIGINAL_IMAGE);
-			boolean isNormalized = input.getBooleanByField(FinalImageBolt.IS_NORMALIZED);
+			short version = input.getIntegerByField(FinalImageBolt.VERSION).shortValue();
 			Dim dim = this.get(currentImage.getCompressedImage());
 			FinalImage.Builder builder = FinalImage.builder();
-			builder.withCompressedData(currentImage.getCompressedImage()).withHeight(dim.getHeight())
-					.withWidth(dim.getWidth()).withOriginal(isNormalized).withId(currentImage.getId());
+			builder.withCompressedData(currentImage.getCompressedImage())
+				.withHeight(dim.getHeight())
+				.withWidth(dim.getWidth())
+				.withVersion(version)
+				.withId(currentImage.getId());
 			finalImage = builder.build();
 			FinalImageBolt.LOGGER.info(" sending final image input " + finalImage);
 			this.producer
-					.send(new ProducerRecord<String, FinalImage>(this.outputTopic, finalImage.getId(), finalImage));
+				.send(new ProducerRecord<String, FinalImage>(this.outputTopic, finalImage.getId(), finalImage));
 
 		});
 		this.producer.flush();
