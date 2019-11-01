@@ -14,7 +14,7 @@ import org.apache.avro.reflect.ReflectData;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.reflect.ClassPath;
 
-public class Snippet {
+public class GenerateAvroSchema {
 	public static void main(String[] args) {
 		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
@@ -23,8 +23,8 @@ public class Snippet {
 			List<Schema> schemas = new ArrayList<>();
 			for (final ClassPath.ClassInfo info : ClassPath.from(loader).getTopLevelClasses()) {
 				if (info.getName().startsWith("com.workflow.model.Hbase")
-						|| info.getName().startsWith("com.workflow.model.Exchange")
-						|| info.getName().startsWith("com.workflow.model.storm")) {
+					|| info.getName().startsWith("com.workflow.model.Exchange")
+					|| info.getName().startsWith("com.workflow.model.storm")) {
 					final Class<?> clazz = info.load();
 					if (!clazz.isInterface()) {
 						try {
