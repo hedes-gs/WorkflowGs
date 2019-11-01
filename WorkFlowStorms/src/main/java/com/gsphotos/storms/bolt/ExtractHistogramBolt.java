@@ -21,14 +21,20 @@ import com.workflow.model.storm.ImageAndLut;
 
 public class ExtractHistogramBolt implements IRichBolt {
 
-	private static final int  RED              = 0;
-	private static final int  GREEN            = 0;
-	private static final int  BLUE             = 0;
+	private static final String IMAGE_AND_LUT          = "imageAndLut";
+	private static final String IMG_NUMBER             = "imgNumber";
+	private static final String VERSION                = "version";
+	private static final String ORIGINAL_IMAGE_STREAM  = "originalImage";
+	private static final String NORMALIZE_IMAGE_STREAM = "normalizeImage";
+	private static final String IMG_FIELD              = "-IMG-";
+	private static final int    RED                    = 0;
+	private static final int    GREEN                  = 0;
+	private static final int    BLUE                   = 0;
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 1L;
-	private OutputCollector   collector;
+	private static final long   serialVersionUID       = 1L;
+	private OutputCollector     collector;
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -39,17 +45,11 @@ public class ExtractHistogramBolt implements IRichBolt {
 		// colorVal 1 -> RED 2 -> GREEN 3 -> BLUE
 		float[][] histogram = new float[3][256];
 
-		for (
-				int i = 0;
-				i < input.getWidth();
-				i++) {
-			for (
-					int j = 0;
-					j < input.getHeight();
-					j++) {
+		for (int i = 0; i < input.getWidth(); i++) {
+			for (int j = 0; j < input.getHeight(); j++) {
 				int red = 0;
 				int rgb = input.getRGB(i,
-						j);
+					j);
 				red = (rgb >> 16) & 0xFF;
 				histogram[ExtractHistogramBolt.RED][red]++;
 				red = (rgb >> 8) & 0xFF;
@@ -64,46 +64,43 @@ public class ExtractHistogramBolt implements IRichBolt {
 	@Override
 	public void execute(Tuple input) {
 		String id = (String) input.getValueByField("KEY");
+		int imgCount = Integer.parseInt(
+			id.substring(id.indexOf(ExtractHistogramBolt.IMG_FIELD) + ExtractHistogramBolt.IMG_FIELD.length()));
+
 		byte[] data = (byte[]) input.getValueByField("VALUE");
 		try {
 			if ((data != null) && (data.length > 0)) {
 				BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data));
 				float[][] histogram = this.getHistogram(bi);
 				float[][] normaLizedHistogram = new float[histogram.length][];
-				for (
-						int i = 0;
-						i < normaLizedHistogram.length;
-						i++) {
+				for (int i = 0; i < normaLizedHistogram.length; i++) {
 					normaLizedHistogram[i] = new float[histogram[i].length];
-					for (
-							int k = 0;
-							k < histogram[i].length;
-							k++) {
+					for (int k = 0; k < histogram[i].length; k++) {
 						normaLizedHistogram[i][k] = histogram[i][k];
 					}
 				}
 				// ===================== Normalizing Whole Image ========================
 				this.normalizedFunction(normaLizedHistogram[ExtractHistogramBolt.RED],
-						0,
-						normaLizedHistogram[0].length - 1);
+					0,
+					normaLizedHistogram[0].length - 1);
 				this.normalizedFunction(normaLizedHistogram[ExtractHistogramBolt.GREEN],
-						0,
-						normaLizedHistogram[0].length - 1);
+					0,
+					normaLizedHistogram[0].length - 1);
 				this.normalizedFunction(normaLizedHistogram[ExtractHistogramBolt.BLUE],
-						0,
-						normaLizedHistogram[0].length - 1);
+					0,
+					normaLizedHistogram[0].length - 1);
 				// ======================================================================
 
 				// ===================== Histogram EQUALIZATION =========================
 				this.histogramEqualization(normaLizedHistogram[0],
-						0,
-						255);
+					0,
+					255);
 				this.histogramEqualization(normaLizedHistogram[1],
-						0,
-						255);
+					0,
+					255);
 				this.histogramEqualization(normaLizedHistogram[2],
-						0,
-						255);
+					0,
+					255);
 				// ======================================================================
 
 				ArrayList<int[]> imageLUT = new ArrayList<int[]>();
@@ -111,10 +108,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 				int[] ghistogram = new int[256];
 				int[] bhistogram = new int[256];
 
-				for (
-						int i = 0;
-						i < rhistogram.length;
-						i++) {
+				for (int i = 0; i < rhistogram.length; i++) {
 					rhistogram[i] = (int) normaLizedHistogram[ExtractHistogramBolt.RED][i];
 					ghistogram[i] = (int) normaLizedHistogram[ExtractHistogramBolt.GREEN][i];
 					bhistogram[i] = (int) normaLizedHistogram[ExtractHistogramBolt.BLUE][i];
@@ -123,15 +117,16 @@ public class ExtractHistogramBolt implements IRichBolt {
 				imageLUT.add(ghistogram);
 				imageLUT.add(bhistogram);
 
-				this.collector.emit("normalizeImage",
-						input,
-						new Values(new ImageAndLut(id, data, imageLUT)));
+				this.collector.emit(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
+					input,
+					new Values(new ImageAndLut(id, data, imageLUT), imgCount));
+
 				FinalImage.Builder builder = FinalImage.builder();
-				builder.withId(id).withOriginal(true).withCompressedData(data);
+				builder.withId(id).withCompressedData(data);
 				final FinalImage finalImage = builder.build();
-				this.collector.emit("originalImage",
-						input,
-						new Values(finalImage, Boolean.FALSE));
+				this.collector.emit(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
+					input,
+					new Values(finalImage, imgCount));
 				bi = null;
 			} else {
 				this.collector.fail(input);
@@ -146,10 +141,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 		float sumr, sumrx;
 		sumr = sumrx = 0;
 		int high_minus_low = high - low;
-		for (
-				int i = low;
-				i <= high;
-				i++) {
+		for (int i = low; i <= high; i++) {
 			sumr += (histogram[i]);
 			sumrx = low + (high_minus_low * sumr);
 			int valr = (int) (sumrx);
@@ -164,16 +156,10 @@ public class ExtractHistogramBolt implements IRichBolt {
 	protected void normalizedFunction(float myArr[], int low, int high) {
 
 		float sumV = 0.0f;
-		for (
-				int i = low;
-				i <= high;
-				i++) {
+		for (int i = low; i <= high; i++) {
 			sumV = sumV + (myArr[i]);
 		}
-		for (
-				int i = low;
-				i <= high;
-				i++) {
+		for (int i = low; i <= high; i++) {
 			myArr[i] /= sumV;
 		}
 	}
@@ -184,11 +170,14 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("imageAndLut", "originalImage", "isNormalized"));
-		declarer.declareStream("normalizeImage",
-				new Fields("imageAndLut"));
-		declarer.declareStream("originalImage",
-				new Fields("originalImage", "isNormalized"));
+		declarer.declare(new Fields(ExtractHistogramBolt.IMAGE_AND_LUT,
+			ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
+			ExtractHistogramBolt.IMG_NUMBER,
+			ExtractHistogramBolt.VERSION));
+		declarer.declareStream(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
+			new Fields(ExtractHistogramBolt.IMAGE_AND_LUT, ExtractHistogramBolt.IMG_NUMBER));
+		declarer.declareStream(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
+			new Fields(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM, ExtractHistogramBolt.VERSION));
 
 	}
 
