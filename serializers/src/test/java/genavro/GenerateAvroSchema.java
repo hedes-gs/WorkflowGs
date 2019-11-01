@@ -1,4 +1,4 @@
-package snippet;
+package genavro;
 
 import java.io.DataOutputStream;
 import java.io.File;
