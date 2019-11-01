@@ -30,9 +30,9 @@
 		<module>../WorkFlowExtractImageInfo</module>
 		<module>../WorkflowScan</module>
 		<module>../WorkflowHbase</module>
-		<module>../WorkFlowProcessAndPublishForRecord</module>
-		<module>../WorkFlowStorms</module>
+		<module>../WorkflowProcessAndPublishThumbImages</module>
 		<module>../WorkflowProcessAndPublishExifData</module>
+		<module>../WorkFlowStorms</module>
 	</modules>
 	<dependencyManagement>
 		<dependencies>

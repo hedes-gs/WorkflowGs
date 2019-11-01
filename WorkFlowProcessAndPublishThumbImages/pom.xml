@@ -6,8 +6,9 @@
 		<groupId>com.gs.photos</groupId>
 		<artifactId>WorkFlow</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../WorkFlow/pom.xml</relativePath>
 	</parent>
-	<artifactId>WorkFlowProcessAndPublishForRecord</artifactId>
+	<artifactId>WorkflowProcessAndPublishThumbImages</artifactId>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
