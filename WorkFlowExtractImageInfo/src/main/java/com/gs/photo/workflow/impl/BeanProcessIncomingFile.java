@@ -77,7 +77,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
 		public Short pop() {
 			if (this.currentIFDStack.size() > 0) {
-				return this.currentIFDStack.remove(this.currentIFDStack.size());
+				return this.currentIFDStack.remove(this.currentIFDStack.size() - 1);
 			}
 			return 0;
 		}
@@ -327,7 +327,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 				Integer::sum);
 			objectsToSend.put(this.topicThumb,
 				key2,
-				Collections.singleton(ifd.getJpegImage()));
+				ifd.getJpegImage());
 		}
 		ifd.getFields().forEach((f) -> {
 			try {
