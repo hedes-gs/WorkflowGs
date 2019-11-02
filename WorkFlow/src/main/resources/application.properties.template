@@ -18,6 +18,7 @@ topic.topicTransformedThumb=topic-transformed-thumb
 topic.topicImageDataToPersist=topic-image-data-to-persist
 topic.topicExifImageDataToPersist=topic-exif-image-data-to-persist
 topic.topicThumb=topic-thumb
+topic.topicCountOfImagesPerDate=topic.topic-count-of-images-per-date
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
