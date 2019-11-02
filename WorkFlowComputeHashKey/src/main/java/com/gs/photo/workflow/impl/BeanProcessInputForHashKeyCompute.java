@@ -27,7 +27,7 @@ import com.gs.photo.workflow.IProcessInputForHashKeyCompute;
 public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
 
 	protected final Logger             LOGGER = LoggerFactory.getLogger(IProcessInputForHashKeyCompute.class);
-	@Value("${topic.scan-output}")
+	@Value("${topic.topicScannedFiles}")
 	protected String                   topicScanOutput;
 
 	@Value("${topic.topicFileHashKey}")
@@ -58,52 +58,52 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 		this.LOGGER.debug("Starting processing key ");
 		this.consumerForTopicWithStringKey.subscribe(Arrays.asList(this.topicScanOutput));
 		this.LOGGER.debug("Subscribing done on topic {}",
-				this.topicScanOutput);
+			this.topicScanOutput);
 		Map<String, String> metrics = new HashMap<String, String>();
 
 		while (true) {
 			try {
 				metrics.clear();
 				ConsumerRecords<String, String> records = this.consumerForTopicWithStringKey
-						.poll(Duration.ofMillis(500));
+					.poll(Duration.ofMillis(500));
 				records.forEach((r) -> {
 					try {
 						byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(r.key(),
-								r.value());
+							r.value());
 						this.LOGGER.info("[EVENT][{}] getting bytes to compute hash key, length is ",
-								r.key(),
-								rawFile.length);
+							r.key(),
+							rawFile.length);
 						String key = this.beanImageFileHelper.computeHashKey(rawFile);
 						this.igniteDAO.save(key,
-								rawFile);
+							rawFile);
 						this.LOGGER.info("[EVENT][{}] saved in ignite {} ",
-								key,
-								r.value() + "@" + r.key());
+							key,
+							r.value() + "@" + r.key());
 						this.producerForPublishingOnStringTopic
-								.send(new ProducerRecord<String, String>(this.topicHashKeyOutput, key, r.value()));
+							.send(new ProducerRecord<String, String>(this.topicHashKeyOutput, key, r.value()));
 						metrics.put(key,
-								r.key());
+							r.key());
 					} catch (IOException e) {
 						this.LOGGER.error("[EVENT][{}] Error when processing key",
-								r.key(),
-								e);
+							r.key(),
+							e);
 					}
 				});
 				this.producerForPublishingOnStringTopic.flush();
 				this.consumerForTopicWithStringKey.commitSync();
 				metrics.entrySet().forEach((e) -> {
 					this.LOGGER.info("[EVENT][{}] Compute hashkey for path {}",
-							e.getKey(),
-							e.getValue());
+						e.getKey(),
+						e.getValue());
 				});
 
 			} catch (InterruptException e) {
 				this.LOGGER.error("[EVENT][{}] Error when processing ",
-						e);
+					e);
 				break;
 			} catch (Exception e) {
 				this.LOGGER.error("[EVENT][{}] Error when processing ",
-						e);
+					e);
 
 			}
 		}
