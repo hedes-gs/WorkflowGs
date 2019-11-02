@@ -40,7 +40,7 @@ pipeline {
 					WorkflowHbase: {
 						sh 'cd WorkflowHbase/deployment;  						ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
 					},
-					WorkflowProcessAndPublishThumbImages: {
+					WorkFlowProcessAndPublishThumbImages: {
 						sh 'cd WorkflowProcessAndPublishThumbImages/deployment;  	ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/deploy.yml '
 					},
 					WorkflowProcessAndPublishExifData: {
