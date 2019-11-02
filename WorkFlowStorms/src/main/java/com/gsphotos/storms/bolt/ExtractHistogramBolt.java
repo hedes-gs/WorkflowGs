@@ -27,7 +27,6 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 	private static final String   IMAGE_AND_LUT          = "imageAndLut";
 	private static final String   IMG_NUMBER             = "imgNumber";
-	private static final String   VERSION                = "version";
 	private static final String   ORIGINAL_IMAGE_STREAM  = "originalImage";
 	private static final String   NORMALIZE_IMAGE_STREAM = "normalizeImage";
 	private static final String   IMG_FIELD              = "-IMG-";
@@ -38,6 +37,8 @@ public class ExtractHistogramBolt implements IRichBolt {
 	 *
 	 */
 	private static final long     serialVersionUID       = 1L;
+
+	private static final String   FINAL_IMAGE            = "finalImage";
 	private OutputCollector       collector;
 
 	@Override
@@ -67,6 +68,16 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
+		try {
+			this.doExecute(input);
+		} catch (Exception e) {
+			ExtractHistogramBolt.LOGGER.error("Unexpected error ",
+				e);
+			this.collector.fail(input);
+		}
+	}
+
+	protected void doExecute(Tuple input) {
 		String id = (String) input.getValueByField("KEY");
 		int imgCount = Integer.parseInt(
 			id.substring(id.indexOf(ExtractHistogramBolt.IMG_FIELD) + ExtractHistogramBolt.IMG_FIELD.length()));
@@ -137,7 +148,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 					id);
 				this.collector.emit(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
 					input,
-					new Values(finalImage, imgCount));
+					new Values(finalImage));
 				bi = null;
 				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit done",
 					id);
@@ -145,7 +156,8 @@ public class ExtractHistogramBolt implements IRichBolt {
 				this.collector.fail(input);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			ExtractHistogramBolt.LOGGER.error("Unexpected error ",
+				e);
 		}
 	}
 
@@ -184,13 +196,12 @@ public class ExtractHistogramBolt implements IRichBolt {
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		declarer.declare(new Fields(ExtractHistogramBolt.IMAGE_AND_LUT,
-			ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
-			ExtractHistogramBolt.IMG_NUMBER,
-			ExtractHistogramBolt.VERSION));
+			ExtractHistogramBolt.FINAL_IMAGE,
+			ExtractHistogramBolt.IMG_NUMBER));
 		declarer.declareStream(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
 			new Fields(ExtractHistogramBolt.IMAGE_AND_LUT, ExtractHistogramBolt.IMG_NUMBER));
 		declarer.declareStream(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
-			new Fields(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM, ExtractHistogramBolt.VERSION));
+			new Fields(ExtractHistogramBolt.FINAL_IMAGE));
 
 	}
 

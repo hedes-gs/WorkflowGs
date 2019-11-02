@@ -9,24 +9,25 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.log4j.Logger;
 import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.base.BaseWindowedBolt;
 import org.apache.storm.windowing.TupleWindow;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.gs.photos.serializers.FinalImageSerializer;
 import com.workflow.model.storm.FinalImage;
 
 public class FinalImageBolt extends BaseWindowedBolt {
+	protected static final Logger LOGGER      = LoggerFactory.getLogger(FinalImageBolt.class);
 
 	protected Map<String, Object> windowConfiguration;
 
-	private static final String   VERSION        = "version";
-	private static final String   ORIGINAL_IMAGE = "originalImage";
-	protected static final Logger LOGGER         = Logger.getLogger(FinalImageBolt.class);
+	private static final String   VERSION     = "version";
+	private static String         FINAL_IMAGE = "finalImage";
 
 	public static class Dim {
 		protected final short width;
@@ -151,12 +152,22 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	@Override
 	public void execute(TupleWindow inputWindow) {
-		ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , receive 1 ");
+		try {
+			doExecute(inputWindow);
+		} catch (Exception e) {
+			FinalImageBolt.LOGGER.error("Unexpected error",
+				e);
+		}
+	}
 
+	protected void doExecute(TupleWindow inputWindow) {
 		inputWindow.get().forEach((input) -> {
 			FinalImage finalImage = null;
 
-			FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.ORIGINAL_IMAGE);
+			FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.FINAL_IMAGE);
+			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , receive 1 ",
+				currentImage.getId());
+
 			short version = input.getIntegerByField(FinalImageBolt.VERSION).shortValue();
 			Dim dim = this.get(currentImage.getCompressedImage());
 			FinalImage.Builder builder = FinalImage.builder();
