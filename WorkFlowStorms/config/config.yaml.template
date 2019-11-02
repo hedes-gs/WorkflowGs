@@ -47,13 +47,13 @@ spouts:
 
 # bolt definitions
 bolts:
-  - id: "extract-histogram-bolt"
+  - id: "extractHistogram"
     className: "com.gsphotos.storms.bolt.ExtractHistogramBolt"
     parallelism: {{ extract_histogram_bolt_parallelism }}
-  - id: "normalize-image-bolt"
+  - id: "normalizeImage"
     className: "com.gsphotos.storms.bolt.NormalizeImageBolt"
     parallelism: {{ normalize_image_bolt_parallelism }}
-  - id: "final-image-bolt"
+  - id: "finalImage"
     className: "com.gsphotos.storms.bolt.FinalImageBolt"
     parallelism: {{ final_image_bolt_parallelism }}
     properties:
@@ -65,23 +65,23 @@ bolts:
         value: "{{ kafka_outputTopic }}"
 
 streams:
-  - name: "kafka --> extract-histogram-bolt" # name isn't used (placeholder for logging, UI, etc.)
+  - name: "kafka --> extractHistogram" # name isn't used (placeholder for logging, UI, etc.)
     from: "kafka-spout"
-    to: "extract-histogram-bolt"
+    to: "extractHistogram"
     grouping:
       type: SHUFFLE
-  - name: "extract-histogram-bolt --> normalize-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
-    from: "extract-histogram-bolt"
-    to: "normalize-image-bolt"
+  - name: "extractHistogram --> normalizeImage" # name isn't used (placeholder for logging, UI, etc.)
+    from: "extractHistogram"
+    to: "normalizeImage"
     grouping:
       type: SHUFFLE
-  - name: "extract-histogram-bolt --> final-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
-    from: "extract-histogram-bolt"
-    to: "final-image-bolt"
+  - name: "extractHistogram --> finalImage" # name isn't used (placeholder for logging, UI, etc.)
+    from: "extractHistogram"
+    to: "finalImage"
     grouping:
       type: SHUFFLE
-  - name: "normalize-image-bolt --> final-image-bolt" # name isn't used (placeholder for logging, UI, etc.)
-    from: "normalize-image-bolt"
-    to: "final-image-bolt"
+  - name: "normalizeImage --> finalImage" # name isn't used (placeholder for logging, UI, etc.)
+    from: "normalizeImage"
+    to: "finalImage"
     grouping:
       type: SHUFFLE
