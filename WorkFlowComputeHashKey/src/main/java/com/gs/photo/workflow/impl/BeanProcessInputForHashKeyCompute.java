@@ -27,7 +27,7 @@ import com.gs.photo.workflow.IProcessInputForHashKeyCompute;
 public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
 
 	protected final Logger             LOGGER = LoggerFactory.getLogger(IProcessInputForHashKeyCompute.class);
-	@Value("${topic.topicScannedFiles}")
+	@Value("${topic.scannedFiles}")
 	protected String                   topicScanOutput;
 
 	@Value("${topic.topicFileHashKey}")
