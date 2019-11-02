@@ -27,7 +27,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 	private static final String   IMAGE_AND_LUT          = "imageAndLut";
 	private static final String   IMG_NUMBER             = "imgNumber";
-	private static final String   ORIGINAL_IMAGE_STREAM  = "originalImage";
+	private static final String   FINAL_IMAGE_STREAM     = "finalImage";
 	private static final String   NORMALIZE_IMAGE_STREAM = "normalizeImage";
 	private static final String   IMG_FIELD              = "-IMG-";
 	private static final int      RED                    = 0;
@@ -146,7 +146,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 				final FinalImage finalImage = builder.build();
 				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit 2",
 					id);
-				this.collector.emit(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
+				this.collector.emit(ExtractHistogramBolt.FINAL_IMAGE_STREAM,
 					input,
 					new Values(finalImage));
 				bi = null;
@@ -200,7 +200,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 			ExtractHistogramBolt.IMG_NUMBER));
 		declarer.declareStream(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
 			new Fields(ExtractHistogramBolt.IMAGE_AND_LUT, ExtractHistogramBolt.IMG_NUMBER));
-		declarer.declareStream(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
+		declarer.declareStream(ExtractHistogramBolt.FINAL_IMAGE_STREAM,
 			new Fields(ExtractHistogramBolt.FINAL_IMAGE));
 
 	}

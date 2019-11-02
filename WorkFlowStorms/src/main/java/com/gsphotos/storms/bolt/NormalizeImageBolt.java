@@ -53,6 +53,7 @@ public class NormalizeImageBolt implements IRichBolt {
 					"jpg",
 					os);
 				this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
+					input,
 					new Values(new NormalizedImage(data.getId(), os.toByteArray()), 100 * imgNumber));
 				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , emit data",
 					data.getId());
