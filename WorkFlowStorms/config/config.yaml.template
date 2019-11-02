@@ -28,6 +28,8 @@ components:
               "key.deserializer" : "org.apache.kafka.common.serialization.StringDeserializer",
               "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer",
               "security.protocol": "SASL_PLAINTEXT",
+              "group.id": "wf-storm-group",
+              "client.id": "wf-storm-client",
               "sasl.kerberos.service.name": "kafka"
             }   
   - id: "spoutConfig"
