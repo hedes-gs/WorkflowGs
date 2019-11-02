@@ -19,6 +19,8 @@ topic.topicImageDataToPersist=topic-image-data-to-persist
 topic.topicExifImageDataToPersist=topic-exif-image-data-to-persist
 topic.topicThumb=topic-thumb
 topic.topicCountOfImagesPerDate=topic.topic-count-of-images-per-date
+topic.scannedFiles=topic-scanned-files
+topic.scannedFilesChildParent=topic-scanned-files-child
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
