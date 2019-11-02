@@ -11,8 +11,15 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class WorkFlowProcessAndPublishExifData {
 
 	public static void main(String[] args) {
-		SpringApplication.run(
-			WorkFlowProcessAndPublishExifData.class,
+		SpringApplication.run(WorkFlowProcessAndPublishExifData.class,
 			args);
+		try {
+			synchronized (SpringApplication.class) {
+				SpringApplication.class.wait();
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
