@@ -151,6 +151,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	@Override
 	public void execute(TupleWindow inputWindow) {
+		ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , receive 1 ");
 
 		inputWindow.get().forEach((input) -> {
 			FinalImage finalImage = null;
@@ -166,6 +167,9 @@ public class FinalImageBolt extends BaseWindowedBolt {
 				.withId(currentImage.getId());
 			finalImage = builder.build();
 			FinalImageBolt.LOGGER.info(" sending final image input " + finalImage);
+			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , emit ",
+				finalImage.getId());
+
 			this.producer
 				.send(new ProducerRecord<String, FinalImage>(this.outputTopic, finalImage.getId(), finalImage));
 

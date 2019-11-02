@@ -15,26 +15,30 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.workflow.model.storm.FinalImage;
 import com.workflow.model.storm.ImageAndLut;
 
 public class ExtractHistogramBolt implements IRichBolt {
 
-	private static final String IMAGE_AND_LUT          = "imageAndLut";
-	private static final String IMG_NUMBER             = "imgNumber";
-	private static final String VERSION                = "version";
-	private static final String ORIGINAL_IMAGE_STREAM  = "originalImage";
-	private static final String NORMALIZE_IMAGE_STREAM = "normalizeImage";
-	private static final String IMG_FIELD              = "-IMG-";
-	private static final int    RED                    = 0;
-	private static final int    GREEN                  = 0;
-	private static final int    BLUE                   = 0;
+	protected static final Logger LOGGER                 = LoggerFactory.getLogger(ExtractHistogramBolt.class);
+
+	private static final String   IMAGE_AND_LUT          = "imageAndLut";
+	private static final String   IMG_NUMBER             = "imgNumber";
+	private static final String   VERSION                = "version";
+	private static final String   ORIGINAL_IMAGE_STREAM  = "originalImage";
+	private static final String   NORMALIZE_IMAGE_STREAM = "normalizeImage";
+	private static final String   IMG_FIELD              = "-IMG-";
+	private static final int      RED                    = 0;
+	private static final int      GREEN                  = 0;
+	private static final int      BLUE                   = 0;
 	/**
 	 *
 	 */
-	private static final long   serialVersionUID       = 1L;
-	private OutputCollector     collector;
+	private static final long     serialVersionUID       = 1L;
+	private OutputCollector       collector;
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -66,10 +70,13 @@ public class ExtractHistogramBolt implements IRichBolt {
 		String id = (String) input.getValueByField("KEY");
 		int imgCount = Integer.parseInt(
 			id.substring(id.indexOf(ExtractHistogramBolt.IMG_FIELD) + ExtractHistogramBolt.IMG_FIELD.length()));
-
 		byte[] data = (byte[]) input.getValueByField("VALUE");
 		try {
 			if ((data != null) && (data.length > 0)) {
+				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , length is {}",
+					id,
+					data.length);
+
 				BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data));
 				float[][] histogram = this.getHistogram(bi);
 				float[][] normaLizedHistogram = new float[histogram.length][];
@@ -116,6 +123,8 @@ public class ExtractHistogramBolt implements IRichBolt {
 				imageLUT.add(rhistogram);
 				imageLUT.add(ghistogram);
 				imageLUT.add(bhistogram);
+				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit 1",
+					id);
 
 				this.collector.emit(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
 					input,
@@ -124,10 +133,14 @@ public class ExtractHistogramBolt implements IRichBolt {
 				FinalImage.Builder builder = FinalImage.builder();
 				builder.withId(id).withCompressedData(data);
 				final FinalImage finalImage = builder.build();
+				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit 2",
+					id);
 				this.collector.emit(ExtractHistogramBolt.ORIGINAL_IMAGE_STREAM,
 					input,
 					new Values(finalImage, imgCount));
 				bi = null;
+				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit done",
+					id);
 			} else {
 				this.collector.fail(input);
 			}
