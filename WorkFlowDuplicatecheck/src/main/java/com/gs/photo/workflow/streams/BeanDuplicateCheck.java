@@ -3,8 +3,6 @@ package com.gs.photo.workflow.streams;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -77,20 +75,20 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 		StreamsBuilder builder = new StreamsBuilder();
 
 		StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
-				Stores.persistentWindowStore(this.storeName,
-						retentionPeriod,
-						numberOfSegments,
-						maintainDurationPerEventInMs,
-						false),
-				Serdes.String(),
-				Serdes.Long());
+			Stores.persistentWindowStore(this.storeName,
+				retentionPeriod,
+				numberOfSegments,
+				maintainDurationPerEventInMs,
+				false),
+			Serdes.String(),
+			Serdes.Long());
 
 		builder.addStateStore(dedupStoreBuilder);
 
 		KStream<String, String> input = builder.stream(this.topicFileHashKey);
 		KStream<String, String> deduplicated = input.transform(
-				() -> this.buildDedupTransformer(maintainDurationPerEventInMs),
-				this.storeName);
+			() -> this.buildDedupTransformer(maintainDurationPerEventInMs),
+			this.storeName);
 		deduplicated.filter((K, V) -> {
 			return K.startsWith("DUP-");
 		}).to(this.duplicateImageFoundTopic);
@@ -99,39 +97,32 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
 		}).to(this.topicDupFilteredFile);
 
 		KafkaStreams streams = new KafkaStreams(builder.build(), this.kafkaStreamProperties);
+
 		return streams;
 	}
 
 	protected DeduplicationTransformer<String, String, String> buildDedupTransformer(
-			long maintainDurationPerEventInMs) {
-		return new DeduplicationTransformer<String, String, String>(
-			maintainDurationPerEventInMs,
+		long maintainDurationPerEventInMs) {
+		return new DeduplicationTransformer<String, String, String>(maintainDurationPerEventInMs,
 			(key, value) -> key,
 			this.storeName) {
 			@Override
 			public KeyValue<String, String> transform(final String key, final String value) {
 				KeyValue<String, String> output = super.transform(key,
-						value);
+					value);
 				if (output == null) {
 					BeanDuplicateCheck.LOGGER.info("[EVENT][{}]!!! Duplicate value found : {}",
-							key,
-							value);
+						key,
+						value);
 					output = KeyValue.pair("DUP-" + key,
-							value);
+						value);
 				} else {
 					BeanDuplicateCheck.LOGGER.info("Unique value found for key {} and value {}",
-							key,
-							value);
+						key,
+						value);
 				}
 				return output;
 			}
 		};
 	}
-
-	@PostConstruct
-	public void init() {
-		this.streams = this.buildKafkaStreamsTopology();
-		this.streams.start();
-	}
-
 }
