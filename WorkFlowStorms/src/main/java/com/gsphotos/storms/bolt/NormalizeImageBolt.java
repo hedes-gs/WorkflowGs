@@ -39,21 +39,30 @@ public class NormalizeImageBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
-		ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , receive 1 ");
-		ImageAndLut data = (ImageAndLut) input.getValueByField(NormalizeImageBolt.IMAGE_AND_LUT);
-		int imgNumber = input.getIntegerByField(NormalizeImageBolt.IMG_NUMBER);
 		try {
-			BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data.getCompressedImage()));
-			BufferedImage mmodifiedImage = this.getOriginalImage(bi,
-				data.getLut());
-			ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
-			ImageIO.write(mmodifiedImage,
-				"jpg",
-				os);
-			this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
-				new Values(new NormalizedImage(data.getId(), os.toByteArray()), 100 * imgNumber));
-		} catch (IOException e) {
-			e.printStackTrace();
+			ImageAndLut data = (ImageAndLut) input.getValueByField(NormalizeImageBolt.IMAGE_AND_LUT);
+			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , receive data",
+				data.getId());
+			int imgNumber = input.getIntegerByField(NormalizeImageBolt.IMG_NUMBER);
+			try {
+				BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data.getCompressedImage()));
+				BufferedImage mmodifiedImage = this.getOriginalImage(bi,
+					data.getLut());
+				ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
+				ImageIO.write(mmodifiedImage,
+					"jpg",
+					os);
+				this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
+					new Values(new NormalizedImage(data.getId(), os.toByteArray()), 100 * imgNumber));
+				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , emit data",
+					data.getId());
+			} catch (IOException e) {
+				NormalizeImageBolt.LOGGER.error("Error ",
+					e);
+			}
+		} catch (Exception e) {
+			NormalizeImageBolt.LOGGER.error("Error ",
+				e);
 		}
 	}
 
