@@ -16,17 +16,21 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.workflow.model.storm.ImageAndLut;
 import com.workflow.model.storm.NormalizedImage;
 
 public class NormalizeImageBolt implements IRichBolt {
-	private static final String FINAL_IMAGE_STREAM = "finalImage";
-	private static final String VERSION_NUMBER     = "version";
-	private static final String IMAGE_AND_LUT      = "imageAndLut";
-	private static final String IMG_NUMBER         = "imgNumber";
-	private static final long   serialVersionUID   = 1;
-	private OutputCollector     collector;
+	protected static final Logger LOGGER             = LoggerFactory.getLogger(ExtractHistogramBolt.class);
+
+	private static final String   FINAL_IMAGE_STREAM = "finalImage";
+	private static final String   VERSION_NUMBER     = "version";
+	private static final String   IMAGE_AND_LUT      = "imageAndLut";
+	private static final String   IMG_NUMBER         = "imgNumber";
+	private static final long     serialVersionUID   = 1;
+	private OutputCollector       collector;
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -35,6 +39,7 @@ public class NormalizeImageBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
+		ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , receive 1 ");
 		ImageAndLut data = (ImageAndLut) input.getValueByField(NormalizeImageBolt.IMAGE_AND_LUT);
 		int imgNumber = input.getIntegerByField(NormalizeImageBolt.IMG_NUMBER);
 		try {
@@ -47,7 +52,6 @@ public class NormalizeImageBolt implements IRichBolt {
 				os);
 			this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
 				new Values(new NormalizedImage(data.getId(), os.toByteArray()), 100 * imgNumber));
-			this.collector.ack(input);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
