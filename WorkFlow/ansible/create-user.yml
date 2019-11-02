@@ -70,6 +70,24 @@
     - name: Force kill stuck processes
       shell: "kill -9 {{ item }}"
       with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
+    - name: del princip
+      shell: kadmin.local -q 'delprinc -force {{ user_to_create }}@GS.COM'
+      when:  inventory_hostname == '192.168.1.206'
+    - name: add princip
+      shell: kadmin.local -q 'addprinc -pw {{ user_to_create }} {{ user_to_create }}@GS.COM' 
+      when:  inventory_hostname == '192.168.1.206'
+    - name: rm keytab
+      shell: rm -f /home/user/keytabs/{{ user_to_create }}.keytab
+      when:  inventory_hostname == '192.168.1.206'
+    - name: create keytabs 
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/{{user_to_create}}.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  {{user_to_create}}@GS.COM'
+      when:  inventory_hostname == '192.168.1.206'
+    - name: get keytab hbase@GS.COM
+      fetch:
+        src: /home/user/keytabs/{{user_to_create}}.keytab
+        dest: ../../WorkFlow/ansible/tools/application/keytabs/
+        flat: yes
+      when:  inventory_hostname == '192.168.1.206'
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
