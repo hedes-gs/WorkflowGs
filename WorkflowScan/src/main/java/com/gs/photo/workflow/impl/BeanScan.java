@@ -36,10 +36,10 @@ public class BeanScan implements IScan {
 
 	protected static final org.slf4j.Logger LOGGER                 = LoggerFactory.getLogger(IScan.class);
 
-	@Value("${topic.scan-output}")
+	@Value("${topic.scannedFiles}")
 	protected String                        outputTopic;
 
-	@Value("${topic.scan-output-child-parent}")
+	@Value("${topic.scannedFilesChildParent}")
 	protected String                        outputParentTopic;
 
 	@Value("${scan.folder}")
@@ -64,7 +64,7 @@ public class BeanScan implements IScan {
 				this.hostname = ip.getHostName();
 			}
 			BeanScan.LOGGER.info("Starting scan at  {}",
-					this.folder);
+				this.folder);
 
 			this.listFiles(Paths.get(this.folder));
 		} catch (IOException e) {
@@ -74,19 +74,19 @@ public class BeanScan implements IScan {
 
 	public void listFiles(Path path) throws IOException {
 		try (
-				DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+			DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
 			for (Path entry : stream) {
 				if (!Files.isDirectory(entry)) {
 					BeanScan.LOGGER.info("Processing file {}",
-							entry);
+						entry);
 					this.processFoundFile(path,
-							entry);
+						entry);
 
 				}
 			}
 		}
 		try (
-				DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+			DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
 
 			for (Path entry : stream) {
 				if (Files.isDirectory(entry)) {
@@ -99,30 +99,30 @@ public class BeanScan implements IScan {
 	public void processFoundFile(Path path, Path entry) {
 		final String currentFileName = entry.getFileName().toString();
 		String extension = currentFileName.substring(currentFileName.indexOf('.'),
-				currentFileName.length());
+			currentFileName.length());
 		switch (extension.toUpperCase()) {
 		case BeanScan.EXTENSION_FILE_ARW: {
 			final String absolutePathOfCurrentFile = entry.toAbsolutePath().toString();
 			final String fileName = entry.toAbsolutePath().getFileName().toString();
 			this.publishMainFile(absolutePathOfCurrentFile);
 			this.mapOfFiles.put(absolutePathOfCurrentFile.toUpperCase(),
-					fileName);
+				fileName);
 			break;
 		}
 		case BeanScan.EXTENSION_FILE_ARW_COF:
 		case BeanScan.EXTENSION_ARW_COP: {
 			Path parentPath = path.getParent().getParent().getParent();
 			this.publishIfThereIsAMainFile(entry,
-					currentFileName,
-					parentPath);
+				currentFileName,
+				parentPath);
 			break;
 		}
 		case BeanScan.EXTENSION_ARW_COS:
 		case BeanScan.EXTENSION_ARW_COMASK: {
 			Path parentPath = path.getParent().getParent();
 			this.publishIfThereIsAMainFile(entry,
-					currentFileName,
-					parentPath);
+				currentFileName,
+				parentPath);
 			break;
 		}
 		}
@@ -130,12 +130,12 @@ public class BeanScan implements IScan {
 
 	public void publishIfThereIsAMainFile(Path entry, final String currentFileName, Path parentPath) {
 		String parentFileName = parentPath.toAbsolutePath().toString() + File.separatorChar
-				+ currentFileName.substring(0,
-						currentFileName.indexOf('.'))
-				+ BeanScan.EXTENSION_FILE_ARW;
+			+ currentFileName.substring(0,
+				currentFileName.indexOf('.'))
+			+ BeanScan.EXTENSION_FILE_ARW;
 		if (this.mapOfFiles.containsKey(parentFileName.toUpperCase())) {
 			this.publishSubFile(parentFileName,
-					entry.toAbsolutePath().toString());
+				entry.toAbsolutePath().toString());
 		}
 	}
 
@@ -144,22 +144,22 @@ public class BeanScan implements IScan {
 		final String nfsValue = this.hostname + ":" + this.folder;
 
 		BeanScan.LOGGER.info("[EVENT][{}] publish main file {} from nfs : '{}'",
-				mainFile,
-				sentFile,
-				nfsValue);
+			mainFile,
+			sentFile,
+			nfsValue);
 		this.producerForPublishingOnStringTopic
-				.send(new ProducerRecord<String, String>(this.outputTopic, sentFile, nfsValue));
+			.send(new ProducerRecord<String, String>(this.outputTopic, sentFile, nfsValue));
 		this.producerForPublishingOnStringTopic.flush();
 	}
 
 	private void publishSubFile(String mainFile, String subFile) {
 		BeanScan.LOGGER.info("[EVENT][{}] publish dependent file {}",
-				mainFile,
-				subFile);
+			mainFile,
+			subFile);
 		this.producerForPublishingOnStringTopic
-				.send(new ProducerRecord<String, String>(this.outputTopic, subFile, subFile));
+			.send(new ProducerRecord<String, String>(this.outputTopic, subFile, subFile));
 		this.producerForPublishingOnStringTopic
-				.send(new ProducerRecord<String, String>(this.outputParentTopic, subFile, mainFile));
+			.send(new ProducerRecord<String, String>(this.outputParentTopic, subFile, mainFile));
 		this.producerForPublishingOnStringTopic.flush();
 	}
 }
