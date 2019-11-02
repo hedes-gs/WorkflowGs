@@ -1,0 +1,14 @@
+com\gsphotos\storms\bolt\ExtractHistogramBolt.class
+com\gsphotos\storms\WorkFlowStormsApplication.class
+com\gsphotos\storms\translator\KeyValueTranslator.class
+com\gsphotos\storms\bolt\FinalImageBolt.class
+com\gsphotos\storms\bolt\ImageKafkaBolt.class
+com\gsphotos\storms\AvroScheme.class
+com\gsphotos\storms\scheme\KeyStringValueArrayByteScheme.class
+com\gsphotos\storms\StormTopology.class
+com\gsphotos\storms\bolt\NormalizeImageBolt.class
+com\gsphotos\storms\IStormTopology.class
+com\gsphotos\storms\ApplicationConfig.class
+com\gsphotos\storms\bolt\FinalImageBolt$Dim.class
+org\apache\storm\flux\GsFlux$1.class
+org\apache\storm\flux\GsFlux.class
