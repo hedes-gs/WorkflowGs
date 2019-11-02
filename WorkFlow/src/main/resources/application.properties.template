@@ -53,3 +53,4 @@ hbase.table.prefix=prod
 consumer.string.string={{ consumer_string_string }}
 producer.string.string={{ producer_string_string }}
 ignite.is.used={{ignite_is_used}}
+deduplication.cleanup=true
