@@ -101,6 +101,10 @@ public class FinalImageBolt extends BaseWindowedBolt {
 			"org.apache.kafka.common.serialization.StringSerializer");
 		this.settings.put("value.serializer",
 			FinalImageSerializer.class.getName());
+		this.settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG,
+			"SASL_PLAINTEXT");
+		this.settings.put("sasl.kerberos.service.name",
+			"kafka");
 		this.producer = new KafkaProducer<>(this.settings);
 		this.windowConfiguration = new HashMap<>();
 		this.buildComponentConfiguration();
