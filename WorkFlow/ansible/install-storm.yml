@@ -172,7 +172,7 @@
   
   vars:
     ansible_become_pass: granada01
-    storm_version: 2.0.0
+    storm_version: 2.1.0
     user_to_create: storm
     storm_install_folder: /home/storm
     PWD: "{{ lookup('env', 'PWD') }}"

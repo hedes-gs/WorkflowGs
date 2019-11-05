@@ -56,9 +56,17 @@ ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/con
 supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf -Dsun.security.krb5.debug=true"
 storm.zookeeper.superACL: "sasl:storm"
 
-worker.heap.memory.mb: 512
+worker.heap.memory.mb: 768
 worker.childopts: "-Djava.security.auth.login.config=/home/wf_storm/config/client_jaas.conf -Dlog4j.configurationFile=/home/wf_storm/config/log4j.xml -Xmx512m -XX:+PrintGCDetails -Xloggc:artifacts/gc.log -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=artifacts/heapdump"
 
+
+storm.messaging.netty.server_worker_threads: 3
+storm.messaging.netty.client_worker_threads: 3
+
+supervisor.monitor.frequency.secs: 10
+supervisor.worker.timeout.secs: 60
+topology.worker.receiver.thread.count: 3
+storm.scheduler: "org.apache.storm.scheduler.DefaultScheduler"
 # 
 # 
 # ##### These may optionally be filled in:
