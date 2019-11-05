@@ -74,6 +74,7 @@
     - name: clean log
       archive:
         path: ~{{ user_to_create }}/logs/*.log
+        dest: ~{{ user_to_create }}/logs
         remove: True
   vars:
     ansible_become_pass: granada01
