@@ -71,6 +71,10 @@
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
+    - name: clean log
+      archive:
+        path: ~{{ user_to_create }}/logs/*.log
+        remove: True
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
