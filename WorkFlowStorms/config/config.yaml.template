@@ -1,9 +1,11 @@
 name: "workflow-topology"
 
 config:
+  topology.debug: false
   topology.workers: 6
+  topology.tasks: 6
   topology.max.spout.pending: 1000
-  topology.message.timeout.secs: 30
+  topology.message.timeout.secs: 500
 
 components:
   - id: "keyValueTranslator"
@@ -58,7 +60,9 @@ bolts:
     parallelism: {{ final_image_bolt_parallelism }}
     properties:
       - name: "windowLength"
-        value: {{ finalImage_windowTuple }}
+        value: {{ finalImage_windowTuple_length }}
+      - name: "windowDuration"
+        value: {{ finalImage_windowTuple_duration }}
       - name: "kafkaBrokers"
         value: "{{ kafka_bootstrap_servers }}"
       - name: "outputTopic"
@@ -70,18 +74,23 @@ streams:
     to: "extractHistogram"
     grouping:
       type: SHUFFLE
+      streamId: "extractHistogram"
+
   - name: "extractHistogram --> normalizeImage" # name isn't used (placeholder for logging, UI, etc.)
     from: "extractHistogram"
     to: "normalizeImage"
     grouping:
       type: SHUFFLE
+      streamId: "normalizeImage"
   - name: "extractHistogram --> finalImage" # name isn't used (placeholder for logging, UI, etc.)
     from: "extractHistogram"
     to: "finalImage"
     grouping:
       type: SHUFFLE
+      streamId: "finalImage"
   - name: "normalizeImage --> finalImage" # name isn't used (placeholder for logging, UI, etc.)
     from: "normalizeImage"
     to: "finalImage"
     grouping:
       type: SHUFFLE
+      streamId: "finalImage"

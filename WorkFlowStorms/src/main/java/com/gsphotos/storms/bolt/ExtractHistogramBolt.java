@@ -10,8 +10,8 @@ import javax.imageio.ImageIO;
 
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
@@ -21,12 +21,13 @@ import org.slf4j.LoggerFactory;
 import com.workflow.model.storm.FinalImage;
 import com.workflow.model.storm.ImageAndLut;
 
-public class ExtractHistogramBolt implements IRichBolt {
+public class ExtractHistogramBolt extends BaseRichBolt {
 
 	protected static final Logger LOGGER                 = LoggerFactory.getLogger(ExtractHistogramBolt.class);
 
 	private static final String   IMAGE_AND_LUT          = "imageAndLut";
 	private static final String   IMG_NUMBER             = "imgNumber";
+	private static final String   VERSION_NUMBER         = "version";
 	private static final String   FINAL_IMAGE_STREAM     = "finalImage";
 	private static final String   NORMALIZE_IMAGE_STREAM = "normalizeImage";
 	private static final String   IMG_FIELD              = "-IMG-";
@@ -41,9 +42,16 @@ public class ExtractHistogramBolt implements IRichBolt {
 	private static final String   FINAL_IMAGE            = "finalImage";
 	private OutputCollector       collector;
 
+	private Map<String, Object>   stormConf;
+
+	private TopologyContext       context;
+
 	@Override
-	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
+	public void prepare(Map<String, Object> stormConf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
+		this.stormConf = stormConf;
+		this.context = context;
+		ExtractHistogramBolt.LOGGER.info("... Context " + context.toJSONString());
 	}
 
 	protected float[][] getHistogram(BufferedImage input) {
@@ -68,12 +76,19 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
+		long time = System.currentTimeMillis();
+		ExtractHistogramBolt.LOGGER.info("ExtractHistogramBolt : processing with msgId = {} ",
+			input.getMessageId());
 		try {
 			this.doExecute(input);
+			this.collector.ack(input);
 		} catch (Exception e) {
 			ExtractHistogramBolt.LOGGER.error("Unexpected error ",
 				e);
 			this.collector.fail(input);
+		} finally {
+			ExtractHistogramBolt.LOGGER.info("ExtractHistogramBolt : end of processing time : {}",
+				((float) (System.currentTimeMillis() - time)) / 1000);
 		}
 	}
 
@@ -139,7 +154,7 @@ public class ExtractHistogramBolt implements IRichBolt {
 
 				this.collector.emit(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
 					input,
-					new Values(new ImageAndLut(id, data, imageLUT), imgCount));
+					new Values(new ImageAndLut(id, data, imageLUT), (short) imgCount));
 
 				FinalImage.Builder builder = FinalImage.builder();
 				builder.withId(id).withCompressedData(data);
@@ -148,16 +163,18 @@ public class ExtractHistogramBolt implements IRichBolt {
 					id);
 				this.collector.emit(ExtractHistogramBolt.FINAL_IMAGE_STREAM,
 					input,
-					new Values(finalImage));
+					new Values(finalImage, (short) imgCount));
 				bi = null;
 				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt ExtractHistogramBolt , emit done",
 					id);
+
 			} else {
-				this.collector.fail(input);
+				throw new IllegalArgumentException("Data is null...");
 			}
 		} catch (IOException e) {
 			ExtractHistogramBolt.LOGGER.error("Unexpected error ",
 				e);
+			throw new IllegalArgumentException(e);
 		}
 	}
 
@@ -201,13 +218,13 @@ public class ExtractHistogramBolt implements IRichBolt {
 		declarer.declareStream(ExtractHistogramBolt.NORMALIZE_IMAGE_STREAM,
 			new Fields(ExtractHistogramBolt.IMAGE_AND_LUT, ExtractHistogramBolt.IMG_NUMBER));
 		declarer.declareStream(ExtractHistogramBolt.FINAL_IMAGE_STREAM,
-			new Fields(ExtractHistogramBolt.FINAL_IMAGE));
+			new Fields(ExtractHistogramBolt.FINAL_IMAGE, ExtractHistogramBolt.VERSION_NUMBER));
 
 	}
 
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
-		return null;
+		return this.stormConf;
 	}
 
 }
