@@ -1,4 +1,22 @@
+StormClient {
+   com.sun.security.auth.module.Krb5LoginModule required
+   useKeyTab=true
+   storeKey=true
+   useTicketCache=false
+   serviceName="storm"
+   keyTab="/home/{{user_to_create}}/config/{{user_to_create}}.keytab"
+   principal="{{ user_to_create}}@GS.COM";
+};
+
 KafkaClient {
+    com.sun.security.auth.module.Krb5LoginModule required
+    useKeyTab=true
+    storeKey=true
+    keyTab="/home/{{user_to_create}}/config/{{user_to_create}}.keytab"
+    principal="{{ user_to_create}}@GS.COM";
+};
+
+Client {
     com.sun.security.auth.module.Krb5LoginModule required
     useKeyTab=true
     storeKey=true

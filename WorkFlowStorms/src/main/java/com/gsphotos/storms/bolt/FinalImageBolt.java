@@ -1,7 +1,9 @@
 package com.gsphotos.storms.bolt;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -9,22 +11,19 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.storm.Config;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.topology.base.BaseWindowedBolt;
-import org.apache.storm.windowing.TupleWindow;
+import org.apache.storm.topology.base.BaseRichBolt;
+import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gs.photos.serializers.FinalImageSerializer;
 import com.workflow.model.storm.FinalImage;
 
-public class FinalImageBolt extends BaseWindowedBolt {
+public class FinalImageBolt extends BaseRichBolt {
 	protected static final Logger LOGGER      = LoggerFactory.getLogger(FinalImageBolt.class);
-
-	protected Map<String, Object> windowConfiguration;
 
 	private static final String   VERSION     = "version";
 	private static String         FINAL_IMAGE = "finalImage";
@@ -63,6 +62,8 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	protected String                       kafkaBrokers;
 	protected String                       outputTopic;
 	protected int                          windowLength;
+	protected int                          windowDuration;
+	protected Map<String, Object>          windowConfiguration;
 
 	protected Dim get(byte[] jpeg_thumbnail) {
 		ByteBuffer buffer = ByteBuffer.wrap(jpeg_thumbnail);
@@ -95,6 +96,7 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	@Override
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
 		this.collector = collector;
+		this.windowConfiguration = new HashMap<>();
 
 		this.settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG,
 			this.kafkaBrokers);
@@ -107,42 +109,24 @@ public class FinalImageBolt extends BaseWindowedBolt {
 		this.settings.put("sasl.kerberos.service.name",
 			"kafka");
 		this.producer = new KafkaProducer<>(this.settings);
-		this.windowConfiguration = new HashMap<>();
 		this.buildComponentConfiguration();
 
 	}
 
 	protected void buildComponentConfiguration() {
-		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_COUNT,
-			this.windowLength);
-		this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_SLIDING_INTERVAL_COUNT,
-			1);
-	}
+		/*
+		 * this.windowConfiguration.put(Config.TOPOLOGY_BOLTS_WINDOW_LENGTH_DURATION_MS,
+		 * this.windowDuration);
+		 */
 
-	@Override
-	public void cleanup() {
-	}
-
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-	}
-
-	@Override
-	public Map<String, Object> getComponentConfiguration() {
-		Map<String, Object> retValue = super.getComponentConfiguration();
-		if (retValue == null) {
-			retValue = new HashMap<String, Object>();
-
-		}
-		this.windowConfiguration = retValue;
-		this.buildComponentConfiguration();
-		return this.windowConfiguration;
 	}
 
 	public FinalImageBolt(
 		String kafkaBrokers,
 		String outputTopic) {
 		super();
+		this.windowConfiguration = new HashMap<>();
+		this.buildComponentConfiguration();
 		this.kafkaBrokers = kafkaBrokers;
 		this.outputTopic = outputTopic;
 	}
@@ -151,24 +135,37 @@ public class FinalImageBolt extends BaseWindowedBolt {
 	}
 
 	@Override
-	public void execute(TupleWindow inputWindow) {
+	public void execute(Tuple inputWindow) {
+		long time = System.currentTimeMillis();
+		List<Tuple> tuples = Arrays.asList(inputWindow);
+		FinalImageBolt.LOGGER.info(
+			"FinalImageBolt : Processing window tuple from source-streamId = {} , source-component = {}, anchor = {}",
+			inputWindow.getSourceStreamId(),
+			inputWindow.getSourceComponent(),
+			inputWindow.getMessageId().getAnchorsToIds());
 		try {
-			doExecute(inputWindow);
+			this.doExecute(tuples);
+			this.collector.ack(inputWindow);
 		} catch (Exception e) {
 			FinalImageBolt.LOGGER.error("Unexpected error",
 				e);
+		} finally {
+			FinalImageBolt.LOGGER.info("FinalImageBolt : End of processing window tuple with size {},  duration : {}",
+				tuples.size(),
+				((float) (System.currentTimeMillis() - time)) / 1000);
 		}
 	}
 
-	protected void doExecute(TupleWindow inputWindow) {
-		inputWindow.get().forEach((input) -> {
+	protected void doExecute(List<Tuple> tuples) {
+
+		tuples.forEach((input) -> {
 			FinalImage finalImage = null;
 
 			FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.FINAL_IMAGE);
-			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , receive 1 ",
+			FinalImageBolt.LOGGER.info("[EVENT][{}] receive one bolt FinalImageBolt",
 				currentImage.getId());
 
-			short version = input.getIntegerByField(FinalImageBolt.VERSION).shortValue();
+			short version = input.getShortByField(FinalImageBolt.VERSION);
 			Dim dim = this.get(currentImage.getCompressedImage());
 			FinalImage.Builder builder = FinalImage.builder();
 			builder.withCompressedData(currentImage.getCompressedImage())
@@ -177,18 +174,15 @@ public class FinalImageBolt extends BaseWindowedBolt {
 				.withVersion(version)
 				.withId(currentImage.getId());
 			finalImage = builder.build();
-			FinalImageBolt.LOGGER.info(" sending final image input " + finalImage);
-			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt FinalImageBolt , emit ",
-				finalImage.getId());
 
 			this.producer
 				.send(new ProducerRecord<String, FinalImage>(this.outputTopic, finalImage.getId(), finalImage));
-
+			FinalImageBolt.LOGGER.info("[EVENT][{}] Produce finalImage, version is {}",
+				finalImage.getId(),
+				finalImage.getVersion());
 		});
 		this.producer.flush();
-		inputWindow.get().forEach((input) -> {
-			this.collector.ack(input);
-		});
+
 	}
 
 	public String getKafkaBrokers() {
@@ -213,6 +207,30 @@ public class FinalImageBolt extends BaseWindowedBolt {
 
 	public void setWindowLength(int windowLength) {
 		this.windowLength = windowLength;
+	}
+
+	public int getWindowDuration() {
+		return this.windowDuration;
+	}
+
+	public void setWindowDuration(int windowDuration) {
+		this.windowDuration = windowDuration;
+	}
+
+	@Override
+	public Map<String, Object> getComponentConfiguration() {
+		Map<String, Object> retValue = super.getComponentConfiguration();
+		if (retValue == null) {
+			retValue = new HashMap<String, Object>();
+
+		}
+		this.windowConfiguration = retValue;
+		this.buildComponentConfiguration();
+		return this.windowConfiguration;
+	}
+
+	@Override
+	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 	}
 
 }

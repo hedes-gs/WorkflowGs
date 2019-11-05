@@ -11,18 +11,18 @@ import javax.imageio.ImageIO;
 
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
-import org.apache.storm.topology.IRichBolt;
 import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.topology.base.BaseRichBolt;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.workflow.model.storm.FinalImage;
 import com.workflow.model.storm.ImageAndLut;
-import com.workflow.model.storm.NormalizedImage;
 
-public class NormalizeImageBolt implements IRichBolt {
+public class NormalizeImageBolt extends BaseRichBolt {
 	protected static final Logger LOGGER             = LoggerFactory.getLogger(ExtractHistogramBolt.class);
 
 	private static final String   FINAL_IMAGE_STREAM = "finalImage";
@@ -39,32 +39,47 @@ public class NormalizeImageBolt implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
+		long time = System.currentTimeMillis();
+		NormalizeImageBolt.LOGGER.info("NormalizeImageBolt : processing");
 		try {
-			ImageAndLut data = (ImageAndLut) input.getValueByField(NormalizeImageBolt.IMAGE_AND_LUT);
-			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , receive data",
-				data.getId());
-			int imgNumber = input.getIntegerByField(NormalizeImageBolt.IMG_NUMBER);
-			try {
-				BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data.getCompressedImage()));
-				BufferedImage mmodifiedImage = this.getOriginalImage(bi,
-					data.getLut());
-				ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
-				ImageIO.write(mmodifiedImage,
-					"jpg",
-					os);
-				this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
-					input,
-					new Values(new NormalizedImage(data.getId(), os.toByteArray()), 100 * imgNumber));
-				ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , emit data",
-					data.getId());
-			} catch (IOException e) {
-				NormalizeImageBolt.LOGGER.error("Error ",
-					e);
-			}
+			this.doExecute(input);
+			this.collector.ack(input);
 		} catch (Exception e) {
 			NormalizeImageBolt.LOGGER.error("Error ",
 				e);
+			this.collector.fail(input);
+		} finally {
+			NormalizeImageBolt.LOGGER.info("NormalizeImageBolt : end of processing time : {}",
+				((float) (System.currentTimeMillis() - time)) / 1000);
 		}
+	}
+
+	protected void doExecute(Tuple input) {
+		ImageAndLut data = (ImageAndLut) input.getValueByField(NormalizeImageBolt.IMAGE_AND_LUT);
+		ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , receive data",
+			data.getId());
+		short imgNumber = input.getShortByField(NormalizeImageBolt.IMG_NUMBER);
+		try {
+			BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data.getCompressedImage()));
+			BufferedImage mmodifiedImage = this.getOriginalImage(bi,
+				data.getLut());
+			ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
+			ImageIO.write(mmodifiedImage,
+				"jpg",
+				os);
+			FinalImage.Builder builder = FinalImage.builder();
+			builder.withId(data.getId()).withCompressedData(os.toByteArray());
+
+			this.collector.emit(NormalizeImageBolt.FINAL_IMAGE_STREAM,
+				input,
+				new Values(builder.build(), (short) (100 * imgNumber)));
+			ExtractHistogramBolt.LOGGER.info("[EVENT][{}] execute bolt NormalizeImageBolt , emit data",
+				data.getId());
+		} catch (IOException e) {
+			NormalizeImageBolt.LOGGER.error("Error ",
+				e);
+		}
+
 	}
 
 	protected BufferedImage getOriginalImage(BufferedImage original, List<int[]> histLUT) {
