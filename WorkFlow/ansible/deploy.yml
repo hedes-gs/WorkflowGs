@@ -29,6 +29,11 @@
       with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
     - debug:
         msg: "{{ inventory_hostname }} and {{ ids }}"
+    - name: clean log
+      archive:
+        path: ~{{ user_to_create }}/logs/*.log
+        dest: ~{{ user_to_create }}/logs/{{ user_to_create }}.tar.bz2
+        remove: True
     - name: build config file from template
       vars:
           host_id: "{{ ids[inventory_hostname].value }}"
@@ -71,11 +76,7 @@
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
-    - name: clean log
-      archive:
-        path: ~{{ user_to_create }}/logs/*.log
-        dest: ~{{ user_to_create }}/logs
-        remove: True
+
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
