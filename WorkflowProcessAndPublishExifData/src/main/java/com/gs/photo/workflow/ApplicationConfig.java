@@ -55,7 +55,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 		config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
 			StreamsConfig.EXACTLY_ONCE);
 		config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
-			"0");
+			"10000");
 		config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
 			"earliest");
 		config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG,
