@@ -5,26 +5,31 @@ import java.util.Properties;
 import javax.annotation.PostConstruct;
 
 import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkflowPhotoScheduler {
 
-	@Autowired
-	protected Properties kafkaStreamProperties;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationConfig.class);
 
 	@Autowired
-	protected Topology kafkaStreamsTopology;
+	protected Properties        kafkaStreamProperties;
+
+	@Autowired
+	protected Topology          kafkaStreamsTopology;
 
 	@PostConstruct
 	public void init() {
-		StreamsBuilder builder = new StreamsBuilder();
-		final KafkaStreams kafkaStreams = new KafkaStreams(builder.build(), kafkaStreamProperties);
+		WorkflowPhotoScheduler.LOGGER.info("Starting kafka gttreams ");
+		final KafkaStreams kafkaStreams = new KafkaStreams(this.kafkaStreamsTopology, this.kafkaStreamProperties);
 		kafkaStreams.start();
-		Runtime.getRuntime().addShutdownHook(
-			new Thread(kafkaStreams::close));
+		WorkflowPhotoScheduler.LOGGER.info("started kafka gttreams {} ",
+			this.kafkaStreamsTopology.describe().toString());
+
+		Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
 	}
 }
