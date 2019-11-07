@@ -65,8 +65,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 		config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG,
 			StreamsConfig.EXACTLY_ONCE);
 		config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG,
-			"0");
-
+			"10000");
+		config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG,
+			"1000");
 		config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
 			"earliest");
 		config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG,
@@ -88,6 +89,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 		KStream<String, ExchangedTiffData> exifOfImageStream = this.buildKStreamToGetExifValue(builder);
 		KStream<String, ExchangedTiffData> filteredImageKStreamForCreationDate = exifOfImageStream
 			.filter((key, exif) -> {
+				ApplicationConfig.LOGGER.debug("Filter  [{},{}]",
+					key,
+					exif);
+
 				boolean b = exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID;
 				return b;
 			})
@@ -100,6 +105,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 		KStream<String, HbaseImageThumbnail> jointureToFindTheCreationDate = filteredImageKStreamForCreationDate.join(
 			imageKTable,
 			(v_exchangedTiffData, v_imagePath) -> {
+				ApplicationConfig.LOGGER.debug("Filter join [{},{}]",
+					v_exchangedTiffData,
+					v_imagePath);
+
 				return this.buildHBaseImageThumbnail(v_exchangedTiffData,
 					v_imagePath);
 			},
@@ -108,6 +117,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 				Serdes.String()));
 
 		KStream<String, Long> imageCountsStream = jointureToFindTheCreationDate.flatMap((key, value) -> {
+			ApplicationConfig.LOGGER.debug("flatMap join [{},{}]",
+				key,
+				value);
 			return this.splitCreationDateToYearMonthDayAndHour(value);
 		});
 
@@ -117,6 +129,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
 		KStream<String, HbaseImageThumbnail> finalStream = jointureToFindTheCreationDate.join(thumbImages,
 			(v_hbaseImageThumbnail, v_finalImage) -> {
+				ApplicationConfig.LOGGER.debug("jointureToFindTheCreationDate join [{},{}]",
+					v_hbaseImageThumbnail,
+					v_finalImage);
 				return this.buildHbaseImageThumbnail(v_finalImage,
 					v_hbaseImageThumbnail);
 			},
@@ -194,12 +209,17 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	}
 
 	protected KTable<String, String> buildKTableToStoreCreatedImages(StreamsBuilder builder) {
+		ApplicationConfig.LOGGER.info("building ktable from topic topicDupFilteredFile {}",
+			this.topicDupFilteredFile);
 		return builder.table(this.topicDupFilteredFile,
 			Consumed.with(Serdes.String(),
 				Serdes.String()));
 	}
 
 	protected KStream<String, String> buildKTableToGetPathValue(StreamsBuilder streamsBuilder) {
+		ApplicationConfig.LOGGER.info("building-1 ktable from topic topicDupFilteredFile {}",
+			this.topicDupFilteredFile);
+
 		KStream<String, String> stream = streamsBuilder.stream(this.topicDupFilteredFile,
 			Consumed.with(Serdes.String(),
 				Serdes.String()));
@@ -207,10 +227,16 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	}
 
 	protected KStream<String, FinalImage> buildKStreamToGetThumbImages(StreamsBuilder streamsBuilder) {
+		ApplicationConfig.LOGGER.info("building ktable from topic topicTransformedThumb {}",
+			this.topicTransformedThumb);
+
 		KStream<String, FinalImage> stream = streamsBuilder.stream(this.topicTransformedThumb,
 			Consumed.with(Serdes.String(),
 				new FinalImageSerDe()))
 			.map((k_string, v_finalImage) -> {
+				ApplicationConfig.LOGGER.debug("Map topicTransformedThumb [{},{}]",
+					k_string,
+					v_finalImage);
 				String newKey = k_string.substring(0,
 					k_string.indexOf("-IMG-"));
 				return new KeyValue<String, FinalImage>(newKey, v_finalImage);
@@ -219,6 +245,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	}
 
 	public KStream<String, ExchangedTiffData> buildKStreamToGetExifValue(StreamsBuilder streamsBuilder) {
+		ApplicationConfig.LOGGER.info("building ktable from topic topicExif {}",
+			this.topicExif);
+
 		KStream<String, ExchangedTiffData> stream = streamsBuilder.stream(this.topicExif,
 			Consumed.with(Serdes.String(),
 				new ExchangedDataSerDe()));
@@ -226,6 +255,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 	}
 
 	protected void publishImageDataInRecordTopic(KStream<String, HbaseImageThumbnail> finalStream) {
+		ApplicationConfig.LOGGER.info("building finalStream to publish in  {}",
+			this.topicImageDataToPersist);
+
 		finalStream.to(this.topicImageDataToPersist,
 			Produced.with(Serdes.String(),
 				new HbaseImageThumbnailSerDe()));
