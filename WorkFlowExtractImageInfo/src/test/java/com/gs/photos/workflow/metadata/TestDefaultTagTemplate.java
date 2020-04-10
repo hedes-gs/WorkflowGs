@@ -24,97 +24,100 @@ import com.gs.photos.workflow.metadata.exif.RootTiffTag;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 public class TestDefaultTagTemplate {
-	public static final int        STREAM_HEAD = 0x00;
-	private Logger                 LOGGER      = LogManager.getLogger(TestDefaultTagTemplate.class);
+    public static final int        STREAM_HEAD = 0x00;
+    private Logger                 LOGGER      = LogManager.getLogger(TestDefaultTagTemplate.class);
 
-	protected FileChannelDataInput fcdi;
+    protected FileChannelDataInput fcdi;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
+    @BeforeClass
+    public static void setUpBeforeClass() throws Exception {}
 
-	@Before
-	public void setUp() throws Exception {
-		Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
-		FileChannel fc = FileChannel.open(filePath,
-				StandardOpenOption.READ);
-		ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
-		fc.read(bb);
-		this.fcdi = new FileChannelDataInput(bb.array());
-	}
+    @Before
+    public void setUp() throws Exception {
+        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
+        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
+        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
+        fc.read(bb);
+        this.fcdi = new FileChannelDataInput(bb.array());
+    }
 
-	@Test
-	public void testConvertTagValueToTag() {
-	}
+    @Test
+    public void testConvertTagValueToTag() {}
 
-	@Test
-	public void testCreateSimpleTiffFields() {
-		List<IFD> allIfds = new ArrayList<>();
-		try {
-			int offset = this.readHeader(this.fcdi);
-			do {
-				AbstractTemplateTag dtp = TemplateTagFactory.create(RootTiffTag.ROOT_TIFF);
-				offset = dtp.createSimpleTiffFields(this.fcdi,
-						offset);
-				allIfds.addAll(dtp.getAllIfds());
-			} while (offset != 0);
-			Collection<TiffField<?>> allTiff = this.getAllTiffFields(allIfds);
+    @Test
+    public void testCreateSimpleTiffFields() {
+        List<IFD> allIfds = new ArrayList<>();
+        try {
+            int offset = this.readHeader(this.fcdi);
+            for (RootTiffTag rtt : RootTiffTag.values()) {
+                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt);
+                offset = dtp.createSimpleTiffFields(this.fcdi, offset);
+                allIfds.addAll(
+                    dtp.getRootIFD()
+                        .getAllChildren());
+                if (offset == 0) {
+                    break;
+                }
+            }
+            Collection<TiffField<?>> allTiff = this.getAllTiffFields(allIfds);
 
-			allIfds.forEach((ifd) -> this.LOGGER.info(ifd));
-			allTiff.forEach((tif) -> this.LOGGER.info(tif));
+            allIfds.forEach((ifd) -> this.LOGGER.info(ifd));
+            allTiff.forEach((tif) -> this.LOGGER.info(tif));
 
-			allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).map((ifd) -> ifd.getJpegImage()).forEach((img) -> {
-				LocalDateTime currentTime = LocalDateTime.now();
-				try (
-						FileOutputStream stream = new FileOutputStream(
-							UUID.randomUUID() + "-" + currentTime.toString().replaceAll("\\:",
-									"_") + ".jpg")) {
-					stream.write(img);
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			});
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+            allIfds.stream()
+                .filter((ifd) -> ifd.imageIsPresent())
+                .map((ifd) -> ifd.getJpegImage())
+                .forEach((img) -> {
+                    LocalDateTime currentTime = LocalDateTime.now();
+                    try (
+                        FileOutputStream stream = new FileOutputStream(UUID.randomUUID() + "-" + currentTime.toString()
+                            .replaceAll("\\:", "_") + ".jpg")) {
+                        stream.write(img);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	private Collection<TiffField<?>> getAllTiffFields(Collection<IFD> allIfds) {
-		final Collection<TiffField<?>> retValue = new ArrayList<>();
-		allIfds.forEach((ifd) -> {
-			retValue.addAll(ifd.getFields());
-			retValue.addAll(this.getAllTiffFields(ifd.getAllChildren()));
-		});
-		return retValue;
-	}
+    private Collection<TiffField<?>> getAllTiffFields(Collection<IFD> allIfds) {
+        final Collection<TiffField<?>> retValue = new ArrayList<>();
+        allIfds.forEach((ifd) -> {
+            retValue.addAll(ifd.getFields());
+            retValue.addAll(this.getAllTiffFields(ifd.getAllChildren()));
+        });
+        return retValue;
+    }
 
-	private int readHeader(FileChannelDataInput rin) throws IOException {
-		int offset = 0;
-		rin.position(TestDefaultTagTemplate.STREAM_HEAD);
-		short endian = rin.readShort();
-		offset += 2;
+    private int readHeader(FileChannelDataInput rin) throws IOException {
+        int offset = 0;
+        rin.position(TestDefaultTagTemplate.STREAM_HEAD);
+        short endian = rin.readShort();
+        offset += 2;
 
-		if (endian == IOUtils.BIG_ENDIAN) {
-			rin.setReadStrategy(ReadStrategyMM.getInstance());
-		} else if (endian == IOUtils.LITTLE_ENDIAN) {
-			rin.setReadStrategy(ReadStrategyII.getInstance());
-		} else {
-			throw new RuntimeException("Invalid TIFF byte order");
-		}
-		rin.position(offset);
-		short tiff_id = rin.readShort();
-		offset += 2;
+        if (endian == IOUtils.BIG_ENDIAN) {
+            rin.setReadStrategy(ReadStrategyMM.getInstance());
+        } else if (endian == IOUtils.LITTLE_ENDIAN) {
+            rin.setReadStrategy(ReadStrategyII.getInstance());
+        } else {
+            throw new RuntimeException("Invalid TIFF byte order");
+        }
+        rin.position(offset);
+        short tiff_id = rin.readShort();
+        offset += 2;
 
-		if (tiff_id != 0x2a) { // "*" 42 decimal
-			throw new RuntimeException("Invalid TIFF identifier");
-		}
+        if (tiff_id != 0x2a) { // "*" 42 decimal
+            throw new RuntimeException("Invalid TIFF identifier");
+        }
 
-		rin.position(offset);
-		offset = rin.readInt();
+        rin.position(offset);
+        offset = rin.readInt();
 
-		return offset;
-	}
+        return offset;
+    }
 
 }

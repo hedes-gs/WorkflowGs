@@ -138,7 +138,7 @@
 	</property>
 	<property>
 		<name>hbase.coprocessor.region.classes</name>
-		<value>org.apache.hadoop.hbase.security.token.TokenProvider</value>
+		<value>org.apache.hadoop.hbase.security.token.TokenProvider,org.apache.hadoop.hbase.coprocessor.AggregateImplementation</value>
 	</property>
 	<property>
 		<name>hbase.client.keytab.file</name>

@@ -2,20 +2,20 @@
 <project name="maven-antrun-" default="main"  >
 <target name="main">
   <property name="protoc.filename" value="protoc-2.5.0-${os.detected.classifier}.exe"/>
-  <property name="protoc.filepath" value="D:\eclipse-workspace\HbaseFilters\target/${protoc.filename}"/>
+  <property name="protoc.filepath" value="E:\eclipse-workspace-gsworkflow\eclipse-workspace\HbaseFilters\target/${protoc.filename}"/>
   <chmod file="${protoc.filepath}" perm="ugo+rx"/>
-  <mkdir dir="D:\eclipse-workspace\HbaseFilters\target/generated-sources"/>
+  <mkdir dir="E:\eclipse-workspace-gsworkflow\eclipse-workspace\HbaseFilters\target/generated-sources"/>
   <path id="protobuf.input.filepaths.path">
-    <fileset dir="D:\eclipse-workspace\HbaseFilters/src/main/proto">
+    <fileset dir="E:\eclipse-workspace-gsworkflow\eclipse-workspace\HbaseFilters/src/main/proto">
       <include name="**/*.proto"/>
     </fileset>
   </path>
   <pathconvert property="protobuf.input.filepaths" pathsep=" " refid="protobuf.input.filepaths.path"/>
   <exec failonerror="true" executable="${protoc.filepath}">
     <arg value="-I"/>
-    <arg value="D:\eclipse-workspace\HbaseFilters/src/main/proto"/>
+    <arg value="E:\eclipse-workspace-gsworkflow\eclipse-workspace\HbaseFilters/src/main/proto"/>
     <arg value="--java_out"/>
-    <arg value="D:\eclipse-workspace\HbaseFilters\target/generated-sources"/>
+    <arg value="E:\eclipse-workspace-gsworkflow\eclipse-workspace\HbaseFilters\target/generated-sources"/>
     <arg line="${protobuf.input.filepaths}"/>
   </exec>
 </target>

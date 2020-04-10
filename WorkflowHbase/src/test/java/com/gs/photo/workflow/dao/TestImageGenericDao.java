@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.dao;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -197,7 +198,8 @@ public class TestImageGenericDao {
 	}
 
 	@Test
-	public void test018_shouldReturn1RecordWhenUsingFilter() {
+	public void test018_shouldReturn1RecordWhenUsingFilter() throws IOException {
+		this.hbaseImageThumbnailDAO.truncate();
 		HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail(
 			LocalDateTime.now().toInstant(ZoneOffset.ofTotalSeconds(0)).toEpochMilli(),
 			(short) 1);
@@ -214,6 +216,23 @@ public class TestImageGenericDao {
 
 	}
 
+	@Test
+	public void test019_shouldReturn1000WhenCountIsCalledAnd1000DataRecorded() throws Throwable {
+
+		this.hbaseImageThumbnailDAO.truncate();
+		List<HbaseImageThumbnail> data = new ArrayList<>(10000);
+		for (int k = 0; k < 1000; k++) {
+			HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail((short) k);
+			data.add(hbaseData);
+		}
+		this.hbaseImageThumbnailDAO.put(data);
+
+		int count = this.hbaseImageThumbnailDAO.count();
+		Assert.assertEquals(1000,
+			count);
+		this.hbaseImageThumbnailDAO.truncate();
+	}
+
 	protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(long creationDate, short v) {
 		HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
 			.withCreationDate(creationDate)
@@ -225,6 +244,8 @@ public class TestImageGenericDao {
 			.withThumbName("Thumbnail_1.jpg")
 			.withHeight(1024)
 			.withWidth(768)
+			.withOriginalHeight(5000)
+			.withOriginalHeight(7000)
 			.build();
 		return hbaseData;
 	}

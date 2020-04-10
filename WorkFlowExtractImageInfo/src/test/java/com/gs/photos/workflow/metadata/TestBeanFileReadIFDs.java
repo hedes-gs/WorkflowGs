@@ -9,10 +9,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,112 +31,99 @@ import com.gs.photo.workflow.IFileMetadataExtractor;
 import com.gs.photo.workflow.IIgniteDAO;
 import com.gs.photo.workflow.impl.BeanFileMetadataExtractor;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
+import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = { NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class })
 public class TestBeanFileReadIFDs {
-	private Logger                   LOGGER = LogManager.getLogger(TestBeanFileReadIFDs.class);
+    private Logger                   LOGGER = LogManager.getLogger(TestBeanFileReadIFDs.class);
 
-	@Autowired
-	IIgniteDAO                       iIgniteDAO;
+    @Autowired
+    IIgniteDAO                       iIgniteDAO;
 
-	@Autowired
-	protected IFileMetadataExtractor beanFileMetadataExtractor;
+    @Autowired
+    protected IFileMetadataExtractor beanFileMetadataExtractor;
 
-	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
-	}
+    @BeforeClass
+    public static void setUpBeforeClass() throws Exception {}
 
-	@Before
-	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-		Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
-		FileChannel fc = FileChannel.open(filePath,
-				StandardOpenOption.READ);
-		ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
-		fc.read(bb);
-		Mockito.when(this.iIgniteDAO.get("1")).thenReturn(bb.array());
-	}
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
+        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
+        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
+        fc.read(bb);
+        Mockito.when(this.iIgniteDAO.get("1"))
+            .thenReturn(bb.array());
+    }
 
-	@Test
-	public void shouldGet204TiffFieldWhenSonyARWIsAnInputFile() {
+    @Test
+    public void shouldGet115TiffFieldWhenSonyARWIsAnInputFile() {
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
+        Assert.assertEquals(
+            115,
+            IFD.tiffFieldsAsStream(allIfds.stream())
+                .count());
+        Assert.assertEquals(115, IFD.getNbOfTiffFields(allIfds));
+    }
 
-		Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
-		Collection<TiffField<?>> allTiff = this.getAllTiffFields(allIfds);
-		Assert.assertEquals(204,
-				allTiff.size());
-	}
+    @Test
+    public void shouldPrint90TiffFieldWhenSonyARWIsAnInputFile() {
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
+        IFD.tiffFieldsAsStream(allIfds.stream())
+            .forEach((tif) -> this.LOGGER.info(tif));
+    }
 
-	@Test
-	public void shouldGet2JpgFilesWhenSonyARWIsAnInputFile() {
+    @Test
+    public void shouldGet2JpgFilesWhenSonyARWIsAnInputFile() {
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
+        Assert.assertEquals(
+            2,
+            IFD.ifdsAsStream(allIfds)
+                .filter((ifd) -> ifd.imageIsPresent())
+                .count());
+        IFD.ifdsAsStream(allIfds)
+            .filter((ifd) -> ifd.imageIsPresent())
+            .map((ifd) -> ifd.getJpegImage())
+            .forEach((img) -> {
+                LocalDateTime currentTime = LocalDateTime.now();
+                try (
+                    FileOutputStream stream = new FileOutputStream(UUID.randomUUID() + "-" + currentTime.toString()
+                        .replaceAll("\\:", "_") + ".jpg")) {
+                    stream.write(img);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+    }
 
-		Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
-		Collection<TiffField<?>> allTiff = this.getAllTiffFields(allIfds);
-		allTiff.forEach((tif) -> this.LOGGER.info(tif));
+    @Test
+    public void shouldGet2DateTimeExifAtPath0x2A_0x8769‬_WhenSonyARWIsAnInputFile() {
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
 
-		Assert.assertEquals(2,
-				allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).count());
+        long count = IFD.tiffFieldsAsStream(allIfds.stream())
+            .filter(
+                (t) -> (t.getTiffField()
+                    .getTag()
+                    .getValue() == (short) 0x9003)
+                    && Objects.deepEquals(t.getPath(), new short[] { 0, (short) 0x8769 }))
+            .count();
+        Assert.assertEquals(1, count);
 
-		allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).map((ifd) -> ifd.getJpegImage()).forEach((img) -> {
-			LocalDateTime currentTime = LocalDateTime.now();
-			try (
-					FileOutputStream stream = new FileOutputStream(
-						UUID.randomUUID() + "-" + currentTime.toString().replaceAll("\\:",
-								"_") + ".jpg")) {
-				stream.write(img);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
-	}
+    }
 
-	@Test
-	public void shouldGetAllFilesWhenSonyARWIsAnInputFile() {
+    protected String buildIfdString(String path, IFD ifd, TiffField<?> t) {
+        if (t.getTag()
+            .getValue() == TiffTag.DATE_TIME_ORIGINAL.getValue()) {
+            this.LOGGER.info("found " + t + "at path " + path + " ");
+        }
 
-		Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1");
-		Collection<String> allTiff = this.getAllTiffFields(allIfds,
-				"/");
-		allTiff.forEach((tif) -> this.LOGGER.info(tif));
+        return path + ifd.toString() + "/" + t.toString();
 
-		Assert.assertEquals(2,
-				allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).count());
-
-		allIfds.stream().filter((ifd) -> ifd.imageIsPresent()).map((ifd) -> ifd.getJpegImage()).forEach((img) -> {
-			LocalDateTime currentTime = LocalDateTime.now();
-			try (
-					FileOutputStream stream = new FileOutputStream(
-						UUID.randomUUID() + "-" + currentTime.toString().replaceAll("\\:",
-								"_") + ".jpg")) {
-				stream.write(img);
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
-	}
-
-	private Collection<TiffField<?>> getAllTiffFields(Collection<IFD> allIfds) {
-		final Collection<TiffField<?>> retValue = new ArrayList<>();
-		allIfds.forEach((ifd) -> {
-			retValue.addAll(ifd.getFields());
-			retValue.addAll(this.getAllTiffFields(ifd.getAllChildren()));
-		});
-		return retValue;
-	}
-
-	private Collection<String> getAllTiffFields(Collection<IFD> allIfds, String path) {
-		final Collection<String> retValue = new ArrayList<>();
-		allIfds.forEach((ifd) -> {
-			retValue.addAll(ifd.getFields().stream().map((t) -> path + ifd.toString() + "/" + t.toString())
-					.collect(Collectors.toList()));
-			retValue.addAll(this.getAllTiffFields(ifd.getAllChildren(),
-					path + ifd.toString() + "/"));
-		});
-		return retValue;
-	}
+    }
 
 }

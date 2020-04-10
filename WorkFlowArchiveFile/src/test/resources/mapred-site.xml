@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<property>
+		<name>mapreduce.framework.name</name>
+		<value>yarn</value>
+	</property>
+	<property>
+		<name>mapreduce.output.fileoutputformat.outputdir</name>
+		<value>.</value>
+	</property>
+	<property>
+		<name>yarn.app.mapreduce.am.staging-dir</name>
+		<value>/tmp/staging-dir</value>
+	</property>
+	<property>
+		<name>yarn.app.mapreduce.am.resource.mb</name>
+		<value>384</value>
+	</property>
+	<property>
+		<name>mapreduce.app-submission.cross-platform</name>
+		<value>true</value>
+	</property>
+	<property>
+	    <name>mapreduce.application.classpath</name>
+	    <value>/home/hadoop/latest/share/hadoop/mapreduce/*:/home/hadoop/latest/share/hadoop/mapreduce/lib/*:/home/hadoop/latest/share/hadoop/mapreduce/*:/home/hadoop/latest/share/hadoop/mapreduce/lib/*</value>
+  	</property>	
+  	
+	<property>
+  		<name>mapreduce.output.fileoutputformat.outputdir</name>
+  		<value>hdfs://hadoop-master:9000/wf_hbase/tmp</value>
+  	</property>
+  	<property>
+  		<name>mapreduce.map.log.level</name>
+  		<value>DEBUG</value>	
+  	</property>
+</configuration>

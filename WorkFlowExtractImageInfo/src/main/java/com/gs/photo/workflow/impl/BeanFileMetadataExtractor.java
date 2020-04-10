@@ -23,69 +23,60 @@ import com.gs.photos.workflow.metadata.exif.RootTiffTag;
 @Service
 public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
-	public static final int STREAM_HEAD = 0x00;
+    public static final int STREAM_HEAD = 0x00;
 
-	private static Logger   LOGGER      = LoggerFactory.getLogger(IFileMetadataExtractor.class);
+    private static Logger   LOGGER      = LoggerFactory.getLogger(IFileMetadataExtractor.class);
 
-	@Autowired
-	protected IIgniteDAO    iIgniteDAO;
+    @Autowired
+    protected IIgniteDAO    iIgniteDAO;
 
-	@Override
-	public Collection<IFD> readIFDs(String key) {
-		Collection<IFD> allIfds = new ArrayList<>();
-		try (
-				FileChannelDataInput fcdi = new FileChannelDataInput(this.iIgniteDAO.get(key))) {
+    @Override
+    public Collection<IFD> readIFDs(String key) {
+        Collection<IFD> allIfds = new ArrayList<>();
+        try (
+            FileChannelDataInput fcdi = new FileChannelDataInput(this.iIgniteDAO.get(key))) {
 
-			int offset = this.readHeader(fcdi);
-			do {
-				AbstractTemplateTag dtp = TemplateTagFactory.create(RootTiffTag.ROOT_TIFF);
-				offset = dtp.createSimpleTiffFields(fcdi,
-						offset);
-				allIfds.addAll(dtp.getAllIfds());
-			} while (offset != 0);
-			Collection<IFD> allIFD = this.getAllIFDs(allIfds);
-			return allIFD;
-		} catch (IOException e) {
-			BeanFileMetadataExtractor.LOGGER.error("Error...",
-					e);
-			throw new RuntimeException(e);
-		}
-	}
+            int offset = this.readHeader(fcdi);
+            for (RootTiffTag rtt : RootTiffTag.values()) {
+                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt);
+                offset = dtp.createSimpleTiffFields(fcdi, offset);
+                allIfds.add(dtp.getRootIFD());
+                if (offset == 0) {
+                    break;
+                }
+            }
+            return allIfds;
+        } catch (IOException e) {
+            BeanFileMetadataExtractor.LOGGER.error("Error...", e);
+            throw new RuntimeException(e);
+        }
+    }
 
-	private Collection<IFD> getAllIFDs(Collection<IFD> allIfds) {
-		final Collection<IFD> retValue = new ArrayList<>();
-		allIfds.forEach((ifd) -> {
-			retValue.add(ifd);
-			retValue.addAll(this.getAllIFDs(ifd.getAllChildren()));
-		});
-		return retValue;
-	}
+    private int readHeader(FileChannelDataInput rin) throws IOException {
+        int offset = 0;
+        rin.position(BeanFileMetadataExtractor.STREAM_HEAD);
+        short endian = rin.readShort();
+        offset += 2;
+        if (endian == IOUtils.BIG_ENDIAN) {
+            rin.setReadStrategy(ReadStrategyMM.getInstance());
+        } else if (endian == IOUtils.LITTLE_ENDIAN) {
+            rin.setReadStrategy(ReadStrategyII.getInstance());
+        } else {
+            throw new RuntimeException("Invalid TIFF byte order");
+        }
+        // Read TIFF identifier
+        rin.position(offset);
+        short tiff_id = rin.readShort();
+        offset += 2;
 
-	private int readHeader(FileChannelDataInput rin) throws IOException {
-		int offset = 0;
-		rin.position(BeanFileMetadataExtractor.STREAM_HEAD);
-		short endian = rin.readShort();
-		offset += 2;
-		if (endian == IOUtils.BIG_ENDIAN) {
-			rin.setReadStrategy(ReadStrategyMM.getInstance());
-		} else if (endian == IOUtils.LITTLE_ENDIAN) {
-			rin.setReadStrategy(ReadStrategyII.getInstance());
-		} else {
-			throw new RuntimeException("Invalid TIFF byte order");
-		}
-		// Read TIFF identifier
-		rin.position(offset);
-		short tiff_id = rin.readShort();
-		offset += 2;
+        if (tiff_id != 0x2a) { // "*" 42 decimal
+            throw new RuntimeException("Invalid TIFF identifier");
+        }
 
-		if (tiff_id != 0x2a) { // "*" 42 decimal
-			throw new RuntimeException("Invalid TIFF identifier");
-		}
+        rin.position(offset);
+        offset = rin.readInt();
 
-		rin.position(offset);
-		offset = rin.readInt();
-
-		return offset;
-	}
+        return offset;
+    }
 
 }

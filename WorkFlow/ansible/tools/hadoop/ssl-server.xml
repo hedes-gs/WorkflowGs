@@ -13,6 +13,12 @@
     <name>ssl.server.keystore.password</name>
     <value>password</value>
   </property>
+  <property>
+    <name>ssl.server.keystore.keypassword</name>
+    <value>password</value>
+  </property>
+  
+  
 
   <!-- Server Trust Store -->
   <property>

@@ -160,11 +160,17 @@
         dest: "{{ hbase_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
         owner: kafka
         mode: 0666        
+    - name: deploy hbase filters
+      copy:
+        src: ../../HbaseFilters/target/HbaseFilters-1.0.0-SNAPSHOT.jar
+        dest: "{{ hbase_install_folder }}/latest/lib/HbaseFilters-1.0.0-SNAPSHOT.jar"
+        owner: hbase
+        mode: 0666        
         
   
   vars:
     ansible_become_pass: granada01
-    hbase_version: 2.2.0
+    hbase_version: 2.2.4
     user_to_create: hbase
     hbase_install_folder: /home/hbase
     PWD: "{{ lookup('env', 'PWD') }}"

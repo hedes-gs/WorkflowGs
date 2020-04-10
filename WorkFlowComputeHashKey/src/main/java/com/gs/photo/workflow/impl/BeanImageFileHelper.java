@@ -1,6 +1,5 @@
 package com.gs.photo.workflow.impl;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -21,74 +20,64 @@ import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
 import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
 import com.emc.ecs.nfsclient.rpc.CredentialUnix;
 import com.google.common.base.Strings;
+import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.gs.photo.workflow.IBeanImageFileHelper;
 
 @Component
 public class BeanImageFileHelper implements IBeanImageFileHelper {
 
-	protected static final Logger LOGGER                               = LoggerFactory
-			.getLogger(BeanImageFileHelper.class);
-	private static final int      NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
+    protected static final Logger LOGGER                               = LoggerFactory
+        .getLogger(BeanImageFileHelper.class);
+    private static final int      NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
 
-	@Override
-	public void waitForCopyComplete(Path filePath) {
-		long k = 0;
-		File f = filePath.toFile();
-		do {
-			k = f.length();
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-			}
-		} while (k != f.length());
-	}
+    @Override
+    public byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException {
+        BeanImageFileHelper.LOGGER.debug(" readFirstBytesOfFile of {}, {}", filePath, coordinates);
+        byte[] retValue = new byte[BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
+        Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
+        Nfs3File file = new Nfs3File(nfs3, filePath);
+        try (
+            NfsFileInputStream inputStream = new NfsFileInputStream(file,
+                BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
+            inputStream.read(retValue);
+        } catch (IOException e) {
+            BeanImageFileHelper.LOGGER.error("unable to compute hash key for " + filePath, e);
+            throw e;
+        }
+        return retValue;
+    }
 
-	@Override
-	public byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException {
-		BeanImageFileHelper.LOGGER.debug(" readFirstBytesOfFile of {}, {}",
-				filePath,
-				coordinates);
-		byte[] retValue = new byte[BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
-		Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
-		Nfs3File file = new Nfs3File(nfs3, filePath);
-		try (
-				NfsFileInputStream inputStream = new NfsFileInputStream(
-					file,
-					BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
-			inputStream.read(retValue);
-		} catch (IOException e) {
-			BeanImageFileHelper.LOGGER.error("unable to compute hash key for " + filePath,
-					e);
-			throw e;
-		}
-		return retValue;
-	}
+    @Override
+    public String computeHashKey(byte[] byteBuffer) {
+        HashFunction hf = Hashing.murmur3_128();
+        hf.hashBytes(byteBuffer)
+            .toString();
+        final String key = hf.hashBytes(byteBuffer)
+            .toString();
+        return key;
+    }
 
-	@Override
-	public String computeHashKey(byte[] byteBuffer) {
-		final String key = Hashing.sha512().newHasher().putBytes(byteBuffer).hash().toString();
-		return key;
-	}
-
-	@Override
-	public String getFullPathName(Path filePath) {
-		try {
-			Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-			List<NetworkInterface> niList = Collections.list(interfaces);
-			String addresses = niList.stream().flatMap((ni) -> {
-				List<InetAddress> addressesList = Collections.list(ni.getInetAddresses());
-				String adressList = addressesList.stream().flatMap(
-						(ia) -> !Strings.isNullOrEmpty(ia.getHostAddress()) ? Stream.of(ia.getHostAddress()) : null)
-						.collect(Collectors.joining(","));
-				return adressList.length() > 0 ? Stream.of(adressList) : null;
-			}).collect(Collectors.joining(","));
-			return "[" + addresses + "]@" + filePath.toAbsolutePath();
-		} catch (SocketException e) {
-			BeanImageFileHelper.LOGGER.error("unable to getFullPathName for " + filePath,
-					e);
-			throw new RuntimeException("unable to getFullPathName for " + filePath, e);
-		}
-	}
+    @Override
+    public String getFullPathName(Path filePath) {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            List<NetworkInterface> niList = Collections.list(interfaces);
+            String addresses = niList.stream()
+                .flatMap((ni) -> {
+                    List<InetAddress> addressesList = Collections.list(ni.getInetAddresses());
+                    String adressList = addressesList.stream()
+                        .flatMap(
+                            (ia) -> !Strings.isNullOrEmpty(ia.getHostAddress()) ? Stream.of(ia.getHostAddress()) : null)
+                        .collect(Collectors.joining(","));
+                    return adressList.length() > 0 ? Stream.of(adressList) : null;
+                })
+                .collect(Collectors.joining(","));
+            return "[" + addresses + "]@" + filePath.toAbsolutePath();
+        } catch (SocketException e) {
+            BeanImageFileHelper.LOGGER.error("unable to getFullPathName for " + filePath, e);
+            throw new RuntimeException("unable to getFullPathName for " + filePath, e);
+        }
+    }
 
 }

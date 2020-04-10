@@ -1,26 +1,23 @@
 topic.inputImageNameTopic=topic-image-name
-topic.topicExif=topic-exif
-topic.recordThumbTopic=topic-to-record-thumb
-topic.processedThumbTopic=topic-processed-thumb
 topic.pathNameTopic=topic-path-image
-
-topic.duplicateImageFoundTopic=topic-duplicate-key-image-found
-topic.topicDupFilteredFile=topic-dup-filtered-file
-topic.scan-output=topic-file-found-in-scan
-topic.topicFileHashKey=topic-file-hash-key
-
-topic.topicImageDate=topic-topic-image-date
-
-topic.topicDupDilteredFile=topic-dup-filtered-file
-topic.topicCopyOtherFile=topic-copy-other-file
 topic.scan-output-child-parent=topic-scan-output-file-child-with-parent
-topic.topicTransformedThumb=topic-transformed-thumb
-topic.topicImageDataToPersist=topic-image-data-to-persist
-topic.topicExifImageDataToPersist=topic-exif-image-data-to-persist
-topic.topicThumb=topic-thumb
+topic.scan-output=topic-file-found-in-scan
+topic.topicCopyOtherFile=topic-copy-other-file
 topic.topicCountOfImagesPerDate=topic.topic-count-of-images-per-date
-topic.scannedFiles=topic-scanned-files
-topic.scannedFilesChildParent=topic-scanned-files-child
+topic.topicDupDilteredFile=topic-dup-filtered-file
+topic.topicDupFilteredFile=topic-dup-filtered-file
+topic.topicDuplicateKeyImageFound=topic-duplicate-key-image-found
+topic.topicEvent=topic-event
+topic.topicExif=topic-exif
+topic.topicExifImageDataToPersist=topic-exif-image-data-to-persist
+topic.topicFileHashKey=topic-file-hash-key
+topic.topicImageDataToPersist=topic-image-data-to-persist
+topic.topicImageDate=topic-topic-image-date
+topic.topicProcessedFile=topic-processed-file
+topic.topicScannedFiles=topic-scanned-files
+topic.topicScannedFilesChild=topic-scanned-files-child
+topic.topicThumb=topic-thumb
+topic.topicTransformedThumb=topic-transformed-thumb
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
@@ -54,3 +51,11 @@ consumer.string.string={{ consumer_string_string }}
 producer.string.string={{ producer_string_string }}
 ignite.is.used={{ignite_is_used}}
 deduplication.cleanup=true
+
+
+wf.spring.datasource.driver-class-name=org.postgresql.Driver
+wf.spring.datasource.url=jdbc:postgresql://192.168.1.205/postgres
+wf.spring.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+wf.spring.datasource.username={{ wf_spring_datasource_username }}
+wf.spring.datasource.password={{ wf_spring_datasource_password }}
+
