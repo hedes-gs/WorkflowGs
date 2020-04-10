@@ -8,6 +8,7 @@
 		<groupId>com.gs.photos</groupId>
 		<artifactId>WorkFlow</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../WorkFlow/pom.xml</relativePath>		
 	</parent>
 	<artifactId>WorkFlowHbase</artifactId>
 
@@ -15,9 +16,35 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
+		<hbase.version>2.2.0</hbase.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-client</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-hdfs</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-auth</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-distcp</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-yarn-server-nodemanager</artifactId>
+			<version>3.2.1</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-integration</artifactId>
@@ -68,14 +95,27 @@
 			<artifactId>WorkFlowCommonStreams</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.gs.photos</groupId>
+			<artifactId>WorkFlowHbaseMapReduceJobs</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-client</artifactId>
-			<version>2.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>HbaseFilters</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hbase</groupId>
+			<artifactId>hbase-protocol</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hbase</groupId>
+			<artifactId>hbase-endpoint</artifactId>
+			<version>2.2.0</version>
 		</dependency>
 	</dependencies>
 
@@ -97,7 +137,7 @@
 						</property>
 						<property>
 							<name>java.security.auth.login.config</name>
-							<value>./src/test/resources/config/client_jaas.conf</value>
+							<value>./config/client_jaas.conf</value>
 						</property>
 						<property>
 							<name>java.security.krb5.realm</name>

@@ -16,6 +16,7 @@ import org.apache.hadoop.hbase.client.Table;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.gs.photo.workflow.hbase.HbaseDataInformation;
 import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset;
 import com.workflow.model.HbaseImageThumbnail;
 
@@ -43,56 +44,68 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> {
 	protected void init() throws IOException {
 		this.hbaseDataInformation = new HbaseDataInformation<>(HbaseImageThumbnail.class, this.tablePrefix);
 		AbstractDAO.buildHbaseDataInformation(HbaseImageThumbnail.class,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
 		this.tableName = this.createTableIfNeeded(this.hbaseDataInformation);
 		this.hbaseDataInformation.setTable(this.tableName);
 	}
 
 	public void put(Collection<HbaseImageThumbnail> hbaseData) {
 		super.put(hbaseData,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
 	}
 
 	public void put(HbaseImageThumbnail hbaseData) {
 		super.put(hbaseData,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
 	}
 
 	public void delete(HbaseImageThumbnail[] hbaseData) {
 		super.delete(hbaseData,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
 	}
 
 	public void delete(HbaseImageThumbnail hbaseData) {
 		super.delete(hbaseData,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
+	}
+
+	public void truncate() throws IOException {
+		super.truncate(this.hbaseDataInformation);
+	}
+
+	public int count() throws Throwable {
+		return super.countWithCoprocessorJob(this.hbaseDataInformation);
 	}
 
 	public HbaseImageThumbnail get(HbaseImageThumbnail hbaseData) {
 		return super.get(hbaseData,
-				this.hbaseDataInformation);
+			this.hbaseDataInformation);
 	}
 
-	public List<HbaseImageThumbnail> getThumbNailsByDate(LocalDateTime firstDate, LocalDateTime lastDate, long minWidth,
-			long minHeight) {
+	public List<HbaseImageThumbnail> getThumbNailsByDate(
+		LocalDateTime firstDate,
+		LocalDateTime lastDate,
+		long minWidth,
+		long minHeight
+	) {
 		List<HbaseImageThumbnail> retValue = new ArrayList<>();
 		final long firstDateEpochMillis = firstDate.toInstant(ZoneOffset.ofTotalSeconds(0)).toEpochMilli();
 		final long mastDateEpochMilli = lastDate.toInstant(ZoneOffset.ofTotalSeconds(0)).toEpochMilli();
 		try (
-				Table table = this.connection.getTable(this.hbaseDataInformation.getTable())) {
+			Table table = this.connection.getTable(this.hbaseDataInformation.getTable())) {
 			Scan scan = new Scan();
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
-					HbaseImageThumbnailDAO.IMAGE_NAME_BYTES);
+				HbaseImageThumbnailDAO.IMAGE_NAME_BYTES);
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
-					HbaseImageThumbnailDAO.TUMB_NAME_BYTES);
+				HbaseImageThumbnailDAO.TUMB_NAME_BYTES);
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES,
-					HbaseImageThumbnailDAO.PATH_BYTES);
+				HbaseImageThumbnailDAO.PATH_BYTES);
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES,
-					HbaseImageThumbnailDAO.WIDTH_BYTES);
+				HbaseImageThumbnailDAO.WIDTH_BYTES);
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES,
-					HbaseImageThumbnailDAO.HEIGHT_BYTES);
+				HbaseImageThumbnailDAO.HEIGHT_BYTES);
 			scan.addColumn(HbaseImageThumbnailDAO.FAMILY_THB_BYTES,
-					HbaseImageThumbnailDAO.TUMBNAIL_BYTES);
+				HbaseImageThumbnailDAO.TUMBNAIL_BYTES);
 
 			scan.setFilter(new FilterRowByLongAtAGivenOffset(0, firstDateEpochMillis, mastDateEpochMilli));
 			ResultScanner rs = table.getScanner(scan);
@@ -101,7 +114,7 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> {
 				HbaseImageThumbnail instance = new HbaseImageThumbnail();
 				retValue.add(instance);
 				this.hbaseDataInformation.build(instance,
-						t);
+					t);
 			});
 		} catch (IOException e1) {
 			e1.printStackTrace();

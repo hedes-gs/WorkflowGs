@@ -6,6 +6,7 @@
 		<groupId>com.gs.photos</groupId>
 		<artifactId>WorkFlow</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../WorkFlow/pom.xml</relativePath>
 	</parent>
 	<artifactId>WorkflowScan</artifactId>
 	<dependencies>

@@ -90,26 +90,16 @@
 			<artifactId>h2</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.sun</groupId>
-			<artifactId>yanfs</artifactId>
-			<version>1.3</version>
-		</dependency>
-		<dependency>
 			<groupId>com.emc.ecs</groupId>
 			<artifactId>nfs-client</artifactId>
 			<version>1.0.3</version>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-hdfs-client</artifactId>
+			<version>3.2.1</version>
+		</dependency>
 	</dependencies>
-	<repositories>
-		<repository>
-			<id>bintray-jcenter</id>
-			<name>bintray</name>
-			<url>http://jcenter.bintray.com</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
 	<build>
 		<plugins>
 			<plugin>

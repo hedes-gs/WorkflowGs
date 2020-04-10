@@ -37,6 +37,17 @@
         - ipc5
         - ipc6
         - hadoop-master
+    - name: del princip rm
+      shell: kadmin.local -q 'delprinc -force  rm/{{ item }}@GS.COM' 
+      loop:
+        - ipc0
+        - ipc1
+        - ipc2
+        - ipc3
+        - ipc4
+        - ipc5
+        - ipc6
+        - hadoop-master
     - name: del princip sn
       shell: kadmin.local -q 'delprinc -force  sn/{{ item }}@GS.COM' 
       loop:
@@ -82,7 +93,20 @@
       shell: rm -f /home/user/keytabs/hdfs_all_sn.keytab
     - name: rm keytab
       shell: rm -f /home/user/keytabs/hdfs_all_jn.keytab
+    - name: rm keytab
+      shell: rm -f /home/user/keytabs/hdfs_all_rm.keytab
 
+    - name: add princip rm
+      shell: kadmin.local -q 'addprinc  -pw rm rm/{{ item }}@GS.COM' 
+      loop:
+        - ipc0
+        - ipc1
+        - ipc2
+        - ipc3
+        - ipc4
+        - ipc5
+        - ipc6
+        - hadoop-master
     - name: add princip dn
       shell: kadmin.local -q 'addprinc  -pw dn dn/{{ item }}@GS.COM' 
       loop:
@@ -281,6 +305,28 @@
         - ipc5
         - ipc6
         - hadoop-master
+    - name: create keytab hdfs_all_rm -1
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hdfs_all_rm.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  rm/{{ item }}@GS.COM'
+      loop:
+        - ipc0
+        - ipc1
+        - ipc2
+        - ipc3
+        - ipc4
+        - ipc5
+        - ipc6
+        - hadoop-master
+    - name: create keytab hdfs_all_rm -2
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hdfs_all_rm.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  host/{{ item }}@GS.COM'
+      loop:
+        - ipc0
+        - ipc1
+        - ipc2
+        - ipc3
+        - ipc4
+        - ipc5
+        - ipc6
+        - hadoop-master        
     - name: create keytab spnego.service.keytab -1
       shell: kadmin.local -q 'ktadd -k /home/user/keytabs/spnego.service.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  HTTP/{{ item }}@GS.COM'
       loop:
@@ -292,6 +338,7 @@
         - ipc5
         - ipc6
         - hadoop-master
+
     - name: get keytab hdfs_all_nn.keytab
       fetch:
         src: /home/user/keytabs/hdfs_all_nn.keytab
@@ -322,7 +369,11 @@
         src: /home/user/keytabs/hdfs_all_jn.keytab
         dest: ./tools/hadoop/keytabs/
         flat: yes
-
+    - name: get keytab  hdfs_all_rm.keytab
+      fetch:
+        src: /home/user/keytabs/hdfs_all_rm.keytab
+        dest: ./tools/hadoop/keytabs/
+        flat: yes
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"

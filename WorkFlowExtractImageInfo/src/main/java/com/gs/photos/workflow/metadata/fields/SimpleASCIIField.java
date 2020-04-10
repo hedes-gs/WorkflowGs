@@ -9,54 +9,44 @@ import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 public class SimpleASCIIField extends SimpleAbstractField<String> {
 
-	protected String data;
+    protected String data;
 
-	public SimpleASCIIField(
-			int fieldLength,
-			int offset,
-			short type) {
-		super(
-			fieldLength,
-			offset,
-			type);
-	}
+    public SimpleASCIIField(
+        int fieldLength,
+        int offset,
+        short type
+    ) { super(fieldLength,
+        offset,
+        type); }
 
-	@Override
-	public TiffField<String> createTiffField(Tag tag, short tagValue) {
-		TiffField<String> ascIIField = new ASCIIField(tag, this, tagValue);
-		return ascIIField;
-	}
+    @Override
+    public TiffField<String> createTiffField(Tag tag, short tagValue) {
+        TiffField<String> ascIIField = new ASCIIField(tag, this, tagValue);
+        return ascIIField;
+    }
 
-	@Override
-	public String getData() {
-		return this.data;
-	}
+    @Override
+    public String getData() { return this.data; }
 
-	@Override
-	public void updateData(FileChannelDataInput rin) {
-		byte[] data = new byte[this.getFieldLength()];
-		try {
-			if (data.length <= 4) {
-				rin.position(this.offset);
-				rin.readFully(data,
-						0,
-						data.length);
-			} else {
-				rin.position(this.offset);
-				rin.position(rin.readInt());
-				rin.readFully(data,
-						0,
-						data.length);
-			}
-			this.data = new String(data, "UTF-8");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+    @Override
+    public void updateData(FileChannelDataInput rin) {
+        byte[] data = new byte[this.getFieldLength()];
+        try {
+            if (data.length <= 4) {
+                rin.position(this.offset);
+                rin.readFully(data, 0, data.length);
+            } else {
+                rin.position(this.offset);
+                rin.position(rin.readInt());
+                rin.readFully(data, 0, data.length);
+            }
+            this.data = new String(data, "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-	@Override
-	public int getNextOffset() {
-		return this.offset + 4;
-	}
+    @Override
+    public int getNextOffset() { return this.offset + 4; }
 
 }

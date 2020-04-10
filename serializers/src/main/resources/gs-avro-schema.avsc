@@ -1,5 +1,72 @@
 [ {
   "type" : "record",
+  "name" : "WfDataClass",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ ]
+}, {
+  "type" : "record",
+  "name" : "WfEvent",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : {
+      "type" : "record",
+      "name" : "WfEventStep",
+      "fields" : [ {
+        "name" : "step",
+        "type" : "string"
+      } ]
+    }
+  }, {
+    "name" : "parentPath",
+    "type" : {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.List"
+    }
+  }, {
+    "name" : "createdEvents",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEvent",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEvents",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "producer",
+    "type" : "string"
+  }, {
+    "name" : "events",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEvent",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
+  } ]
+}, "com.workflow.model.events.WfEventStep", {
+  "type" : "record",
   "name" : "ExchangedTiffData",
   "namespace" : "com.workflow.model",
   "fields" : [ {
@@ -61,21 +128,29 @@
     } ],
     "default" : null
   }, {
-    "name" : "id",
-    "type" : [ "null", "string" ],
-    "default" : null
-  }, {
     "name" : "intId",
     "type" : "int"
   }, {
     "name" : "total",
     "type" : "int"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",
   "name" : "HbaseData",
   "namespace" : "com.workflow.model",
-  "fields" : [ ]
+  "fields" : [ {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
+  } ]
 }, {
   "type" : "record",
   "name" : "HbaseExif",
@@ -167,6 +242,12 @@
   }, {
     "name" : "height",
     "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",
@@ -227,6 +308,12 @@
   }, {
     "name" : "height",
     "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",
@@ -334,6 +421,12 @@
   }, {
     "name" : "height",
     "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",
@@ -372,15 +465,27 @@
   }, {
     "name" : "height",
     "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",
   "name" : "FinalImage",
   "namespace" : "com.workflow.model.storm",
   "fields" : [ {
-    "name" : "id",
-    "type" : "string"
-  }, {
     "name" : "version",
     "type" : {
       "type" : "int",
@@ -398,6 +503,12 @@
       "type" : "bytes",
       "java-class" : "[B"
     }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
   } ]
 }, {
   "type" : "record",

@@ -5,14 +5,19 @@ import com.gs.photos.workflow.metadata.Tag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
 public class RationalField extends TiffField<int[]> {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public RationalField(Tag tag, SimpleAbstractField<int[]> underLayingField, short tagValue) {
-		super(tag, underLayingField, tagValue);
-	}
+    public RationalField(
+        Tag tag,
+        SimpleAbstractField<int[]> underLayingField,
+        short tagValue
+    ) {
+        super(tag,
+            underLayingField,
+            tagValue,
+            underLayingField.getOffset());
+    }
 
-	@Override
-	public String getDataAsString() {
-		return StringUtils.longArrayToString(getData(), 0, 10, true);
-	}
+    @Override
+    public String getDataAsString() { return StringUtils.longArrayToString(this.getData(), 0, 10, true); }
 }
