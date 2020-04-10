@@ -1,4 +1,5 @@
-. .profile
+#!/usr/bin/env bash
+. /home/hadoop/.profile
 
 export PATH=$PATH:$HADOOP_HOME/bin
 export PATH=$PATH:$HADOOP_HOME/sbin

@@ -56,10 +56,19 @@
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-core</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-spring</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hbase</groupId>
+			<artifactId>hbase-client</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.emc.ecs</groupId>
+			<artifactId>nfs-client</artifactId>
+			<version>1.0.3</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -11,6 +11,7 @@
         dest: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
         mode: 0644
         force: no
+      ignore_errors: yes
     - name: Unpack the tar
       unarchive:
         src: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
@@ -27,16 +28,6 @@
         dest: "{{ hadoop_install_folder }}/latest"
         state: link
         force: yes
-    - name: Create folder {{ hadoop_install_folder }}/latest/logs
-      file:
-        path: "{{ hadoop_install_folder }}/latest/logs"
-        state: directory
-        mode: 0700
-        owner: "{{ user_to_create }}"
-        group: hadoop
-    - name: stop-hdfs
-      shell:  "rm -f {{ hadoop_install_folder }}/latest/logs/*"
-
     - name: Create folders .~hadoop/.ssh
       file:
         path: ~hadoop/.ssh
@@ -109,9 +100,19 @@
     - name: deploy ./tools/hadoop/core-site.xml
       vars:
         hadoop_host: "{{ hadoop_hosts[inventory_hostname].value }}"
-
+        hadoop_master_name: "{{ hadoop_master_nodes[inventory_hostname].value }}"
       template:
         src: ./tools/hadoop/core-site.xml
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: hadoop
+        mode: 0600
+    - name: deploy ./tools/hadoop/yarn-env.sh
+      vars:
+        hadoop_host: "{{ hadoop_hosts[inventory_hostname].value }}"
+        hadoop_master_name: "{{ hadoop_master_nodes[inventory_hostname].value }}"
+      template:
+        src: ./tools/hadoop/yarn-env.sh
         dest: "~hadoop/latest/etc/hadoop"
         owner: "{{ user_to_create }}"
         group: hadoop
@@ -124,6 +125,9 @@
         group: hadoop
         mode: 0600  
     - name: deploy ./tools/hadoop/yarn-site.xml
+      vars:
+        hadoop_host: "{{ hadoop_hosts[inventory_hostname].value }}"
+        yarn_hostname: "{{ yarn_hostnames[inventory_hostname].value }}"
       template:
         src: ./tools/hadoop/yarn-site.xml
         dest: "~hadoop/latest/etc/hadoop"
@@ -169,9 +173,69 @@
         mode: 0600
       when: inventory_hostname == "192.168.1.205"
 
+    - name: Recursively change ownership of the /home/hadoop/latest directory
+      file:
+        path: /home/hadoop/latest
+        state: directory
+        recurse: yes
+        mode: 0755
+        owner: root
+    - name: Recursively change ownership of the /home/hadoop/latest directory
+      file:
+        path: /home/hadoop/
+        state: directory
+        recurse: yes
+        mode: 0755
+        owner: root
+    - name: deploy ./tools/hadoop/profile
+      template:
+        src: ./tools/hadoop/profile
+        dest: "{{ hadoop_install_folder }}/.profile"
+        owner: "{{ user_to_create }}"
+        mode: 0755
+    - name: deploy ./tools/hadoop/bashrc.txt
+      template:
+        src: ./tools/hadoop/bashrc.txt
+        dest: "{{ hadoop_install_folder }}/.bashrc"
+        owner: "{{ user_to_create }}"
+        mode: 0755
+    - name: Recursively change ownership of the /home/hadoop/latest/etc directory
+      file:
+        path: /home/hadoop/etc
+        state: directory
+        recurse: yes
+        mode: 0666
+        owner: root
+    - name: deploy ./tools/hadoop/container-executor.cfg
+      template:
+        src: ./tools/hadoop/container-executor.cfg
+        dest: "/home/hadoop/latest/etc/hadoop"
+        owner: "root"
+        mode: 0600
+    - name: Recursively change to 6050 the right of /home/hadoop/latest/bin/container-executor
+      file:
+        path: /home/hadoop/latest/bin/container-executor
+        mode: 06050
+        owner: root
+    - name: Create folder {{ hadoop_install_folder }}/latest/logs
+      file:
+        path: "{{ hadoop_install_folder }}/latest/logs"
+        state: directory
+        mode: 0777
+        owner: "root"
+    - name: Create folder {{ hadoop_install_folder }}/latest/yarn
+      file:
+        path: "{{ hadoop_install_folder }}/latest/yarn"
+        state: directory
+        mode: 0777
+        owner: "root"
+    - name: remove logs
+      shell:  "rm -rf {{ hadoop_install_folder }}/latest/yarn/*"
+    - name: remove logs
+      shell:  "rm -rf {{ hadoop_install_folder }}/latest/logs/*"
   vars:
     ansible_become_pass: granada01
-    hadoop_version: 3.2.0
+    hadoop_version: 3.2.1
     user_to_create: hadoop
     hadoop_install_folder: /home/hadoop
     PWD: "{{ lookup('env', 'PWD') }}"
@@ -188,16 +252,42 @@
         value: 5
       192.168.1.206:
         value: 6 
-    hadoop_hosts:
+    yarn_hostnames:
+      192.168.1.205:
+        value: 0.0.0.0
+      192.168.1.201:
+        value: ipc5
+      192.168.1.202:
+        value: ipc5
+      192.168.1.203:
+        value: ipc5
       192.168.1.200:
+        value: ipc5
+      192.168.1.206:
+        value: ipc5
+    hadoop_hosts:
+      192.168.1.205:
         value: hadoop-master
       192.168.1.201:
-        value: hadoop-slave-1
+        value: ipc1
       192.168.1.202:
-        value: hadoop-slave-2
+        value: ipc2
       192.168.1.203:
-        value: hadoop-slave-3
-      192.168.1.205:
-        value: hadoop-slave-4
+        value: ipc3
+      192.168.1.200:
+        value: ipc0
       192.168.1.206:
-        value: hadoop-slave-5
+        value: ipc6
+    hadoop_master_nodes:
+      192.168.1.205:
+        value: 0.0.0.0
+      192.168.1.201:
+        value: hadoop-master
+      192.168.1.202:
+        value: hadoop-master
+      192.168.1.203:
+        value: hadoop-master
+      192.168.1.200:
+        value: hadoop-master
+      192.168.1.206:
+        value: hadoop-master

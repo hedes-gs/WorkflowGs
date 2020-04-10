@@ -4,14 +4,19 @@ import com.gs.photos.workflow.metadata.Tag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
 public final class ASCIIField extends TiffField<String> {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public ASCIIField(Tag tag, SimpleAbstractField<String> data, short tagValue) {
-		super(tag, data, tagValue);
-	}
+    public ASCIIField(
+        Tag tag,
+        SimpleAbstractField<String> data,
+        short tagValue
+    ) {
+        super(tag,
+            data,
+            tagValue,
+            data.getOffset());
+    }
 
-	@Override
-	public String getDataAsString() {
-		return underLayingField.getData();
-	}
+    @Override
+    public String getDataAsString() { return this.underLayingField.getData(); }
 }

@@ -7,60 +7,55 @@ import com.workflow.model.FieldType;
 
 public enum RootTiffTag implements Tag {
 
-	ROOT_TIFF("Root tiff ", (short) 0x002A, Attribute.BASELINE);
+    IFD0(
+        "IFD0", (short) 0x0000, Attribute.BASELINE
+    ), IFD1(
+        "IFD1", (short) 0x0001, Attribute.BASELINE
+    ), IFD2(
+        "IFD2", (short) 0x0002, Attribute.BASELINE
+    ), IFD3(
+        "IFD3", (short) 0x0003, Attribute.BASELINE
+    );
 
-	private final String    name;
+    private final String    name;
 
-	private final short     value;
+    private final short     value;
 
-	private final Attribute attribute;
+    private final Attribute attribute;
 
-	@Override
-	public String getFieldAsString(Object value) {
-		return "";
-	}
+    @Override
+    public String getFieldAsString(Object value) { return ""; }
 
-	@Override
-	public FieldType getFieldType() {
-		return FieldType.UNKNOWN;
-	}
+    @Override
+    public FieldType getFieldType() { return FieldType.UNKNOWN; }
 
-	@Override
-	public String getName() {
-		return this.name;
-	}
+    @Override
+    public String getName() { return this.name; }
 
-	@Override
-	public short getValue() {
-		return this.value;
-	}
+    @Override
+    public short getValue() { return this.value; }
 
-	@Override
-	public boolean isCritical() {
-		return true;
-	}
+    @Override
+    public boolean isCritical() { return true; }
 
-	@Override
-	public String toString() {
-		return this.name + " [Value: " + StringUtils.shortToHexStringMM(this.value) + "] (" + this.getAttribute() + ")";
-	}
+    @Override
+    public String toString() {
+        return this.name + " [Value: " + StringUtils.shortToHexStringMM(this.value) + "] (" + this.getAttribute() + ")";
+    }
 
-	public Attribute getAttribute() {
-		return this.attribute;
-	}
+    public Attribute getAttribute() { return this.attribute; }
 
-	@Override
-	public boolean mayContainSomeSimpleFields() {
-		return false;
-	}
+    @Override
+    public boolean mayContainSomeSimpleFields() { return false; }
 
-	private RootTiffTag(
-			String name,
-			short value,
-			Attribute attribute) {
-		this.name = name;
-		this.value = value;
-		this.attribute = attribute;
-	}
+    private RootTiffTag(
+        String name,
+        short value,
+        Attribute attribute
+    ) {
+        this.name = name;
+        this.value = value;
+        this.attribute = attribute;
+    }
 
 }

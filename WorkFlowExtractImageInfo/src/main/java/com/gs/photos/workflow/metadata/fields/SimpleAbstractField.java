@@ -6,30 +6,32 @@ import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 public abstract class SimpleAbstractField<T> {
 
-	protected final int fieldLength;
-	protected final int offset;
-	protected final short type;
+    protected final int   fieldLength;
+    protected final int   offset;
+    protected final short type;
 
-	public int getFieldLength() {
-		return fieldLength;
-	}
+    public int getFieldLength() { return this.fieldLength; }
 
-	protected SimpleAbstractField(int fieldLength, int offset, short type) {
-		this.fieldLength = fieldLength;
-		this.offset = offset;
-		this.type = type;
-	}
+    protected SimpleAbstractField(
+        int fieldLength,
+        int offset,
+        short type
+    ) {
+        this.fieldLength = fieldLength;
+        this.offset = offset;
+        this.type = type;
+    }
 
-	public abstract TiffField<T> createTiffField(Tag tag, short tagValue);
+    public int getOffset() { return this.offset; }
 
-	public short getType() {
-		return type;
-	}
+    public abstract TiffField<T> createTiffField(Tag tag, short tagValue);
 
-	public abstract T getData();
+    public short getType() { return this.type; }
 
-	public abstract void updateData(FileChannelDataInput rin);
+    public abstract T getData();
 
-	public abstract int getNextOffset();
+    public abstract void updateData(FileChannelDataInput rin);
+
+    public abstract int getNextOffset();
 
 }
