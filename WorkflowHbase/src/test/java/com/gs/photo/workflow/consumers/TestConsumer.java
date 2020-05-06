@@ -25,7 +25,7 @@ public class TestConsumer {
 		for (int i = 0; i < 1; i++) {
 			executor.execute(
 				() -> {
-					consumer.recordIncomingMessageInHbase();
+					consumer.processIncomingMessages();
 				});
 		}
 		synchronized (this) {

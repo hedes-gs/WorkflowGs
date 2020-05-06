@@ -15,35 +15,41 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<java.version>1.8</java.version>
-		<hbase.version>2.2.0</hbase.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-client</artifactId>
-			<version>3.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-hdfs</artifactId>
-			<version>3.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-auth</artifactId>
-			<version>3.2.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-distcp</artifactId>
-			<version>3.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-server-nodemanager</artifactId>
-			<version>3.2.1</version>
+			<exclusions>
+				<!-- Exclude due to compatibility issue with ignite which is using  cache-api.jar -->
+				<exclusion>
+					<groupId>org.apache.geronimo.specs</groupId>
+					<artifactId>geronimo-jcache_1.0_spec</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -110,25 +116,27 @@
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-protocol</artifactId>
-			<version>2.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hbase</groupId>
 			<artifactId>hbase-endpoint</artifactId>
-			<version>2.2.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M3</version>
 				<configuration>
 					<systemProperties>
 						<property>
@@ -148,7 +156,14 @@
 							<value>ipc6</value>
 						</property>
 					</systemProperties>
+					<compilerArgs>
+						--enable-preview
+					</compilerArgs>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>

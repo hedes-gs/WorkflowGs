@@ -3,6 +3,7 @@ package com.gs.photo.workflow.consumers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.errors.WakeupException;
@@ -10,10 +11,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.gs.photo.workflow.dao.GenericDAO;
+import com.gs.photo.workflow.dao.HbaseExifDataDAO;
+import com.gs.photo.workflow.dao.HbaseExifDataOfImagesDAO;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseExifDataOfImages;
@@ -33,23 +38,46 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
     protected String                      topicExifImageDataToPersist;
 
     @Autowired
-    protected Consumer<String, HbaseData> consumerForRecordingExifDataFromTopic;
+    @Qualifier("consumerToRecordExifDataOfImages")
+    protected Consumer<String, HbaseData> consumerToRecordExifDataOfImages;
+
+    @Autowired
+    protected HbaseExifDataDAO            HbaseExifDataDAO;
+
+    @Autowired
+    protected HbaseExifDataOfImagesDAO    hbaseExifDataOfImagesDAO;
 
     @Override
-    public void recordIncomingMessageInHbase() {
+    public void processIncomingMessages() {
         try {
-            ConsumerForRecordHbaseExif.LOGGER.info("Start ConsumerForRecordHbaseExif.recordIncomingMessageInHbase");
-            this.consumerForRecordingExifDataFromTopic.subscribe(Arrays.asList(this.topicExifImageDataToPersist));
-            this.processMessagesFromTopic(this.consumerForRecordingExifDataFromTopic);
+            ConsumerForRecordHbaseExif.LOGGER.info(
+                "Start ConsumerForRecordHbaseExif.processIncomingMessages , subscribing to {} ",
+                this.topicExifImageDataToPersist);
+            this.consumerToRecordExifDataOfImages.subscribe(Arrays.asList(this.topicExifImageDataToPersist));
+            this.processMessagesFromTopic(this.consumerToRecordExifDataOfImages, "EXIF");
         } catch (WakeupException e) {
             ConsumerForRecordHbaseExif.LOGGER.warn("Error ", e);
         } finally {
-            this.consumerForRecordingExifDataFromTopic.close();
+            this.consumerToRecordExifDataOfImages.close();
         }
     }
 
     @Override
-    protected void postRecord(List<HbaseData> v, Class<HbaseData> k) {}
+    protected void postRecord(List<HbaseData> v, Class<HbaseData> k) {
+        v.stream()
+            .collect(Collectors.groupingBy((hb) -> this.getGroupKey(hb), Collectors.counting()))
+            .forEach((k1, v1) -> ConsumerForRecordHbaseExif.LOGGER.info("EVENT[{}] {} records were recorded", k1, v1));
+    }
+
+    private String getGroupKey(HbaseData hb) {
+        if (hb instanceof HbaseExifData) {
+            return ((HbaseExifData) hb).getImageId();
+        } else if (hb instanceof HbaseExifDataOfImages) {
+            return ((HbaseExifDataOfImages) hb).getImageId();
+        } else {
+            throw new IllegalArgumentException("Unable to process class  " + hb.getClass());
+        }
+    }
 
     @Override
     protected @Nullable Optional<WfEvent> buildEvent(HbaseData x) {
@@ -81,6 +109,18 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
                     .withStep(WfEventStep.CREATED_FROM_STEP_RECORDED_IN_HBASE)
                     .build())
             .build();
+    }
+
+    public ConsumerForRecordHbaseExif() {
+
+    }
+
+    @Override
+    protected <X extends HbaseData> GenericDAO<X> getGenericDAO(Class<X> k) {
+        if (k.equals(HbaseExifData.class)) {
+            return (GenericDAO<X>) this.HbaseExifDataDAO;
+        } else if (k.equals(HbaseExifDataOfImages.class)) { return (GenericDAO<X>) this.hbaseExifDataOfImagesDAO; }
+        return null;
     }
 
 }

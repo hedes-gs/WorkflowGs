@@ -1,7 +1,5 @@
 package com.gs.photo.workflow.impl;
 
-import java.util.Arrays;
-
 import javax.annotation.PostConstruct;
 
 import org.apache.log4j.Logger;
@@ -18,25 +16,20 @@ import com.gs.photo.workflow.consumers.IConsumerForRecordHbaseImage;
 @ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class BeanScheduleRecordMessageInHbase implements IBeanScheduleRecordMessageInHbase {
 
-	protected static final Logger          LOGGER = Logger.getLogger(BeanScheduleRecordMessageInHbase.class);
+    protected static final Logger          LOGGER = Logger.getLogger(BeanScheduleRecordMessageInHbase.class);
 
-	@Autowired
-	protected IConsumerForRecordHbaseImage consumerForRecordHbaseImage;
+    @Autowired
+    protected IConsumerForRecordHbaseImage consumerForRecordHbaseImage;
 
-	@Autowired
-	protected IConsumerForRecordHbaseExif  consumerForRecordHbaseExif;
+    @Autowired
+    protected IConsumerForRecordHbaseExif  consumerForRecordHbaseExif;
 
-	@Autowired
-	protected IBeanTaskExecutor            beanTaskExecutor;
+    @Autowired
+    protected IBeanTaskExecutor            beanTaskExecutor;
 
-	@PostConstruct
-	public void init() {
-		this.beanTaskExecutor.executeRunnables(Arrays.asList(() -> {
-			this.consumerForRecordHbaseImage.recordIncomingMessageInHbase();
-		},
-				() -> {
-					this.consumerForRecordHbaseExif.recordIncomingMessageInHbase();
-				}));
-	}
+    @PostConstruct
+    public void init() {
+
+    }
 
 }
