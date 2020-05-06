@@ -39,6 +39,8 @@ public class BeanMonitor implements IMonitor {
     protected IEventDAO                  eventDAO;
     @Autowired
     protected ICacheNodeDAO              cacheNodeDAO;
+    @Value("${kafka.pollTimeInMillisecondes}")
+    protected int                        kafkaPollTimeInMillisecondes;
 
     @PostConstruct
     public void init() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
@@ -56,7 +58,8 @@ public class BeanMonitor implements IMonitor {
                     }
                     ConsumerRecords<String, WfEvents> nextRecords;
                     do {
-                        nextRecords = BeanMonitor.this.consumerOfWfEventsWithStringKey.poll(Duration.ofMillis(250));
+                        nextRecords = BeanMonitor.this.consumerOfWfEventsWithStringKey
+                            .poll(Duration.ofMillis(kafkaPollTimeInMillisecondes));
                     } while (nextRecords.isEmpty());
                     this.records = nextRecords.iterator();
                 }

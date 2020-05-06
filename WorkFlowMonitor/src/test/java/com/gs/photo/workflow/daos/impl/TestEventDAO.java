@@ -2,6 +2,7 @@ package com.gs.photo.workflow.daos.impl;
 
 import java.util.Arrays;
 
+import org.apache.kafka.clients.producer.Producer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -10,7 +11,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.workflow.ApplicationConfig;
@@ -29,6 +32,10 @@ class TestEventDAO {
 
     @Before
     public void setUp() throws Exception { MockitoAnnotations.initMocks(this); }
+
+    @MockBean
+    @Qualifier("producerForPublishingWfEvents")
+    protected Producer<String, WfEvents> producerForPublishingWfEvents;
 
     @Test
     void testCreateEvent() {
