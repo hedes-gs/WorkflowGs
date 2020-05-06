@@ -1,5 +1,5 @@
 package com.gs.photo.workflow.consumers;
 
 public interface IConsumerForRecordHbaseExif {
-	public void recordIncomingMessageInHbase();
+	public void processIncomingMessages();
 }
