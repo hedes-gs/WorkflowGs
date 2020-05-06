@@ -18,7 +18,7 @@
 
 		<RollingFile name="RollingFile"
 			filename="logs/{{ application_id }}.log"
-			filepattern="${logPath}/%d{YYYYMMddHHmmss}-{{ application_id }}.log" >
+			filepattern="${logPath}/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
 			<param name="append" value="false" />
 			<PatternLayout
 				pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n" />
@@ -36,6 +36,8 @@
 				eventEol="true">
 				<KeyValuePair key="application"
 					value="{{ application_id }}" />
+				<KeyValuePair key="timestamp"
+					value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
 			</JsonLayout>
 			<Policies>
 				<SizeBasedTriggeringPolicy size="100 MB" />
@@ -48,7 +50,6 @@
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 			<AppenderRef ref="RollingFileJson" />
-
 		</Root>
 	</Loggers>
 </Configuration>

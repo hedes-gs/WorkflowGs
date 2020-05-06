@@ -1,17 +1,14 @@
 - hosts: all
   become: true
   tasks:
-    - debug:
-        msg: Download hbase "{{ hbase_version }}"
     - user: name="{{ user_to_create }}" group=nogroup shell=/bin/bash
-    - name: deploy keys and files
+    - name: deploy bash_profile
       template:
         src: ./tools/hbase/bash_profile
         dest: "~hbase/.bash_profile"
         owner: "{{ user_to_create }}"
         group: nogroup
         mode: 0600
-
     - name: deploy run.sh
       template:
         src: ./tools/hbase/run.sh
@@ -26,17 +23,12 @@
         dest: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
         mode: 0644
         force: no
+      ignore_errors: yes
     - name: Unpack the tar
       unarchive:
         src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
         dest: "{{ hbase_install_folder }}"
         remote_src: true
-    - name: stop hbase
-      shell: " {{ hbase_install_folder }}/run.sh stop master"
-      args:
-        executable: /bin/bash
-      when:  inventory_hostname == '192.168.1.200'
-
     - name: remove symlink /usr/local/kafka to this version
       file:
         path: "{{ hbase_install_folder }}/latest"
@@ -148,7 +140,7 @@
         path: "{{ hbase_install_folder }}/latest/monitor"
         state: directory
         owner: "{{ user_to_create }}"
-    - name: deploy prometheus jars.
+    - name: deploy prometheus config_prometheus.yml
       copy:
         src: ./tools/hbase/config_prometheus.yml
         dest: "{{ hbase_install_folder }}/latest/monitor/config_prometheus.yml"

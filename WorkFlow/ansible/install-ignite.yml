@@ -19,19 +19,24 @@
       shell: "systemctl stop apache-ignite@cluster-server.xml"
     - name: Install aptitude using apt
       shell: "apt install dirmngr --no-install-recommends"
+      ignore_errors: yes
+
     - name: copy ignite.repo 
       copy:
         src: ./tools/ignite/ignite.list
         dest: "/etc/apt/sources.list.d/ignite.list"
-    - name: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61
-      shell: "apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61"
-    - name: apt update
-      shell: "apt update"
-    - name: apt install apache-ignite --no-install-recommends
-      apt:
-        name: apache-ignite
-        state: present
-        install_recommends: no
+#    - name: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61
+#      shell: "apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61"
+#      ignore_errors: yes
+#    - name: apt update
+#      shell: "apt update"
+#      ignore_errors: yes
+#    - name: apt install apache-ignite --no-install-recommends
+#      apt:
+#        name: apache-ignite
+#        state: present
+#        install_recommends: no
+#      ignore_errors: yes
     - name: copy server.xml 
       copy:
         src: ./tools/ignite/cluster-server.xml

@@ -1,0 +1,25 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download java "OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz"
+    - name: Download OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz
+      get_url: 
+        url: "https://github.com/AdoptOpenJDK/openjdk13-binaries/releases/download/jdk-13.0.2%2B8/OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz"
+        owner: "root"
+        dest: /usr/lib/jvm/
+        mode: 0644
+        force: no
+      ignore_errors: yes
+    - name: Unpack the tar
+      unarchive:
+        owner: "root"
+        src: "/usr/lib/jvm/OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz"
+        dest: /usr/lib/jvm/
+        remote_src: true
+    - name: Correct java version selected
+      alternatives:
+        name: java
+        path: /usr/lib/jvm/java-8-openjdk-amd64/bin/java
+  vars:
+    ansible_become_pass: granada01

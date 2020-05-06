@@ -1,0 +1,28 @@
+- hosts: 192.168.1.206
+  become: true
+  tasks:
+    - debug:
+        msg: create kerberos
+    - name: del princip
+      shell: kadmin.local -q 'delprinc -force kafkatool@GS.COM' 
+      
+    - name: add princip
+      shell: kadmin.local -q 'addprinc -pw kafkatool kafkatool@GS.COM' 
+      
+    
+    - name: rm keytab
+      shell: rm -f /home/user/keytabs/kafkatool.keytab
+      
+    - name: create keytabs 
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/kafkatool.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  kafkatool@GS.COM'
+      
+
+    - name: get keytab hbase@GS.COM
+      fetch:
+        src: /home/user/keytabs/kafkatool.keytab
+        dest: ./tools/application/keytabs/
+        flat: yes
+     
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

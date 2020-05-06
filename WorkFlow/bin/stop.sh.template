@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+
+PID=`ps axo user:20,pid,command | grep java | grep wf_cmp_hashkey | grep java | grep -v grep | awk '{print $2}'`
+count=0
+while [  ! -z $PID  ] && [ $count -lt 20 ]
+do
+   kill $PID
+   PID=`ps axo user:20,pid,command | grep java | grep wf_cmp_hashkey | grep java | grep -v grep | awk '{print $2}'`
+   if [ -z $PID]
+   then
+    sleep 1
+   fi
+   let "count=count+1"
+done
+if [ ! -z $PID ]
+then
+  kill -9 $PID
+fi  

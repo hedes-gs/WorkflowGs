@@ -1,3 +1,4 @@
+SERVER_JVMFLAGS=-Dzookeeper.DigestAuthenticationProvider.superDigest=super:xQJmxLMiHGwaqBvst5y6rkB6HQs=
 ZOOMAIN=org.apache.zookeeper.server.quorum.QuorumPeerMain
 ZOOCFGDIR=/home/zookeeper/latest/conf
 ZOOCFG=zoo.cfg

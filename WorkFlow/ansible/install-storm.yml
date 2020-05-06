@@ -5,23 +5,20 @@
         msg: Download storm "{{ storm_version }}"
     - user: name="{{ user_to_create }}" group=nogroup
     - name: chown /home/storm to root
-      shell: " chown -R {{ user_to_create }}:nogroup {{ storm_install_folder }}"
+      shell: "chown -R {{ user_to_create }}:nogroup {{ storm_install_folder }}"
     - name: chown /home/storm to root
-      shell: " chown root:nogroup {{ storm_install_folder }}"
-    - name : stop service nimbus
-      sudo: yes
+      shell: "chown root:nogroup {{ storm_install_folder }}"
+    - name: stop service nimbus
       service:
         name: nimbus
         state: stopped
       when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
     - name : stop service nimbusui
-      sudo: yes
       service:
         name: nimbusui
         state: stopped
       when: inventory_hostname == "192.168.1.200"
     - name : stop service supervisor
-      sudo: yes
       service:
         name: supervisor 
         state: stopped
@@ -150,22 +147,18 @@
         src: ./tools/storm/supervisor.service
         dest: "/etc/systemd/system/supervisor.service"
     - name: reload systemd/system/nimbus
-      sudo: yes
       command: systemctl daemon-reload
     - name : start service nimbus
-      sudo: yes
       service:
         name: nimbus
         state: started
       when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
     - name : start service nimbusui
-      sudo: yes
       service:
         name: nimbusui
         state: started
       when: inventory_hostname == "192.168.1.200"
-    - name : stop service supervisor
-      sudo: yes
+    - name : start service supervisor
       service:
         name: supervisor 
         state: started
