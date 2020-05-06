@@ -1,0 +1,21 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "Start process {{ PWD }}"
+
+    - name: Stop appli
+      shell: systemctl stop {{item}}_appli.service
+      loop:
+        - wf_archive
+        - wf_cmp_hashkey
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_exif_data
+        - wf_proc_and_publish_photo
+        - wf_scan
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

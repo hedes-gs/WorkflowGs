@@ -124,6 +124,13 @@
         owner: "{{ user_to_create }}"
         group: hadoop
         mode: 0600  
+    - name: deploy ./tools/hadoop/ssl-client.xml
+      template:
+        src: ./tools/hadoop/ssl-client.xml
+        dest: "~hadoop/latest/etc/hadoop"
+        owner: "{{ user_to_create }}"
+        group: hadoop
+        mode: 0600  
     - name: deploy ./tools/hadoop/yarn-site.xml
       vars:
         hadoop_host: "{{ hadoop_hosts[inventory_hostname].value }}"

@@ -1,0 +1,14 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: Start kafka
+      shell: "systemctl restart kafka.service"
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

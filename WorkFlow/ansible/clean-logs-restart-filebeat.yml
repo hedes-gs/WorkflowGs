@@ -1,0 +1,42 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Clean logs !!
+    - name: remove log dirs
+      file:
+        path: '/home/{{item}}/logs'
+        state: absent
+      loop:
+        - wf_archive
+        - wf_cmp_hashkey
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_exif_data
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_copy_files
+    - name: Clean folder logs
+      file:
+        path: '/home/{{item}}/logs'
+        state: directory
+        owner: "{{ item }}"
+      loop:
+        - wf_archive
+        - wf_cmp_hashkey
+        - wf_dupcheck
+        - wf_ext_img_infos
+        - wf_hbase
+        - wf_proc_and_publish_exif_data
+        - wf_proc_and_publish_photo
+        - wf_scan
+        - wf_copy_files
+    - name: Restart filebeat
+      shell: systemctl restart filebeat.service
+    - name: Restart logstash
+      shell: systemctl restart logstash
+      when:  inventory_hostname == "192.168.1.205"
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

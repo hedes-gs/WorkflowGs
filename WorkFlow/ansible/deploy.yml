@@ -1,5 +1,6 @@
 ---
 - hosts: all
+  gather_facts: no
   become: true
   tasks:
     - debug:
@@ -10,31 +11,25 @@
     - name: load
       include_vars:
         file: "{{ PWD }}/prod.properties"
-    - name: Get running processes
-      shell: "ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'"
-      register: running_processes
-    - debug:
-        msg: "found processes : {{ running_processes.stdout_lines }}"
     - name: Kill running processes
-      shell: "kill {{ item }}"
-      with_items: "{{ running_processes.stdout_lines }}"
-    - wait_for:
-        path: "/proc/{{ item }}/status"
+      shell: systemctl stop {{user_to_create}}_appli.service
+      async: 5
+      poll: 0
+    - name: clean stream-dir if exists
+      file:
+        path: ~{{ user_to_create }}/stream-dir
         state: absent
-      with_items: "{{ running_processes.stdout_lines }}"
       ignore_errors: yes
-      register: killed_processes
-    - name: Force kill stuck processes
-      shell: "kill -9 {{ item }}"
-      with_items: "{{ killed_processes.results | select('failed') | map(attribute='item') | list }}"
-    - debug:
-        msg: "{{ inventory_hostname }} and {{ ids }}"
+      async: 5
+      poll: 0
     - name: clean log
       archive:
         path: ~{{ user_to_create }}/logs/*.log
         dest: ~{{ user_to_create }}/logs/{{ user_to_create }}.tar.bz2
         remove: True
       ignore_errors: yes
+      async: 5
+      poll: 0
     - name: build config file from template
       vars:
           host_id: "{{ ids[inventory_hostname].value }}"
@@ -43,13 +38,25 @@
         dest: ~{{ user_to_create }}/config/application.properties
         owner: "{{ user_to_create }}"
         mode: 0666
-    - name: build bin file from template
+    - name: build run.sh file from template
       template:
         src: ../bin/run.sh.template
         dest: ~{{ user_to_create }}/bin/run.sh
         owner: "{{ user_to_create }}"
         mode: 0744
-    - name: build bin file from template
+    - name: build stop.sh file from template
+      template:
+        src: ../bin/stop.sh.template
+        dest: ~{{ user_to_create }}/bin/stop.sh
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: build debug.sh from template
+      template:
+        src: ../bin/debug.sh.template
+        dest: ~{{ user_to_create }}/bin/debug.sh
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: build log4j from template
       template:
         src: ../config/log4j.xml.template
         dest: ~{{ user_to_create }}/config/log4j.xml
@@ -73,6 +80,20 @@
         dest: ~{{ user_to_create }}/config/cluster-client.xml
         owner: "{{ user_to_create }}"
         mode: 0644
+    - name: Deploy {{user_to_create }}_appli.service  file
+      template:
+        src: ../bin/application.service.template
+        dest: /etc/systemd/system/{{user_to_create }}_appli.service
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: reload daemon
+      shell: systemctl  daemon-reload    
+      async: 5
+      poll: 0
+    - name: enable {{user_to_create }}_appli.service
+      shell: systemctl enable {{user_to_create }}_appli.service
+      async: 5
+      poll: 0
     - name: Copy jars
       copy:
         src: "{{ PWD }}/../target/{{ jar_name }}"

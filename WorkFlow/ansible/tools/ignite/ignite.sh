@@ -5,7 +5,7 @@ set -o pipefail
 set -o errtrace
 set -o functrace
 
-
+export JAVA_HOME=/usr/lib/jvm/jdk-13.0.2+8
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -105,7 +105,7 @@ JVM_OPTS="${JVM_OPTS} -DIGNITE_JETTY_PORT=10000"
 #
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
-# JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
+JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"
 
 #
 # Uncomment if you get StackOverflowError.
@@ -116,7 +116,7 @@ JVM_OPTS="${JVM_OPTS} -DIGNITE_JETTY_PORT=10000"
 #
 # Uncomment to set preference for IPv4 stack.
 #
-# JVM_OPTS="${JVM_OPTS} -Djava.net.preferIPv4Stack=true"
+JVM_OPTS="${JVM_OPTS} -Djava.net.preferIPv4Stack=true"
 
 #
 # Assertions are disabled by default since version 3.5.

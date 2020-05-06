@@ -1,0 +1,4 @@
+#!/bin/bash
+export JAR_FILE={{ jar_name }}
+cd /home/{{ user_to_create }}
+/usr/lib/jvm/jdk-13.0.2+8/bin/java -agentlib:jdwp=transport=dt_socket,server=y,address=0.0.0.0:8000,suspend=n  -Xlog:gc -XX:+UseParallelGC  -XX:ParallelGCThreads=2 -XX:InitiatingHeapOccupancyPercent=65 -Xmx768m -Xms512m -Djava.net.preferIPv4Stack=true -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -jar lib/${JAR_FILE} 

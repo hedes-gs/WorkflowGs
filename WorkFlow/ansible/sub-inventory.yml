@@ -1,0 +1,8 @@
+all:
+  hosts:
+    192.168.1.205:
+    192.168.1.206:
+
+  vars:
+    ansible_user: user
+    ansible_ssh_private_key_file: /etc/gitlab/ssh-keys/private-key-1

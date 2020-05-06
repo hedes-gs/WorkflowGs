@@ -1,0 +1,13 @@
+[Unit]
+Description=High-available, distributed message broker
+After=network.target
+[Service]
+User=wf_nfs
+ExecStart=/home/wf_nfs/bin/run.sh
+ExecStop=/home/wf_nfs/bin/stop.sh
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=wf_nfs
+
+[Install]
+WantedBy=multi-user.target
