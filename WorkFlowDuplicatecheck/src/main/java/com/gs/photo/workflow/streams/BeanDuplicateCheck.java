@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.streams;
 
+import java.time.Duration;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -7,7 +8,9 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.WindowStore;
@@ -21,6 +24,8 @@ import org.springframework.stereotype.Component;
 import com.gs.photo.workflow.AbstractStream;
 import com.gs.photo.workflow.IDuplicateCheck;
 import com.gs.photo.workflow.IStreamsHelper;
+import com.gs.photos.serializers.FileToProcessSerDe;
+import com.workflow.model.files.FileToProcess;
 
 @Component
 public class BeanDuplicateCheck extends AbstractStream implements IDuplicateCheck {
@@ -77,42 +82,43 @@ public class BeanDuplicateCheck extends AbstractStream implements IDuplicateChec
         StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
             Stores.persistentWindowStore(
                 this.storeName,
-                retentionPeriod,
-                numberOfSegments,
-                maintainDurationPerEventInMs,
+                Duration.ofMillis(retentionPeriod),
+                Duration.ofMillis(maintainDurationPerEventInMs),
                 false),
             Serdes.String(),
             Serdes.Long());
 
         builder.addStateStore(dedupStoreBuilder);
 
-        KStream<String, String> input = builder.stream(this.topicFileHashKey);
-        KStream<String, String> deduplicated = input
+        KStream<String, FileToProcess> input = builder
+            .stream(this.topicFileHashKey, Consumed.with(Serdes.String(), new FileToProcessSerDe()));
+        KStream<String, FileToProcess> deduplicated = input
             .transform(() -> this.buildDedupTransformer(maintainDurationPerEventInMs), this.storeName);
         deduplicated.filter((K, V) -> { return K.startsWith("DUP-"); })
-            .to(this.duplicateImageFoundTopic);
+            .to(this.duplicateImageFoundTopic, Produced.with(Serdes.String(), new FileToProcessSerDe()));
         deduplicated.filterNot((K, V) -> { return K.startsWith("DUP-"); })
-            .to(this.topicDupFilteredFile);
+            .to(this.topicDupFilteredFile, Produced.with(Serdes.String(), new FileToProcessSerDe()));
 
         KafkaStreams streams = new KafkaStreams(builder.build(), this.kafkaStreamProperties);
 
         return streams;
     }
 
-    protected DeduplicationTransformer<String, String, String> buildDedupTransformer(
+    protected DeduplicationTransformer<String, FileToProcess, String> buildDedupTransformer(
         long maintainDurationPerEventInMs
     ) {
-        return new DeduplicationTransformer<String, String, String>(maintainDurationPerEventInMs,
+        return new DeduplicationTransformer<String, FileToProcess, String>(maintainDurationPerEventInMs,
             (key, value) -> key,
             this.storeName) {
             @Override
-            public KeyValue<String, String> transform(final String key, final String value) {
-                KeyValue<String, String> output = super.transform(key, value);
+            public KeyValue<String, FileToProcess> transform(final String key, final FileToProcess value) {
+                KeyValue<String, FileToProcess> output = super.transform(key, value);
                 if (output == null) {
-                    BeanDuplicateCheck.LOGGER.info("[EVENT][{}]!!! Duplicate value found : {}", key, value);
+                    BeanDuplicateCheck.LOGGER.warn("[EVENT][{}]!!! Duplicate value found : {}", key, value);
                     output = KeyValue.pair("DUP-" + key, value);
                 } else {
-                    BeanDuplicateCheck.LOGGER.info("Unique value found for key {} and value {}", key, value);
+                    BeanDuplicateCheck.LOGGER
+                        .info("[EVENT][{}][DUPLICATE]Unique value found FileToProcess value {}", key, value.toString());
                 }
                 return output;
             }

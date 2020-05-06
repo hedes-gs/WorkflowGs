@@ -1,5 +1,6 @@
 package com.gs.photos.workflow.metadata;
 
+import com.gs.photos.workflow.metadata.IFD.IFDContext;
 import com.gs.photos.workflow.metadata.exif.InteropTag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
@@ -8,9 +9,9 @@ public class InteropTagTemplate extends AbstractTemplateTag {
     protected SimpleAbstractField<int[]> data;
 
     @Override
-    protected void buildChildren(FileChannelDataInput rin) {
+    protected void buildChildren(FileChannelDataInput rin, IFDContext ifdContext) {
         if (this.data.getData()[0] != 0) {
-            super.createSimpleTiffFields(rin, this.data.getData()[0]);
+            super.createSimpleTiffFields(rin, this.data.getData()[0], ifdContext);
         }
     }
 
