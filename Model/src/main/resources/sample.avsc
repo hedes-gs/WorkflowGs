@@ -1,0 +1,220 @@
+[ {
+  "type" : "record",
+  "name" : "HbaseExif",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseExif",
+  "fields" : [ {
+    "name" : "cardId",
+    "type" : "int"
+  }, {
+    "name" : "data",
+    "type" : [ "null", "bytes" ]
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "tagId",
+    "type" : "int"
+  }, {
+    "name" : "tagName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "tagType",
+    "type" : "int"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifData",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseExifData",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "exifTag",
+    "type" : "long"
+  }, {
+    "name" : "exifValueAsByte",
+    "type" : [ "null", "bytes" ]
+  }, {
+    "name" : "exifValueAsInt",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int"
+    } ]
+  }, {
+    "name" : "exifValueAsShort",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int"
+    } ]
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "width",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifDataOfImages",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseExifDataOfImages",
+  "fields" : [ {
+    "name" : "exifTag",
+    "type" : "long"
+  }, {
+    "name" : "exifValue",
+    "type" : [ "null", "bytes" ]
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "width",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifDateImage",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseExifDateImage",
+  "fields" : [ {
+    "name" : "cardId",
+    "type" : "int"
+  }, {
+    "name" : "data",
+    "type" : [ "null", "bytes" ]
+  }, {
+    "name" : "dateInNanosecondes",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "tagId",
+    "type" : "int"
+  }, {
+    "name" : "tagName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "tagType",
+    "type" : "int"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageData",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseImageData",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "name",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "path",
+    "type" : [ "null", "string" ]
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageEvent",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseImageEvent",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "eventClient",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "eventName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "imageName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "path",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ]
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageImportProject",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseImageImportProject",
+  "fields" : [ {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "imageName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "importId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "path",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "width",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageThumbnail",
+  "namespace" : "com.workflow.model",
+  "doc" : "Schema for com.workflow.model.HbaseImageThumbnail",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "imageName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "orignal",
+    "type" : "boolean"
+  }, {
+    "name" : "path",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ]
+  }, {
+    "name" : "thumbnail",
+    "type" : [ "null", "bytes" ]
+  }, {
+    "name" : "width",
+    "type" : "long"
+  } ]
+} ]
