@@ -18,26 +18,24 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.Joined;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.ValueJoiner;
-import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.WindowStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.ks.transformers.MapCollector;
 import com.gs.photos.serializers.ExchangedDataSerDe;
 import com.gs.photos.serializers.FinalImageSerDe;
 import com.gs.photos.serializers.HbaseImageThumbnailSerDe;
-import com.gs.photos.serializers.WfEventSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseImageThumbnail;
@@ -50,7 +48,6 @@ import com.workflow.model.storm.FinalImage;
 @Configuration
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    private static final int    EVENTS_WINDOW_DURATION     = 500;
     private static final byte[] EMPTY_ARRAY_BYTE           = new byte[] {};
     private static final String NOT_SET                    = "<not set>";
     private static final Logger LOGGER                     = LoggerFactory.getLogger(ApplicationConfig.class);
@@ -62,10 +59,15 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public Properties kafkaStreamProperties(
         @Value("${bootstrap.servers}") String bootstrapServers,
         @Value("${kafkaStreamDir.dir}") String kafkaStreamDir,
-        @Value("${group.id}") String applicationGroupId
+        @Value("${application.kafkastreams.id}") String applicationId,
+        @Value("${kafka.pollTimeInMillisecondes}") int pollTimeInMillisecondes,
+        @Value("${kafka.consumer.batchRecords}") int consumerBatch,
+        @Value("${kafka.stream.commit.interval.ms}") int commitIntervalIms,
+        @Value("${kafka.stream.metadata.age.ms}") int metaDataAgeIms,
+        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads
     ) {
         Properties config = new Properties();
-        config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationGroupId + "-streams");
+        config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(
             StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
@@ -77,12 +79,15 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                 .getClass());
         config.put(StreamsConfig.STATE_DIR_CONFIG, kafkaStreamDir);
         config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
-        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "10000");
-        config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, "20000");
+        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, commitIntervalIms);
+        config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, metaDataAgeIms);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+        config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 5 * 1024 * 1024);
+        config.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, pollTimeInMillisecondes);
+        config.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, consumerBatch);
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name());
         config.put("sasl.kerberos.service.name", "kafka");
+        config.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, nbOfThreads);
         return config;
     }
 
@@ -94,8 +99,13 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${topic.topicImageDataToPersist}") String topicImageDataToPersist,
         @Value("${topic.topicDupFilteredFile}") String topicDupFilteredFile,
         @Value("${topic.topicCountOfImagesPerDate}") String topicCountOfImagesPerDate,
-        @Value("${topic.topicExif}") String topicExif
+        @Value("${topic.topicExif}") String topicExif,
+        @Value("${events.collectorEventsBufferSize}") int collectorEventsBufferSize,
+        @Value("${events.collectorEventsTimeWindow}") int collectorEventsTimeWindow,
+        @Value("${kafkastreams.windowsOfEventsInMs}") int windowsOfEvents
     ) {
+        ApplicationConfig.LOGGER.info("Starting application with windowsOfEvents : {}", windowsOfEvents);
+
         StreamsBuilder builder = new StreamsBuilder();
         KStream<String, String> pathOfImageKStream = this
             .buildKTableToStoreCreatedImages(builder, topicDupFilteredFile);
@@ -110,12 +120,6 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                 boolean b = (exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
                     && (Objects.deepEquals(exif.getPath(), ApplicationConfig.EXIF_CREATION_DATE_ID_PATH));
                 return b;
-            })
-            .map((k, v) -> {
-                String key = KeysBuilder.topicExifKeyBuilder()
-                    .build(k)
-                    .getOriginalKey();
-                return new KeyValue<String, ExchangedTiffData>(key, v);
             });
 
         /*
@@ -127,6 +131,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             v_imagePath) -> { return this.buildHBaseImageThumbnail(v_exchangedTiffData, v_imagePath); };
         final Joined<String, ExchangedTiffData, String> joined = Joined
             .with(Serdes.String(), new ExchangedDataSerDe(), Serdes.String());
+
         KStream<String, HbaseImageThumbnail> jointureToFindTheCreationDate = filteredImageKStreamForCreationDate
             .join(pathOfImageKStream, joiner, JoinWindows.of(Duration.ofDays(2)), joined);
 
@@ -145,15 +150,19 @@ public class ApplicationConfig extends AbstractApplicationConfig {
          * finalStream : we update the HbaseImageThumbnail which was created with the
          * creation date only.
          */
-        KStream<String, HbaseImageThumbnail> finalStream = jointureToFindTheCreationDate
-            .join(thumbImages, (v_hbaseImageThumbnail, v_finalImage) -> {
+        final ValueJoiner<? super HbaseImageThumbnail, ? super FinalImage, ? extends HbaseImageThumbnail> joiner2 = (
+            v_hbaseImageThumbnail,
+            v_finalImage) -> {
 
-                final HbaseImageThumbnail buildHbaseImageThumbnail = this
-                    .buildHbaseImageThumbnail(v_finalImage, v_hbaseImageThumbnail);
-                return buildHbaseImageThumbnail;
-            },
-                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-                Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
+            final HbaseImageThumbnail buildHbaseImageThumbnail = this
+                .buildHbaseImageThumbnail(v_finalImage, v_hbaseImageThumbnail);
+            return buildHbaseImageThumbnail;
+        };
+        KStream<String, HbaseImageThumbnail> finalStream = jointureToFindTheCreationDate.join(
+            thumbImages,
+            joiner2,
+            JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+            Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
 
         /*
          * final2Stream : we update the HbaseImageThumbnail which was created with the
@@ -170,23 +179,29 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             },
                 JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
                 Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), Serdes.String()));
-        KStream<String, WfEvent> eventStream = final2Stream
-            .map((k, v) -> new KeyValue<String, WfEvent>(k, this.buildEvent(v)));
-        final2Stream = final2Stream.map((k, v) -> new KeyValue<>(this.buildKey(v), v));
         this.publishImageDataInRecordTopic(final2Stream, topicImageDataToPersist);
-        final KTable<Windowed<String>, WfEvents> streamAggregatedByKey = eventStream
-            .groupByKey(Grouped.with(Serdes.String(), new WfEventSerDe()))
-            .windowedBy(TimeWindows.of(Duration.ofMillis(ApplicationConfig.EVENTS_WINDOW_DURATION)))
-            .aggregate(
-                () -> WfEvents.builder()
-                    .withDataId("<not used>")
+
+        KStream<String, WfEvent> eventStream = final2Stream.mapValues((k, v) -> this.buildEvent(v));
+
+        StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
+            Stores.persistentWindowStore("MyTransformer", Duration.ofMillis(10000), Duration.ofMillis(10000), false),
+            Serdes.String(),
+            Serdes.Long());
+
+        builder.addStateStore(dedupStoreBuilder);
+
+        KStream<String, WfEvents> wfEventsStream = eventStream.transform(
+            () -> MapCollector.of(
+                (k, wfEventList) -> WfEvents.builder()
+                    .withDataId(k)
                     .withProducer("PUBLISH_THB_IMGS")
-                    .withEvents(new ArrayList<WfEvent>())
+                    .withEvents(new ArrayList<WfEvent>(wfEventList))
                     .build(),
-                (k, v, wfevents) -> wfevents.addEvent(v),
-                Materialized.with(Serdes.String(), new WfEventsSerDe()));
-        final KStream<Windowed<String>, WfEvents> streamOfEventsInAWindow = streamAggregatedByKey.toStream();
-        KStream<String, WfEvents> wfEventsStream = streamOfEventsInAWindow.map((k, v) -> new KeyValue<>(k.key(), v));
+                (k, values) -> ApplicationConfig.LOGGER
+                    .info("[EVENT][{}] processed and {} events produced ", k, values.size()),
+                collectorEventsBufferSize,
+                collectorEventsTimeWindow),
+            "MyTransformer");
         this.publishEventInEventTopic(wfEventsStream, topicEvent);
         return builder.build();
     }
@@ -287,12 +302,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         ApplicationConfig.LOGGER.info("building ktable from topic topicTransformedThumb {}", topicTransformedThumb);
 
         KStream<String, FinalImage> stream = streamsBuilder
-            .stream(topicTransformedThumb, Consumed.with(Serdes.String(), new FinalImageSerDe()))
-            .map((k_string, v_finalImage) -> {
-                String newKey = KeysBuilder.topicTransformedThumbKeyBuilder()
-                    .getOriginalKey(k_string);
-                return new KeyValue<String, FinalImage>(newKey, v_finalImage);
-            });
+            .stream(topicTransformedThumb, Consumed.with(Serdes.String(), new FinalImageSerDe()));
         return stream;
     }
 

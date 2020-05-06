@@ -18,10 +18,13 @@ components:
       - ["{{ kafka_inputTopic }}"]
     properties:
       - name: "firstPollOffsetStrategy"
-        value: EARLIEST
+        value: UNCOMMITTED_EARLIEST
+      - name: "pollTimeoutMs"
+        value: 15000
+      - name: "processingGuarantee"
+        value: AT_LEAST_ONCE
       - name: "recordTranslator"
         ref: "keyValueTranslator"
-
 
     configMethods:
       - name: "setProp"
@@ -29,6 +32,7 @@ components:
           - {
               "key.deserializer" : "org.apache.kafka.common.serialization.StringDeserializer",
               "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer",
+              "isolation.level": "read_committed",
               "security.protocol": "SASL_PLAINTEXT",
               "group.id": "wf-storm-group",
               "client.id": "wf-storm-client",
@@ -67,6 +71,8 @@ bolts:
         value: "{{ kafka_bootstrap_servers }}"
       - name: "outputTopic"
         value: "{{ kafka_outputTopic }}"
+      - name: "eventTopic"
+        value: "{{ kafka_eventTopic }}"
 
 streams:
   - name: "kafka --> extractHistogram" # name isn't used (placeholder for logging, UI, etc.)

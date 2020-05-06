@@ -3,14 +3,6 @@
 
 	<Appenders>
 		<!-- http://logging.apache.org/log4j/2.x/manual/layouts.html#PatternLayout -->
-		<DefaultRolloverStrategy max="20" />
-		<JsonLayout compact="true" locationInfo="true"
-			complete="false" includeStacktrace="true" stacktraceAsString="true"
-			eventEol="true">
-			<KeyValuePair key="application"
-				value="{{ application_id }}" />
-		</JsonLayout>
-
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout
 				pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n" />
@@ -19,7 +11,6 @@
 		<RollingFile name="RollingFile"
 			filename="/home/wf_storm/logs/{{ application_id }}.log"
 			filepattern="/home/wf_storm/logs/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
-			<param name="append" value="false" />
 			<PatternLayout
 				pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n" />
 			<Policies>
@@ -28,14 +19,15 @@
 			<DefaultRolloverStrategy max="20" />
 		</RollingFile>
 		<RollingFile name="RollingFileJson"
-			filename="/home/wf_storm/logs/{{ application_id }}.log"
-			filepattern="/home/wf_storm/logs/json-%d{YYYYMMddHHmmss}-{{ application_id }}.log">
-			<param name="append" value="false" />
+			filepattern="/home/wf_storm/logs/json_%d{YYYYMMddHHmmss}-storm-topology.log"
+			filename="/home/wf_storm/logs/json_{{ application_id }}.log">
 			<JsonLayout compact="true" locationInfo="true"
 				complete="false" includeStacktrace="true" stacktraceAsString="true"
 				eventEol="true">
 				<KeyValuePair key="application"
 					value="{{ application_id }}" />
+				<KeyValuePair key="timestamp"
+					value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
 			</JsonLayout>
 			<Policies>
 				<SizeBasedTriggeringPolicy size="100 MB" />
@@ -44,9 +36,25 @@
 		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Root level="info">
+		<Root level="warn" >
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="RollingFileJson" />
 		</Root>
+		<logger name="com.gsphotos" additivity="false" level="info" >
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="RollingFileJson" />
+		</logger>
+		<logger name="org.apache.storm" additivity="false" level="info" >
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="RollingFileJson" />
+		</logger>
+		<logger name="org.kafka" additivity="false" level="info" >
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="RollingFileJson" />
+		</logger>
 	</Loggers>
 </Configuration>
