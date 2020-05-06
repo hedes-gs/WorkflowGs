@@ -1,14 +1,19 @@
 package com.gs.photo.workflow;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -26,36 +31,49 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.workflow.impl.BeanArchive;
+import com.gs.photo.workflow.impl.FileUtils;
+import com.workflow.model.events.WfEvents;
+import com.workflow.model.files.FileToProcess;
 
 @RunWith(SpringRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SpringBootTest(classes = { ApplicationConfig.class, BeanArchive.class })
 public class TestBeanArchive {
 
-    @Autowired
     @MockBean
-    @Qualifier("consumerForTransactionalCopyForTopicWithStringKey")
-    protected Consumer<String, String> consumerForTransactionalCopyForTopicWithStringKey;
+    @Qualifier("consumerForTransactionalReadOfFileToProcess")
+    protected Consumer<String, FileToProcess> consumerForTransactionalReadOfFileToProcess;
 
     @MockBean
-    protected IBeanTaskExecutor        beanTaskExecutor;
+    protected IBeanTaskExecutor               beanTaskExecutor;
 
     @Autowired
-    protected BeanArchive              beanArchive;
+    protected IBeanArchive                    beanArchive;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {}
 
-    @Before
-    public void setUp() throws Exception { MockitoAnnotations.initMocks(this); }
+    @MockBean
+    @Qualifier("producerForPublishingWfEvents")
+    protected Producer<String, WfEvents>  producerForPublishingWfEvents;
 
-    @Test
-    public void test() {
-        Map<TopicPartition, List<ConsumerRecord<String, String>>> mapOfRecords = new HashMap<>();
-        final List<ConsumerRecord<String, String>> asList = Arrays
-            .asList(new ConsumerRecord<>("topic", 1, 0, "1", "1"));
-        mapOfRecords.put(new TopicPartition("topic", 1), asList);
-        ConsumerRecords<String, String> records = new ConsumerRecords<>(mapOfRecords);
+    @MockBean
+    @Qualifier("hdfsFileSystem")
+    protected FileSystem                  hdfsFileSystem;
+
+    @MockBean
+    @Qualifier("userGroupInformationAction")
+    protected IUserGroupInformationAction userGroupInformationAction;
+
+    @MockBean
+    @Qualifier("fileUtils")
+    protected FileUtils                   fileUtils;
+
+    protected class ExceptionToStop extends RuntimeException {}
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
 
         Mockito.doAnswer(invocation -> {
             Runnable arg = (Runnable) invocation.getArgument(0);
@@ -64,18 +82,109 @@ public class TestBeanArchive {
         })
             .when(this.beanTaskExecutor)
             .execute((Runnable) ArgumentMatchers.any());
-        Mockito.when(this.consumerForTransactionalCopyForTopicWithStringKey.poll(ArgumentMatchers.any()))
+        Mockito.doAnswer(invocation -> {
+            PrivilegedAction<?> arg = (PrivilegedAction<?>) invocation.getArgument(0);
+            return arg.run();
+        })
+            .when(this.userGroupInformationAction)
+            .run((PrivilegedAction<?>) ArgumentMatchers.any());
+    }
+
+    @Test
+    public void test001_shouldSendOneWfEventWhenReceivingOneRecord() throws IOException {
+        Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
+        final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
+            new ConsumerRecord<>("topic",
+                1,
+                0,
+                "1",
+                FileToProcess.builder()
+                    .withDataId("<dataId>")
+                    .withHost("localhost")
+                    .withName("file")
+                    .withPath("/")
+                    .build()));
+        mapOfRecords.put(new TopicPartition("topic", 1), asList);
+        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+
+        Mockito.when(this.consumerForTransactionalReadOfFileToProcess.poll(ArgumentMatchers.any()))
             .thenReturn(records)
-            .thenReturn(null);
-        this.beanArchive.init();
+            .thenThrow(new ExceptionToStop());
+
+        Mockito.when(this.hdfsFileSystem.mkdirs(ArgumentMatchers.any()))
+            .thenReturn(true);
 
         try {
-            TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException ie) {
-            Thread.currentThread()
-                .interrupt();
+            this.beanArchive.init();
+        } catch (ExceptionToStop e) {
         }
+        Mockito.verify(this.producerForPublishingWfEvents, Mockito.times(1))
+            .send(ArgumentMatchers.any());
+    }
 
+    @Test
+    public void test002_shouldCreateOneDirWhenReceivingOneRecord() throws IOException {
+        Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
+        final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
+            new ConsumerRecord<>("topic",
+                1,
+                0,
+                "1",
+                FileToProcess.builder()
+                    .withDataId("<dataId>")
+                    .withHost("localhost")
+                    .withName("file")
+                    .withPath("/")
+                    .build()));
+        mapOfRecords.put(new TopicPartition("topic", 1), asList);
+        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+
+        Mockito.when(this.consumerForTransactionalReadOfFileToProcess.poll(ArgumentMatchers.any()))
+            .thenReturn(records)
+            .thenThrow(new ExceptionToStop());
+        Mockito.when(this.hdfsFileSystem.mkdirs(ArgumentMatchers.any()))
+            .thenReturn(true);
+
+        try {
+            this.beanArchive.init();
+        } catch (ExceptionToStop e) {
+        }
+        Mockito.verify(this.hdfsFileSystem, Mockito.times(1))
+            .mkdirs((Path) ArgumentMatchers.any());
+    }
+
+    @Test
+    public void test003_shouldCopyLocalToRemoteWhenReceivingOneRecord() throws IOException {
+        Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
+        final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
+            new ConsumerRecord<>("topic",
+                1,
+                0,
+                "1",
+                FileToProcess.builder()
+                    .withDataId("<dataId>")
+                    .withHost("localhost")
+                    .withName("file")
+                    .withPath("/")
+                    .build()));
+        mapOfRecords.put(new TopicPartition("topic", 1), asList);
+        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+
+        Mockito.when(this.consumerForTransactionalReadOfFileToProcess.poll(ArgumentMatchers.any()))
+            .thenReturn(records)
+            .thenThrow(new ExceptionToStop());
+        Mockito.when(this.hdfsFileSystem.mkdirs(ArgumentMatchers.any()))
+            .thenReturn(true);
+
+        try {
+            this.beanArchive.init();
+        } catch (ExceptionToStop e) {
+        }
+        Mockito.verify(this.fileUtils, Mockito.times(1))
+            .copyRemoteToLocal(
+                (FileToProcess) ArgumentMatchers.any(),
+                (OutputStream) ArgumentMatchers.any(),
+                (Integer) ArgumentMatchers.any());
     }
 
 }

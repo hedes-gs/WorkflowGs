@@ -1,5 +1,3 @@
 package com.gs.photo.workflow;
 
-public interface IProcessInputForHashKeyCompute {
-	public void init();
-}
+public interface IProcessInputForHashKeyCompute {}
