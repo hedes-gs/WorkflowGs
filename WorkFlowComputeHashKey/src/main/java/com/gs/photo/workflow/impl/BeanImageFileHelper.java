@@ -10,7 +10,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -23,6 +27,7 @@ import com.google.common.base.Strings;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.gs.photo.workflow.IBeanImageFileHelper;
+import com.workflow.model.files.FileToProcess;
 
 @Component
 public class BeanImageFileHelper implements IBeanImageFileHelper {
@@ -78,6 +83,52 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
             BeanImageFileHelper.LOGGER.error("unable to getFullPathName for " + filePath, e);
             throw new RuntimeException("unable to getFullPathName for " + filePath, e);
         }
+    }
+
+    @Override
+    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
+        BeanImageFileHelper.LOGGER.debug(" readFirstBytesOfFile of {}", file);
+        byte[] retValue = new byte[BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
+        String root = "/" + file.getPath()
+            .split("/")[1];
+        Nfs3 nfs3 = new Nfs3(file.getHost(), root, new CredentialUnix(0, 0, null), 3);
+        Nfs3File nfs3File = new Nfs3File(nfs3,
+            file.getPath()
+                .substring(root.length()));
+        if (!file.isCompressedFile()) {
+            try (
+                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
+                    BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
+                inputStream.read(retValue);
+            } catch (IOException e) {
+                BeanImageFileHelper.LOGGER.error(
+                    "ERROR : unable to compute hash key for {} error is {} ",
+                    file,
+                    ExceptionUtils.getStackTrace(e));
+                throw e;
+            }
+        } else {
+            try (
+                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
+                    BeanImageFileHelper.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                ZipInputStream zis = new ZipInputStream(inputStream)) {
+                ZipEntry entry = zis.getNextEntry();
+                do {
+                    if (FilenameUtils.isExtension(entry.getName(), "EIP")) {
+                        zis.read(retValue);
+                        break;
+                    }
+                } while ((entry = zis.getNextEntry()) != null);
+
+            } catch (IOException e) {
+                BeanImageFileHelper.LOGGER.error(
+                    "ERROR : unable to compute hash key for {} error is {} ",
+                    file,
+                    ExceptionUtils.getStackTrace(e));
+                throw e;
+            }
+        }
+        return retValue;
     }
 
 }

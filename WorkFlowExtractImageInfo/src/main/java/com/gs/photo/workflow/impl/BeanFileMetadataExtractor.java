@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +33,21 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
     @Override
     public Collection<IFD> readIFDs(String key) {
+        return this.iIgniteDAO.get(key)
+            .map((buffer) -> this.processFile(buffer, key))
+            .orElseThrow(() -> new IllegalArgumentException("Key " + key + " is not present in cache"));
+    }
+
+    private Collection<IFD> processFile(byte[] buffer, String key) {
+        IFD.IFDContext ifdContext = new IFD.IFDContext();
         Collection<IFD> allIfds = new ArrayList<>();
         try (
-            FileChannelDataInput fcdi = new FileChannelDataInput(this.iIgniteDAO.get(key))) {
+            FileChannelDataInput fcdi = new FileChannelDataInput(buffer)) {
 
             int offset = this.readHeader(fcdi);
             for (RootTiffTag rtt : RootTiffTag.values()) {
                 AbstractTemplateTag dtp = TemplateTagFactory.create(rtt);
-                offset = dtp.createSimpleTiffFields(fcdi, offset);
+                offset = dtp.createSimpleTiffFields(fcdi, offset, ifdContext);
                 allIfds.add(dtp.getRootIFD());
                 if (offset == 0) {
                     break;
@@ -47,7 +55,8 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
             }
             return allIfds;
         } catch (IOException e) {
-            BeanFileMetadataExtractor.LOGGER.error("Error...", e);
+            BeanFileMetadataExtractor.LOGGER
+                .error("Error when processing {} : {} ", key, ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         }
     }

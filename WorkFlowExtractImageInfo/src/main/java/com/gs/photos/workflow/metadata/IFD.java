@@ -17,6 +17,13 @@ import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 public class IFD {
 
+    public static final class IFDContext {
+        MutableInt currentImageNb = new MutableInt(1);
+
+        public int getImageAndIncrement() { return this.currentImageNb.getAndIncrement(); }
+
+    }
+
     private Map<Tag, IFD>               children          = new HashMap<Tag, IFD>();
     private Multimap<Tag, TiffField<?>> tiffFields        = ArrayListMultimap.create();
     private short[]                     path;
@@ -27,6 +34,7 @@ public class IFD {
     private Tag                         tag;
     private int                         endOffset;
     private int                         startOffset;
+    private int                         currentImageNumber;
 
     public IFD() {
 
@@ -46,11 +54,13 @@ public class IFD {
         return nbOfTiffFields + nbOFChildren;
     }
 
+    public int getCurrentImageNumber() { return this.currentImageNumber; }
+
     public short[] getPath() { return this.path; }
 
     public void addChild(Tag tag, IFD child) { this.children.put(tag, child); }
 
-    public void addField(TiffField<?> tiffField) {
+    public void addField(TiffField<?> tiffField, IFDContext ifdContext) {
         if (tiffField.getTag() == TiffTag.JPEG_INTERCHANGE_FORMAT) {
             this.jpegImagePosition = ((int[]) tiffField.getData())[0];
         }
@@ -59,13 +69,14 @@ public class IFD {
         }
         if ((this.jpegImageLength != -1) && (this.jpegImagePosition != -1) && (this.jpegImage == null)) {
             this.jpegImage = new byte[this.jpegImageLength];
+            this.currentImageNumber = ifdContext.getImageAndIncrement();
         }
         this.tiffFields.put(tiffField.getTag(), tiffField);
     }
 
-    public void addFields(Collection<TiffField<?>> tiffFields) {
+    public void addFields(Collection<TiffField<?>> tiffFields, IFDContext ifdContext) {
         for (TiffField<?> field : tiffFields) {
-            this.addField(field);
+            this.addField(field, ifdContext);
         }
     }
 

@@ -11,6 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
@@ -56,7 +57,7 @@ public class TestBeanFileReadIFDs {
         ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
         fc.read(bb);
         Mockito.when(this.iIgniteDAO.get("1"))
-            .thenReturn(bb.array());
+            .thenReturn(Optional.of(bb.array()));
     }
 
     @Test

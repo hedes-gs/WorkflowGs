@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.gs.photos.workflow.metadata.IFD.IFDContext;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 import com.gs.photos.workflow.metadata.fields.SimpleFieldFactory;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
@@ -20,7 +21,7 @@ public abstract class AbstractTemplateTag {
 
     public IFD getRootIFD() { return this.tiffIFD; }
 
-    public int createSimpleTiffFields(FileChannelDataInput rin, int offset) {
+    public int createSimpleTiffFields(FileChannelDataInput rin, int offset, IFDContext ifdContext) {
         rin.position(offset);
         try {
             int nbOfFields = rin.readShort();
@@ -51,9 +52,9 @@ public abstract class AbstractTemplateTag {
                 SimpleAbstractField<?> saf = SimpleFieldFactory.createField(type, field_length, offset);
                 saf.updateData(rin);
                 final TiffField<?> tiffField = saf.createTiffField(ftag, tagValue);
-                this.tiffIFD.addField(tiffField);
+                this.tiffIFD.addField(tiffField, ifdContext);
                 AbstractTemplateTag tagTemplate = TemplateTagFactory.create(ftag, this.tiffIFD, saf);
-                tagTemplate.buildChildren(rin);
+                tagTemplate.buildChildren(rin, ifdContext);
                 offset = saf.getNextOffset();
             }
             if (this.LOGGER.isDebugEnabled()) {
@@ -101,7 +102,7 @@ public abstract class AbstractTemplateTag {
 
     protected abstract Tag convertTagValueToTag(short tagValue);
 
-    protected void buildChildren(FileChannelDataInput rin) {
+    protected void buildChildren(FileChannelDataInput rin, IFDContext ifdContext) {
 
     }
 
