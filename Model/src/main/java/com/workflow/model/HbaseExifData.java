@@ -26,25 +26,28 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
     protected byte[]          exifValueAsByte;
     @Nullable
-    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 101)
     protected int[]           exifValueAsInt;
     @Nullable
-    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 102)
     protected short[]         exifValueAsShort;
     @Nullable
-    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 101)
+    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 103)
     protected String          thumbName        = "";
-    @Column(hbaseName = "creation_date", toByte = ToByteLong.class, columnFamily = "imd", rowKeyNumber = 102)
+    @Column(hbaseName = "creation_date", toByte = ToByteLong.class, columnFamily = "imd", rowKeyNumber = 104)
     protected long            creationDate;
-    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 103)
+    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 105)
     protected long            width;
-    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 104)
+    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
     protected long            height;
+    @Nullable
+    @Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 107)
+    protected byte[]          thumbnail        = {};
 
     @Generated("SparkTools")
     private HbaseExifData(Builder builder) {
         super(builder.dataId,
-            System.currentTimeMillis());
+            builder.dataCreationDate);
         this.exifTag = builder.exifTag;
         this.exifPath = builder.exifPath;
         this.imageId = builder.imageId;
@@ -55,6 +58,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         this.creationDate = builder.creationDate;
         this.width = builder.width;
         this.height = builder.height;
+        this.thumbnail = builder.thumbnail;
     }
 
     public short[] getExifPath() { return this.exifPath; }
@@ -92,43 +96,31 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
     public void setCreationDate(long creationDate) { this.creationDate = creationDate; }
 
+    public byte[] getThumbnail() { return this.thumbnail; }
+
+    public void setThumbnail(byte[] thumbnail) { this.thumbnail = thumbnail; }
+
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = 1;
-        result = (prime * result) + (int) (this.creationDate ^ (this.creationDate >>> 32));
+        int result = super.hashCode();
         result = (prime * result) + Arrays.hashCode(this.exifPath);
         result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
-        result = (prime * result) + Arrays.hashCode(this.exifValueAsByte);
-        result = (prime * result) + Arrays.hashCode(this.exifValueAsInt);
-        result = (prime * result) + Arrays.hashCode(this.exifValueAsShort);
-        result = (prime * result) + (int) (this.height ^ (this.height >>> 32));
         result = (prime * result) + ((this.imageId == null) ? 0 : this.imageId.hashCode());
-        result = (prime * result) + ((this.thumbName == null) ? 0 : this.thumbName.hashCode());
-        result = (prime * result) + (int) (this.width ^ (this.width >>> 32));
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) { return true; }
-        if (obj == null) { return false; }
+        if (!super.equals(obj)) { return false; }
         if (this.getClass() != obj.getClass()) { return false; }
         HbaseExifData other = (HbaseExifData) obj;
-        if (this.creationDate != other.creationDate) { return false; }
         if (!Arrays.equals(this.exifPath, other.exifPath)) { return false; }
         if (this.exifTag != other.exifTag) { return false; }
-        if (!Arrays.equals(this.exifValueAsByte, other.exifValueAsByte)) { return false; }
-        if (!Arrays.equals(this.exifValueAsInt, other.exifValueAsInt)) { return false; }
-        if (!Arrays.equals(this.exifValueAsShort, other.exifValueAsShort)) { return false; }
-        if (this.height != other.height) { return false; }
         if (this.imageId == null) {
             if (other.imageId != null) { return false; }
         } else if (!this.imageId.equals(other.imageId)) { return false; }
-        if (this.thumbName == null) {
-            if (other.thumbName != null) { return false; }
-        } else if (!this.thumbName.equals(other.thumbName)) { return false; }
-        if (this.width != other.width) { return false; }
         return true;
     }
 
@@ -154,6 +146,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     @Generated("SparkTools")
     public static final class Builder {
         private String  dataId;
+        private long    dataCreationDate;
         private long    exifTag;
         private short[] exifPath;
         private String  imageId;
@@ -164,6 +157,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         private long    creationDate;
         private long    width;
         private long    height;
+        private byte[]  thumbnail;
 
         private Builder() {}
 
@@ -176,6 +170,18 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
          */
         public Builder withDataId(String dataId) {
             this.dataId = dataId;
+            return this;
+        }
+
+        /**
+         * Builder method for dataCreationDate parameter.
+         *
+         * @param dataCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataCreationDate(long dataCreationDate) {
+            this.dataCreationDate = dataCreationDate;
             return this;
         }
 
@@ -296,6 +302,18 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
          */
         public Builder withHeight(long height) {
             this.height = height;
+            return this;
+        }
+
+        /**
+         * Builder method for thumbnail parameter.
+         *
+         * @param thumbnail
+         *            field to set
+         * @return builder
+         */
+        public Builder withThumbnail(byte[] thumbnail) {
+            this.thumbnail = thumbnail;
             return this;
         }
 

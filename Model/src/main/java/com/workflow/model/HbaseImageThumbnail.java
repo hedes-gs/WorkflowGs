@@ -160,8 +160,9 @@ public class HbaseImageThumbnail extends HbaseData {
     public String toString() {
         return "HbaseImageThumbnail [creationDate=" + this.creationDate + ", imageId=" + this.imageId + ", version="
             + this.version + ", imageName=" + this.imageName + ", thumbName=" + this.thumbName + ", thumbnail="
-            + Arrays.toString(this.thumbnail) + ", path=" + this.path + ", width=" + this.width + ", height="
-            + this.height + ", originalWidth=" + this.originalWidth + ", originalHeight=" + this.originalHeight + "]";
+            + (this.thumbnail != null ? this.thumbnail.length : "<unset>") + ", path=" + this.path + ", width="
+            + this.width + ", height=" + this.height + ", originalWidth=" + this.originalWidth + ", originalHeight="
+            + this.originalHeight + "]";
     }
 
     /**
