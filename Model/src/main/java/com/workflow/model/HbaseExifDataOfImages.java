@@ -7,7 +7,7 @@ import javax.annotation.Generated;
 
 import org.apache.avro.reflect.Nullable;
 
-@HbaseTableName("image_exif")
+@HbaseTableName("image_exif_data_of_image")
 public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
