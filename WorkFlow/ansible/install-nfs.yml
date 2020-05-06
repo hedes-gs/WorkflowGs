@@ -1,0 +1,46 @@
+###########################################################################################################################
+# DO Community Playbooks
+# Playbook: Installing Docker and Creating Containers on Ubuntu 18.04
+# Based on: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04
+# Guide: https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-18-04
+###########################################################################################################################
+
+---
+- hosts: all
+  become: true
+  vars:
+    ansible_become_pass: granada01
+  tasks:
+    - name: remove nfs-kernel-server
+      shell: "apt-get -y  remove nfs-kernel-server"
+      ignore_errors: yes
+    - name: stop nfs
+      shell: "systemctl stop wf_nfs.service"
+      ignore_errors: yes
+    - name: stop nfs
+      shell: "systemctl stop wf_nfs.service"
+      ignore_errors: yes
+    - name: copy wf_nfs.service
+      copy:
+        src: ./tools/nfs/wf_nfs.service
+        dest: "/etc/systemd/system/wf_nfs.service"
+    - name: copy ../../WorkFlowNFSServer/target/WorkFlowNFSServer.jar
+      copy: 
+        src: "../../WorkFlowNFSServer/target/WorkFlowNFSServer.jar"
+        dest: "/home/wf_nfs/lib/WorkFlowNFSServer.jar"
+    - name: copy run.sh 
+      copy:
+        src: "./tools/nfs/run.sh"
+        dest: "/home/wf_nfs/bin/run.sh"
+        owner: "wf_nfs"
+        mode: 0744		
+    - name: copy stop.sh 
+      copy:
+        src: "./tools/nfs/stop.sh"
+        dest: "/home/wf_nfs/bin/stop.sh"
+        owner: "wf_nfs"
+        mode: 0744		
+    - name: enable  wf_nfs.service
+      shell: "systemctl enable wf_nfs.service"
+    - name: start  wf_nfs.service
+      shell: "systemctl start wf_nfs.service"

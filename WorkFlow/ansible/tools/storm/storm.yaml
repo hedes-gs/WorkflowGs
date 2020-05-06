@@ -46,8 +46,8 @@ nimbus.supervisor.users: ["storm","wf_storm"]
 nimbus.admins: ["storm"]
 storm.principal.tolocal: "org.apache.storm.security.auth.KerberosPrincipalToLocal"
 storm.thrift.transport: "org.apache.storm.security.auth.kerberos.KerberosSaslTransportPlugin"
-supervisor.heartbeat.frequency.secs: 60
-worker.heartbeat.frequency.secs: 30
+supervisor.heartbeat.frequency.secs: 20
+worker.heartbeat.frequency.secs: 5
 supervisor.thrift.threads: 4
 
 java.security.auth.login.config: "/home/storm/latest/conf/client_jaas.conf"

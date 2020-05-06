@@ -144,7 +144,6 @@
 		<name>hbase.client.keytab.file</name>
 		<value>/home/hbase/latest/conf/hbase_all.keytab</value>
 	</property>
-
 	<property>
 		<name>hbase.client.keytab.principal</name>
 		<value>hbase@GS.COM</value>

@@ -55,9 +55,33 @@
 		<value>true</value>
 	</property>
 	<property>
+		<name>dfs.namenode.acls.enabled</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>dfs.web.ugi</name>
+		<value>hadoop,hadoop</value>
+	</property>
+	<property>
+		<name>dfs.cluster.administrators</name>
+		<value>hadoop,supergroup</value>
+	</property>
+	<property>
 		<name>dfs.http.policy</name>
 		<value>HTTPS_ONLY</value>
 	</property>
+	<property>
+		<name>dfs.web.authentication.type</name>
+		<value>kerberos</value>
+	</property>
+	
+	<!-- use only if dfs.web.authentication.type == simple -->
+	<property>
+		<name>dfs.web.authentication.simple.anonymous.allowed</name>
+		<value>true</value>
+	</property>
+	
+	
 	
 	
 </configuration>

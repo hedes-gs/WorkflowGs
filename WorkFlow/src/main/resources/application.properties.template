@@ -3,8 +3,8 @@ topic.pathNameTopic=topic-path-image
 topic.scan-output-child-parent=topic-scan-output-file-child-with-parent
 topic.scan-output=topic-file-found-in-scan
 topic.topicCopyOtherFile=topic-copy-other-file
+topic.topicLocalFileCopy=topic-local-file-copy
 topic.topicCountOfImagesPerDate=topic.topic-count-of-images-per-date
-topic.topicDupDilteredFile=topic-dup-filtered-file
 topic.topicDupFilteredFile=topic-dup-filtered-file
 topic.topicDuplicateKeyImageFound=topic-duplicate-key-image-found
 topic.topicEvent=topic-event
@@ -18,6 +18,8 @@ topic.topicScannedFiles=topic-scanned-files
 topic.topicScannedFilesChild=topic-scanned-files-child
 topic.topicThumb=topic-thumb
 topic.topicTransformedThumb=topic-transformed-thumb
+topic.topicExifSizeOfImageStream=topic-exif-size-of-image-stream
+topic.processedThumbTopic=
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
@@ -25,37 +27,59 @@ sasl.kerberos.service.name="kafka"
 duplicate.storeName=image-key-store
 copy.group.id=copy-group-transactional
 
-zookeeper.hosts={{zookeeper_hosts}}
-hbase.master={{hbase_master}}
-zookeeper.port={{zookeeper_port}}
-bootstrap.servers={{ kafka_bootstrap_servers }}
-kafkaStreamDir.dir={{ kafka_stream_dir }}
-application.id={{ application_id }}_{{ host_id }}
-group.id=group-for-{{ application_id }}
-application.kafkastreams.id={{ application_id }}
-scan.folder={{ application_scannedFolder }}
-copy.repository={{ copy_repository }}
+zookeeper.hosts={{zookeeper_hosts | default('IPC0,IPC1,IPC2') }}
+hbase.master={{hbase_master | default('IPC0') }}
+zookeeper.port={{zookeeper_port | default('2181')}}
+bootstrap.servers={{ kafka_bootstrap_servers | default('IPC0IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092') }}
+kafkaStreamDir.dir={{ kafka_stream_dir | default('unset')}}
+application.id={{ application_id | default('unset') }}_{{ host_id | default('unset') }}
+group.id=group-for-{{ application_id | default('unset')}}
+application.kafkastreams.id={{ application_id | default('unset')}}
+scan.folder={{ application_scannedFolder | default('unset')  }}
+copy.repository={{ copy_repository | default('unset')}}
 logging.config=config/log4j.xml
-copy.maxNumberOfFilesInAFolder={{ max_number_of_files_in_a_folder }}
+copy.maxNumberOfFilesInAFolder={{ max_number_of_files_in_a_folder | default('unset') }}
 
-transaction.id={{ transaction_id }}_{{ host_id }}
+transaction.id={{ transaction_id | default('unset') }}_{{ host_id | default('unset')}}
 transaction.timeout=180000
 
 application.gs.principal={{ application_gs_principal }}
 application.gs.keytab={{ application_gs_keytab }}
-hbase.table.prefix=prod
+hbase.namespace=prod
 
 
 #Configuration
-consumer.string.string={{ consumer_string_string }}
-producer.string.string={{ producer_string_string }}
-ignite.is.used={{ignite_is_used}}
+consumer.string.string={{ consumer_string_string | default('false') }}
+producer.string.string={{ producer_string_string | default('false') }}
+kafka.consumer.batchSizeForParallelProcessingIncomingRecords={{ kafka_consumer_batchSizeForParallelProcessingIncomingRecords | default('15') }} 
+kafka.consumer.batchRecords={{ kafka_consumer_batchRecords | default('500') }}
+kafka.stream.commit.interval.ms={{ kafka_stream_commit_interval_ms | default('50000') }}
+kafka.stream.metadata.age.ms={{ kafka_stream_metadata_age_ms | default('60000') }}
+kafka.stream.nb.of.threads={{ kafka_stream_nb_of_threads | default('UNSET') }}
+
+
+ignite.is.used={{ignite_is_used | default('false') }}
+ignite.caches={{ ignite_caches | default('unset') }} 
+ignite.defaultCache={{ ignite_default_cache | default('unset') }}
 deduplication.cleanup=true
 
 
 wf.spring.datasource.driver-class-name=org.postgresql.Driver
 wf.spring.datasource.url=jdbc:postgresql://192.168.1.205/postgres
 wf.spring.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-wf.spring.datasource.username={{ wf_spring_datasource_username }}
-wf.spring.datasource.password={{ wf_spring_datasource_password }}
+wf.spring.datasource.username={{ wf_spring_datasource_username | default('unset') }}
+wf.spring.datasource.password={{ wf_spring_datasource_password | default('unset') }}
+
+unit-test=false
+
+
+wf.hdfs.rootPath={{ wf_hdfs_rootPath | default('unset')  }}
+
+
+kafka.pollTimeInMillisecondes={{ kafka_poll_time_in_millisecondes| default('10000') }}
+kafkastreams.windowsOfEventsInMs={{ kafkastreams_windows_of_events_in_ms| default('20') }}
+
+
+events.collectorEventsBufferSize={{ events_collector_events_buffer_size| default('unset') }}
+events.collectorEventsTimeWindow={{ events_collector_events_timewindow| default('unset') }}
 
