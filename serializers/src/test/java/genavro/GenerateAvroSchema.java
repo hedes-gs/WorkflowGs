@@ -29,6 +29,8 @@ public class GenerateAvroSchema {
                     || info.getName()
                         .startsWith("com.workflow.model.Hbase")
                     || info.getName()
+                        .startsWith("com.workflow.model.files")
+                    || info.getName()
                         .startsWith("com.workflow.model.Exchange")
                     || info.getName()
                         .startsWith("com.workflow.model.storm")) {

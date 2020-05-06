@@ -142,6 +142,33 @@
   } ]
 }, {
   "type" : "record",
+  "name" : "FileToProcess",
+  "namespace" : "com.workflow.model.files",
+  "fields" : [ {
+    "name" : "parent",
+    "type" : [ "null", "FileToProcess" ],
+    "default" : null
+  }, {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "host",
+    "type" : "string"
+  }, {
+    "name" : "compressedFile",
+    "type" : "boolean"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : "string"
+  } ]
+}, {
+  "type" : "record",
   "name" : "HbaseData",
   "namespace" : "com.workflow.model",
   "fields" : [ {
@@ -242,6 +269,13 @@
   }, {
     "name" : "height",
     "type" : "long"
+  }, {
+    "name" : "thumbnail",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
   }, {
     "name" : "dataCreationDate",
     "type" : "long"
