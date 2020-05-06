@@ -1,0 +1,259 @@
+[ {
+  "type" : "record",
+  "name" : "HbaseData",
+  "namespace" : "com.workflow.model",
+  "fields" : [ ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExif",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "tagId",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "tagName",
+    "type" : "string"
+  }, {
+    "name" : "tagType",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "data",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "cardId",
+    "type" : "int"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifData",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "exifTag",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "exifValueAsByte",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "exifValueAsInt",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "exifValueAsShort",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : {
+        "type" : "int",
+        "java-class" : "java.lang.Short"
+      },
+      "java-class" : "[S"
+    } ],
+    "default" : null
+  }, {
+    "name" : "thumbName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifDataOfImages",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "exifTag",
+    "type" : "long"
+  }, {
+    "name" : "exifValue",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseExifDateImage",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "dateInNanosecondes",
+    "type" : "long"
+  }, {
+    "name" : "tagId",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "tagName",
+    "type" : "string"
+  }, {
+    "name" : "tagType",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "data",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "cardId",
+    "type" : "int"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageData",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageEvent",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "eventName",
+    "type" : "string"
+  }, {
+    "name" : "dateOfEvent",
+    "type" : "string"
+  }, {
+    "name" : "eventClient",
+    "type" : "string"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageImportProject",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "importId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageThumbnail",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "orignal",
+    "type" : "boolean"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "thumbnail",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  } ]
+} ]

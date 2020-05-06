@@ -6,7 +6,7 @@ import org.apache.kafka.common.serialization.Serializer;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.events.WfEvents;
 
-public class HbaseExifOrImageSerializer implements Serializer<Object> {
+public class HbaseExifOrImageOrWfEventsSerializer implements Serializer<Object> {
 
     protected ExchangedDataSerializer exchangedDataSerializer = new ExchangedDataSerializer();
     protected ByteArraySerializer     byteArraySerializer     = new ByteArraySerializer();
@@ -22,6 +22,6 @@ public class HbaseExifOrImageSerializer implements Serializer<Object> {
         throw new IllegalArgumentException("Unexpected object " + data);
     }
 
-    public HbaseExifOrImageSerializer() { super(); }
+    public HbaseExifOrImageOrWfEventsSerializer() { super(); }
 
 }
