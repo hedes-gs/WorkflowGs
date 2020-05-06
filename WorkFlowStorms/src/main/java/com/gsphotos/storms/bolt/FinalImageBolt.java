@@ -10,6 +10,7 @@ import java.util.Properties;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.gs.photos.serializers.FinalImageSerializer;
+import com.gs.photos.serializers.WfEventsSerializer;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
@@ -56,16 +58,18 @@ public class FinalImageBolt extends BaseRichBolt {
 
     }
 
-    private static final long          serialVersionUID = 1;
-    private OutputCollector            collector;
-    protected Properties               settings         = new Properties();
-    protected Producer<String, Object> producer;
-    protected String                   kafkaBrokers;
-    protected String                   outputTopic;
-    protected String                   eventTopic;
-    protected int                      windowLength;
-    protected int                      windowDuration;
-    protected Map<String, Object>      windowConfiguration;
+    private static final long            serialVersionUID     = 1;
+    private OutputCollector              collector;
+    protected Properties                 settingForFinalImage = new Properties();
+    protected Producer<String, Object>   producerOfFinalImage;
+    protected Properties                 settingForWfEvents   = new Properties();
+    protected Producer<String, WfEvents> producerOfEvents;
+    protected String                     kafkaBrokers;
+    protected String                     outputTopic;
+    protected String                     eventTopic;
+    protected int                        windowLength;
+    protected int                        windowDuration;
+    protected Map<String, Object>        windowConfiguration;
 
     protected Dim get(byte[] jpeg_thumbnail) {
         ByteBuffer buffer = ByteBuffer.wrap(jpeg_thumbnail);
@@ -100,12 +104,23 @@ public class FinalImageBolt extends BaseRichBolt {
         this.collector = collector;
         this.windowConfiguration = new HashMap<>();
 
-        this.settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, this.kafkaBrokers);
-        this.settings.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        this.settings.put("value.serializer", FinalImageSerializer.class.getName());
-        this.settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
-        this.settings.put("sasl.kerberos.service.name", "kafka");
-        this.producer = new KafkaProducer<>(this.settings);
+        this.settingForFinalImage.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, this.kafkaBrokers);
+        this.settingForFinalImage
+            .put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        this.settingForFinalImage
+            .put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, FinalImageSerializer.class.getName());
+        this.settingForFinalImage.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        this.settingForFinalImage.put("sasl.kerberos.service.name", "kafka");
+        this.producerOfFinalImage = new KafkaProducer<>(this.settingForFinalImage);
+
+        this.settingForWfEvents.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, this.kafkaBrokers);
+        this.settingForWfEvents
+            .put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        this.settingForWfEvents.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, WfEventsSerializer.class.getName());
+        this.settingForWfEvents.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        this.settingForWfEvents.put("sasl.kerberos.service.name", "kafka");
+        this.producerOfEvents = new KafkaProducer<>(this.settingForWfEvents);
+
         this.buildComponentConfiguration();
 
     }
@@ -120,13 +135,15 @@ public class FinalImageBolt extends BaseRichBolt {
 
     public FinalImageBolt(
         String kafkaBrokers,
-        String outputTopic
+        String outputTopic,
+        String eventTopic
     ) {
         super();
         this.windowConfiguration = new HashMap<>();
         this.buildComponentConfiguration();
         this.kafkaBrokers = kafkaBrokers;
         this.outputTopic = outputTopic;
+        this.eventTopic = eventTopic;
     }
 
     public FinalImageBolt() {}
@@ -173,8 +190,7 @@ public class FinalImageBolt extends BaseRichBolt {
                 .withDataId(currentImage.getDataId());
             finalImage = builder.build();
 
-            this.producer
-                .send(new ProducerRecord<String, Object>(this.outputTopic, finalImage.getDataId(), finalImage));
+            this.producerOfFinalImage.send(new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage));
             final WfEvent wfEvent = this
                 .buildEvent(imgKey, finalImage.getDataId(), finalImage.getDataId() + "-" + version);
             multiMapOfEvents.put(imgKey, wfEvent);
@@ -183,12 +199,16 @@ public class FinalImageBolt extends BaseRichBolt {
         });
         multiMapOfEvents.keySet()
             .forEach(
-                (k) -> this.producer.send(
-                    new ProducerRecord<String, Object>(this.eventTopic,
+                (k) -> this.producerOfEvents.send(
+                    new ProducerRecord<String, WfEvents>(this.eventTopic,
                         k,
                         WfEvents.builder()
-                            .withEvents(multiMapOfEvents.get(k)))));
-        this.producer.flush();
+                            .withDataId("<unset>")
+                            .withProducer("STORM_BUILD_FINAL_IMAGE")
+                            .withEvents(multiMapOfEvents.get(k))
+                            .build())));
+        this.producerOfFinalImage.flush();
+        this.producerOfEvents.flush();
     }
 
     private WfEvent buildEvent(String imageKey, String parentDataId, String dataId) {
@@ -210,6 +230,10 @@ public class FinalImageBolt extends BaseRichBolt {
     public String getOutputTopic() { return this.outputTopic; }
 
     public void setOutputTopic(String outputTopic) { this.outputTopic = outputTopic; }
+
+    public String getEventTopic() { return this.eventTopic; }
+
+    public void setEventTopic(String eventTopic) { this.eventTopic = eventTopic; }
 
     public int getWindowLength() { return this.windowLength; }
 

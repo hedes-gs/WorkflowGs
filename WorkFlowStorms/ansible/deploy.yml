@@ -9,7 +9,7 @@
       register: current_working_directory
     - name: load
       include_vars:
-        file: "{{ PWD }}/prod.properties"
+        file: "{{ PWD }}/deployment/prod.properties"
     - debug:
         msg: "{{ inventory_hostname }} and {{ ids }}"
     - name: build config file from template
@@ -20,6 +20,8 @@
         dest: ~{{ user_to_create }}/config/config.yaml
         owner: "{{ user_to_create }}"
         mode: 0666
+    - name: clean logs
+      shell: "/bin/rm -rf ~{{ user_to_create }}/logs/*.log"      
     - name: build bin file from template
       template:
         src: ../bin/run.sh.template
@@ -46,7 +48,7 @@
         mode: 0600
     - name: Copy jars
       copy:
-        src: "{{ PWD }}/../target/{{ jar_name }}"
+        src: "{{ PWD }}/target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
       when:  inventory_hostname == "192.168.1.200"
   vars:

@@ -4,37 +4,36 @@ import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.Joined;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.ValueJoiner;
-import org.apache.kafka.streams.kstream.Windowed;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
+import org.apache.kafka.streams.state.WindowStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.ks.transformers.MapCollector;
 import com.gs.photos.serializers.ExchangedDataSerDe;
 import com.gs.photos.serializers.HbaseDataSerDe;
 import com.gs.photos.serializers.HbaseExifDataSerDe;
 import com.gs.photos.serializers.HbaseImageThumbnailSerDe;
-import com.gs.photos.serializers.WfEventSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseData;
@@ -51,25 +50,27 @@ import com.workflow.model.events.WfEvents;
 @Configuration
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    private static final int    EVENTS_WINDOW_DURATION = 500;
-    private static final String HEIGHT_STRING          = "-HEIGHT";
-    private static final String WIDTH_STRING           = "-WIDTH";
-    private static final String CREATION_DATE          = "-CREATION_DATE";
+    private static Logger     LOGGER                = LoggerFactory.getLogger(ApplicationConfig.class);
 
-    public static final int     JOIN_WINDOW_TIME       = 86400;
-    public static final short   EXIF_CREATION_DATE_ID  = (short) 0x9003;
-    public static final short   EXIF_SIZE_WIDTH        = (short) 0xA002;
-    public static final short   EXIF_SIZE_HEIGHT       = (short) 0xA003;
+    public static final int   JOIN_WINDOW_TIME      = 86400;
+    public static final short EXIF_CREATION_DATE_ID = (short) 0x9003;
+    public static final short EXIF_SIZE_WIDTH       = (short) 0xA002;
+    public static final short EXIF_SIZE_HEIGHT      = (short) 0xA003;
 
     @Bean
     public Properties kafkaStreamProperties(
         @Value("${bootstrap.servers}") String bootstrapServers,
         @Value("${kafkaStreamDir.dir}") String kafkaStreamDir,
-        @Value("${group.id}") String applicationGroupId
+        @Value("${application.kafkastreams.id}") String applicationId,
+        @Value("${kafka.pollTimeInMillisecondes}") int pollTimeInMillisecondes,
+        @Value("${kafka.consumer.batchRecords}") int consumerBatch,
+        @Value("${kafka.stream.commit.interval.ms}") int commitIntervalIms,
+        @Value("${kafka.stream.metadata.age.ms}") int metaDataAgeIms,
+        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads
 
     ) {
         Properties config = new Properties();
-        config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationGroupId + "-wf-proc-publ-exif-data");
+        config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(
             StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,
@@ -81,10 +82,16 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                 .getClass());
         config.put(StreamsConfig.STATE_DIR_CONFIG, kafkaStreamDir);
         config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
-        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, "10000");
+        config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, commitIntervalIms);
+        config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, metaDataAgeIms);
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+        config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 5 * 1024 * 1024);
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        config.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, pollTimeInMillisecondes);
+        config.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, consumerBatch);
+        config.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, nbOfThreads);
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 30);
+        config.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 1024 * 1024);
         config.put("sasl.kerberos.service.name", "kafka");
         return config;
     }
@@ -95,9 +102,12 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${topic.topicImageDataToPersist}") String topicImageDataToPersist,
         @Value("${topic.topicExifImageDataToPersist}") String topicExifImageDataToPersist,
         @Value("${topic.topicExif}") String topicExif,
-        @Value("${topic.topicEvent}") String topicEvent
-
+        @Value("${topic.topicEvent}") String topicEvent,
+        @Value("${kafkastreams.windowsOfEventsInMs}") int windowsOfEvents,
+        @Value("${events.collectorEventsBufferSize}") int collectorEventsBufferSize,
+        @Value("${events.collectorEventsTimeWindow}") int collectorEventsTimeWindow
     ) {
+        ApplicationConfig.LOGGER.info("Starting application with windowsOfEvents : {}", windowsOfEvents);
         StreamsBuilder builder = new StreamsBuilder();
         final KStream<String, ExchangedTiffData> kstreamToGetExifValue = this
             .buildKStreamToGetExifValue(builder, topicExif);
@@ -106,94 +116,27 @@ public class ApplicationConfig extends AbstractApplicationConfig {
          * Stream of HbaseExifData from topicExif : [ key-EXIF-tiffId, ExchnaedTiffData
          * ] -> [key,HbaseExifData]
          */
-        final KStream<String, HbaseExifData> streamOfHbaseExifData = kstreamToGetExifValue.map(
-            (k, v) -> {
-                // We create the HbaseExifData that will be stored in hbase
-                // the HbaseExifData value is streamed with the current key.
-                return new KeyValue<String, HbaseExifData>(k, this.buildHbaseExifData(v));
-            });
-
-        /*
-         * Stream of the {height, width} of image
-         */
-        KStream<String, Long> exifSizeOfImageStream = kstreamToGetExifValue.filter((key, exif) -> {
-            boolean b = (exif.getTag() == ApplicationConfig.EXIF_SIZE_WIDTH)
-                || (exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
-                || (exif.getTag() == ApplicationConfig.EXIF_SIZE_HEIGHT);
-            return b;
-        })
-            .map((k, exif) -> {
-                Optional<String> newKey;
-                Optional<Long> value = Optional.empty();
-                switch (exif.getTag()) {
-                    case ApplicationConfig.EXIF_SIZE_WIDTH: {
-                        newKey = Optional.of(
-                            KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                                .withKey(k)
-                                .withSizeWidth()
-                                .build());
-                        value = Optional.of((long) exif.getDataAsInt()[0]);
-                        break;
-                    }
-                    case ApplicationConfig.EXIF_SIZE_HEIGHT: {
-                        newKey = Optional.of(
-                            KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                                .withKey(k)
-                                .withSizeHeight()
-                                .build());
-                        value = Optional.of((long) exif.getDataAsInt()[0]);
-                        break;
-                    }
-                    case ApplicationConfig.EXIF_CREATION_DATE_ID: {
-                        newKey = Optional.of(
-                            KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                                .withKey(k)
-                                .withCreationDate()
-                                .build());
-                        try {
-                            value = Optional
-                                .of(DateTimeHelper.toEpochMillis(new String(exif.getDataAsByte(), "UTF-8").trim()));
-                        } catch (UnsupportedEncodingException e) {
-                            AbstractApplicationConfig.LOGGER.error("Error", e);
-                        }
-                        break;
-                    }
-                    default: {
-                        newKey = Optional.empty();
-                        break;
-                    }
-                }
-                final KeyValue<String, Long> keyValue = new KeyValue<String, Long>(
-                    newKey.orElseThrow(() -> new IllegalArgumentException("Filter failed : received " + exif.getTag())),
-                    value.orElseThrow(() -> new IllegalArgumentException("No value found")));
-                return keyValue;
-            })
-            .through(topicExifSizeOfImageStream, Produced.with(Serdes.String(), Serdes.Long()));
+        // We create the HbaseExifData that will be stored in hbase
+        // the HbaseExifData value is streamed with the current key.
+        final KStream<String, HbaseExifData> streamOfHbaseExifData = kstreamToGetExifValue
+            .mapValues((v) -> this.buildHbaseExifData(v));
 
         /*
          * Streams to retrieve {height, width, creation date} of image
          */
-        KStream<String, Long> streamForWidthForHbaseExifData = exifSizeOfImageStream
-            .filter((key, hbaseExifData) -> { return key.contains(ApplicationConfig.WIDTH_STRING); })
-            .map(
-                (k, v) -> {
-                    return new KeyValue<String, Long>(KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                        .getOriginalKey(k), v);
-                });
-        KStream<String, Long> streamForHeightForHbaseExifData = exifSizeOfImageStream
-            .filter((key, hbaseExifData) -> { return key.contains(ApplicationConfig.HEIGHT_STRING); })
-            .map(
-                (k, v) -> {
-                    return new KeyValue<String, Long>(KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                        .getOriginalKey(k), v);
-                });
-        KStream<String, Long> streamForCreationDateForHbaseExifData = exifSizeOfImageStream
-            .filter((key, hbaseExifData) -> { return key.contains(ApplicationConfig.CREATION_DATE); })
-            .map(
-                (k, v) -> {
-                    return new KeyValue<String, Long>(KeysBuilder.topicExifSizeOfImageStreamBuilder()
-                        .getOriginalKey(k), v);
-                });
+        KStream<String, Long> streamForWidthForHbaseExifData = kstreamToGetExifValue
+            .filter((key, hbaseExifData) -> hbaseExifData.getTag() == ApplicationConfig.EXIF_SIZE_WIDTH)
+            .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsInt()[0]);
+        KStream<String, Long> streamForHeightForHbaseExifData = kstreamToGetExifValue
+            .filter((key, hbaseExifData) -> hbaseExifData.getTag() == ApplicationConfig.EXIF_SIZE_HEIGHT)
+            .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsInt()[0]);
+        KStream<String, Long> streamForCreationDateForHbaseExifData = kstreamToGetExifValue
+            .filter((key, hbaseExifData) -> hbaseExifData.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
+            .mapValues((hbaseExifData) -> this.toEpochMilli(hbaseExifData));
+
+        /*
+         * Streams to retrieve {height, width, creation date} of image
+         */
 
         Joined<String, HbaseExifData, Long> join = Joined
             .with(Serdes.String(), new HbaseExifDataSerDe(), Serdes.Long());
@@ -233,101 +176,58 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             .buildKStreamToGetHbaseImageThumbNail(builder, topicImageDataToPersist);
         KStream<String, HbaseExifData> hbaseExifUpdate = streamForUpdatingHbaseExifData.join(
             hbaseThumbMailStream,
-            (v_HbaseExifData, v_HbaseImageThumbnail) -> {
-                return this.updateHbaseExifData(v_HbaseExifData, v_HbaseImageThumbnail);
-            },
+            (v_HbaseExifData, v_HbaseImageThumbnail) -> this
+                .updateHbaseExifData(v_HbaseExifData, v_HbaseImageThumbnail),
             JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
             Joined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
 
-        KStream<String, HbaseData> finalStreamOfHbaseExifData = hbaseExifUpdate.flatMapValues((key, value) -> {
-            final Collection<HbaseData> asList = Arrays.asList(value, this.buildHbaseExifDataOfImages(value));
-            return asList;
-        });
+        KStream<String, HbaseData> finalStreamOfHbaseExifData = hbaseExifUpdate
+            .flatMapValues((key, value) -> Arrays.asList(value, this.buildHbaseExifDataOfImages(value)));
 
-        KStream<String, WfEvent> eventStream = finalStreamOfHbaseExifData
-            .filter((k, v) -> v instanceof HbaseExifDataOfImages)
-            .map(
-                (k, v) -> new KeyValue<String, WfEvent>(k,
-                    this.buildEvent(v)
-                        .orElseThrow(() -> new IllegalArgumentException())));
-
-        finalStreamOfHbaseExifData = finalStreamOfHbaseExifData
-            .map((k, v) -> new KeyValue<String, HbaseData>(this.buildKeyForHbaseExifData(v), v));
+        KStream<String, WfEvent> eventStream = finalStreamOfHbaseExifData.mapValues(
+            (k, v) -> this.buildEvent(v)
+                .orElseThrow(() -> new IllegalArgumentException()));
 
         this.publishImageDataInRecordTopic(finalStreamOfHbaseExifData, topicExifImageDataToPersist);
 
-        final KTable<Windowed<String>, WfEvents> streamAggregatedByKey = eventStream
-            .groupByKey(Grouped.with(Serdes.String(), new WfEventSerDe()))
-            .windowedBy(TimeWindows.of(Duration.ofMillis(ApplicationConfig.EVENTS_WINDOW_DURATION)))
-            .aggregate(
-                () -> WfEvents.builder()
-                    .withProducer("PUBLISH_THB_EXIF")
-                    .withDataId("<not used>")
-                    .withEvents(new ArrayList<WfEvent>())
+        StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
+            Stores.persistentWindowStore("MyTransformer", Duration.ofMillis(10000), Duration.ofMillis(10000), false),
+            Serdes.String(),
+            Serdes.Long());
+        builder.addStateStore(dedupStoreBuilder);
+        KStream<String, WfEvents> wfEventsStream = eventStream.transform(
+            () -> MapCollector.of(
+                (k, wfEventList) -> WfEvents.builder()
+                    .withDataId(k)
+                    .withProducer("PUBLISH_EXIF_DATA_OF_IMGS")
+                    .withEvents(new ArrayList<WfEvent>(wfEventList))
                     .build(),
-                (k, v, wfevents) -> wfevents.addEvent(v),
-                Materialized.with(Serdes.String(), new WfEventsSerDe()));
-        final KStream<Windowed<String>, WfEvents> streamOfEventsInAWindow = streamAggregatedByKey.toStream();
-        KStream<String, WfEvents> wfEventsStream = streamOfEventsInAWindow.map((k, v) -> new KeyValue<>(k.key(), v));
-
+                (k, values) -> ApplicationConfig.LOGGER
+                    .info("[EVENT][{}] processed and {} events produced ", k, values.size()),
+                collectorEventsBufferSize,
+                collectorEventsTimeWindow),
+            "MyTransformer");
         this.publishImageDataInEventTopic(wfEventsStream, topicEvent);
-
         return builder.build();
+    }
+
+    protected long toEpochMilli(ExchangedTiffData hbaseExifData) {
+        try {
+            return DateTimeHelper.toEpochMillis(new String(hbaseExifData.getDataAsByte(), "UTF-8").trim());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String buildKeyForHbaseExifData(HbaseData v) {
         if (v instanceof HbaseExifDataOfImages) {
             HbaseExifDataOfImages hbedoi = (HbaseExifDataOfImages) v;
-            return KeysBuilder.topicExifImageDataToPersistKeyBuilder()
-                .withExifPath(hbedoi.getExifPath())
-                .withExifTag(hbedoi.getExifTag())
-                .withOriginalImageKey(hbedoi.getImageId())
-                .build();
+            return hbedoi.getImageId();
         } else if (v instanceof HbaseExifData) {
             HbaseExifData hbed = (HbaseExifData) v;
-            return KeysBuilder.topicExifImageDataToPersistKeyBuilder()
-                .withExifPath(hbed.getExifPath())
-                .withExifTag(hbed.getExifTag())
-                .withOriginalImageKey(hbed.getImageId())
-                .build();
+            return hbed.getImageId();
         }
         throw new IllegalArgumentException("Unexpected class " + v);
-
-    }
-
-    // @Bean
-    public Topology kafkaStreamsTopology(
-        @Value("${topic.topicExifSizeOfImageStream}") String topicExifSizeOfImageStream,
-        @Value("${topic.topicImageDataToPersist}") String topicImageDataToPersist,
-        @Value("${topic.topicExifImageDataToPersist}") String topicExifImageDataToPersist,
-        @Value("${topic.topicExif}") String topicExif
-    ) {
-        StreamsBuilder builder = new StreamsBuilder();
-
-        KStream<String, HbaseExifData> exifOfImageStream = this
-            .buildKStreamToGetExifValue(builder, topicImageDataToPersist)
-            .map(
-                (key, v_ExchangedTiffData) -> {
-                    return new KeyValue<>(key, this.buildHbaseExifData(v_ExchangedTiffData));
-                });
-        KStream<String, HbaseImageThumbnail> hbaseThumbMailStream = this
-            .buildKStreamToGetHbaseImageThumbNail(builder, topicImageDataToPersist);
-        KStream<String, HbaseExifData> hbaseExifUpdate = exifOfImageStream.join(
-            hbaseThumbMailStream,
-            (v_HbaseExifData, v_HbaseImageThumbnail) -> {
-                return this.updateHbaseExifData(v_HbaseExifData, v_HbaseImageThumbnail);
-            },
-            JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-            Joined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
-
-        KStream<String, HbaseData> finalStream = hbaseExifUpdate.flatMapValues((key, value) -> {
-            final Collection<HbaseData> asList = Arrays.asList(value, this.buildHbaseExifDataOfImages(value));
-            return asList;
-        });
-        this.publishImageDataInRecordTopic(finalStream, topicExifImageDataToPersist);
-
-        return builder.build();
-
     }
 
     private HbaseExifData updateHbaseExifData(
@@ -336,6 +236,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     ) {
         v_HbaseExifData.setImageId(v_HbaseImageThumbnail.getImageId());
         v_HbaseExifData.setThumbName(v_HbaseImageThumbnail.getThumbName());
+        v_HbaseExifData.setThumbnail(v_HbaseImageThumbnail.getThumbnail());
         return v_HbaseExifData;
     }
 
@@ -371,8 +272,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         StreamsBuilder builder,
         String topicImageDataToPersist
     ) {
+        KeysBuilder.topicImageDataToPersistKeyBuilder();
         KStream<String, HbaseImageThumbnail> stream = builder
-            .stream(topicImageDataToPersist, Consumed.with(Serdes.String(), new HbaseImageThumbnailSerDe()));
+            .stream(topicImageDataToPersist, Consumed.with(Serdes.String(), new HbaseImageThumbnailSerDe()))
+            .filter((k, v) -> v.getVersion() == 1);
         return stream;
     }
 
@@ -381,15 +284,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         String topicExif
     ) {
         KStream<String, ExchangedTiffData> stream = streamsBuilder
-            .stream(topicExif, Consumed.with(Serdes.String(), new ExchangedDataSerDe()))
-            .map((k_string, v_exchangedTiffData) -> {
-                String newKey = KeysBuilder.topicExifKeyBuilder()
-                    .build(k_string)
-                    .getOriginalKey();
-                // The key is of the form <img-key>-EXIF-<tiff-id>
-                // We extract the "<img-key>" in order to be able to perform a joint later.
-                return new KeyValue<String, ExchangedTiffData>(newKey, v_exchangedTiffData);
-            });
+            .stream(topicExif, Consumed.with(Serdes.String(), new ExchangedDataSerDe()));
         return stream;
     }
 
