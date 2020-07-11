@@ -15,6 +15,9 @@ public interface ToByteLong extends ToByte<Long> {
     public default Long fromByte(byte[] parameter, int offset, int length) { return Bytes.toLong(parameter, offset); }
 
     @Override
+    public default Long fromByte(byte[] parameter) { return Bytes.toLong(parameter); }
+
+    @Override
     public default ToByte<Long> getInstance() { return new ToByteLong() {}; }
 
 }

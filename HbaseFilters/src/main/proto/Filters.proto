@@ -7,11 +7,58 @@
 	option java_generate_equals_and_hash = true;
 	option optimize_for = SPEED;
 	
-	
 	message FilterRowByLongAtAGivenOffset {
+	 enum TypeValue  {
+	    BYTE = 0;
+	    USHORT = 1;
+	    INT = 2;
+	    LONG = 3;
+	  }
+	
 	  required uint64 longOffset = 1;
 	  required uint64 firstLong = 2;
 	  required uint64 lastLong = 3 ;
+	  required TypeValue typeValue = 4 [default = LONG];
 	}
+	
+	message FilterRowByLongAtAGivenOffsetWithPage {
+	 enum TypeValue  {
+	    BYTE = 0;
+	    USHORT = 1;
+	    INT = 2;
+	    LONG = 3;
+	  }
+	
+	  required uint64 longOffset = 1;
+	  required uint64 firstLong = 2;
+	  required uint64 lastLong = 3 ;
+	  required TypeValue typeValue = 4 [default = LONG];
+	  required uint32 pageSize = 5;
+	  required uint32 startRownumber = 6;
+	}
+	
 
-
+	message FilterRowFindNextRowWithTwoFields {
+	  required uint32 longOffset = 1;
+	  required bytes byteArraytoCompare = 2; 
+	  required uint32 offsetOfShortValue = 3;
+	  required uint32 shortValue = 4 ;
+	}
+	
+	message FilterRowFindNextRowWithinAMetaData {
+	  required bytes keyByteArray = 1;
+	  required uint32 lengthOfMetaDataKey= 2;
+	  required uint32 offsetOfImageId= 3;
+	  required uint32 lengthOfImageId= 4;
+	}
+	
+	message FilterRowFindPages {
+	  required bytes keyByteArrayToFind = 1;
+	  required uint32 pageSize = 2;
+	  required uint32 startRownumber = 3;
+	}
+	
+	message FilterTablePage {
+	  required uint32 pageSize = 1;
+	  required uint32 startRownumber = 2;
+	}		

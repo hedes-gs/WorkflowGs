@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.consumers;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -16,9 +17,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.gs.photo.workflow.dao.GenericDAO;
 import com.gs.photo.workflow.dao.HbaseExifDataDAO;
 import com.gs.photo.workflow.dao.HbaseExifDataOfImagesDAO;
+import com.gs.photo.workflow.hbase.dao.GenericDAO;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseExifDataOfImages;
@@ -121,6 +122,12 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
             return (GenericDAO<X>) this.HbaseExifDataDAO;
         } else if (k.equals(HbaseExifDataOfImages.class)) { return (GenericDAO<X>) this.hbaseExifDataOfImagesDAO; }
         return null;
+    }
+
+    @Override
+    protected void flushAllDAO() throws IOException {
+        this.HbaseExifDataDAO.flush();
+        this.hbaseExifDataOfImagesDAO.flush();
     }
 
 }

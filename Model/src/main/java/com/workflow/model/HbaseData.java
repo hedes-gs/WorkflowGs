@@ -3,12 +3,16 @@ package com.workflow.model;
 import java.io.Serializable;
 import java.util.Objects;
 
+import org.apache.avro.reflect.Nullable;
+
 public class HbaseData implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
-    private long              dataCreationDate;
-    private String            dataId;
+    protected long            dataCreationDate;
+
+    @Nullable
+    protected String          dataId;
 
     public String getDataId() { return this.dataId; }
 
@@ -22,6 +26,8 @@ public class HbaseData implements Serializable, Cloneable {
         this.dataId = dataId;
         this.dataCreationDate = dataCreationDate;
     }
+
+    protected HbaseData() { super(); }
 
     @Override
     public int hashCode() { return Objects.hash(this.dataId); }

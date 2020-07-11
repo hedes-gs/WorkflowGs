@@ -7,6 +7,7 @@ import javax.annotation.Generated;
 import org.apache.avro.reflect.Nullable;
 
 import com.workflow.model.HbaseData;
+import com.workflow.model.events.ImportEvent;
 
 public class FileToProcess extends HbaseData implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -17,23 +18,31 @@ public class FileToProcess extends HbaseData implements Serializable {
     private String            path;
     private String            host;
     private boolean           compressedFile;
+    private long              importDate;
+    private ImportEvent       importEvent;
 
     @Generated("SparkTools")
     private FileToProcess(Builder builder) {
-        super(builder.dataId,
-            builder.dataCreationDate);
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
         this.parent = builder.parent;
         this.name = builder.name;
         this.path = builder.path;
         this.host = builder.host;
         this.compressedFile = builder.compressedFile;
+        this.importDate = builder.importDate;
+        this.importEvent = builder.importEvent;
     }
+
+    public ImportEvent getImportEvent() { return this.importEvent; }
 
     public String getName() { return this.name; }
 
     public String getPath() { return this.path; }
 
     public String getHost() { return this.host; }
+
+    public long getImportDate() { return this.importDate; }
 
     public boolean isCompressedFile() { return this.compressedFile; }
 
@@ -80,7 +89,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link FileToProcess}.
-     *
+     * 
      * @return created builder
      */
     @Generated("SparkTools")
@@ -91,31 +100,21 @@ public class FileToProcess extends HbaseData implements Serializable {
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private String        dataId;
         private long          dataCreationDate;
+        private String        dataId;
         private FileToProcess parent;
         private String        name;
         private String        path;
         private String        host;
         private boolean       compressedFile;
+        private long          importDate;
+        private ImportEvent   importEvent;
 
         private Builder() {}
 
         /**
-         * Builder method for dataId parameter.
-         *
-         * @param dataId
-         *            field to set
-         * @return builder
-         */
-        public Builder withDataId(String dataId) {
-            this.dataId = dataId;
-            return this;
-        }
-
-        /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -126,8 +125,20 @@ public class FileToProcess extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
          * Builder method for parent parameter.
-         *
+         * 
          * @param parent
          *            field to set
          * @return builder
@@ -139,7 +150,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for name parameter.
-         *
+         * 
          * @param name
          *            field to set
          * @return builder
@@ -151,7 +162,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for path parameter.
-         *
+         * 
          * @param path
          *            field to set
          * @return builder
@@ -163,7 +174,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for host parameter.
-         *
+         * 
          * @param host
          *            field to set
          * @return builder
@@ -175,7 +186,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for compressedFile parameter.
-         *
+         * 
          * @param compressedFile
          *            field to set
          * @return builder
@@ -186,8 +197,32 @@ public class FileToProcess extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for importDate parameter.
+         * 
+         * @param importDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withImportDate(long importDate) {
+            this.importDate = importDate;
+            return this;
+        }
+
+        /**
+         * Builder method for importEvent parameter.
+         * 
+         * @param importEvent
+         *            field to set
+         * @return builder
+         */
+        public Builder withImportEvent(ImportEvent importEvent) {
+            this.importEvent = importEvent;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public FileToProcess build() { return new FileToProcess(this); }

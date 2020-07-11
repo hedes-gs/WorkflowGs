@@ -1,7 +1,8 @@
 package com.gs.photos.workflow.metadata;
 
+import com.gs.photo.workflow.exif.IExifService;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.IFD.IFDContext;
-import com.gs.photos.workflow.metadata.exif.InteropTag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
 public class InteropTagTemplate extends AbstractTemplateTag {
@@ -18,14 +19,13 @@ public class InteropTagTemplate extends AbstractTemplateTag {
     public InteropTagTemplate(
         Tag tag,
         IFD ifdParent,
-        SimpleAbstractField<int[]> data
+        SimpleAbstractField<int[]> data,
+        IExifService exifService
     ) {
         super(tag,
-            ifdParent);
+            ifdParent,
+            exifService);
         this.data = data;
     }
-
-    @Override
-    public Tag convertTagValueToTag(short tag) { return InteropTag.fromShort(tag); }
 
 }

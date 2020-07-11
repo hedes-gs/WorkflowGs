@@ -2,10 +2,7 @@ package com.gs.photos.workflow.metadata.tiff;
 
 import java.io.Serializable;
 
-import com.gs.photos.workflow.metadata.Tag;
-import com.gs.photos.workflow.metadata.exif.ExifTag;
-import com.gs.photos.workflow.metadata.exif.GPSTag;
-import com.gs.photos.workflow.metadata.exif.InteropTag;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
 public abstract class TiffField<T> implements Comparable<TiffField<?>>, Serializable {
@@ -13,11 +10,13 @@ public abstract class TiffField<T> implements Comparable<TiffField<?>>, Serializ
     private static final long        serialVersionUID = 1L;
     private final short              tagValue;
     private final Tag                tag;
+    private final Tag                ifdTagParent;
     protected SimpleAbstractField<T> underLayingField;
 
     protected int                    dataOffset;
 
     public TiffField(
+        Tag ifdTagParent,
         Tag tag,
         SimpleAbstractField<T> underLayingField,
         short tagValue,
@@ -27,6 +26,7 @@ public abstract class TiffField<T> implements Comparable<TiffField<?>>, Serializ
         this.underLayingField = underLayingField;
         this.tagValue = tagValue;
         this.dataOffset = dataOffset;
+        this.ifdTagParent = ifdTagParent;
     }
 
     @Override
@@ -61,19 +61,13 @@ public abstract class TiffField<T> implements Comparable<TiffField<?>>, Serializ
 
     public Tag getTag() { return this.tag; }
 
+    public Tag getIfdTagParent() { return this.ifdTagParent; }
+
     @Override
     public String toString() {
         Tag tag = this.getTag();
-        if ((tag == TiffTag.UNKNOWN) || (tag == ExifTag.UNKNOWN) || (tag == GPSTag.UNKNOWN)
-            || (tag == InteropTag.UNKNOWN)) {
-            return " At Offset " + this.dataOffset + " / " + tag.toString() + " [TiffTag value: " + tag + ", tagValue: "
-                + Integer.toHexString(this.tagValue) + "] : " + this.getDataAsString();
-
-        } else {
-            return " At Offset " + this.dataOffset + " / " + tag.toString() + " [TiffTag value: " + tag
-                + "] : [field type " + this.underLayingField.getClass() + " ] : Data : " + this.getDataAsString();
-
-        }
+        return " At Offset " + this.dataOffset + " / " + tag.toString() + " [TiffTag value: " + tag + "] : [field type "
+            + this.underLayingField.getClass() + " ] : Data : " + this.getDataAsString();
     }
 
     public short getTagValue() { return this.tagValue; }

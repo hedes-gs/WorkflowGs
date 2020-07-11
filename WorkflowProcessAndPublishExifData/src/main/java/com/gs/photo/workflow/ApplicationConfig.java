@@ -66,7 +66,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${kafka.consumer.batchRecords}") int consumerBatch,
         @Value("${kafka.stream.commit.interval.ms}") int commitIntervalIms,
         @Value("${kafka.stream.metadata.age.ms}") int metaDataAgeIms,
-        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads
+        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads,
+        @Value("${kafka.producer.maxBlockMsConfig}") int maxBlockMsConfig
 
     ) {
         Properties config = new Properties();
@@ -92,6 +93,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         config.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, nbOfThreads);
         config.put(ProducerConfig.BATCH_SIZE_CONFIG, 30);
         config.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 1024 * 1024);
+        config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, maxBlockMsConfig);
         config.put("sasl.kerberos.service.name", "kafka");
         return config;
     }
@@ -130,6 +132,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         KStream<String, Long> streamForHeightForHbaseExifData = kstreamToGetExifValue
             .filter((key, hbaseExifData) -> hbaseExifData.getTag() == ApplicationConfig.EXIF_SIZE_HEIGHT)
             .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsInt()[0]);
+
         KStream<String, Long> streamForCreationDateForHbaseExifData = kstreamToGetExifValue
             .filter((key, hbaseExifData) -> hbaseExifData.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
             .mapValues((hbaseExifData) -> this.toEpochMilli(hbaseExifData));
@@ -141,16 +144,32 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Joined<String, HbaseExifData, Long> join = Joined
             .with(Serdes.String(), new HbaseExifDataSerDe(), Serdes.Long());
         ValueJoiner<HbaseExifData, Long, HbaseExifData> joinerWidth = (value1, width) -> {
-            value1.setWidth(width);
-            return value1;
+            try {
+                HbaseExifData hbaseExifData = (HbaseExifData) value1.clone();
+                hbaseExifData.setWidth(width);
+                return hbaseExifData;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         };
         ValueJoiner<HbaseExifData, Long, HbaseExifData> joinerHeight = (value1, height) -> {
-            value1.setHeight(height);
-            return value1;
+            try {
+                HbaseExifData hbaseExifData = (HbaseExifData) value1.clone();
+                hbaseExifData.setHeight(height);
+                return hbaseExifData;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
         };
         ValueJoiner<HbaseExifData, Long, HbaseExifData> joinerCreationDate = (value1, creationDate) -> {
-            value1.setCreationDate(creationDate);
-            return value1;
+            try {
+                HbaseExifData hbaseExifData = (HbaseExifData) value1.clone();
+                hbaseExifData.setCreationDate(creationDate);
+                return hbaseExifData;
+            } catch (CloneNotSupportedException e) {
+                // TODO Auto-generated catch block
+                throw new RuntimeException(e);
+            }
         };
         // KStream<String, HbaseExifData> streamOfHbaseExifData
         // KStream<String, Integer> streamForWidthForHbaseExifData
@@ -173,7 +192,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             join);
 
         KStream<String, HbaseImageThumbnail> hbaseThumbMailStream = this
-            .buildKStreamToGetHbaseImageThumbNail(builder, topicImageDataToPersist);
+            .buildKStreamToGetOnlyVersion2HbaseImageThumbNail(builder, topicImageDataToPersist);
         KStream<String, HbaseExifData> hbaseExifUpdate = streamForUpdatingHbaseExifData.join(
             hbaseThumbMailStream,
             (v_HbaseExifData, v_HbaseImageThumbnail) -> this
@@ -268,14 +287,14 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         return builder.build();
     }
 
-    private KStream<String, HbaseImageThumbnail> buildKStreamToGetHbaseImageThumbNail(
+    private KStream<String, HbaseImageThumbnail> buildKStreamToGetOnlyVersion2HbaseImageThumbNail(
         StreamsBuilder builder,
         String topicImageDataToPersist
     ) {
         KeysBuilder.topicImageDataToPersistKeyBuilder();
         KStream<String, HbaseImageThumbnail> stream = builder
             .stream(topicImageDataToPersist, Consumed.with(Serdes.String(), new HbaseImageThumbnailSerDe()))
-            .filter((k, v) -> v.getVersion() == 1);
+            .filter((k, v) -> v.getVersion() == 2);
         return stream;
     }
 

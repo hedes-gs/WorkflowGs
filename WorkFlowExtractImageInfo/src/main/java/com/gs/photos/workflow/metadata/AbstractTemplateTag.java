@@ -5,19 +5,24 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.gs.photo.workflow.exif.IExifService;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.IFD.IFDContext;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 import com.gs.photos.workflow.metadata.fields.SimpleFieldFactory;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
+import com.gs.photos.workflow.metadata.tiff.TiffTag;
+import com.workflow.model.FieldType;
 
 public abstract class AbstractTemplateTag {
-    private Logger           LOGGER                  = LogManager.getLogger(AbstractTemplateTag.class);
+    private Logger               LOGGER                  = LogManager.getLogger(AbstractTemplateTag.class);
 
-    private static final int NB_OF_BYTES_FOR_AN_INT  = 4;
-    private static final int NB_OF_BYTES_FOR_A_SHORT = 2;
-    protected final Tag      tag;
-    protected final IFD      tiffIFD;
-    protected final IFD      ifdParent;
+    private static final int     NB_OF_BYTES_FOR_AN_INT  = 4;
+    private static final int     NB_OF_BYTES_FOR_A_SHORT = 2;
+    protected final Tag          tag;
+    protected final IFD          tiffIFD;
+    protected final IFD          ifdParent;
+    protected final IExifService exifService;
 
     public IFD getRootIFD() { return this.tiffIFD; }
 
@@ -27,7 +32,8 @@ public abstract class AbstractTemplateTag {
             int nbOfFields = rin.readShort();
             offset += AbstractTemplateTag.NB_OF_BYTES_FOR_A_SHORT;
             if (this.LOGGER.isDebugEnabled()) {
-                this.LOGGER.info("Started create simple tiff fields {} - {} ", this.tiffIFD, nbOfFields);
+                this.LOGGER
+                    .info("Started create simple tiff fields {} - {} offset is {} ", this.tiffIFD, nbOfFields, offset);
             }
             for (int i = 0; i < nbOfFields; i++) {
                 int currentOffset = offset;
@@ -41,19 +47,23 @@ public abstract class AbstractTemplateTag {
                 rin.position(offset);
                 int field_length = rin.readInt();
                 offset += AbstractTemplateTag.NB_OF_BYTES_FOR_AN_INT;
-                if (this.LOGGER.isDebugEnabled()) {
-                    this.LOGGER.debug(
-                        " Found tag {} at offset {} - field length {} - IFD {}  ",
-                        ftag,
-                        currentOffset,
-                        field_length,
-                        this.tiffIFD);
-                }
                 SimpleAbstractField<?> saf = SimpleFieldFactory.createField(type, field_length, offset);
                 saf.updateData(rin);
-                final TiffField<?> tiffField = saf.createTiffField(ftag, tagValue);
+                final TiffField<?> tiffField = saf.createTiffField(this.tiffIFD.getTag(), ftag, tagValue);
                 this.tiffIFD.addField(tiffField, ifdContext);
-                AbstractTemplateTag tagTemplate = TemplateTagFactory.create(ftag, this.tiffIFD, saf);
+                if (this.LOGGER.isDebugEnabled()) {
+                    this.LOGGER.debug(
+                        " Found at index {} :  tag {} with type {}, decoded type is {}, at offset {} - field length {} - next offset is {}  - IFD is {} ",
+                        i,
+                        ftag,
+                        type,
+                        FieldType.fromShort(type),
+                        currentOffset,
+                        field_length,
+                        saf.getNextOffset(),
+                        this.tiffIFD);
+                }
+                AbstractTemplateTag tagTemplate = TemplateTagFactory.create(ftag, this.tiffIFD, saf, this.exifService);
                 tagTemplate.buildChildren(rin, ifdContext);
                 offset = saf.getNextOffset();
             }
@@ -100,7 +110,16 @@ public abstract class AbstractTemplateTag {
         rin.readFully(this.tiffIFD.getJpegImage());
     }
 
-    protected abstract Tag convertTagValueToTag(short tagValue);
+    protected Tag convertTagValueToTag(short tagValue) {
+        try {
+            return this.exifService.getTagFrom(
+                this.tiffIFD.getTag()
+                    .getValue(),
+                tagValue);
+        } catch (Exception e) {
+            return TiffTag.UNKNOWN;
+        }
+    }
 
     protected void buildChildren(FileChannelDataInput rin, IFDContext ifdContext) {
 
@@ -108,7 +127,8 @@ public abstract class AbstractTemplateTag {
 
     protected AbstractTemplateTag(
         Tag tag,
-        IFD ifdParent
+        IFD ifdParent,
+        IExifService exifService
     ) {
         this.ifdParent = ifdParent;
         this.tag = tag;
@@ -116,10 +136,15 @@ public abstract class AbstractTemplateTag {
         if (ifdParent != null) {
             ifdParent.addChild(tag, this.getTiffIFD());
         }
+        this.exifService = exifService;
     }
 
-    protected AbstractTemplateTag(Tag tag) { this(tag,
-        null); }
+    protected AbstractTemplateTag(
+        Tag tag,
+        IExifService exifService
+    ) { this(tag,
+        null,
+        exifService); }
 
     public void buildChildrenIfNeeded() {
 

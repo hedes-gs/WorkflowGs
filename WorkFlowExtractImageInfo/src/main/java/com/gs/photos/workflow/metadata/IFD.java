@@ -12,8 +12,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
-import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 public class IFD {
 
@@ -24,17 +24,19 @@ public class IFD {
 
     }
 
-    private Map<Tag, IFD>               children          = new HashMap<Tag, IFD>();
-    private Multimap<Tag, TiffField<?>> tiffFields        = ArrayListMultimap.create();
+    private Map<Tag, IFD>               children                       = new HashMap<Tag, IFD>();
+    private Multimap<Tag, TiffField<?>> tiffFields                     = ArrayListMultimap.create();
     private short[]                     path;
     private int                         ifdNumber;
-    private int                         jpegImageLength   = -1;
-    private int                         jpegImagePosition = -1;
+    private int                         jpegImageLength                = -1;
+    private int                         jpegImagePosition              = -1;
     private byte[]                      jpegImage;
     private Tag                         tag;
     private int                         endOffset;
     private int                         startOffset;
     private int                         currentImageNumber;
+    static final private short          JPEG_INTERCHANGE_FORMAT        = (short) 0x0201;
+    static final private short          JPEG_INTERCHANGE_FORMAT_LENGTH = (short) 0x0202;
 
     public IFD() {
 
@@ -61,10 +63,12 @@ public class IFD {
     public void addChild(Tag tag, IFD child) { this.children.put(tag, child); }
 
     public void addField(TiffField<?> tiffField, IFDContext ifdContext) {
-        if (tiffField.getTag() == TiffTag.JPEG_INTERCHANGE_FORMAT) {
+        if (tiffField.getTag()
+            .getValue() == IFD.JPEG_INTERCHANGE_FORMAT) {
             this.jpegImagePosition = ((int[]) tiffField.getData())[0];
         }
-        if (tiffField.getTag() == TiffTag.JPEG_INTERCHANGE_FORMAT_LENGTH) {
+        if (tiffField.getTag()
+            .getValue() == IFD.JPEG_INTERCHANGE_FORMAT_LENGTH) {
             this.jpegImageLength = ((int[]) tiffField.getData())[0];
         }
         if ((this.jpegImageLength != -1) && (this.jpegImagePosition != -1) && (this.jpegImage == null)) {
@@ -156,27 +160,23 @@ public class IFD {
     }
 
     protected Stream<TiffFieldAndPath> tiffFieldsAsStream(final short[] path, MutableInt currentTiffNumber) {
-        final short[] pathAsShort = Arrays.copyOf(path, path.length + 1);
-        pathAsShort[pathAsShort.length - 1] = this.getTag()
+        final short[] localPath = Arrays.copyOf(path, path.length + 1);
+        localPath[localPath.length - 1] = this.getTag()
             .getValue();
         Stream<TiffFieldAndPath> retValue = Stream.concat(
             this.children.values()
                 .stream()
-                .flatMap((ifd) -> this.tiffFieldsAsStream(pathAsShort, ifd, currentTiffNumber)),
+                .flatMap((ifd) -> ifd.tiffFieldsAsStream(localPath, currentTiffNumber)),
             this.tiffFields.values()
                 .stream()
                 .map(
                     (t) -> TiffFieldAndPath.builder()
                         .withTiffField(t)
                         .withTiffNumber(currentTiffNumber.getAndIncrement())
-                        .withPath(pathAsShort)
+                        .withPath(localPath)
                         .build()));
         return retValue;
 
-    }
-
-    protected Stream<TiffFieldAndPath> tiffFieldsAsStream(final short[] path, IFD ifd, MutableInt currentTiffNumber) {
-        return ifd.tiffFieldsAsStream(path, currentTiffNumber);
     }
 
     public int getIfdNumber() { return this.ifdNumber; }

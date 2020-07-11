@@ -2,9 +2,11 @@ package com.gs.photo.workflow;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -32,15 +34,22 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.ImmutableSet;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.serializers.ExchangedDataSerializer;
+import com.gs.photos.serializers.FileToProcessSerializer;
 import com.gs.photos.serializers.FinalImageSerializer;
+import com.gs.photos.serializers.HbaseImageThumbnailKeySerDe;
 import com.gs.photos.serializers.HbaseImageThumbnailSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.FieldType;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.HbaseImageThumbnailKey;
 import com.workflow.model.builder.KeysBuilder;
+import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
+import com.workflow.model.files.FileToProcess;
 import com.workflow.model.storm.FinalImage;
 
 @RunWith(SpringRunner.class)
@@ -48,35 +57,58 @@ import com.workflow.model.storm.FinalImage;
 @SpringBootTest(classes = ApplicationConfig.class)
 public class TestWfProcessAndPublishExifDataOfImages {
 
-    protected static Logger                 LOGGER                = LoggerFactory
+    protected static Logger                 LOGGER          = LoggerFactory
         .getLogger(TestWfProcessAndPublishExifDataOfImages.class);
 
-    private static final short              EXIF_CREATION_DATE_ID = ApplicationConfig.EXIF_CREATION_DATE_ID;
-    private static final String             DATE_1                = "Y:2019";
-    private static final String             DATE_2                = "Y:2019/M:10";
-    private static final String             DATE_3                = "Y:2019/M:10/D:16";
-    private static final String             DATE_4                = "Y:2019/M:10/D:16/H:22";
-    private static final String             DATE_5                = "Y:2019/M:10/D:16/H:22/Mn:12";
-    private static final String             DATE_6                = "Y:2019/M:10/D:16/H:22/Mn:12/S:0";
-    private static final Collection<String> DATES                 = ImmutableSet.of(
-        TestWfProcessAndPublishExifDataOfImages.DATE_1,
-        TestWfProcessAndPublishExifDataOfImages.DATE_2,
-        TestWfProcessAndPublishExifDataOfImages.DATE_3,
-        TestWfProcessAndPublishExifDataOfImages.DATE_4,
-        TestWfProcessAndPublishExifDataOfImages.DATE_5,
-        TestWfProcessAndPublishExifDataOfImages.DATE_6);
+    private static final String             DATE_1          = "Y:2019";
+    private static final String             DATE_2          = "Y:2019/M:01";
+    private static final String             DATE_3          = "Y:2019/M:01/D:16";
+    private static final String             DATE_4          = "Y:2019/M:01/D:16/H:22";
+    private static final String             DATE_5          = "Y:2019/M:01/D:16/H:22/Mn:12";
+    private static final String             DATE_6          = "Y:2019/M:01/D:16/H:22/Mn:12/S:00";
+    private static final Collection<String> DATES           = ImmutableSet.of(
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_1,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)),
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_2,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)),
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_3,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)),
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_4,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)),
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_5,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)),
+        StringUtils.rightPad(
+            TestWfProcessAndPublishExifDataOfImages.DATE_6,
+            AbstractHbaseStatsDAO.getKeyLength(KeyEnumType.ALL)));
 
-    private static final String             IMAGE_KEY             = "1234";                                 // KeysBuilder.topicThumbKeyBuilder()
+    private static final String             IMAGE_KEY       = "1234";                            // KeysBuilder.topicThumbKeyBuilder()
     // .withOriginalImageKey("1234")
     // .withPathInExifTags(new short[] { 0, 1 })
     // .withThumbNb(1)
     // .build();
-    private static final String             PATH                  = "/tmp/image/1234.ARW";
-    private static final int                HEIGHT                = 768;
-    private static final int                WIDTH                 = 1024;
-    private static final byte[]             COMPRESSED_DATA       = new byte[] { 0, 1, 2, 3, 4 };
-    private static final String             EXIF_DATE             = "2019:10:16 22:12:00";
-    protected Properties                    props                 = new Properties();;
+    private static final FileToProcess      FILE_TO_PROCESS = FileToProcess.builder()
+        .withPath("/path")
+        .withHost("IPC3")
+        .withName("1234")
+        .withImportEvent(
+            ImportEvent.builder()
+                .withAlbum("album")
+                .withImportName("Mon import")
+                .withKeyWords(Arrays.asList("kw1", "kw2"))
+                .withScanners(Arrays.asList("sc1", "sc2"))
+                .build())
+        .build();                                                                                // =
+    // "/tmp/image/1234.ARW";
+    private static final int                HEIGHT          = 768;
+    private static final int                WIDTH           = 1024;
+    private static final byte[]             COMPRESSED_DATA = new byte[] { 0, 1, 2, 3, 4 };
+    private static final String             EXIF_DATE       = "2019:01:16 22:12:00";
+    protected Properties                    props           = new Properties();;
 
     @MockBean
     @Qualifier("producerForPublishingWfEvents")
@@ -140,12 +172,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test001_shouldRetrieveOneHbaseImageThumbnailWhenOneExifOneImagePathAndOneFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -159,17 +190,105 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
+
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
 
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImage);
+
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         ProducerRecord<String, HbaseImageThumbnail> outputRecord = this.testDriver.readOutput(
             this.topicImageDataToPersist,
@@ -190,12 +309,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test002_shouldRetrieveOneHbaseImageThumbnailWithRightValueWhenExifImagePathAndOneFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -209,17 +327,101 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
 
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         ProducerRecord<String, HbaseImageThumbnail> outputRecord = this.testDriver.readOutput(
             this.topicImageDataToPersist,
@@ -236,29 +438,44 @@ public class TestWfProcessAndPublishExifDataOfImages {
             outputRecord.value()
                 .getThumbnail());
         Assert.assertEquals(
+            TestWfProcessAndPublishExifDataOfImages.WIDTH,
             outputRecord.value()
-                .getWidth(),
-            TestWfProcessAndPublishExifDataOfImages.WIDTH);
+                .getWidth());
         Assert.assertEquals(
+            TestWfProcessAndPublishExifDataOfImages.HEIGHT,
             outputRecord.value()
-                .getHeight(),
-            TestWfProcessAndPublishExifDataOfImages.HEIGHT);
+                .getHeight());
         Assert.assertEquals(
+            TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS.getPath(),
             outputRecord.value()
-                .getPath(),
-            TestWfProcessAndPublishExifDataOfImages.PATH);
+                .getPath());
+        Assert.assertEquals(
+            TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS.getName(),
+            outputRecord.value()
+                .getImageName());
+        Assert.assertEquals(
+            1024,
+            outputRecord.value()
+                .getOriginalWidth());
+        Assert.assertEquals(
+            768,
+            outputRecord.value()
+                .getOriginalHeight());
+        Assert.assertEquals(
+            1,
+            outputRecord.value()
+                .getOrientation());
     }
 
     @Test
     public void test003_shouldRetrieveNullFromOutputTopicWhenTopicExifIsEmpty() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, FinalImage> factoryForFinalImage = new ConsumerRecordFactory<>(
             this.topicTransformedThumb,
             Serdes.String()
@@ -299,7 +516,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
         ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
@@ -320,12 +537,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test005_shouldRetrieveNullFromOutputTopicWhenTopicFinalImageIsEmpty() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -337,7 +553,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
         ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
 
         this.testDriver.pipeInput(inputExchangedTiffData);
@@ -354,12 +570,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test006_shouldRetrieveOneHbaseImageThumbnailWhen2ExifOneImagePathAndOneFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -373,20 +588,105 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithOtherKey = this
-            .createConsumerRecordForTopicExifData(factoryForExchangedTiffData, key, (short) 0, new short[] { 0, 1 });
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithOtherKey = this
+            .createConsumerRecordForTopicExifData(factoryForExchangedTiffData, key, (short) 0, new short[] { 0, 1 });
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
 
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputExchangedTiffDataWithOtherKey);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         ProducerRecord<String, HbaseImageThumbnail> outputRecord = this.testDriver.readOutput(
             this.topicImageDataToPersist,
@@ -407,12 +707,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test007_shouldRetrieveOneHbaseImageThumbnailWhenOneExifOneImagePathAndTwoFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -426,14 +725,87 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
-
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
+
         ConsumerRecord<byte[], byte[]> inputFinalImageWithSalt = this.createConsumerRecordForTopicTransformedThumb(
             factoryForFinalImage,
             KeysBuilder.topicThumbKeyBuilder()
@@ -442,9 +814,21 @@ public class TestWfProcessAndPublishExifDataOfImages {
                 .build());
 
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImageWithSalt);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         ProducerRecord<String, HbaseImageThumbnail> outputRecord = this.testDriver.readOutput(
             this.topicImageDataToPersist,
@@ -465,12 +849,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test008_shouldRetrieveOneHbaseImageThumbnailWhenOneExifTwoImagePathAndOneFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -486,20 +869,103 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile2 = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1235");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
-
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
 
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
         this.testDriver.pipeInput(inputDupFilteredFile);
         this.testDriver.pipeInput(inputDupFilteredFile2);
-        this.testDriver.pipeInput(inputExchangedTiffData);
-
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         ProducerRecord<String, HbaseImageThumbnail> outputRecord = this.testDriver.readOutput(
             this.topicImageDataToPersist,
@@ -520,12 +986,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test009_shouldRetrieveDatesWhenExifImagePathAndOneFinalImageArePublished() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -539,38 +1004,121 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
 
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
-        ProducerRecord<String, Long> outputRecord = this.testDriver.readOutput(
+        ProducerRecord<String, HbaseImageThumbnailKey> outputRecord = this.testDriver.readOutput(
             this.topicImageDate,
             Serdes.String()
                 .deserializer(),
-            Serdes.Long()
-                .deserializer());
+            new HbaseImageThumbnailKeySerDe().deserializer());
         boolean end = false;
 
         do {
             Assert.assertThat(outputRecord.key(), Matchers.isIn(TestWfProcessAndPublishExifDataOfImages.DATES));
             Assert.assertEquals(
-                1,
+                TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY,
                 outputRecord.value()
-                    .intValue());
+                    .getImageId());
             outputRecord = this.testDriver.readOutput(
                 this.topicImageDate,
                 Serdes.String()
                     .deserializer(),
-                Serdes.Long()
-                    .deserializer());
+                new HbaseImageThumbnailKeySerDe().deserializer());
             end = outputRecord == null;
 
         } while (!end);
@@ -580,12 +1128,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     public void test010_topicEvent() {
         final String key = TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY;
 
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile = new ConsumerRecordFactory<>(
             this.topicDupFilteredFile,
             Serdes.String()
                 .serializer(),
-            Serdes.String()
-                .serializer());
+            new FileToProcessSerializer());
         ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData = new ConsumerRecordFactory<>(
             this.topicExif,
             Serdes.String()
@@ -599,17 +1146,102 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = this
             .createConsumerRecordForTopicDuFilteredFile(factoryForTopicDupFilteredFile, "1234");
-        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
+        ConsumerRecord<byte[], byte[]> inputEtdCreationDate = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             key,
-            TestWfProcessAndPublishExifDataOfImages.EXIF_CREATION_DATE_ID,
+            ApplicationConfig.EXIF_CREATION_DATE_ID,
             new short[] { (short) 0, (short) 0x8769 });
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
             .createConsumerRecordForTopicTransformedThumb(factoryForFinalImage, key);
+        ConsumerRecord<byte[], byte[]> inputEtdOrientation = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ORIENTATION,
+            new short[] { (short) 0 },
+            (short) 1);
+        ConsumerRecord<byte[], byte[]> inputEtdWidth = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_WIDTH,
+            new short[] { (short) 0, (short) 0x8769 },
+            1024);
+        ConsumerRecord<byte[], byte[]> inputEtdHeight = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SIZE_HEIGHT,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            "90mm".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdFocalLens = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_FOCAL_LENS,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 4, 5 });
+
+        ConsumerRecord<byte[], byte[]> inputEtdShiftExpo = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SHIFT_EXPO,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 6, 7 });
+        ConsumerRecord<byte[], byte[]> inputEtdSpeedIso = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED_ISO,
+            new short[] { (short) 0, (short) 0x8769 },
+            (short) 640);
+        ConsumerRecord<byte[], byte[]> inputEtdAperture = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_APERTURE,
+            new short[] { (short) 0, (short) 0x8769 },
+            768);
+        ConsumerRecord<byte[], byte[]> inputEtdSpeed = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_SPEED,
+            new short[] { (short) 0, (short) 0x8769 },
+            new int[] { 1, 120 });
+        ConsumerRecord<byte[], byte[]> inputEtdCopyright = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_COPYRIGHT,
+            new short[] { (short) 0 },
+            "Granada".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdArtist = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_ARTIST,
+            new short[] { (short) 0 },
+            "mwa".getBytes());
+        ConsumerRecord<byte[], byte[]> inputEtdCameraModel = this.createConsumerRecordForTopicExifData(
+            factoryForExchangedTiffData,
+            key,
+            ApplicationConfig.EXIF_CAMERA_MODEL,
+            new short[] { (short) 0 },
+            "A9".getBytes());
 
         this.testDriver.pipeInput(inputDupFilteredFile);
-        this.testDriver.pipeInput(inputExchangedTiffData);
+        this.testDriver.pipeInput(inputEtdCreationDate);
+        this.testDriver.pipeInput(inputEtdOrientation);
+        this.testDriver.pipeInput(inputEtdWidth);
+        this.testDriver.pipeInput(inputEtdHeight);
         this.testDriver.pipeInput(inputFinalImage);
+        this.testDriver.pipeInput(inputEtdCameraModel);
+        this.testDriver.pipeInput(inputEtdArtist);
+        this.testDriver.pipeInput(inputEtdCopyright);
+        this.testDriver.pipeInput(inputEtdLens);
+        this.testDriver.pipeInput(inputEtdFocalLens);
+        this.testDriver.pipeInput(inputEtdShiftExpo);
+        this.testDriver.pipeInput(inputEtdSpeedIso);
+        this.testDriver.pipeInput(inputEtdAperture);
+        this.testDriver.pipeInput(inputEtdSpeed);
 
         this.testDriver.advanceWallClockTime(101);
         ProducerRecord<String, WfEvents> outputRecord = this.testDriver.readOutput(
@@ -653,11 +1285,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
     }
 
     protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicDuFilteredFile(
-        ConsumerRecordFactory<String, String> factoryForTopicDupFilteredFile,
+        ConsumerRecordFactory<String, FileToProcess> factoryForTopicDupFilteredFile,
         final String key
     ) {
         ConsumerRecord<byte[], byte[]> inputDupFilteredFile = factoryForTopicDupFilteredFile
-            .create(this.topicDupFilteredFile, key, TestWfProcessAndPublishExifDataOfImages.PATH);
+            .create(this.topicDupFilteredFile, key, TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS);
         return inputDupFilteredFile;
     }
 
@@ -669,6 +1301,102 @@ public class TestWfProcessAndPublishExifDataOfImages {
     ) {
         ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
         builder.withDataAsByte(TestWfProcessAndPublishExifDataOfImages.EXIF_DATE.getBytes(Charset.forName("UTF-8")))
+            .withFieldType(FieldType.IFD)
+            .withDataId(KeysBuilder.buildKeyForExifData(key, tag, path))
+            .withImageId(key)
+            .withIntId(1)
+            .withKey(key)
+            .withLength(1234)
+            .withTag(tag)
+            .withPath(path)
+            .withTotal(150);
+        final ExchangedTiffData exchangedTiffData = builder.build();
+        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData
+            .create(this.topicExif, exchangedTiffData.getKey(), exchangedTiffData);
+        return inputExchangedTiffData;
+    }
+
+    protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
+        ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData,
+        final String key,
+        short tag,
+        short[] path,
+        int value
+    ) {
+        ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
+        builder.withDataAsInt(new int[] { value })
+            .withFieldType(FieldType.IFD)
+            .withDataId(KeysBuilder.buildKeyForExifData(key, tag, path))
+            .withImageId(key)
+            .withIntId(1)
+            .withKey(key)
+            .withLength(1234)
+            .withTag(tag)
+            .withPath(path)
+            .withTotal(150);
+        final ExchangedTiffData exchangedTiffData = builder.build();
+        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData
+            .create(this.topicExif, exchangedTiffData.getKey(), exchangedTiffData);
+        return inputExchangedTiffData;
+    }
+
+    protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
+        ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData,
+        final String key,
+        short tag,
+        short[] path,
+        int[] value
+    ) {
+        ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
+        builder.withDataAsInt(value)
+            .withFieldType(FieldType.IFD)
+            .withDataId(KeysBuilder.buildKeyForExifData(key, tag, path))
+            .withImageId(key)
+            .withIntId(1)
+            .withKey(key)
+            .withLength(1234)
+            .withTag(tag)
+            .withPath(path)
+            .withTotal(150);
+        final ExchangedTiffData exchangedTiffData = builder.build();
+        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData
+            .create(this.topicExif, exchangedTiffData.getKey(), exchangedTiffData);
+        return inputExchangedTiffData;
+    }
+
+    protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
+        ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData,
+        final String key,
+        short tag,
+        short[] path,
+        byte[] value
+    ) {
+        ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
+        builder.withDataAsByte(value)
+            .withFieldType(FieldType.IFD)
+            .withDataId(KeysBuilder.buildKeyForExifData(key, tag, path))
+            .withImageId(key)
+            .withIntId(1)
+            .withKey(key)
+            .withLength(1234)
+            .withTag(tag)
+            .withPath(path)
+            .withTotal(150);
+        final ExchangedTiffData exchangedTiffData = builder.build();
+        ConsumerRecord<byte[], byte[]> inputExchangedTiffData = factoryForExchangedTiffData
+            .create(this.topicExif, exchangedTiffData.getKey(), exchangedTiffData);
+        return inputExchangedTiffData;
+    }
+
+    protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
+        ConsumerRecordFactory<String, ExchangedTiffData> factoryForExchangedTiffData,
+        final String key,
+        short tag,
+        short[] path,
+        short value
+    ) {
+        ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
+        builder.withDataAsShort(new short[] { value })
             .withFieldType(FieldType.IFD)
             .withDataId(KeysBuilder.buildKeyForExifData(key, tag, path))
             .withImageId(key)

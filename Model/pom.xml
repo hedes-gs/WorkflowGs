@@ -41,6 +41,29 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>cz.habarta.typescript-generator</groupId>
+				<artifactId>typescript-generator-maven-plugin</artifactId>
+				<version>2.23.603</version>
+				<executions>
+					<execution>
+						<id>generate</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<phase>process-classes</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<jsonLibrary>jackson2</jsonLibrary>
+					<outputKind>module</outputKind>
+					<classes>
+						<class>com.workflow.model.dtos.ImageDto</class>
+						<class>com.workflow.model.dtos.ExifDTO</class>
+						<class>com.workflow.model.events.ImportEvent</class>
+					</classes>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration combine.self="override">
