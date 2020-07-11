@@ -4,13 +4,17 @@ import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -33,16 +37,25 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.gs.photo.ks.transformers.MapCollector;
+import com.gs.photo.workflow.exif.FieldType;
+import com.gs.photo.workflow.exif.IExifService;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.serializers.ExchangedDataSerDe;
+import com.gs.photos.serializers.FileToProcessSerDe;
 import com.gs.photos.serializers.FinalImageSerDe;
+import com.gs.photos.serializers.HbaseImageThumbnailKeySerDe;
 import com.gs.photos.serializers.HbaseImageThumbnailSerDe;
+import com.gs.photos.serializers.IntArrayDeserializer;
+import com.gs.photos.serializers.IntArraySerializer;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseImageThumbnail;
-import com.workflow.model.builder.KeysBuilder;
+import com.workflow.model.HbaseImageThumbnailKey;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
+import com.workflow.model.files.FileToProcess;
 import com.workflow.model.storm.FinalImage;
 
 @Configuration
@@ -53,7 +66,34 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     private static final Logger LOGGER                     = LoggerFactory.getLogger(ApplicationConfig.class);
     public static final int     JOIN_WINDOW_TIME           = 86400;
     public static final short   EXIF_CREATION_DATE_ID      = (short) 0x9003;
+    public static final short   EXIF_SIZE_WIDTH            = (short) 0xA002;
+    public static final short   EXIF_SIZE_HEIGHT           = (short) 0xA003;
+    public static final short   EXIF_ORIENTATION           = (short) 0x0112;
+
+    public static final short   EXIF_LENS                  = (short) 0xA434;
+    public static final short   EXIF_FOCAL_LENS            = (short) 0x920A;
+    public static final short   EXIF_SHIFT_EXPO            = (short) 0x9204;
+    public static final short   EXIF_SPEED_ISO             = (short) 0x8827;
+    public static final short   EXIF_APERTURE              = (short) 0x829D;
+    public static final short   EXIF_SPEED                 = (short) 0x829A;
+    public static final short   EXIF_COPYRIGHT             = (short) 0x8298;
+    public static final short   EXIF_ARTIST                = (short) 0x13B;
+    public static final short   EXIF_CAMERA_MODEL          = (short) 0x110;
+
     public static final short[] EXIF_CREATION_DATE_ID_PATH = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_WIDTH_HEIGHT_PATH     = { (short) 0, (short) 0x8769 };
+
+    public static final short[] EXIF_LENS_PATH             = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_FOCAL_LENS_PATH       = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_SHIFT_EXPO_PATH       = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_SPEED_ISO_PATH        = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_APERTURE_PATH         = { (short) 0, (short) 0x8769 };
+    public static final short[] EXIF_SPEED_PATH            = { (short) 0, (short) 0x8769 };
+
+    public static final short[] EXIF_COPYRIGHT_PATH        = { (short) 0 };
+    public static final short[] EXIF_ARTIST_PATH           = { (short) 0 };
+    public static final short[] EXIF_CAMERA_MODEL_PATH     = { (short) 0 };
+    public static final short[] EXIF_ORIENTATION_PATH      = { (short) 0 };
 
     @Bean
     public Properties kafkaStreamProperties(
@@ -64,7 +104,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${kafka.consumer.batchRecords}") int consumerBatch,
         @Value("${kafka.stream.commit.interval.ms}") int commitIntervalIms,
         @Value("${kafka.stream.metadata.age.ms}") int metaDataAgeIms,
-        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads
+        @Value("${kafka.stream.nb.of.threads}") int nbOfThreads,
+        @Value("${kafka.producer.maxBlockMsConfig}") int maxBlockMsConfig
     ) {
         Properties config = new Properties();
         config.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
@@ -86,6 +127,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         config.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, pollTimeInMillisecondes);
         config.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, consumerBatch);
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name());
+        config.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, maxBlockMsConfig);
         config.put("sasl.kerberos.service.name", "kafka");
         config.put(StreamsConfig.NUM_STREAM_THREADS_CONFIG, nbOfThreads);
         return config;
@@ -102,12 +144,13 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${topic.topicExif}") String topicExif,
         @Value("${events.collectorEventsBufferSize}") int collectorEventsBufferSize,
         @Value("${events.collectorEventsTimeWindow}") int collectorEventsTimeWindow,
-        @Value("${kafkastreams.windowsOfEventsInMs}") int windowsOfEvents
+        @Value("${kafkastreams.windowsOfEventsInMs}") int windowsOfEvents,
+        IExifService exifService
     ) {
         ApplicationConfig.LOGGER.info("Starting application with windowsOfEvents : {}", windowsOfEvents);
 
         StreamsBuilder builder = new StreamsBuilder();
-        KStream<String, String> pathOfImageKStream = this
+        KStream<String, FileToProcess> pathOfImageKStream = this
             .buildKTableToStoreCreatedImages(builder, topicDupFilteredFile);
         KStream<String, FinalImage> thumbImages = this.buildKStreamToGetThumbImages(builder, topicTransformedThumb);
         KStream<String, ExchangedTiffData> exifOfImageStream = this.buildKStreamToGetExifValue(builder, topicExif);
@@ -115,36 +158,356 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         /*
          * Stream to get the creation date on topic topicCountOfImagesPerDate
          */
-        KStream<String, ExchangedTiffData> filteredImageKStreamForCreationDate = exifOfImageStream
-            .filter((key, exif) -> {
-                boolean b = (exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
-                    && (Objects.deepEquals(exif.getPath(), ApplicationConfig.EXIF_CREATION_DATE_ID_PATH));
-                return b;
-            });
+        KStream<String, ExchangedTiffData> streamForCreationDateForHbaseExifData = exifOfImageStream.filter(
+            (key, exif) -> (exif.getTag() == ApplicationConfig.EXIF_CREATION_DATE_ID)
+                && (Objects.deepEquals(exif.getPath(), ApplicationConfig.EXIF_CREATION_DATE_ID_PATH)));
+        KStream<String, Long> streamForWidthForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_SIZE_WIDTH)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH)))
+            .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsInt()[0]);
+        KStream<String, Long> streamForHeightForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_SIZE_HEIGHT)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH)))
+            .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsInt()[0]);
+        KStream<String, Long> streamForOrientationForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_ORIENTATION)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_ORIENTATION_PATH)))
+            .mapValues((hbaseExifData) -> (long) hbaseExifData.getDataAsShort()[0]);
+
+        KStream<String, byte[]> streamForLensForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_LENS)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_LENS_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsByte());
+        KStream<String, int[]> streamForFocalLensForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_FOCAL_LENS)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_FOCAL_LENS_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsInt());
+        KStream<String, int[]> streamForShifExpoForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_SHIFT_EXPO)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_SHIFT_EXPO_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsInt());
+        KStream<String, Short> streamForSpeedIsoForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_SPEED_ISO)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_SPEED_ISO_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsShort()[0]);
+        KStream<String, int[]> streamForApertureForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_APERTURE)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_APERTURE_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsInt());
+        KStream<String, int[]> streamForSpeedForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_SPEED)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_SPEED_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsInt());
+        KStream<String, byte[]> streamForCopyrightForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_COPYRIGHT)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_COPYRIGHT_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsByte());
+        KStream<String, byte[]> streamForArtistForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_ARTIST)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_ARTIST_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsByte());
+        KStream<String, byte[]> streamForCameraModelForHbaseExifData = exifOfImageStream
+            .filter(
+                (key, hbaseExifData) -> (hbaseExifData.getTag() == ApplicationConfig.EXIF_CAMERA_MODEL)
+                    && (Objects.deepEquals(hbaseExifData.getPath(), ApplicationConfig.EXIF_CAMERA_MODEL_PATH)))
+            .mapValues((hbaseExifData) -> hbaseExifData.getDataAsByte());
 
         /*
          * join to build the HbaseImageThumbnail which will be stored in hbase. We just
          * set the creation date.
          */
-        final ValueJoiner<ExchangedTiffData, String, HbaseImageThumbnail> joiner = (
+        final ValueJoiner<ExchangedTiffData, FileToProcess, HbaseImageThumbnail> joiner = (
             v_exchangedTiffData,
             v_imagePath) -> { return this.buildHBaseImageThumbnail(v_exchangedTiffData, v_imagePath); };
-        final Joined<String, ExchangedTiffData, String> joined = Joined
-            .with(Serdes.String(), new ExchangedDataSerDe(), Serdes.String());
 
-        KStream<String, HbaseImageThumbnail> jointureToFindTheCreationDate = filteredImageKStreamForCreationDate
-            .join(pathOfImageKStream, joiner, JoinWindows.of(Duration.ofDays(2)), joined);
+        final Joined<String, ExchangedTiffData, FileToProcess> joined = Joined
+            .with(Serdes.String(), new ExchangedDataSerDe(), new FileToProcessSerDe());
+
+        KStream<String, HbaseImageThumbnail> jointureToFindTheCreationDate = streamForCreationDateForHbaseExifData
+            .join(pathOfImageKStream, joiner, JoinWindows.of(Duration.ofDays(2)), joined)
+            .peek((key, hbi) -> {
+                ApplicationConfig.LOGGER.info(
+                    " Object with key {} was built and set the creation date {}, the path {}, the image name {} ",
+                    key,
+                    hbi.getCreationDate(),
+                    hbi.getPath(),
+                    hbi.getImageName());
+            });
+
+        Joined<String, HbaseImageThumbnail, Long> join = Joined
+            .with(Serdes.String(), new HbaseImageThumbnailSerDe(), Serdes.Long());
+        Joined<String, HbaseImageThumbnail, byte[]> joinArrayOfBytes = Joined
+            .with(Serdes.String(), new HbaseImageThumbnailSerDe(), Serdes.ByteArray());
+        Joined<String, HbaseImageThumbnail, int[]> joinArrayOfInt = Joined.with(
+            Serdes.String(),
+            new HbaseImageThumbnailSerDe(),
+            Serdes.serdeFrom(new IntArraySerializer(), new IntArrayDeserializer()));
+        Joined<String, HbaseImageThumbnail, Short> joinShort = Joined
+            .with(Serdes.String(), new HbaseImageThumbnailSerDe(), Serdes.Short());
+
+        ValueJoiner<HbaseImageThumbnail, Long, HbaseImageThumbnail> joinerWidth = (value1, width) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setOriginalWidth(width);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, Long, HbaseImageThumbnail> joinerHeight = (value1, height) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setOriginalHeight(height);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, Long, HbaseImageThumbnail> joinerOrientation = (value1, orientation) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setOrientation(orientation);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        // new
+        ValueJoiner<HbaseImageThumbnail, byte[], HbaseImageThumbnail> joinerLens = (value1, lens) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setLens(lens);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, int[], HbaseImageThumbnail> joinerFocalLens = (value1, focalLens) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setFocalLens(focalLens);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, int[], HbaseImageThumbnail> joinerShiftExpo = (value1, shift) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setShiftExpo(shift);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, Short, HbaseImageThumbnail> joinerSpeedIso = (value1, speedIso) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setIsoSpeed(speedIso);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, int[], HbaseImageThumbnail> joinerAperture = (value1, aperture) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setAperture(aperture);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, int[], HbaseImageThumbnail> joinerSpeed = (value1, speed) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setSpeed(speed);
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, byte[], HbaseImageThumbnail> joinerCopyright = (value1, copyright) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setCopyright(exifService.toString(FieldType.ASCII, copyright));
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, byte[], HbaseImageThumbnail> joinerArtist = (value1, artist) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setArtist(exifService.toString(FieldType.ASCII, artist));
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ValueJoiner<HbaseImageThumbnail, byte[], HbaseImageThumbnail> joinerCameraModel = (value1, model) -> {
+            try {
+                HbaseImageThumbnail hbi = (HbaseImageThumbnail) value1.clone();
+                hbi.setCamera(exifService.toString(FieldType.ASCII, model));
+                return hbi;
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+
+        // KStream<String, HbaseExifData> streamOfHbaseExifData
+        // KStream<String, Integer> streamForWidthForHbaseExifData
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForWidthForHbaseExifData,
+                joinerWidth,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                join)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the width {}", key, hbi.getOriginalWidth());
+                });
+
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForHeightForHbaseExifData,
+                joinerHeight,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                join)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the height {}", key, hbi.getOriginalHeight());
+                });
+
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForOrientationForHbaseExifData,
+                joinerOrientation,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                join)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the orientation {}", key, hbi.getOrientation());
+                });
+        // Tech
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForLensForHbaseExifData,
+                joinerLens,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfBytes)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the lens {}", key, hbi.getLens());
+                });
+
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForFocalLensForHbaseExifData,
+                joinerFocalLens,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfInt)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the focal length {}", key, hbi.getFocalLens());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForShifExpoForHbaseExifData,
+                joinerShiftExpo,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfInt)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the shif expo {}", key, hbi.getShiftExpo());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForSpeedIsoForHbaseExifData,
+                joinerSpeedIso,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinShort)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the iso {}", key, hbi.getIsoSpeed());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForApertureForHbaseExifData,
+                joinerAperture,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfInt)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the aperure {}", key, hbi.getAperture());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForSpeedForHbaseExifData,
+                joinerSpeed,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfInt)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the speed {}", key, hbi.getSpeed());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForCopyrightForHbaseExifData,
+                joinerCopyright,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfBytes)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the copyright {}", key, hbi.getCopyright());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForArtistForHbaseExifData,
+                joinerArtist,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfBytes)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the artist {}", key, hbi.getArtist());
+                });
+        jointureToFindTheCreationDate = jointureToFindTheCreationDate
+            .join(
+                streamForCameraModelForHbaseExifData,
+                joinerCameraModel,
+                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
+                joinArrayOfBytes)
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER.info(" [EVENT][{}] was set the camera model {}", key, hbi.getCamera());
+                });
 
         /*
          * imageCountsStream : stream to create the number of images per hour/minutes
          * etc. this is published on topic topicCountOfImagesPerDate
          */
-        KStream<String, Long> imageCountsStream = jointureToFindTheCreationDate.flatMap((key, value) -> {
+        KStream<String, HbaseImageThumbnailKey> imageCountsStream = jointureToFindTheCreationDate
+            .flatMap((key, value) -> this.splitCreationDateToYearMonthDayAndHour(value))
+            .peek(
+                (key, hbi) -> {
+                    ApplicationConfig.LOGGER
+                        .info(" [EVENT][{}] was built and published to time intervall {}", hbi.getImageId(), key);
+                });
 
-            return this.splitCreationDateToYearMonthDayAndHour(value);
-        });
-
-        imageCountsStream.to(topicCountOfImagesPerDate, Produced.with(Serdes.String(), Serdes.Long()));
+        imageCountsStream
+            .to(topicCountOfImagesPerDate, Produced.with(Serdes.String(), new HbaseImageThumbnailKeySerDe()));
 
         /*
          * finalStream : we update the HbaseImageThumbnail which was created with the
@@ -163,25 +526,12 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             joiner2,
             JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
             Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
+        finalStream.peek(
+            (key, hbi) -> ApplicationConfig.LOGGER
+                .info(" [EVENT][{}] was created with the thumb with version {} ", key, hbi.getVersion()));
+        this.publishImageDataInRecordTopic(finalStream, topicImageDataToPersist);
 
-        /*
-         * final2Stream : we update the HbaseImageThumbnail which was created with the
-         * creation date and the thumb images only. At the end the key is the original
-         * image key
-         */
-        KStream<String, HbaseImageThumbnail> final2Stream = finalStream
-            .join(pathOfImageKStream, (v_hbaseImageThumbnail, v_path) -> {
-                v_hbaseImageThumbnail.setPath(v_path);
-                final String imageName = v_path.substring(v_path.lastIndexOf("/"));
-                v_hbaseImageThumbnail.setImageName(imageName);
-                v_hbaseImageThumbnail.setThumbName(imageName);
-                return v_hbaseImageThumbnail;
-            },
-                JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-                Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), Serdes.String()));
-        this.publishImageDataInRecordTopic(final2Stream, topicImageDataToPersist);
-
-        KStream<String, WfEvent> eventStream = final2Stream.mapValues((k, v) -> this.buildEvent(v));
+        KStream<String, WfEvent> eventStream = finalStream.mapValues((k, v) -> this.buildEvent(v));
 
         StoreBuilder<WindowStore<String, Long>> dedupStoreBuilder = Stores.windowStoreBuilder(
             Stores.persistentWindowStore("MyTransformer", Duration.ofMillis(10000), Duration.ofMillis(10000), false),
@@ -215,13 +565,6 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             .build();
     }
 
-    private String buildKey(HbaseImageThumbnail v) {
-        return KeysBuilder.topicImageDataToPersistKeyBuilder()
-            .withOriginalImageKey(v.getImageId())
-            .withVersion(v.getVersion())
-            .build();
-    }
-
     protected HbaseImageThumbnail buildHbaseImageThumbnail(
         FinalImage v_FinalImage,
         HbaseImageThumbnail v_hbaseImageThumbnail
@@ -238,15 +581,25 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         return retValue;
     }
 
-    private HbaseImageThumbnail buildHBaseImageThumbnail(ExchangedTiffData key, String value) {
+    private HbaseImageThumbnail buildHBaseImageThumbnail(ExchangedTiffData key, FileToProcess value) {
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         try {
-            builder.withImageName(ApplicationConfig.NOT_SET)
-                .withPath(ApplicationConfig.NOT_SET)
+            builder.withPath(value.getPath())
+                .withImageName(value.getName())
                 .withThumbnail(ApplicationConfig.EMPTY_ARRAY_BYTE)
-                .withThumbName(ApplicationConfig.NOT_SET)
+                .withThumbName(value.getName())
                 .withImageId(key.getImageId())
                 .withDataId(ApplicationConfig.NOT_SET)
+                .withAlbums(
+                    new HashSet<>(Collections.singleton(
+                        value.getImportEvent()
+                            .getAlbum())))
+                .withImportName(
+                    value.getImportEvent()
+                        .getImportName())
+                .withKeyWords(
+                    new HashSet<>(value.getImportEvent()
+                        .getKeyWords()))
                 .withCreationDate(DateTimeHelper.toEpochMillis(new String(key.getDataAsByte(), "UTF-8").trim()));
         } catch (UnsupportedEncodingException e) {
             ApplicationConfig.LOGGER.error("unsupported charset ", e);
@@ -254,34 +607,32 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         return builder.build();
     }
 
-    private Iterable<? extends KeyValue<String, Long>> splitCreationDateToYearMonthDayAndHour(
+    private Iterable<? extends KeyValue<String, HbaseImageThumbnailKey>> splitCreationDateToYearMonthDayAndHour(
         HbaseImageThumbnail value
     ) {
         OffsetDateTime ldt = DateTimeHelper.toLocalDateTime(value.getCreationDate());
-
-        List<KeyValue<String, Long>> retValue;
-        String keyYear = "Y:" + (long) ldt.getYear();
-        String keyMonth = keyYear + "/M:" + (long) ldt.getMonthValue();
-        String keyDay = keyMonth + "/D:" + (long) ldt.getDayOfMonth();
-        String keyHour = keyDay + "/H:" + (long) ldt.getHour();
-        String keyMinute = keyHour + "/Mn:" + (long) ldt.getMinute();
-        String keySeconde = keyMinute + "/S:" + (long) ldt.getSecond();
-        retValue = Arrays.asList(
-            new KeyValue<String, Long>(keyYear, 1L),
-            new KeyValue<String, Long>(keyMonth, 1L),
-            new KeyValue<String, Long>(keyDay, 1L),
-            new KeyValue<String, Long>(keyHour, 1L),
-            new KeyValue<String, Long>(keyMinute, 1L),
-            new KeyValue<String, Long>(keySeconde, 1L));
+        List<KeyValue<String, HbaseImageThumbnailKey>> retValue;
+        HbaseImageThumbnailKey hbaseImageThumbnailKey = HbaseImageThumbnailKey.builder()
+            .withDataId(DateTimeHelper.toDateTimeAsString(value.getCreationDate()))
+            .withImageId(value.getImageId())
+            .withCreationDate(value.getCreationDate())
+            .withVersion(value.getVersion())
+            .build();
+        Map<AbstractHbaseStatsDAO.KeyEnumType, String> keys = AbstractHbaseStatsDAO.toKey(ldt, KeyEnumType.ALL);
+        keys.remove(KeyEnumType.ALL);
+        retValue = keys.values()
+            .stream()
+            .map((v) -> new KeyValue<String, HbaseImageThumbnailKey>(v, hbaseImageThumbnailKey))
+            .collect(Collectors.toList());
         return retValue;
     }
 
-    protected KStream<String, String> buildKTableToStoreCreatedImages(
+    protected KStream<String, FileToProcess> buildKTableToStoreCreatedImages(
         StreamsBuilder builder,
         String topicDupFilteredFile
     ) {
         ApplicationConfig.LOGGER.info("building ktable from topic topicDupFilteredFile {}", topicDupFilteredFile);
-        return builder.stream(topicDupFilteredFile, Consumed.with(Serdes.String(), Serdes.String()));
+        return builder.stream(topicDupFilteredFile, Consumed.with(Serdes.String(), new FileToProcessSerDe()));
     }
 
     protected KStream<String, String> buildKTableToGetPathValue(
@@ -316,7 +667,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         return stream;
     }
 
-    protected void publishImageDataInRecordTopic(
+    private void publishImageDataInRecordTopic(
         KStream<String, HbaseImageThumbnail> finalStream,
         String topicImageDataToPersist
     ) {

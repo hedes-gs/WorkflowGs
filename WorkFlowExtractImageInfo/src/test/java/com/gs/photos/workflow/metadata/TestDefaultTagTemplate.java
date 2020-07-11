@@ -19,16 +19,29 @@ import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.workflow.ApplicationConfig;
+import com.gs.photo.workflow.exif.ExifServiceImpl;
 import com.gs.photos.workflow.metadata.IFD.IFDContext;
 import com.gs.photos.workflow.metadata.exif.RootTiffTag;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
+@ActiveProfiles("test")
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = { ExifServiceImpl.class, ApplicationConfig.class })
 public class TestDefaultTagTemplate {
     public static final int        STREAM_HEAD = 0x00;
     private Logger                 LOGGER      = LogManager.getLogger(TestDefaultTagTemplate.class);
 
     protected FileChannelDataInput fcdi;
+
+    @Autowired
+    protected ExifServiceImpl      exifService;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {}
@@ -52,7 +65,7 @@ public class TestDefaultTagTemplate {
         try {
             int offset = this.readHeader(this.fcdi);
             for (RootTiffTag rtt : RootTiffTag.values()) {
-                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt);
+                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt, this.exifService);
                 offset = dtp.createSimpleTiffFields(this.fcdi, offset, ifdContext);
                 allIfds.addAll(
                     dtp.getRootIFD()

@@ -34,6 +34,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         .getName();
 
     @Bean("producerForTransactionPublishingOnExifOrImageTopic")
+    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
     public Producer<String, Object> producerForTransactionPublishingOnExifOrImageTopic(
         @Value("${transaction.id}") String transactionId,
         @Value("${transaction.timeout}") String transactionTimeout,

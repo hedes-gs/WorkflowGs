@@ -1,7 +1,8 @@
 package com.gs.photos.workflow.metadata;
 
+import com.gs.photo.workflow.exif.IExifService;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.IFD.IFDContext;
-import com.gs.photos.workflow.metadata.exif.GPSTag;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
 
 public class GpsTagTemplate extends AbstractTemplateTag {
@@ -10,8 +11,6 @@ public class GpsTagTemplate extends AbstractTemplateTag {
 
     @Override
     protected void buildChildren(FileChannelDataInput rin, IFDContext ifdContext) {
-        System.out.println("... buildChildren in  GpsTagTemplate ");
-
         if (this.data.getData()[0] != 0) {
             super.createSimpleTiffFields(rin, this.data.getData()[0], ifdContext);
         }
@@ -20,14 +19,13 @@ public class GpsTagTemplate extends AbstractTemplateTag {
     public GpsTagTemplate(
         Tag tag,
         IFD ifdParent,
-        SimpleAbstractField<int[]> data
+        SimpleAbstractField<int[]> data,
+        IExifService exifService
     ) {
         super(tag,
-            ifdParent);
+            ifdParent,
+            exifService);
         this.data = data;
     }
-
-    @Override
-    public Tag convertTagValueToTag(short tag) { return GPSTag.fromShort(tag); }
 
 }

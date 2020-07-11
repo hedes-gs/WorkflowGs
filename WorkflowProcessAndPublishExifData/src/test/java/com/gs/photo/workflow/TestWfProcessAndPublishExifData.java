@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +49,8 @@ import com.workflow.model.events.WfEvents;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SpringBootTest(classes = ApplicationConfig.class)
 public class TestWfProcessAndPublishExifData {
+    private static Logger                   LOGGER                      = LoggerFactory
+        .getLogger(TestWfProcessAndPublishExifData.class);
 
     private static final short[]            PATH2                       = new short[] { 1, 5, 8 };
 
@@ -370,13 +374,15 @@ public class TestWfProcessAndPublishExifData {
             .withImageId(TestWfProcessAndPublishExifData.IMGID)
             .withImageName(TestWfProcessAndPublishExifData.IMG_NAME)
             .withDataId(TestWfProcessAndPublishExifData.ID)
-            .withVersion((short) 1)
+            .withVersion((short) 2)
             .withPath(TestWfProcessAndPublishExifData.IMG_PATH)
             .withThumbnail(TestWfProcessAndPublishExifData.THUMBNAIL)
             .withThumbName(TestWfProcessAndPublishExifData.THUMB_NAME);
         HbaseImageThumbnail hbit = builder.build();
         ConsumerRecord<byte[], byte[]> outputHbaseImageThumbnail = factoryForHbaseImageThumbnail
             .create(this.topicImageDataToPersist, key, hbit);
+        TestWfProcessAndPublishExifData.LOGGER
+            .info(" input image in {} with key {} ", this.topicImageDataToPersist, key);
         return outputHbaseImageThumbnail;
     }
 

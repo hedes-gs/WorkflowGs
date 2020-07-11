@@ -1,5 +1,6 @@
 package com.gs.photo.workflow;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -24,6 +25,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.gs.photo.workflow.exif.ExifServiceImpl;
+import com.gs.photo.workflow.exif.IExifService;
 import com.gs.photos.serializers.ExchangedDataSerializer;
 import com.gs.photos.serializers.WfEventsSerializer;
 import com.workflow.model.ExchangedTiffData;
@@ -56,6 +59,9 @@ public abstract class AbstractApplicationConfig {
     public final static String              HBASE_IMAGE_THUMBNAIL_SERIALIZER             = com.gs.photos.serializers.HbaseImageThumbnailSerializer.class
         .getName();
     public final static String              HBASE_IMAGE_THUMBNAIL_DESERIALIZER           = com.gs.photos.serializers.HbaseImageThumbnailDeserializer.class
+        .getName();
+
+    public final static String              HBASE_IMAGE_THUMBNAIL_KEY_DESERIALIZER       = com.gs.photos.serializers.HbaseImageThumbnailKeyDeserializer.class
         .getName();
     public final static String              HBASE_IMAGE_EXIF_DATA_DESERIALIZER           = com.gs.photos.serializers.HbaseExifDataDeserializer.class
         .getName();
@@ -294,5 +300,11 @@ public abstract class AbstractApplicationConfig {
     @Bean
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
     public CountDownLatch shutdownCoseLatch() { return new CountDownLatch(1); }
+
+    @Bean
+    @ConditionalOnProperty(name = "exifservice.is.used", havingValue = "true")
+    public IExifService exifService(@Value("${exif.files}") List<String> exifFiles) {
+        return new ExifServiceImpl(exifFiles);
+    }
 
 }

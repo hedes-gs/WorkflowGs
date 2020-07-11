@@ -15,8 +15,8 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     // Row key
     @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
     protected String          imageId;
-    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
-    protected long            exifTag;
+    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
+    protected short           exifTag;
     @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
     protected short[]         exifPath;
     // Data
@@ -24,25 +24,24 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
     protected byte[]          exifValueAsByte;
     @Nullable
-    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 101)
     protected int[]           exifValueAsInt;
     @Nullable
-    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 102)
     protected short[]         exifValueAsShort;
     @Nullable
-    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 101)
+    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 103)
     protected String          thumbName        = "";
-    @Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 102)
+    @Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 104)
     protected String          creationDate     = "";
-    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 103)
+    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 105)
     protected long            width;
-    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 104)
+    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
     protected long            height;
 
     @Generated("SparkTools")
     private HbaseExifDataOfImages(Builder builder) {
-        super(builder.dataId,
-            System.currentTimeMillis());
+        super();
         this.imageId = builder.imageId;
         this.exifTag = builder.exifTag;
         this.exifPath = builder.exifPath;
@@ -58,9 +57,9 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     public HbaseExifDataOfImages() { super(null,
         0); }
 
-    public long getExifTag() { return this.exifTag; }
+    public short getExifTag() { return this.exifTag; }
 
-    public void setExifTag(long exifTag) { this.exifTag = exifTag; }
+    public void setExifTag(short exifTag) { this.exifTag = exifTag; }
 
     public String getImageId() { return this.imageId; }
 
@@ -104,7 +103,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
         int result = 1;
         result = (prime * result) + ((this.creationDate == null) ? 0 : this.creationDate.hashCode());
         result = (prime * result) + Arrays.hashCode(this.exifPath);
-        result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
+        result = (prime * result) + (this.exifTag ^ (this.exifTag >>> 32));
         result = (prime * result) + Arrays.hashCode(this.exifValueAsByte);
         result = (prime * result) + Arrays.hashCode(this.exifValueAsInt);
         result = (prime * result) + Arrays.hashCode(this.exifValueAsShort);
@@ -155,7 +154,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     public static final class Builder {
         private String  dataId;
         private String  imageId;
-        private long    exifTag;
+        private short   exifTag;
         private short[] exifPath;
         private byte[]  exifValueAsByte;
         private int[]   exifValueAsInt;
@@ -198,7 +197,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
          *            field to set
          * @return builder
          */
-        public Builder withExifTag(long exifTag) {
+        public Builder withExifTag(short exifTag) {
             this.exifTag = exifTag;
             return this;
         }

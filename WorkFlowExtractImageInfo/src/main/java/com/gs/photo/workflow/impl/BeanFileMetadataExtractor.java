@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.gs.photo.workflow.IFileMetadataExtractor;
 import com.gs.photo.workflow.IIgniteDAO;
+import com.gs.photo.workflow.exif.IExifService;
 import com.gs.photos.workflow.metadata.AbstractTemplateTag;
 import com.gs.photos.workflow.metadata.FileChannelDataInput;
 import com.gs.photos.workflow.metadata.IFD;
@@ -31,6 +32,9 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
     @Autowired
     protected IIgniteDAO    iIgniteDAO;
 
+    @Autowired
+    protected IExifService  exifService;
+
     @Override
     public Collection<IFD> readIFDs(String key) {
         return this.iIgniteDAO.get(key)
@@ -46,7 +50,7 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
             int offset = this.readHeader(fcdi);
             for (RootTiffTag rtt : RootTiffTag.values()) {
-                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt);
+                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt, this.exifService);
                 offset = dtp.createSimpleTiffFields(fcdi, offset, ifdContext);
                 allIfds.add(dtp.getRootIFD());
                 if (offset == 0) {

@@ -5,6 +5,8 @@ public interface ToByte<T> {
 
     T fromByte(byte[] parameter, int offset, int length);
 
+    T fromByte(byte[] parameter);
+
     ToByte<T> getInstance();
 
 }

@@ -13,6 +13,9 @@ public interface ToByteBoolean extends ToByte<Boolean> {
     public default Boolean fromByte(byte[] parameter, int offset, int length) { return parameter[offset] == -1; }
 
     @Override
+    public default Boolean fromByte(byte[] parameter) { return parameter[0] == -1; }
+
+    @Override
     public default ToByte<Boolean> getInstance() { return new ToByteBoolean() {}; }
 
 }

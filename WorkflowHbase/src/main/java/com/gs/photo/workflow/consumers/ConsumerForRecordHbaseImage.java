@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.consumers;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.LogManager;
@@ -19,8 +21,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.workflow.IIgniteDAO;
-import com.gs.photo.workflow.dao.GenericDAO;
 import com.gs.photo.workflow.dao.HbaseImageThumbnailDAO;
+import com.gs.photo.workflow.dao.IHbaseImagesOfAlbumDAO;
+import com.gs.photo.workflow.dao.IHbaseImagesOfKeyWordsDAO;
+import com.gs.photo.workflow.hbase.dao.GenericDAO;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.events.WfEvent;
@@ -45,6 +49,12 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
 
     @Autowired
     protected HbaseImageThumbnailDAO                hbaseImageThumbnailDAO;
+
+    @Autowired
+    protected IHbaseImagesOfAlbumDAO                hbaseAlbumDAO;
+
+    @Autowired
+    protected IHbaseImagesOfKeyWordsDAO             hbaseKeyWordsDAO;
 
     @Override
     public void processIncomingMessages() {
@@ -73,12 +83,27 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
 
     @Override
     protected void postRecord(List<HbaseImageThumbnail> v, Class<HbaseImageThumbnail> k) {
-
         Stream<HbaseImageThumbnail> stream = v.stream()
             .filter((h) -> { return ((h.getVersion() == 0) || (h.getVersion() == 1)); });
-        Map<String, HbaseImageThumbnail> convertedStream = stream
+        Map<String, HbaseImageThumbnail> convertedStream = stream.map((hbi) -> {
+            try {
+                this.hbaseAlbumDAO.updateMetadata(hbi, null);
+                this.hbaseKeyWordsDAO.updateMetadata(hbi, null);
+                return hbi;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        })
             .collect(Collectors.toMap(x -> x.getImageId() + "-" + x.getVersion(), x -> x));
         this.igniteDao.save(convertedStream, HbaseImageThumbnail.class);
+
+        try {
+            this.hbaseAlbumDAO.flush();
+            this.hbaseKeyWordsDAO.flush();
+        } catch (IOException e) {
+            ConsumerForRecordHbaseImage.LOGGER.warn("Error when flushing {} ", ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
         v.stream()
             .collect(Collectors.groupingBy((hb) -> this.getGroupKey(hb), Collectors.counting()))
             .forEach(
@@ -106,5 +131,8 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
     protected <X extends HbaseImageThumbnail> GenericDAO<X> getGenericDAO(Class<X> k) {
         return (GenericDAO<X>) this.hbaseImageThumbnailDAO;
     }
+
+    @Override
+    protected void flushAllDAO() throws IOException { this.hbaseImageThumbnailDAO.flush(); }
 
 }

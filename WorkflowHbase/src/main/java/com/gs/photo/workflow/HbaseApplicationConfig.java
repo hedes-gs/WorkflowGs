@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Scope;
 
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.HbaseImageThumbnailKey;
 
 @Configuration
 @ImportResource("file:${user.home}/config/cluster-client.xml")
@@ -131,9 +132,44 @@ public class HbaseApplicationConfig extends AbstractApplicationConfig {
             IsolationLevel.READ_COMMITTED.toString()
                 .toLowerCase(Locale.ROOT));
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 500);
+        settings.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 10 * 104 * 1024);
 
         Consumer<String, HbaseData> consumer = new KafkaConsumer<>(settings);
         return consumer;
+    }
+
+    @Bean(name = "consumerForRecordingImageFromTopicHbaseImageThumbnailKey")
+    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
+    Consumer<String, HbaseImageThumbnailKey> consumerForRecordingImageFromTopicHbaseImageThumbnailKey(
+        @Value("${application.id}") String applicationId,
+        @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${group.id}") String groupId
+    ) {
+        Properties settings = new Properties();
+        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        settings.put(
+            ConsumerConfig.ISOLATION_LEVEL_CONFIG,
+            IsolationLevel.READ_COMMITTED.toString()
+                .toLowerCase(Locale.ROOT));
+        settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 50);
+        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
+        settings.put("sasl.kerberos.service.name", "kafka");
+        settings.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER);
+        settings.put(
+            ConsumerConfig.ISOLATION_LEVEL_CONFIG,
+            IsolationLevel.READ_COMMITTED.toString()
+                .toLowerCase(Locale.ROOT));
+        settings.put(
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+            AbstractApplicationConfig.HBASE_IMAGE_THUMBNAIL_KEY_DESERIALIZER);
+        settings.put(ConsumerConfig.GROUP_ID_CONFIG, groupId + "-" + HbaseApplicationConfig.CONSUMER_IMAGE);
+        settings
+            .put(ConsumerConfig.CLIENT_ID_CONFIG, "tr-" + applicationId + "-" + HbaseApplicationConfig.CONSUMER_IMAGE);
+        Consumer<String, HbaseImageThumbnailKey> consumer = new KafkaConsumer<>(settings);
+        return consumer;
+
     }
 
     @Bean(name = "consumerForRecordingImageFromTopic")

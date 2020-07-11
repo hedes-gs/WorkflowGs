@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import com.gs.photo.workflow.IFileMetadataExtractor;
 import com.gs.photo.workflow.IIgniteDAO;
 import com.gs.photo.workflow.IProcessIncomingFiles;
 import com.gs.photo.workflow.TimeMeasurement;
+import com.gs.photo.workflow.exif.IExifService;
 import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
 import com.gs.photo.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.internal.KafkaManagedWfEvent;
@@ -51,6 +53,9 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
     @Autowired
     protected IBeanTaskExecutor               beanTaskExecutor;
+
+    @Autowired
+    protected IExifService                    exifService;
 
     @Value("${topic.topicDupFilteredFile}")
     protected String                          topicDupFilteredFile;
@@ -143,7 +148,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 BeanProcessIncomingFile.LOGGER.info("Offset to commit {} ", offsets.toString());
                 this.producerForTransactionPublishingOnExifOrImageTopic.sendOffsetsToTransaction(offsets, this.groupId);
                 this.producerForTransactionPublishingOnExifOrImageTopic.commitTransaction();
-                this.beanTaskExecutor.execute(() -> this.cleanIgniteCache(eventsToSend.keySet()));
+                this.beanTaskExecutor.execute(() -> this.cleanIgniteCache(new HashSet<>(eventsToSend.keySet())));
             } catch (IOException e) {
             }
         }
@@ -258,12 +263,27 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                         .getTagValue())
                 .withPath(path)
                 .build();
-            BeanProcessIncomingFile.LOGGER.debug(
-                "[EVENT][{}] publishing an exif {} ",
-                tiffKey,
-                f.getTiffField()
-                    .getData() != null ? f.getTiffField()
-                        .getData() : " <null> ");
+            try {
+                BeanProcessIncomingFile.LOGGER.debug(
+                    "[EVENT][{}] publishing an exif {} ",
+                    tiffKey,
+                    this.exifService.toString(
+                        f.getTiffField()
+                            .getIfdTagParent(),
+                        f.getTiffField()
+                            .getTag(),
+                        f.getTiffField()
+                            .getData()));
+            } catch (Exception e) {
+                BeanProcessIncomingFile.LOGGER.error(
+                    "Unable to process {} - {} - {} ",
+                    f.getTiffField()
+                        .getTag(),
+                    f.getTiffField()
+                        .getIfdTagParent(),
+                    f.getTiffField()
+                        .getData());
+            }
             ExchangedTiffData.Builder builder = ExchangedTiffData.builder();
             Object internalData = f.getTiffField()
                 .getData();

@@ -28,15 +28,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.workflow.ApplicationConfig;
 import com.gs.photo.workflow.IFileMetadataExtractor;
 import com.gs.photo.workflow.IIgniteDAO;
+import com.gs.photo.workflow.exif.ExifServiceImpl;
 import com.gs.photo.workflow.impl.BeanFileMetadataExtractor;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = { NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class })
+@SpringBootTest(classes = {
+        ExifServiceImpl.class, NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class,
+        ApplicationConfig.class })
 public class TestBeanFileReadIFDs {
     private Logger                   LOGGER = LogManager.getLogger(TestBeanFileReadIFDs.class);
 

@@ -1,7 +1,7 @@
 package com.gs.photos.workflow.metadata.fields;
 
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.FileChannelDataInput;
-import com.gs.photos.workflow.metadata.Tag;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
 public abstract class SimpleAbstractField<T> {
@@ -24,7 +24,7 @@ public abstract class SimpleAbstractField<T> {
 
     public int getOffset() { return this.offset; }
 
-    public abstract TiffField<T> createTiffField(Tag tag, short tagValue);
+    public abstract TiffField<T> createTiffField(Tag ifdParent, Tag tag, short tagValue);
 
     public short getType() { return this.type; }
 

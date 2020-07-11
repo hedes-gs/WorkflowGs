@@ -1,5 +1,76 @@
 [ {
   "type" : "record",
+  "name" : "ComponentEvent",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "status",
+    "type" : {
+      "type" : "enum",
+      "name" : "ComponentStatus",
+      "namespace" : "com.workflow.model.events.ComponentEvent",
+      "symbols" : [ "ALIVE", "STOPPED" ]
+    }
+  }, {
+    "name" : "componentType",
+    "type" : {
+      "type" : "enum",
+      "name" : "ComponentType",
+      "namespace" : "com.workflow.model.events.ComponentEvent",
+      "symbols" : [ "SCAN", "WF_HBASE" ]
+    }
+  }, {
+    "name" : "message",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "componentName",
+    "type" : "string"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "ImportEvent",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "keyWords",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.List"
+    } ],
+    "default" : null
+  }, {
+    "name" : "scanners",
+    "type" : {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.List"
+    }
+  }, {
+    "name" : "album",
+    "type" : "string"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "importName",
+    "type" : "string"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "WfDataClass",
   "namespace" : "com.workflow.model.events",
   "fields" : [ ]
@@ -42,7 +113,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -63,7 +135,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, "com.workflow.model.events.WfEventStep", {
   "type" : "record",
@@ -138,7 +211,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -161,11 +235,40 @@
     "name" : "compressedFile",
     "type" : "boolean"
   }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "importEvent",
+    "type" : "com.workflow.model.events.ImportEvent"
+  }, {
     "name" : "dataCreationDate",
     "type" : "long"
   }, {
     "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseAlbum",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "albumName",
     "type" : "string"
+  }, {
+    "name" : "description",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "nbOfImages",
+    "type" : "int"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -176,7 +279,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -216,7 +320,10 @@
   "namespace" : "com.workflow.model",
   "fields" : [ {
     "name" : "exifTag",
-    "type" : "long"
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "exifPath",
     "type" : {
@@ -281,7 +388,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -292,7 +400,10 @@
     "type" : "string"
   }, {
     "name" : "exifTag",
-    "type" : "long"
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "exifPath",
     "type" : {
@@ -347,7 +458,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -383,6 +495,24 @@
   }, {
     "name" : "cardId",
     "type" : "int"
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageAlbum",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "album",
+    "type" : "string"
+  }, {
+    "name" : "description",
+    "type" : "string"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -432,6 +562,36 @@
   } ]
 }, {
   "type" : "record",
+  "name" : "HbaseImageForAlbumOrKeywords",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "tumbnail",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "HbaseImageImportProject",
   "namespace" : "com.workflow.model",
   "fields" : [ {
@@ -460,7 +620,203 @@
     "type" : "long"
   }, {
     "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageKeywordsKey",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "keyWord",
     "type" : "string"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfAlbum",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "albumName",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "thumbnail",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfKeywords",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "keyword",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "thumbnail",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfRatings",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "ratings",
+    "type" : "int"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "thumbnail",
+    "type" : {
+      "type" : "bytes",
+      "java-class" : "[B"
+    }
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -509,11 +865,149 @@
     "name" : "importDate",
     "type" : "long"
   }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "albums",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
+    "default" : null
+  }, {
+    "name" : "keyWords",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
+    "default" : null
+  }, {
+    "name" : "ratings",
+    "type" : "int"
+  }, {
     "name" : "dataCreationDate",
     "type" : "long"
   }, {
     "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageThumbnailKey",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
     "type" : "string"
+  }, {
+    "name" : "version",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseKeywords",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "keyword",
+    "type" : "string"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseRatings",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "ratings",
+    "type" : "int"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",
@@ -542,7 +1036,8 @@
     "type" : "long"
   }, {
     "name" : "dataId",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   } ]
 }, {
   "type" : "record",

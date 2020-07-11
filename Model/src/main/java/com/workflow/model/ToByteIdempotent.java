@@ -12,6 +12,9 @@ public interface ToByteIdempotent extends ToByte<byte[]> {
     }
 
     @Override
+    default byte[] fromByte(byte[] parameter) { return parameter; }
+
+    @Override
     public default ToByte<byte[]> getInstance() { return new ToByteIdempotent() {}; }
 
 }

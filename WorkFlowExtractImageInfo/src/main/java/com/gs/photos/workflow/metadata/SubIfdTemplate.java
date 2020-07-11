@@ -3,9 +3,10 @@ package com.gs.photos.workflow.metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.gs.photo.workflow.exif.IExifService;
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.IFD.IFDContext;
 import com.gs.photos.workflow.metadata.fields.SimpleAbstractField;
-import com.gs.photos.workflow.metadata.tiff.TiffTag;
 
 public class SubIfdTemplate extends AbstractTemplateTag {
 
@@ -29,14 +30,13 @@ public class SubIfdTemplate extends AbstractTemplateTag {
     public SubIfdTemplate(
         Tag tag,
         IFD ifdParent,
-        SimpleAbstractField<int[]> data
+        SimpleAbstractField<int[]> data,
+        IExifService exifService
     ) {
         super(tag,
-            ifdParent);
+            ifdParent,
+            exifService);
         this.data = data;
     }
-
-    @Override
-    protected Tag convertTagValueToTag(short tagValue) { return TiffTag.fromShort(tagValue); }
 
 }
