@@ -8,7 +8,7 @@
 		<groupId>com.gs.photos</groupId>
 		<artifactId>WorkFlow</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>../WorkFlow/pom.xml</relativePath>		
+		<relativePath>../WorkFlow/pom.xml</relativePath>
 	</parent>
 	<artifactId>WorkFlowHbase</artifactId>
 
@@ -44,7 +44,7 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-server-nodemanager</artifactId>
 			<exclusions>
-				<!-- Exclude due to compatibility issue with ignite which is using  cache-api.jar -->
+				<!-- Exclude due to compatibility issue with ignite which is using cache-api.jar -->
 				<exclusion>
 					<groupId>org.apache.geronimo.specs</groupId>
 					<artifactId>geronimo-jcache_1.0_spec</artifactId>
@@ -111,7 +111,6 @@
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>HbaseFilters</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hbase</groupId>

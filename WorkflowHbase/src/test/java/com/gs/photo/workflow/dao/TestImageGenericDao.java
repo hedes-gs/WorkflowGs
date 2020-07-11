@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.kafka.clients.producer.Producer;
 import org.junit.After;
@@ -51,6 +54,9 @@ public class TestImageGenericDao {
     }
 
     protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(short v) {
+        HashSet<String> albums = new HashSet<>(Arrays.asList("album1", "album2"));
+        HashSet<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
+
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
             .withCreationDate(1)
             .withImageId("ABCDEF")
@@ -61,6 +67,18 @@ public class TestImageGenericDao {
             .withThumbName("Thumbnail_1.jpg")
             .withHeight(1024)
             .withWidth(768)
+            .withAlbums(albums)
+            .withAperture(new int[] { 0, 1 })
+            .withArtist("Mwa")
+            .withCamera("Alpha9")
+            .withCopyright("gs")
+            .withFocalLens(new int[] { 2, 3 })
+            .withImportName("Mon import")
+            .withIsoSpeed((short) 2)
+            .withKeyWords(keywords)
+            .withLens(new byte[] { 3, 4 })
+            .withShiftExpo(new int[] { 4, 5 })
+            .withSpeed(new int[] { 6, 7 })
             .build();
         return hbaseData;
     }
@@ -69,6 +87,7 @@ public class TestImageGenericDao {
     public void test002_shouldRecordInHbaseWithKey1ABCDEFVersion2() throws IOException {
         HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail((short) 2);
         this.hbaseImageThumbnailDAO.put(hbaseData);
+        this.hbaseImageThumbnailDAO.flush();
     }
 
     @Test
@@ -143,6 +162,7 @@ public class TestImageGenericDao {
             data.add(hbaseData);
         }
         this.hbaseImageThumbnailDAO.put(data);
+        this.hbaseImageThumbnailDAO.flush();
     }
 
     @Test
@@ -209,6 +229,7 @@ public class TestImageGenericDao {
                 .toEpochMilli(),
             (short) 1);
         this.hbaseImageThumbnailDAO.put(hbaseData);
+        this.hbaseImageThumbnailDAO.flush();
 
         List<HbaseImageThumbnail> scanValue = this.hbaseImageThumbnailDAO.getThumbNailsByDate(
             LocalDateTime.now()
@@ -219,6 +240,7 @@ public class TestImageGenericDao {
             0);
         Assert.assertEquals(1, scanValue.size());
         this.hbaseImageThumbnailDAO.delete(hbaseData);
+        this.hbaseImageThumbnailDAO.flush();
 
     }
 
@@ -238,7 +260,106 @@ public class TestImageGenericDao {
         this.hbaseImageThumbnailDAO.truncate();
     }
 
+    @Test
+    public void test020_shouldReturn1RecordWhenUsingFilterNextRow() throws IOException {
+        this.hbaseImageThumbnailDAO.truncate();
+        final long epochMilli = LocalDateTime.now()
+            .toInstant(ZoneOffset.ofTotalSeconds(0))
+            .toEpochMilli();
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("0123456", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("12345", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("9ABCDEF", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+
+        this.hbaseImageThumbnailDAO.flush();
+        HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("12345", epochMilli, (short) 1);
+        List<HbaseImageThumbnail> scanValue = this.hbaseImageThumbnailDAO.getNextThumbNailOf(hbaseData);
+        Assert.assertEquals(1, scanValue.size());
+        Assert.assertEquals(
+            "9ABCDEF",
+            scanValue.get(0)
+                .getImageId()
+                .trim());
+        Assert.assertEquals(
+            1,
+            scanValue.get(0)
+                .getVersion());
+
+        this.hbaseImageThumbnailDAO.truncate();
+    }
+
+    @Test
+    public void test020_shouldReturn1RecordWhenUsingFilterPreviousRow() throws IOException {
+        this.hbaseImageThumbnailDAO.truncate();
+        final long epochMilli = LocalDateTime.now()
+            .toInstant(ZoneOffset.ofTotalSeconds(0))
+            .toEpochMilli();
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("0123456", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("12345", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+        for (int k = 0; k < 10; k++) {
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("9ABCDEF", epochMilli, (short) k);
+            this.hbaseImageThumbnailDAO.put(hbaseData);
+        }
+
+        this.hbaseImageThumbnailDAO.flush();
+
+        HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("12345", epochMilli, (short) 1);
+        List<HbaseImageThumbnail> scanValue = this.hbaseImageThumbnailDAO.getPreviousThumbNailOf(hbaseData);
+        Assert.assertEquals(1, scanValue.size());
+        Assert.assertEquals(
+            "0123456",
+            scanValue.get(0)
+                .getImageId()
+                .trim());
+        Assert.assertEquals(
+            1,
+            scanValue.get(0)
+                .getVersion());
+        this.hbaseImageThumbnailDAO.truncate();
+    }
+
+    @Test
+    public void test021_shouldReturnCorrectsKeyWordsWhenRecordsAreAssociated() throws IOException {
+        try {
+            Set<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
+            this.hbaseImageThumbnailDAO.truncate();
+            final long epochMilli = LocalDateTime.now()
+                .toInstant(ZoneOffset.ofTotalSeconds(0))
+                .toEpochMilli();
+            HbaseImageThumbnail hbaseDataRecordedData = this
+                .buildVersionHbaseImageThumbnail("0123456", epochMilli, (short) 1);
+            this.hbaseImageThumbnailDAO.put(hbaseDataRecordedData);
+            this.hbaseImageThumbnailDAO.flush();
+
+            HbaseImageThumbnail hbaseData = this.buildVersionHbaseImageThumbnail("0123456", epochMilli, (short) 1);
+
+            HbaseImageThumbnail scanValue = this.hbaseImageThumbnailDAO.get(hbaseData);
+            Assert.assertNotNull(scanValue);
+            Assert.assertEquals(keywords, scanValue.getKeyWords());
+        } finally {
+            this.hbaseImageThumbnailDAO.truncate();
+        }
+    }
+
     protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(long creationDate, short v) {
+        HashSet<String> albums = new HashSet<>(Arrays.asList("album1", "album2"));
+        HashSet<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
             .withCreationDate(creationDate)
             .withImageId("ABCDEF")
@@ -251,6 +372,50 @@ public class TestImageGenericDao {
             .withWidth(768)
             .withOriginalHeight(5000)
             .withOriginalHeight(7000)
+            .withAlbums(albums)
+            .withAperture(new int[] { 0, 1 })
+            .withArtist("Mwa")
+            .withCamera("Alpha9")
+            .withCopyright("gs")
+            .withFocalLens(new int[] { 2, 3 })
+            .withImportName("Mon import")
+            .withIsoSpeed((short) 2)
+            .withKeyWords(keywords)
+            .withLens(new byte[] { 3, 4 })
+            .withShiftExpo(new int[] { 4, 5 })
+            .withSpeed(new int[] { 6, 7 })
+            .build();
+
+        return hbaseData;
+    }
+
+    protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(String id, long creationDate, short v) {
+        HashSet<String> albums = new HashSet<>(Arrays.asList("album1", "album2"));
+        HashSet<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
+        HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
+            .withCreationDate(creationDate)
+            .withImageId(id)
+            .withVersion(v)
+            .withImageName("Mon Image")
+            .withPath("Mon path")
+            .withThumbnail(new byte[] { 0, 1, 2, 3, 4 })
+            .withThumbName("Thumbnail_1.jpg")
+            .withHeight(1024)
+            .withWidth(768)
+            .withOriginalHeight(5000)
+            .withOriginalHeight(7000)
+            .withAlbums(albums)
+            .withAperture(new int[] { 0, 1 })
+            .withArtist("Mwa")
+            .withCamera("Alpha9")
+            .withCopyright("gs")
+            .withFocalLens(new int[] { 2, 3 })
+            .withImportName("Mon import")
+            .withIsoSpeed((short) 2)
+            .withKeyWords(keywords)
+            .withLens(new byte[] { 3, 4 })
+            .withShiftExpo(new int[] { 4, 5 })
+            .withSpeed(new int[] { 6, 7 })
             .build();
         return hbaseData;
     }

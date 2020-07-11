@@ -56,7 +56,7 @@ public class BeanCopyFile implements ICopyFile {
     @Value("${group.id}")
     protected String                          groupId;
 
-    @Value("${topic.topicDupDilteredFile}")
+    @Value("${topic.topicDupFilteredFile}")
     protected String                          topicDupDilteredFile;
 
     @Value("${topic.topicLocalFileCopy}")

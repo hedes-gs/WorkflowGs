@@ -17,6 +17,8 @@ public class TimeMeasurement implements Closeable {
         protected float  duration;
         protected String name;
 
+        public float getDuration() { return this.duration; }
+
         @Override
         public String toString() { return "[ " + this.name + " : " + this.duration + " sec]"; }
 

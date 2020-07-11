@@ -15,5 +15,8 @@ public interface ToByteShort extends ToByte<Short> {
     public default Short fromByte(byte[] parameter, int offset, int length) { return Bytes.toShort(parameter, offset); }
 
     @Override
+    public default Short fromByte(byte[] parameter) { return Bytes.toShort(parameter); }
+
+    @Override
     public default ToByte<Short> getInstance() { return new ToByteShort() {}; }
 }

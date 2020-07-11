@@ -3,8 +3,8 @@ package com.gs.photos.workflow.metadata.fields;
 import java.io.IOException;
 import java.util.Arrays;
 
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.FileChannelDataInput;
-import com.gs.photos.workflow.metadata.Tag;
 import com.gs.photos.workflow.metadata.tiff.RationalField;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
@@ -22,8 +22,8 @@ public class SimpleRationalField extends SimpleAbstractField<int[]> {
         type); }
 
     @Override
-    public TiffField<int[]> createTiffField(Tag tag, short tagValue) {
-        TiffField<int[]> ratField = new RationalField(tag, this, tagValue);
+    public TiffField<int[]> createTiffField(Tag ifdParent, Tag tag, short tagValue) {
+        TiffField<int[]> ratField = new RationalField(ifdParent, tag, this, tagValue);
         return ratField;
     }
 

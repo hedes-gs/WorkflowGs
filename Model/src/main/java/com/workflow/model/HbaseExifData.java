@@ -13,8 +13,8 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     private static final long serialVersionUID = 1L;
 
     // Row key
-    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
-    protected long            exifTag;
+    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
+    protected short           exifTag;
     @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
     protected short[]         exifPath;
     @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
@@ -44,6 +44,15 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     @Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 107)
     protected byte[]          thumbnail        = {};
 
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw e;
+        }
+    }
+
     @Generated("SparkTools")
     private HbaseExifData(Builder builder) {
         super(builder.dataId,
@@ -66,9 +75,9 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     public HbaseExifData() { super(null,
         0); }
 
-    public long getExifTag() { return this.exifTag; }
+    public short getExifTag() { return this.exifTag; }
 
-    public void setExifTag(long exifTag) { this.exifTag = exifTag; }
+    public void setExifTag(short exifTag) { this.exifTag = exifTag; }
 
     public String getImageId() { return this.imageId; }
 
@@ -105,7 +114,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         final int prime = 31;
         int result = super.hashCode();
         result = (prime * result) + Arrays.hashCode(this.exifPath);
-        result = (prime * result) + (int) (this.exifTag ^ (this.exifTag >>> 32));
+        result = (prime * result) + (this.exifTag ^ (this.exifTag >>> 32));
         result = (prime * result) + ((this.imageId == null) ? 0 : this.imageId.hashCode());
         return result;
     }
@@ -147,7 +156,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     public static final class Builder {
         private String  dataId;
         private long    dataCreationDate;
-        private long    exifTag;
+        private short   exifTag;
         private short[] exifPath;
         private String  imageId;
         private byte[]  exifValueAsByte;
@@ -192,7 +201,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
          *            field to set
          * @return builder
          */
-        public Builder withExifTag(long exifTag) {
+        public Builder withExifTag(short exifTag) {
             this.exifTag = exifTag;
             return this;
         }

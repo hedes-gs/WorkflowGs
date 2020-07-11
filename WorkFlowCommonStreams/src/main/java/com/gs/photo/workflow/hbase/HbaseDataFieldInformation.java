@@ -25,8 +25,13 @@ public class HbaseDataFieldInformation implements Comparable<HbaseDataFieldInfor
         return convertedValue;
     }
 
-    public Object fromByte(byte[] buffer, int offset, int length) {
-        Object value = this.transformInstance.fromByte(buffer, offset, length);
+    public <T> T fromByte(byte[] buffer, int offset, int length) {
+        T value = (T) this.transformInstance.fromByte(buffer, offset, length);
+        return value;
+    }
+
+    public <T> T fromByte(byte[] buffer) {
+        T value = (T) this.transformInstance.fromByte(buffer);
         return value;
     }
 

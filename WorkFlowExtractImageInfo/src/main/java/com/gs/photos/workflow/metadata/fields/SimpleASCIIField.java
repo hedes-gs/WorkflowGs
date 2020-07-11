@@ -2,8 +2,8 @@ package com.gs.photos.workflow.metadata.fields;
 
 import java.io.IOException;
 
+import com.gs.photo.workflow.exif.Tag;
 import com.gs.photos.workflow.metadata.FileChannelDataInput;
-import com.gs.photos.workflow.metadata.Tag;
 import com.gs.photos.workflow.metadata.tiff.ASCIIField;
 import com.gs.photos.workflow.metadata.tiff.TiffField;
 
@@ -20,8 +20,8 @@ public class SimpleASCIIField extends SimpleAbstractField<String> {
         type); }
 
     @Override
-    public TiffField<String> createTiffField(Tag tag, short tagValue) {
-        TiffField<String> ascIIField = new ASCIIField(tag, this, tagValue);
+    public TiffField<String> createTiffField(Tag ifdParent, Tag tag, short tagValue) {
+        TiffField<String> ascIIField = new ASCIIField(ifdParent, tag, this, tagValue);
         return ascIIField;
     }
 

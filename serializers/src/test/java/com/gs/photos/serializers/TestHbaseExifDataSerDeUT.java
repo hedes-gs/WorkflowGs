@@ -35,7 +35,7 @@ public class TestHbaseExifDataSerDeUT {
             .withWidth(1024)
             .withDataId("hbe-id")
             .withImageId("<img>")
-            .withExifTag(25)
+            .withExifTag((short) 25)
             .withExifValueAsByte(new byte[] { 0, 1, 2 })
             .withThumbName("img-1")
             .withExifPath(new short[] { 0, 1, 2, 3, 4 })

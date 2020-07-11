@@ -32,15 +32,18 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.workflow.ApplicationConfig;
 import com.gs.photo.workflow.IBeanTaskExecutor;
 import com.gs.photo.workflow.IIgniteDAO;
+import com.gs.photo.workflow.exif.ExifServiceImpl;
 import com.gs.photos.workflow.metadata.NameServiceTestConfiguration;
 import com.workflow.model.files.FileToProcess;
 
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
-        NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class, BeanProcessIncomingFile.class })
+        ExifServiceImpl.class, NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class,
+        BeanProcessIncomingFile.class, ApplicationConfig.class })
 public class BeanProcessIncomingFileTest {
     @MockBean
     protected IBeanTaskExecutor               beanTaskExecutor;
