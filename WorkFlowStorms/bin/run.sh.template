@@ -1,4 +1,6 @@
 #!/bin/bash
 export JAR_FILE={{ jar_name }}
 cd ~{{ user_to_create }}
+./bin/kill.sh
+sleep 2
 ~storm/latest/bin/storm jar lib/${JAR_FILE} org.apache.storm.flux.GsFlux config/config.yaml

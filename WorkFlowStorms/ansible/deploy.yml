@@ -30,6 +30,12 @@
         mode: 0744
     - name: build bin file from template
       template:
+        src: ../bin/kill.sh.template
+        dest: ~{{ user_to_create }}/bin/kill.sh
+        owner: "{{ user_to_create }}"
+        mode: 0744
+    - name: build bin file from template
+      template:
         src: ../config/log4j.xml.template
         dest: ~{{ user_to_create }}/config/log4j.xml
         owner: "{{ user_to_create }}"
