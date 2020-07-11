@@ -1,0 +1,103 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Download hbase "{{ hbase_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: Download hbase {{ hbase_version }}
+      get_url: 
+        url: http://www-eu.apache.org/dist/hbase/{{ hbase_version }}/hbase-{{ hbase_version }}-bin.tar.gz
+        owner: "{{ user_to_create }}"
+        dest: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
+        mode: 0644
+        force: no
+    - name: Unpack the tar
+      unarchive:
+        src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
+        dest: "{{ hbase_install_folder }}"
+        remote_src: true
+    - name: remove symlink /usr/local/kafka to this version
+      file:
+        path: "{{ hbase_install_folder }}/latest"
+        state: absent
+    - name: Symlink {{ hbase_install_folder }}/latest to this version
+      file:
+        path: "{{ hbase_install_folder }}"
+        src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}"
+        dest: "{{ hbase_install_folder }}/latest"
+        state: link
+        force: yes
+    - name: Create folder {{ hbase_install_folder }}/latest/logs
+      file:
+        path: "{{ hbase_install_folder }}/latest/logs"
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: stop-hdfs
+      shell:  "rm -f {{ hbase_install_folder }}/latest/logs/*"
+
+    - name: Create folders .~hbase/.ssh
+      file:
+        path: ~hbase/.ssh
+        state: directory
+        mode: 0700
+        owner: "{{ user_to_create }}"
+        group: nogroup
+    - name: deploy keys and files
+      template:
+        src: ./tools/hbase/authorized_keys
+        dest: "~hbase/.ssh/authorized_keys"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/hbase/hbase-site.xml
+      vars:
+          hbase_slave_host: "{{ slaves_ids[inventory_hostname].value }}"
+      template:
+        src: ./tools/hbase/hbase-site.xml
+        dest: "~hbase/latest/conf"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600  
+    - name: deploy ./tools/hbase/hbase-env.sh
+      template:
+        src: ./tools/hbase/hbase-env.sh
+        dest: "~hbase/latest/conf"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy ./tools/hbase/regionservers on master
+      template:
+        src: ./tools/hbase/regionservers
+        dest: "~hbase/latest/conf"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+    - name: deploy keys and files
+      template:
+        src: ./tools/hbase/bashrc
+        dest: "~hbase/.bashrc"
+        owner: "{{ user_to_create }}"
+        group: nogroup
+        mode: 0600
+ 
+  vars:
+    ansible_become_pass: granada01
+    hbase_version: 2.2.0
+    user_to_create: hbase
+    hbase_install_folder: /home/hbase
+    PWD: "{{ lookup('env', 'PWD') }}"
+    slaves_ids:
+      192.168.1.200:
+        value: "hbase-slave-0"
+      192.168.1.201:
+        value: "hbase-slave-1"
+      192.168.1.202:
+        value: "hbase-slave-2"
+      192.168.1.203:
+        value: "hbase-slave-3"
+      192.168.1.205:
+        value: "hbase-slave-4"
+      192.168.1.206:
+        value: "hbase-slave-5"

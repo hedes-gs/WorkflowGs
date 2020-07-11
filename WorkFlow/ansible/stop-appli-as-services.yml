@@ -16,6 +16,7 @@
         - wf_proc_and_publish_exif_data
         - wf_proc_and_publish_photo
         - wf_scan
+        - wf_copy_files
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"

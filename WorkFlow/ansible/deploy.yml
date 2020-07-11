@@ -38,6 +38,18 @@
         dest: ~{{ user_to_create }}/config/application.properties
         owner: "{{ user_to_create }}"
         mode: 0666
+    - name: copy prometheus template
+      copy:
+        src: ../lib/jmx_prometheus_javaagent-0.12.0.jar
+        dest: ~{{ user_to_create }}/lib/jmx_prometheus_javaagent-0.12.0.jar
+        owner: "{{ user_to_create }}"
+        mode: 0644
+    - name: build config prometheus file from template
+      template:
+        src: ../config/config_prometheus.yml.template
+        dest: ~{{ user_to_create }}/config/config_prometheus.yml
+        owner: "{{ user_to_create }}"
+        mode: 0644
     - name: build run.sh file from template
       template:
         src: ../bin/run.sh.template
