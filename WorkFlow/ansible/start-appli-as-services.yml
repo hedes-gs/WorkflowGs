@@ -18,6 +18,12 @@
         - wf_scan
         - wf_copy_files
         
+    - name: Start hbase
+      shell: systemctl start {{item}}_appli.service
+      loop:
+        - wf_hbase
+      when: inventory_hostname == "192.168.1.206" or inventory_hostname == "192.168.1.203" or inventory_hostname  == "192.168.1.201"
+        
     - name: Start appli
       shell: systemctl start {{item}}_appli.service
       loop:
@@ -29,8 +35,8 @@
         - wf_hbase
         - wf_proc_and_publish_exif_data
         - wf_proc_and_publish_photo
-#        - wf_scan
-#        - wf_copy_files
+        - wf_scan
+        - wf_copy_files
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"

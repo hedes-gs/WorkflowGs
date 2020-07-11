@@ -1,0 +1,7 @@
+[ignite]
+name=Apache Ignite
+baseurl=http://apache.org/dist/ignite/rpm/
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=http://apache.org/dist/ignite/KEYS
+       http://bintray.com/user/downloadSubjectPublicKey?username=bintray
