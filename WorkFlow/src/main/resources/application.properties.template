@@ -4,7 +4,7 @@ topic.scan-output-child-parent=topic-scan-output-file-child-with-parent
 topic.scan-output=topic-file-found-in-scan
 topic.topicCopyOtherFile=topic-copy-other-file
 topic.topicLocalFileCopy=topic-local-file-copy
-topic.topicCountOfImagesPerDate=topic.topic-count-of-images-per-date
+topic.topicCountOfImagesPerDate=topic-count-of-images-per-date
 topic.topicDupFilteredFile=topic-dup-filtered-file
 topic.topicDuplicateKeyImageFound=topic-duplicate-key-image-found
 topic.topicEvent=topic-event
@@ -20,6 +20,8 @@ topic.topicThumb=topic-thumb
 topic.topicTransformedThumb=topic-transformed-thumb
 topic.topicExifSizeOfImageStream=topic-exif-size-of-image-stream
 topic.processedThumbTopic=
+topic.topicComponentStatus=topic-component-status
+topic.topicImportEvent=topic-import-event
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
@@ -46,6 +48,7 @@ transaction.timeout=180000
 application.gs.principal={{ application_gs_principal }}
 application.gs.keytab={{ application_gs_keytab }}
 hbase.namespace=prod
+hbase.table.stats.name={{ hbase_table_stats_name | default('<not used>') }} 
 
 
 #Configuration
@@ -53,7 +56,8 @@ consumer.string.string={{ consumer_string_string | default('false') }}
 producer.string.string={{ producer_string_string | default('false') }}
 kafka.consumer.batchSizeForParallelProcessingIncomingRecords={{ kafka_consumer_batchSizeForParallelProcessingIncomingRecords | default('15') }} 
 kafka.consumer.batchRecords={{ kafka_consumer_batchRecords | default('500') }}
-kafka.stream.commit.interval.ms={{ kafka_stream_commit_interval_ms | default('50000') }}
+kafka.producer.maxBlockMsConfig={{ kafka_producer_maxBlockMsConfig| default('180000') }}
+kafka.stream.commit.interval.ms={{ kafka_stream_commit_interval_ms | default('UNSET') }}
 kafka.stream.metadata.age.ms={{ kafka_stream_metadata_age_ms | default('60000') }}
 kafka.stream.nb.of.threads={{ kafka_stream_nb_of_threads | default('UNSET') }}
 
@@ -62,7 +66,8 @@ ignite.is.used={{ignite_is_used | default('false') }}
 ignite.caches={{ ignite_caches | default('unset') }} 
 ignite.defaultCache={{ ignite_default_cache | default('unset') }}
 deduplication.cleanup=true
-
+exifservice.is.used={{exifservice_is_used | default('false') }}
+exif.files={{exif_files| default('not used') }}
 
 wf.spring.datasource.driver-class-name=org.postgresql.Driver
 wf.spring.datasource.url=jdbc:postgresql://192.168.1.205/postgres
@@ -74,9 +79,9 @@ unit-test=false
 
 
 wf.hdfs.rootPath={{ wf_hdfs_rootPath | default('unset')  }}
+scan.heartBeatTimeInSeconds={{scan_heartBeatTimeInSeconds| default('not used') }}
 
-
-kafka.pollTimeInMillisecondes={{ kafka_poll_time_in_millisecondes| default('10000') }}
+kafka.pollTimeInMillisecondes={{ kafka_poll_time_in_millisecondes| default('86400000') }}
 kafkastreams.windowsOfEventsInMs={{ kafkastreams_windows_of_events_in_ms| default('20') }}
 
 

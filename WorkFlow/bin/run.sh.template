@@ -1,4 +1,4 @@
 #!/bin/bash
 export JAR_FILE={{ jar_name }}
 cd /home/{{ user_to_create }}
-/usr/lib/jvm/jdk-13.0.2+8/bin/java --enable-preview -Xlog:gc -XX:+UseParallelGC  -XX:ParallelGCThreads=2 -XX:InitiatingHeapOccupancyPercent=65 -Xmx384m -Xms384m -Djava.net.preferIPv4Stack=true -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -jar lib/${JAR_FILE} 
+/usr/lib/jvm/jdk-13.0.2+8/bin/java --enable-preview  -javaagent:/home/{{ user_to_create }}/lib/jmx_prometheus_javaagent-0.12.0.jar={{promotheus_port}}://home/{{ user_to_create }}/config/config_prometheus.yml   -Xlog:gc*,gc+phases*,gc+region*=debug:file=/home/{{ user_to_create }}/logs/{{ user_to_create }}_log.gc:time:filecount=10:filesize=1024 -XX:+UseParallelGC  -XX:ParallelGCThreads=2 -XX:InitiatingHeapOccupancyPercent=65 -Xmx{{application_xmx | default('512m')  }} -Xms{{application_xms | default('512m')  }} -Djava.net.preferIPv4Stack=true -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -jar lib/${JAR_FILE} 

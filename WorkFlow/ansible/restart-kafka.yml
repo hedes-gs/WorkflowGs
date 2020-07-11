@@ -4,6 +4,12 @@
   tasks:
     - debug:
         msg: "demarrage {{ PWD }}"
+    - name: build run.sh from template
+      copy:
+        src: ./tools/kafka/run.sh
+        dest: "{{ kafka_install_folder }}/latest/bin/run.sh"
+        owner: root
+        mode: 0755
     - name: current_working_directory
       shell: pwd
       register: current_working_directory
@@ -12,3 +18,4 @@
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
+    kafka_install_folder: /opt/kafka

@@ -1,0 +1,16 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Clean logs !!
+    - name: remove log dirs
+      file:
+        path: '/home/{{item}}/stream-dir'
+        state: absent
+      loop:
+        - wf_dupcheck
+        - wf_proc_and_publish_exif_data
+        - wf_proc_and_publish_photo
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"
