@@ -68,7 +68,8 @@ function App() {
                 container: {
                     flexWrap: 'nowrap'
                 }
-            }
+            },
+
         },
 
 

@@ -19,11 +19,13 @@ const keywordService: KeywordsService = new KeywordsServiceImpl();
 
 export type ThunkResult<R> = ThunkAction<R, ApplicationState, undefined, ApplicationEvent>;
 export type ApplicationThunkDispatch = ThunkDispatch<ApplicationState, undefined, ApplicationEvent>;
-const UnknownSelectedEventValue = "0";
-const PayloadIntervalDatesSelectedEvent = "1";
-const SelectedImageEvent = '16';
-const AddKeywordEvent = '15'
-const SaveImageEvent = '12'
+export const UnknownSelectedEventValue = "0";
+export const PayloadIntervalDatesSelectedEvent = "1";
+export const PayloadLoadedImagesEvent = '2'
+export const SaveImageEvent = '12'
+export const AddKeywordEvent = '15'
+export const SelectedImageEvent = '16';
+export const LoadPagesOfImagesEvent = '21' 
 export const DownloadSelectedImageEvent = '22'
 
 export interface UnknownSelectedEvent {
@@ -37,14 +39,16 @@ export interface PayloadIntervalDatesSelectedEvent {
     payload: {
         min: number,
         max: number,
-        intervallType: string
+        intervallType: string,
+        titleOfImagesList: string
     }
 }
 export interface PayloadLoadedImagesEvent {
-    payloadType: "2",
+    payloadType: typeof PayloadLoadedImagesEvent,
     type: Actions,
     payload: {
         images: PageOfImageDto,
+        titleOfImagesList: string
     }
 }
 
@@ -85,7 +89,8 @@ export interface LastImagesAreLoadedEvent {
     payloadType: "7",
     type: Actions,
     payload: {
-        pageNumber: number
+        pageNumber: number,
+        titleOfImagesList: string
     }
 }
 
@@ -198,10 +203,11 @@ export interface LoadImagesOfKeywordEvent {
 }
 
 export interface LoadPagesOfImagesEvent {
-    payloadType: "21",
+    payloadType: typeof LoadPagesOfImagesEvent ,
     type: Actions,
     payload: {
-        url: string
+        url: string,
+        titleOfImagesList: string
     }
 }
 
@@ -250,25 +256,27 @@ const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     payload: {}
 };
 
-export const loadImagesInterval = (min: number, max: number, intervallType: string): ApplicationEvent => {
+export const loadImagesInterval = (min: number, max: number, intervallType: string,titleOfImagesList: string): ApplicationEvent => {
     return {
-        payloadType: "1",
+        payloadType: PayloadIntervalDatesSelectedEvent,
         type: Actions.IMAGES_LOADING,
         payload: {
             min,
             max,
-            intervallType
+            intervallType,
+            titleOfImagesList: titleOfImagesList
         }
     }
 };
 
 
-export const loadImages = (json: string): ApplicationEvent => {
+export const loadImages = (json: string, titleOfImagesList: string): ApplicationEvent => {
     return {
         payloadType: "2",
         type: Actions.IMAGES_ARE_LOADED,
         payload: {
-            images: toPageOfImageDto(json)
+            images: toPageOfImageDto(json),
+            titleOfImagesList: titleOfImagesList 
         }
     }
 };
@@ -304,12 +312,13 @@ export const loadExif = (json: string): ApplicationEvent => {
     }
 };
 
-export const loadLastImages = (pageNumber: number): ApplicationEvent => {
+export const loadLastImages = (pageNumber: number,titleOfImagesList: string): ApplicationEvent => {
     return {
         payloadType: "7",
         type: Actions.LAST_IMAGES_LOADING,
         payload: {
-            pageNumber: pageNumber
+            pageNumber: pageNumber,
+            titleOfImagesList: titleOfImagesList
         }
     }
 };
@@ -474,12 +483,13 @@ export const loadImagesOfKeyword = (url: string): ApplicationEvent => {
     }
 };
 
-export const loadPagesOfImages = (url: string): ApplicationEvent => {
+export const loadPagesOfImages = (url: string,titleOfImagesList: string): ApplicationEvent => {
     return {
-        payloadType: "21",
+        payloadType: LoadPagesOfImagesEvent,
         type: Actions.IMAGES_LOADING,
         payload: {
-            url: url
+            url: url,
+            titleOfImagesList: titleOfImagesList
         }
     }
 };
@@ -513,7 +523,7 @@ export function dispatchLastImages(x: ApplicationEvent): ThunkResult<Promise<App
         if (x.payloadType == '7') {
             dispatch(x);
             return imagesService.getLastImages(x.payload.pageNumber)
-                .then(json => dispatch(loadImages(json)));
+                .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)));
 
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
@@ -522,10 +532,10 @@ export function dispatchLastImages(x: ApplicationEvent): ThunkResult<Promise<App
 
 export function dispatchNewSelectedDateImagesInterval(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == '1') {
+        if (x.payloadType == PayloadIntervalDatesSelectedEvent ) {
             dispatch(x);
             return imagesService.getImagesByDate(MomentTimezone(x.payload.min), MomentTimezone(x.payload.max), x.payload.intervallType)
-                .then(json => dispatch(loadImages(json)));
+                .then(json => dispatch(loadImages(json,x.payload.titleOfImagesList)));
 
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
@@ -665,10 +675,10 @@ export function dispatchLoadImagesOfKeyword(x: ApplicationEvent): ThunkResult<Pr
 
 export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == '21') {
+        if (x.payloadType == LoadPagesOfImagesEvent ) {
             dispatch(x);
             return imagesService.getPageOfImages(x.payload.url)
-                .then(json => dispatch(loadImages(json)))
+                .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };
@@ -676,10 +686,10 @@ export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<Appli
 
 export function dispatchPrevPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == '21') {
+        if (x.payloadType == LoadPagesOfImagesEvent ) {
             dispatch(x);
             return imagesService.getPageOfImages(x.payload.url)
-                .then(json => dispatch(loadImages(json)))
+                .then(json => dispatch(loadImages(json,x.payload.titleOfImagesList)))
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };

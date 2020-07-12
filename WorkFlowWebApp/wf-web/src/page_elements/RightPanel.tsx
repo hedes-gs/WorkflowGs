@@ -310,7 +310,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             const imgHeight = this.getImgHeight(img);
             const imgWidth = this.getImgWidth(img);
 
-            const ratioH = viewportHeight / imgHeight;
+            const ratioH = viewportHeight / imgHeight / 1.1;
             const ratioW = imgWidth > viewportWidth / 2.1 ? viewportWidth / 2.1 / imgWidth : viewportWidth / imgWidth;
             const ratio = Math.min(ratioH, ratioW);
             return {
@@ -392,13 +392,14 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
         const imgWidth = newDimension.newWidth;
         const imgHeihgt = newDimension.newHeight;
         const ratingValue = img != null ? img.ratings : 0
+        const orienation = img != null ? img.orientation : 0;
         const exifTableStyle: CSSProperties = {
-            width: imgWidth
+            width: orienation != 8 ? imgWidth / 1.5 : imgWidth
         }
         const exifDToesToDisplay = exifDToes != null ? exifDToes : new ExifDToes();
         return (
             <div >
-                <Grid container direction="row" style={{ height: this.state.height - 80 }}>
+                <Grid container direction="row" >
                     <Grid item >
                         <div style={{ margin: '5px' }}>
                             <div style={{ position: 'relative' }}>
@@ -475,7 +476,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                 color: 'rgba(255, 255, 255, 0.3)',
                                 paddingRight: '15px',
                                 paddingLeft: '15px',
-                                marginTop: '0.2em',
+                                marginTop: '0.4em',
                                 paddingBottom: '0.2em',
                                 borderRadius: '5px',
                                 fontSize: '0.8em'
@@ -572,8 +573,8 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
 const mapStateToProps = (state: ClientApplicationState, previousState: RightPanelProps): RightPanelProps => {
 
     if (state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading) {
-        globalId++;
         return {
+            isOpenedStateId: ++globalId,
             isLoading: true
         };
     }

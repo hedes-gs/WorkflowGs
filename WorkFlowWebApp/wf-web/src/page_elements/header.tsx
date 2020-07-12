@@ -3,6 +3,8 @@ import Button from '@material-ui/core/Button';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import TextField from '@material-ui/core/TextField';
+import Input from '@material-ui/core/Input';
+
 
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
@@ -57,8 +59,8 @@ export interface HeaderProps {
     min?: number;
     max?: number;
     intervallType?: string;
-    loadLastImages?(pageNumber: number): ApplicationEvent;
-    loadPagesOfImages?(url: string): ApplicationEvent;
+    loadLastImages?(pageNumber: number, title: string): ApplicationEvent;
+    loadPagesOfImages?(url: string, title: string): ApplicationEvent;
     thunkActionToLoadAllImages?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     loadImagesInterval?(min: number, max: number, intervallType: string): ApplicationEvent;
     thunkAction?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
@@ -123,13 +125,13 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
     handleNextPage() {
         if (this.props.loadPagesOfImages != null && this.props.thunkActionToLoadNextPage != null && this.props.urlNext != null) {
-            this.props.thunkActionToLoadNextPage(this.props.loadPagesOfImages(this.props.urlNext))
+            this.props.thunkActionToLoadNextPage(this.props.loadPagesOfImages(this.props.urlNext,'Page '+(this.state.pageNumber+1)+' de vos photos '))
         }
     }
 
     handlePreviousPage() {
         if (this.props.loadPagesOfImages != null && this.props.thunkActionToLoadNextPage != null && this.props.urlPrevious != null) {
-            this.props.thunkActionToLoadNextPage(this.props.loadPagesOfImages(this.props.urlPrevious))
+            this.props.thunkActionToLoadNextPage(this.props.loadPagesOfImages(this.props.urlPrevious,'Page '+(this.state.pageNumber-1)+' de vos photos '))
         }
     }
 
@@ -191,19 +193,19 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
     handleRefresh() {
         if (this.props.loadLastImages != null && this.props.thunkActionToLoadAllImages != null) {
-            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(this.state.pageNumber))
+            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(this.state.pageNumber,'Page '+this.state.pageNumber+' de vos photos ' ))
         }
     }
 
     handleNextPageNumberUpdate(pageNumber: number) {
         if (this.props.loadLastImages != null && this.props.thunkActionToLoadAllImages != null) {
-            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(pageNumber))
+            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(pageNumber,'Page '+this.state.pageNumber+' de vos photos '))
         }
     }
 
     handlePreviousPageNumberUpdate(pageNumber: number) {
         if (this.props.loadLastImages != null && this.props.thunkActionToLoadAllImages != null) {
-            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(pageNumber))
+            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(pageNumber,'Page '+this.state.pageNumber+' de vos photos '))
         }
     }
 
@@ -217,7 +219,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     }
     componentDidMount() {
         if (this.props.loadLastImages != null && this.props.thunkActionToLoadAllImages != null) {
-            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(1))
+            this.props.thunkActionToLoadAllImages(this.props.loadLastImages(1,'Dernières images'))
         }
         this.limitDatesService.getLimits((lim?: MinMaxDatesDto) => {
             this.setState({
@@ -352,7 +354,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                                     <IconButton edge="start" color="inherit" style={{ float: 'right' }} >
                                         <SkipPreviousIcon onClick={this.handlePreviousPage} />
                                     </IconButton>
-                                    <TextField label="Page courante" value={pageNumber} onChange={(e) => this.handlePageNumberUpdate(e.target.value)} />
+                                    <TextField label="Page courante" value={pageNumber} onChange={(e) => { this.handlePageNumberUpdate(e.target.value); }} />
                                 </div>
                             </div>
                             <div style={{
