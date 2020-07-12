@@ -16,7 +16,8 @@ const initialState: ApplicationSate = {
         images: null,
         urlNext: '',
         urlPrev: '',
-        pageNumber: 1
+        pageNumber: 1,
+        titleOfImagesList: ''
     },
     imagesToDelete: {},
     imagesToDownload: {},
@@ -133,7 +134,8 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                                 images: action.payload.images,
                                 pageNumber: action.payload.images.page != null ? action.payload.images.page.number : 1,
                                 urlNext: action.payload.images._links != null && action.payload.images._links.next != null ? action.payload.images._links.next.href : '',
-                                urlPrev: action.payload.images._links != null && action.payload.images._links.prev != null ? action.payload.images._links.prev.href : ''
+                                urlPrev: action.payload.images._links != null && action.payload.images._links.prev != null ? action.payload.images._links.prev.href : '',
+                                titleOfImagesList: action.payload.titleOfImagesList
                             },
 
                         },
@@ -162,7 +164,8 @@ export function reducerInformImagesAreLoaded(state: ApplicationSate, action: App
                         {
                             imagesLoaded: {
                                 state: 'LOADED...',
-                                images: action.payload.images
+                                images: action.payload.images,
+                                titleOfImagesList: action.payload.titleOfImagesList
                             }
                         });
                     return returnedTarget;

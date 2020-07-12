@@ -21,7 +21,8 @@ import {
     addKeywords,
     deleteKeywords,
     dispatchAddKeywordEvent,
-    dispatchDeleteKeywordEvent
+    dispatchDeleteKeywordEvent,
+    selectedImageIsLoading
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
 import { toArrayOfString, ImageDto } from '../model/ImageDto';
@@ -32,7 +33,7 @@ interface ReactAutosuggestRemoteProp {
     addKeywords?(img: ImageDto, keyword: string): ApplicationEvent,
     deleteKeywords?(img: ImageDto, keyword: string): ApplicationEvent,
     thunkActionForAddKeyword?: (x: ApplicationEvent) => Promise<ApplicationEvent>
-    thunkActionForDeleteKeyword?: (x: ApplicationEvent) => Promise<ApplicationEvent>
+    thunkActionForDeleteKeyword?: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => Promise<ApplicationEvent>
 
 }
 
@@ -86,18 +87,20 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
     renderInput(inputProps: any) {
         const { value, onChange, ref, ...other } = inputProps
         return (
-            <ChipInput
-                clearInputValueOnChange
-                onUpdateInput={(e) => this.handleChipInputChange(e, inputProps.onChange)}
-                value={this.state.value}
-                inputRef={inputProps.ref}
-                onAdd={inputProps.onAdd}
-                onDelete={this.handleDeleteChip}
-                fullWidthInput={true}
-                style={{ width: '100%', paddingTop: '0.6em' }}
+            <div style={{ marginTop: '0.8em', marginBottom: '0.2em' }}>
+                <ChipInput
+                    clearInputValueOnChange
+                    onUpdateInput={(e) => this.handleChipInputChange(e, inputProps.onChange)}
+                    value={this.state.value}
+                    inputRef={inputProps.ref}
+                    onAdd={inputProps.onAdd}
+                    onDelete={this.handleDeleteChip}
+                    fullWidthInput={true}
+                    style={{ width: '100%', paddingTop: '0.6em' }}
 
-                {...other}
-            />
+                    {...other}
+                />
+            </div>
         )
     }
 
@@ -189,8 +192,14 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
     }
 
     handleDeleteChip(chip: string, index: number) {
-        if (this.props.thunkActionForDeleteKeyword != null && this.props.image != null) {
-            this.props.thunkActionForDeleteKeyword(deleteKeywords(this.props.image, chip));
+        if (this.props.thunkActionForDeleteKeyword != null &&
+            this.props.image != null &&
+            this.props.image._links != null &&
+            this.props.image._links.self != null &&
+            this.props.image._links._exif != null) {
+            this.props.thunkActionForDeleteKeyword(
+                deleteKeywords(this.props.image, chip),
+                selectedImageIsLoading(this.props.image._links.self.href, this.props.image._links._exif.href));
         }
 
     };
@@ -262,7 +271,8 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
             const r = dispatchAddKeywordEvent(x);
             return dispatch(r);
         },
-        thunkActionForDeleteKeyword: (x: ApplicationEvent) => {
+        thunkActionForDeleteKeyword: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
+            dispatch(loadingEvent);
             const r = dispatchDeleteKeywordEvent(x);
             return dispatch(r);
         }
