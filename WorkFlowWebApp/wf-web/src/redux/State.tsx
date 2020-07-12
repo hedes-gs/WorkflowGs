@@ -12,6 +12,7 @@ export interface ApplicationState {
         urlNext: string,
         urlPrev: string,
         pageNumber: number,
+        titleOfImagesList: string,
         images: PageOfImageDto | null
     }
     imagesToDelete: {

@@ -16,13 +16,14 @@ import { ParagraphTitle } from '../styles';
 import { DisplayInside } from 'csstype';
 import { ClientApplicationState } from '../redux/State';
 import { Divider } from '@material-ui/core';
+import MomentTimeZone, { Moment } from 'moment-timezone';
 
 
 interface LeftPanelProps {
     isOpenedStateId?: number | 0;
     drawerIsOpen?: boolean | null;
     onClose?(): void | null;
-    loadImagesInterval?(min: number, max: number, intervallType: string): ApplicationEvent;
+    loadImagesInterval?(min: number, max: number, intervallType: string, title: string): ApplicationEvent;
     thunkAction?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
 }
 interface LeftPanelState {
@@ -51,7 +52,11 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
 
     handleIntervalSelected(min: number, max: number, intervallType: string) {
         if (this.props.loadImagesInterval != null && this.props.thunkAction != null) {
-            this.props.thunkAction(this.props.loadImagesInterval(min, max, intervallType))
+            this.setState({
+                drawerIsOpen: false,
+                minMaxDates: this.state.minMaxDates
+            });
+            this.props.thunkAction(this.props.loadImagesInterval(min, max, intervallType, ' Photos du ' + MomentTimeZone(min).format('ddd DD MMMM YYYY, HH:mm:ss') ))
         }
     }
 
@@ -85,7 +90,7 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
         if (props.isOpenedStateId != state.isOpenedStateId) {
             return {
                 isOpenedStateId: props.isOpenedStateId,
-                drawerIsOpen: props.drawerIsOpen,
+                drawerIsOpen: state.drawerIsOpen,
                 minMaxDates: state.minMaxDates
             }
         } else {
