@@ -88,3 +88,22 @@ kafkastreams.windowsOfEventsInMs={{ kafkastreams_windows_of_events_in_ms| defaul
 events.collectorEventsBufferSize={{ events_collector_events_buffer_size| default('unset') }}
 events.collectorEventsTimeWindow={{ events_collector_events_timewindow| default('unset') }}
 
+
+
+cache.images.size={{ cache_images_size | default('unset')  }}
+cache.jpegimages.size={{ cache_jpegimages_size | default('unset')  }}
+cache.images.expireinseconds={{ cache_images_expireinseconds | default('unset')  }}
+cache.jpegimages.expireinseconds={{ cache_jpegimages_expireinseconds | default('unset')  }}
+cache.images.name={{ cache_images_name | default('unset')  }}
+cache.jpegimages.name={{ cache_jpegimages_name | default('unset')  }}
+cache.jpegimages.version.name={{ cache_jpegimages_version_name | default('unset')  }}
+cache.exif.size={{ cache_exif_size | default('unset')  }}
+cache.exif.name={{ cache_exi_.name | default('unset')  }}
+cache.exif.expireinseconds={{ cache_exif_expireinseconds | default('unset')  }}
+
+spring.main.allow-bean-definition-overriding=true
+
+spring.mvc.date-format={{ spring_mvc_date_format | default('unset')  }}
+spring.jackson.date-format={{ spring_jackson_date_format | default('unset')  }}
+exif.files=sony-exif.csv,standard-exif.csv
+exifservice.is.used=true
