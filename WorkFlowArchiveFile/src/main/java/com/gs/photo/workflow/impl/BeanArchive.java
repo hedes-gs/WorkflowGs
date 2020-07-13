@@ -99,7 +99,7 @@ public class BeanArchive implements IBeanArchive {
                     System.currentTimeMillis())) {
                 Map<TopicPartition, OffsetAndMetadata> offsets = KafkaUtils
                     .toStreamV2(
-                        kafkaPollTimeInMillisecondes,
+                        this.kafkaPollTimeInMillisecondes,
                         this.consumerForTransactionalReadOfFileToProcess,
                         this.batchSizeForParallelProcessingIncomingRecords,
                         true,
@@ -184,7 +184,9 @@ public class BeanArchive implements IBeanArchive {
         try {
             final PrivilegedAction<KafkaManagedWfEvents> action = () -> {
                 try {
-                    final Path folderWhereRecord = new Path(new Path(this.rootPath, localDate.toString()),
+                    final Path folderWhereRecord = new Path(new Path(this.rootPath,
+                        value.getImportEvent()
+                            .getImportName()),
                         new Path(key));
                     boolean dirIsCreated = this.hdfsFileSystem.mkdirs(folderWhereRecord);
                     if (dirIsCreated) {

@@ -70,7 +70,7 @@ public class TestKeywordsAndAlbum {
     public void test001_countAllShouldReturn2WhenOneHbaseImageThumbnailIsRecordedWith2albums() throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test001");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfAlbumDAO.flush();
         Assert.assertEquals(2, this.hbaseAlbumDAO.countAll());
         this.hbaseImagesOfAlbumDAO.truncate();
@@ -80,7 +80,7 @@ public class TestKeywordsAndAlbum {
     public void test002_countAllOfAlbumShouldReturn1WhenOneHbaseImageThumbnailIsRecordedWith2albums() throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test002");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfAlbumDAO.flush();
         Assert.assertEquals(1, this.hbaseAlbumDAO.countAll("album1"));
         this.hbaseImagesOfAlbumDAO.truncate();
@@ -90,9 +90,9 @@ public class TestKeywordsAndAlbum {
     public void test003_countAllOfAlbumShouldReturn2When2HbaseImageThumbnailIsRecordedWith2albums() throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test003");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfAlbumDAO.flush();
         Assert.assertEquals(2, this.hbaseAlbumDAO.countAll("album1"));
         this.hbaseImagesOfAlbumDAO.truncate();
@@ -103,7 +103,7 @@ public class TestKeywordsAndAlbum {
         throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test004");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfKeyWordsDAO.flush();
         Assert.assertEquals(2, this.hbaseKeywordsDAO.countAll());
         this.hbaseImagesOfKeyWordsDAO.truncate();
@@ -115,7 +115,7 @@ public class TestKeywordsAndAlbum {
         TestKeywordsAndAlbum.LOGGER.info("... test005");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
         this.hbaseImagesOfKeyWordsDAO.truncate();
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfKeyWordsDAO.flush();
         Assert.assertEquals(1, this.hbaseKeywordsDAO.countAll("keyword2"));
         this.hbaseImagesOfKeyWordsDAO.truncate();
@@ -125,9 +125,9 @@ public class TestKeywordsAndAlbum {
     public void test006_countAllOfAlbumShouldReturn2When2HbaseImageThumbnailIsRecordedWith2albums() throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test006");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfKeyWordsDAO.flush();
         Assert.assertEquals(2, this.hbaseKeywordsDAO.countAll("keyword2"));
         this.hbaseImagesOfKeyWordsDAO.truncate();
@@ -138,9 +138,9 @@ public class TestKeywordsAndAlbum {
         throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test007");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("123456", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 2);
-        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi2, null);
+        this.hbaseImagesOfAlbumDAO.updateMetadata(hbi2, (HbaseImageThumbnail) null);
         this.hbaseImagesOfAlbumDAO.flush();
         List<HbaseImagesOfAlbum> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
         Assert.assertEquals(2, images.size());
@@ -156,9 +156,9 @@ public class TestKeywordsAndAlbum {
         throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test008");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("123456", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi2, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi2, (HbaseImageThumbnail) null);
         this.hbaseImagesOfKeyWordsDAO.flush();
         List<HbaseImagesOfKeywords> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
         Assert.assertEquals(2, images.size());
@@ -194,9 +194,9 @@ public class TestKeywordsAndAlbum {
         throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test010");
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 2);
-        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, null);
+        this.hbaseImagesOfKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
         this.hbaseImagesOfKeyWordsDAO.flush();
         final List<HbaseKeywords> all = this.hbaseKeywordsDAO.getAll();
         Assert.assertEquals(2, all.size());

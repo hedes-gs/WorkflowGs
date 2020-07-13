@@ -87,8 +87,8 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
             .filter((h) -> { return ((h.getVersion() == 0) || (h.getVersion() == 1)); });
         Map<String, HbaseImageThumbnail> convertedStream = stream.map((hbi) -> {
             try {
-                this.hbaseAlbumDAO.updateMetadata(hbi, null);
-                this.hbaseKeyWordsDAO.updateMetadata(hbi, null);
+                this.hbaseAlbumDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
+                this.hbaseKeyWordsDAO.updateMetadata(hbi, (HbaseImageThumbnail) null);
                 return hbi;
             } catch (IOException e) {
                 throw new RuntimeException(e);

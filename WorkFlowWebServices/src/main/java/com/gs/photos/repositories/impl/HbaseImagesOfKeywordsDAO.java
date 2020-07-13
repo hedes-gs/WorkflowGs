@@ -19,6 +19,7 @@ import com.gs.photo.workflow.hbase.dao.HbaseImagesOfMetadataDAO;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfKeywords;
 import com.workflow.model.ModelConstants;
+import com.workflow.model.dtos.ImageDto;
 
 @Component
 public class HbaseImagesOfKeywordsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfKeywords, String>
@@ -181,6 +182,10 @@ public class HbaseImagesOfKeywordsDAO extends HbaseImagesOfMetadataDAO<HbaseImag
         if (cmpOfCreationDate == 0) { return t1.getImageId()
             .compareTo(t2.getImageId()); }
         return (int) cmpOfCreationDate;
+    }
+
+    @Override
+    public void deleteReferences(ImageDto imageToDelete) { // TODO Auto-generated method stub
     }
 
 }

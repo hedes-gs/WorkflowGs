@@ -141,4 +141,15 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
         return (int) cmpOfCreationDate;
     }
 
+    @Override
+    public List<HbaseImagesOfRatings> getAllImagesOfMetadata(Integer key, int first, int pageSize) { // TODO
+                                                                                                     // Auto-generated
+                                                                                                     // method stub
+        return null;
+    }
+
+    @Override
+    public void updateMetadata(HbaseImageThumbnail hbi, Integer medataData) { // TODO Auto-generated method stub
+    }
+
 }

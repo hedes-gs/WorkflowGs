@@ -394,4 +394,8 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public void decrement(OffsetDateTime creationDate) { // TODO Auto-generated method stub
+    }
 }
