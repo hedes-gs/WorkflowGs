@@ -3,7 +3,7 @@ export const ServiceConfig = {
     returnRejectedPromiseOnError: true,
     withCredentials: false,
     timeout: 30000,
-	baseURL: "http://localhost:8080/",
+	baseURL: "http://192.168.1.128:8080/",
     headers: {
         common: {
             "Cache-Control": "no-cache, no-store, must-revalidate",

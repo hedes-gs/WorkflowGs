@@ -22,7 +22,7 @@
 		<guava.version>28.0-jre</guava.version>
 		<javax.annotation.version>1.3.2</javax.annotation.version>
 		<hadoop.version>3.2.1</hadoop.version>
-		<JAVA_8_HOME>E:/eclipse-workspace-gsworkflow/java/adopt-jdk-8.0.252.09-hotspot</JAVA_8_HOME>
+		<JAVA_8_HOME>D:/jdk-8.0.252.09-hotspot</JAVA_8_HOME>
 	</properties>
 	<packaging>pom</packaging>
 	<modules>

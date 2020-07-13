@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gs.photos.repositories.IImageRepository;
+import com.gs.photos.services.KafkaConsumerService;
 import com.gs.photos.web.assembler.ImageAssembler;
 import com.gs.photos.web.assembler.PageImageAssembler;
 import com.workflow.model.dtos.ImageDto;
@@ -43,12 +44,16 @@ import com.workflow.model.dtos.MinMaxDatesDto;
 @CrossOrigin(origins = "*")
 public class ImageController {
 
-    protected static Logger    LOGGER = LoggerFactory.getLogger(ImageController.class);
-    @Autowired
-    protected IImageRepository repository;
+    protected static Logger        LOGGER = LoggerFactory.getLogger(ImageController.class);
 
     @Autowired
-    protected ImageAssembler   imageAssembler;
+    protected KafkaConsumerService kafkaConsumerService;
+
+    @Autowired
+    protected IImageRepository     repository;
+
+    @Autowired
+    protected ImageAssembler       imageAssembler;
 
     public ImageController() {}
 
@@ -61,6 +66,28 @@ public class ImageController {
     @GetMapping("/images/count/all")
     public @ResponseBody ResponseEntity<Long> countAll() throws IOException {
         return ResponseEntity.ok(this.repository.countAll());
+    }
+
+    @GetMapping("/images/checkout/{id}/{creationDate}/{version}")
+    public @ResponseBody ResponseEntity<?> checkout(
+        @PathVariable String id,
+        @PathVariable OffsetDateTime creationDate,
+        @PathVariable int version
+    ) throws IOException {
+        Optional<ImageDto> img = this.repository.findById(creationDate, id, version);
+        img.ifPresent((i) -> this.kafkaConsumerService.checkout(i));
+        return ResponseEntity.ok(this.imageAssembler.toModel(img.orElseThrow()));
+    }
+
+    @GetMapping("/images/delete/{id}/{creationDate}/{version}")
+    public @ResponseBody ResponseEntity<?> delete(
+        @PathVariable String id,
+        @PathVariable OffsetDateTime creationDate,
+        @PathVariable int version
+    ) throws IOException {
+        Optional<ImageDto> img = this.repository.findById(creationDate, id, version);
+        img.ifPresent((i) -> this.kafkaConsumerService.checkout(i));
+        return ResponseEntity.ok(this.imageAssembler.toModel(img.orElseThrow()));
     }
 
     @GetMapping("/images/count/all/{intervallType}")

@@ -15,6 +15,8 @@ public interface IImageRepository {
 
     Optional<ImageDto> findById(OffsetDateTime creationDate, String id, int version);
 
+    void delete(OffsetDateTime creationDate, String id, int version);
+
     Optional<ImageDto> getNextImageById(OffsetDateTime creationDate, String id, int version);
 
     Optional<ImageDto> getPreviousImageById(OffsetDateTime creationDate, String id, int version);

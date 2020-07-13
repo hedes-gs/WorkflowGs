@@ -14,6 +14,7 @@ import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.controllers.GsPageImpl;
 import com.gs.photos.repositories.IHbaseImageThumbnailDAO;
 import com.gs.photos.repositories.IImageRepository;
+import com.gs.photos.services.IHFileServices;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.MinMaxDatesDto;
 
@@ -28,6 +29,9 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Autowired
     protected IHbaseImagesOfKeywordsDAO ihbaseImagesOfKeywordsDAO;
+
+    @Autowired
+    protected IHFileServices            ihFileServices;
 
     @Override
     public long countAll() throws IOException {
@@ -298,6 +302,15 @@ public class ImageRepositoryImpl implements IImageRepository {
         String keyword
     ) {
         return null;
+    }
+
+    @Override
+    public void delete(OffsetDateTime creationDate, String id, int version) {
+        final ImageDto imageToDelete = this.hbaseImageThumbnailDAO.findById(creationDate, id, version);
+        this.ihFileServices.delete(imageToDelete);
+        this.hbaseImageThumbnailDAO.delete(creationDate, id, version);
+        this.ihbaseStatsDAO.decrement(creationDate);
+        this.ihbaseImagesOfKeywordsDAO.deleteReferences(imageToDelete);
     }
 
 }
