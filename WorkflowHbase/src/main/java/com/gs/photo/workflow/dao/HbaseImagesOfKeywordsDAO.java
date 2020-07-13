@@ -60,6 +60,32 @@ public class HbaseImagesOfKeywordsDAO extends HbaseImagesOfMetadataDAO<HbaseImag
         });
     }
 
+    @Override
+    public void updateMetadata(HbaseImageThumbnail hbi, String metaData) {
+        try {
+            HbaseImagesOfKeywords keywordOfHbi = HbaseImagesOfKeywords.builder()
+                .withKeyword(metaData)
+                .withCreationDate(hbi.getCreationDate())
+                .withHeight(hbi.getHeight())
+                .withImageId(hbi.getImageId())
+                .withImageName(hbi.getImageName())
+                .withImportDate(hbi.getImportDate())
+                .withOrientation(hbi.getOrientation())
+                .withOriginalHeight(hbi.getOriginalHeight())
+                .withOriginalWidth(hbi.getOriginalWidth())
+                .withPath(hbi.getPath())
+                .withThumbnail(hbi.getThumbnail())
+                .withThumbName(hbi.getThumbName())
+                .withVersion(hbi.getVersion())
+                .withWidth(hbi.getWidth())
+                .build();
+            super.put(keywordOfHbi, super.getHbaseDataInformation());
+            this.incrementNbOfImages(keywordOfHbi.getKeyword());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     protected void incrementNbOfImages(String album) throws IOException {
         this.hbaseKeywordsDAO.incrementNbOfImages(album);
     }
@@ -146,6 +172,13 @@ public class HbaseImagesOfKeywordsDAO extends HbaseImagesOfMetadataDAO<HbaseImag
         if (cmpOfCreationDate == 0) { return t1.getImageId()
             .compareTo(t2.getImageId()); }
         return (int) cmpOfCreationDate;
+    }
+
+    @Override
+    public List<HbaseImagesOfKeywords> getAllImagesOfMetadata(String key, int first, int pageSize) { // TODO
+                                                                                                     // Auto-generated
+                                                                                                     // method stub
+        return null;
     }
 
 }

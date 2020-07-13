@@ -981,4 +981,8 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     @Override
     public void addAlbum(String id, OffsetDateTime creationDate, int version, String album) {}
 
+    @Override
+    public void delete(OffsetDateTime creationDate, String id, int version) { // TODO Auto-generated method stub
+    }
+
 }

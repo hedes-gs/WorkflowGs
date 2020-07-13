@@ -311,7 +311,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             const imgWidth = this.getImgWidth(img);
 
             const ratioH = viewportHeight / imgHeight / 1.1;
-            const ratioW = imgWidth > viewportWidth / 2.1 ? viewportWidth / 2.1 / imgWidth : viewportWidth / imgWidth;
+            const ratioW = imgWidth > viewportWidth / 2.25 ? viewportWidth / 2.25 / imgWidth : viewportWidth / imgWidth;
             const ratio = Math.min(ratioH, ratioW);
             return {
                 newHeight: ratio < 1 ? imgHeight * ratio : imgHeight,

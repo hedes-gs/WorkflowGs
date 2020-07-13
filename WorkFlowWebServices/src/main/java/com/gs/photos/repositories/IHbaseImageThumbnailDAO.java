@@ -39,4 +39,6 @@ public interface IHbaseImageThumbnailDAO {
 
     Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
 
+    void delete(OffsetDateTime creationDate, String id, int version);
+
 }

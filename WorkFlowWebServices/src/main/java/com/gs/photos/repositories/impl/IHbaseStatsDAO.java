@@ -22,4 +22,6 @@ public interface IHbaseStatsDAO {
 
     List<MinMaxDatesDto> getDatesBetween(OffsetDateTime startTime, OffsetDateTime stopDate, KeyEnumType year)
         throws IOException;
+
+    void decrement(OffsetDateTime creationDate);
 }

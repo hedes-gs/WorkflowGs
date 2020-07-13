@@ -66,6 +66,32 @@ public class HbaseImagesOfAlbumDAO extends HbaseImagesOfMetadataDAO<HbaseImagesO
     }
 
     @Override
+    public void updateMetadata(HbaseImageThumbnail hbi, String metaData) {
+        try {
+            HbaseImagesOfAlbum keywordOfHbi = HbaseImagesOfAlbum.builder()
+                .withAlbumName(metaData)
+                .withCreationDate(hbi.getCreationDate())
+                .withHeight(hbi.getHeight())
+                .withImageId(hbi.getImageId())
+                .withImageName(hbi.getImageName())
+                .withImportDate(hbi.getImportDate())
+                .withOrientation(hbi.getOrientation())
+                .withOriginalHeight(hbi.getOriginalHeight())
+                .withOriginalWidth(hbi.getOriginalWidth())
+                .withPath(hbi.getPath())
+                .withThumbnail(hbi.getThumbnail())
+                .withThumbName(hbi.getThumbName())
+                .withVersion(hbi.getVersion())
+                .withWidth(hbi.getWidth())
+                .build();
+            super.put(keywordOfHbi, super.getHbaseDataInformation());
+            this.incrementNbOfImages(keywordOfHbi.getAlbumName());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public List<HbaseImagesOfAlbum> getAllImagesOfMetadata(String album) {
         List<HbaseImagesOfAlbum> retValue = new ArrayList<>();
         try (
@@ -149,6 +175,12 @@ public class HbaseImagesOfAlbumDAO extends HbaseImagesOfMetadataDAO<HbaseImagesO
         if (cmpOfCreationDate == 0) { return t1.getImageId()
             .compareTo(t2.getImageId()); }
         return (int) cmpOfCreationDate;
+    }
+
+    @Override
+    public List<HbaseImagesOfAlbum> getAllImagesOfMetadata(String key, int first, int pageSize) { // TODO Auto-generated
+                                                                                                  // method stub
+        return null;
     }
 
 }

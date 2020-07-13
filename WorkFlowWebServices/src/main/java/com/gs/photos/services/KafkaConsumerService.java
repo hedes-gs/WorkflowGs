@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.events.ComponentEvent;
 
 @Service
@@ -17,6 +18,10 @@ public class KafkaConsumerService {
 
     @Autowired
     protected SimpMessagingTemplate template;
+
+    public void checkout(ImageDto imgKeyDto) {
+
+    }
 
     @KafkaListener(topics = "${topic.topicComponentStatus}")
     public void consume(@Payload(required = false) ComponentEvent message) {
