@@ -1,0 +1,53 @@
+tag-hex,tag-dec,ifd,key,type,tag-description
+0x0102,258,Sony1,Exif.Sony1.Quality,Long,Image quality
+0x0104,260,Sony1,Exif.Sony1.FlashExposureComp,SRational,Flash exposure compensation in EV
+0x0105,261,Sony1,Exif.Sony1.Teleconverter,Long,Teleconverter Model
+0x0112,274,Sony1,Exif.Sony1.WhiteBalanceFineTune,Long,White Balance Fine Tune Value
+0x0114,276,Sony1,Exif.Sony1.CameraSettings,Undefined,Camera Settings
+0x0115,277,Sony1,Exif.Sony1.WhiteBalance,Long,White balance
+0x0116,278,Sony1,Exif.Sony1.0x0116,Undefined,Unknown
+0x0e00,3584,Sony1,Exif.Sony1.PrintIM,Undefined,PrintIM information
+0x1000,4096,Sony1,Exif.Sony1.MultiBurstMode,Undefined,Multi Burst Mode
+0x1001,4097,Sony1,Exif.Sony1.MultiBurstImageWidth,Short,Multi Burst Image Width
+0x1002,4098,Sony1,Exif.Sony1.MultiBurstImageHeight,Short,Multi Burst Image Height
+0x1003,4099,Sony1,Exif.Sony1.Panorama,Undefined,Panorama
+0x2000,8192,Sony1,Exif.Sony1.0x2000,Undefined,Unknown
+0x2001,8193,Sony1,Exif.Sony1.PreviewImage,Undefined,JPEG preview image
+0x2002,8194,Sony1,Exif.Sony1.0x2002,Long,Unknown
+0x2003,8195,Sony1,Exif.Sony1.0x2003,Ascii,Unknown
+0x2004,8196,Sony1,Exif.Sony1.Contrast,SLong,Contrast
+0x2005,8197,Sony1,Exif.Sony1.Saturation,SLong,Saturation
+0x2006,8198,Sony1,Exif.Sony1.0x2006,SLong,Unknown
+0x2007,8199,Sony1,Exif.Sony1.0x2007,SLong,Unknown
+0x2008,8200,Sony1,Exif.Sony1.0x2008,SLong,Unknown
+0x2009,8201,Sony1,Exif.Sony1.0x2009,Short,Unknown
+0x200a,8202,Sony1,Exif.Sony1.AutoHDR,Long,High Definition Range Mode
+0x3000,12288,Sony1,Exif.Sony1.ShotInfo,Undefined,Shot Information
+0xb000,45056,Sony1,Exif.Sony1.FileFormat,Byte,File Format
+0xb001,45057,Sony1,Exif.Sony1.SonyModelID,Short,Sony Model ID
+0xb020,45088,Sony1,Exif.Sony1.ColorReproduction,Ascii,Color Reproduction
+0xb021,45089,Sony1,Exif.Sony1.ColorTemperature,Long,Color Temperature
+0xb022,45090,Sony1,Exif.Sony1.ColorCompensationFilter,Long,"Color Compensation Filter: negative is green, positive is magenta"
+0xb023,45091,Sony1,Exif.Sony1.SceneMode,Long,Scene Mode
+0xb024,45092,Sony1,Exif.Sony1.ZoneMatching,Long,Zone Matching
+0xb025,45093,Sony1,Exif.Sony1.DynamicRangeOptimizer,Long,Dynamic Range Optimizer
+0xb026,45094,Sony1,Exif.Sony1.ImageStabilization,Long,Image stabilization
+0xb027,45095,Sony1,Exif.Sony1.LensID,Long,Lens identifier
+0xb028,45096,Sony1,Exif.Sony1.MinoltaMakerNote,Undefined,Minolta MakerNote
+0xb029,45097,Sony1,Exif.Sony1.ColorMode,Long,Color Mode
+0xb02b,45099,Sony1,Exif.Sony1.FullImageSize,Long,Full Image Size
+0xb02c,45100,Sony1,Exif.Sony1.PreviewImageSize,Long,Preview image size
+0xb040,45120,Sony1,Exif.Sony1.Macro,Short,Macro
+0xb041,45121,Sony1,Exif.Sony1.ExposureMode,Short,Exposure Mode
+0xb042,45122,Sony1,Exif.Sony1.FocusMode,Short,Focus Mode
+0xb043,45123,Sony1,Exif.Sony1.AFMode,Short,AF Mode
+0xb044,45124,Sony1,Exif.Sony1.AFIlluminator,Short,AF Illuminator
+0xb047,45127,Sony1,Exif.Sony1.JPEGQuality,Short,JPEG Quality
+0xb048,45128,Sony1,Exif.Sony1.FlashLevel,SShort,Flash Level
+0xb049,45129,Sony1,Exif.Sony1.ReleaseMode,Short,Release Mode
+0xb04a,45130,Sony1,Exif.Sony1.SequenceNumber,Short,Shot number in continuous burst mode
+0xb04b,45131,Sony1,Exif.Sony1.AntiBlur,Short,Anti-Blur
+0xb04e,45134,Sony1,Exif.Sony1.LongExposureNoiseReduction,Short,Long Exposure Noise Reduction
+0xb04f,45135,Sony1,Exif.Sony1.DynamicRangeOptimizer,Short,Dynamic Range Optimizer
+0xb052,45138,Sony1,Exif.Sony1.IntelligentAuto,Short,Intelligent Auto
+0xb054,45140,Sony1,Exif.Sony1.WhiteBalance2,Short,White balance 2
