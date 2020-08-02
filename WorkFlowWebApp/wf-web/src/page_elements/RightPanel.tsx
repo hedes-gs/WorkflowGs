@@ -98,7 +98,7 @@ export const styles = {
             backgroundColor: 'inherit'
         },
         '.MuiIconButton-root': {
-            padding: '2px'
+            padding: '12px'
         },
         '.MuiTableCell-sizeSmall': {
             fontSize: '10px'
