@@ -31,6 +31,8 @@ public class ComponentController {
     @PostMapping(path = "/import/start")
     public void startImport(@RequestBody ImportEvent importEvent) throws IOException {
         ComponentController.LOGGER.info("Request to start import with {}", importEvent);
+        importEvent.setForTest(true);
+        importEvent.setNbMaxOfImages(10);
         this.kafkaTemplate.send(this.topicImportEvent, importEvent);
     }
 }

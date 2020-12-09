@@ -8,7 +8,7 @@ public class HbaseImageThumbnailKeySerializer extends AbstractModelSerializerAnd
     implements Serializer<HbaseImageThumbnailKey> {
 
     @Override
-    public byte[] serialize(String topic, HbaseImageThumbnailKey data) { return this.toBytesGeneric(data); }
+    public byte[] serialize(String topic, HbaseImageThumbnailKey data) { return this.toBytesGeneric(topic, data); }
 
     public HbaseImageThumbnailKeySerializer() { super(); }
 

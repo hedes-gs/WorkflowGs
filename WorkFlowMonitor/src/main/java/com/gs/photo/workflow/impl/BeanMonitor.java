@@ -1,30 +1,42 @@
 package com.gs.photo.workflow.impl;
 
-import java.time.Duration;
+import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.stream.StreamSupport;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.workflow.IBeanTaskExecutor;
 import com.gs.photo.workflow.IMonitor;
-import com.gs.photo.workflow.daos.ICacheNodeDAO;
-import com.gs.photo.workflow.daos.IEventDAO;
-import com.workflow.model.events.WfEvent;
+import com.gs.photo.workflow.TimeMeasurement;
+import com.gs.photo.workflow.TimeMeasurement.Step;
+import com.gs.photo.workflow.daos.impl.CacheNodeDAOV2;
+import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
+import com.gs.photo.workflow.internal.KafkaManagedWfEvents;
 import com.workflow.model.events.WfEvents;
 
 @Component
 public class BeanMonitor implements IMonitor {
+
+    protected static final Logger        LOGGER = LoggerFactory.getLogger(BeanMonitor.class);
+
     @Autowired
     protected Consumer<String, WfEvents> consumerOfWfEventsWithStringKey;
     @Autowired
@@ -35,57 +47,88 @@ public class BeanMonitor implements IMonitor {
     private String                       topicEvent;
     @Value("${topic.topicProcessedFile}")
     private String                       topicProcessedFile;
+    @Value("${topic.topicFullyProcessedImage}")
+    private String                       topicFullyProcessedImage;
+
     @Autowired
-    protected IEventDAO                  eventDAO;
-    @Autowired
-    protected ICacheNodeDAO              cacheNodeDAO;
+    protected CacheNodeDAOV2             cacheNodeDAO;
     @Value("${kafka.pollTimeInMillisecondes}")
     protected int                        kafkaPollTimeInMillisecondes;
+
+    @Value("${kafka.consumer.batchSizeForParallelProcessingIncomingRecords}")
+    protected int                        batchSizeForParallelProcessingIncomingRecords;
 
     @PostConstruct
     public void init() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
 
     protected void processInputFile() {
+
         this.consumerOfWfEventsWithStringKey.subscribe(Collections.singleton(this.topicEvent));
-        Iterable<ConsumerRecord<String, WfEvents>> iterable = () -> new Iterator<ConsumerRecord<String, WfEvents>>() {
-            Iterator<ConsumerRecord<String, WfEvents>> records;
+        while (true) {
+            try (
+                TimeMeasurement timeMeasurement = TimeMeasurement
+                    .of("BATCH_PROCESS_FILES", (d) -> this.dummy(d), System.currentTimeMillis())) {
+                Stream<ConsumerRecord<String, WfEvents>> eventStreams = KafkaUtils.toStreamV2(
+                    200,
+                    this.consumerOfWfEventsWithStringKey,
+                    this.batchSizeForParallelProcessingIncomingRecords,
+                    true,
+                    (i) -> this.startTransactionForRecords(i),
+                    timeMeasurement);
+                List<GenericKafkaManagedObject<?>> eventsToSend = eventStreams
+                    .peek(
+                        (rec) -> BeanMonitor.LOGGER.info(
+                            "Starting to process evts {} for img id {} ",
+                            rec.value()
+                                .getEvents()
+                                .size(),
+                            rec.key()))
+                    .map((rec) -> this.processEvent(rec))
+                    .filter((evt) -> this.cacheNodeDAO.allEventsAreReceivedForAnImage(evt.getImageKey()))
+                    .peek((evt) -> BeanMonitor.LOGGER.info("Img Id {} is complete ", evt))
+                    .map((evts) -> this.send(evts))
+                    .collect(Collectors.toList());
 
-            @Override
-            public boolean hasNext() {
-                if ((this.records == null) || !this.records.hasNext()) {
-                    if (this.records != null) {
-                        BeanMonitor.this.consumerOfWfEventsWithStringKey.commitSync();
-                    }
-                    ConsumerRecords<String, WfEvents> nextRecords;
-                    do {
-                        nextRecords = BeanMonitor.this.consumerOfWfEventsWithStringKey
-                            .poll(Duration.ofMillis(kafkaPollTimeInMillisecondes));
-                    } while (nextRecords.isEmpty());
-                    this.records = nextRecords.iterator();
-                }
-                return true;
+                Map<TopicPartition, OffsetAndMetadata> offsets = eventsToSend.stream()
+                    .flatMap((c) -> c.stream())
+                    .collect(
+                        () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
+                        (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
+                        (r, t) -> this.merge(r, t));
+
+                BeanMonitor.LOGGER.info("Offset to commit {} ", offsets.toString());
+                this.producerForPublishingOnStringTopic.sendOffsetsToTransaction(offsets, this.groupId);
+                this.producerForPublishingOnStringTopic.commitTransaction();
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-            @Override
-            public ConsumerRecord<String, WfEvents> next() { return this.records.next(); }
-        };
-        StreamSupport.stream(iterable.spliterator(), true)
-            .peek((rec) -> this.eventDAO.addOrCreate(rec.value()))
-            .parallel()
-            .peek((rec) -> this.cacheNodeDAO.addOrCreate(rec.value()))
-            .parallel()
-            .flatMap(
-                (evts) -> evts.value()
-                    .getEvents()
-                    .stream())
-            .filter((evt) -> this.cacheNodeDAO.allEventsAreReceivedForAnImage(evt.getImgId()))
-            .forEach((evt) -> this.publishImagecompleted(evt));
+        }
 
     }
 
-    private void publishImagecompleted(WfEvent evt) {
+    private GenericKafkaManagedObject<?> send(GenericKafkaManagedObject<?> evts) {
         this.producerForPublishingOnStringTopic
-            .send(new ProducerRecord<String, String>(this.topicProcessedFile, evt.getImgId()));
+            .send(new ProducerRecord<>(this.topicFullyProcessedImage, evts.getImageKey()));
+        return evts;
+    }
+
+    private GenericKafkaManagedObject<?> processEvent(ConsumerRecord<String, WfEvents> record) {
+        this.cacheNodeDAO.addOrCreate(record.key(), record.value());
+        return KafkaManagedWfEvents.builder()
+            .withKafkaOffset(record.offset())
+            .withPartition(record.partition())
+            .withWfEvents(Optional.of(record.value()))
+            .build();
+
+    }
+
+    private Object dummy(List<Step> d) { // TODO Auto-generated method stub
+        return null;
+    }
+
+    private Object startTransactionForRecords(int i) { // TODO Auto-generated method stub
+        return null;
     }
 
 }

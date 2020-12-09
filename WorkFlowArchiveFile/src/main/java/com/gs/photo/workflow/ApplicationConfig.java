@@ -2,7 +2,6 @@ package com.gs.photo.workflow;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
-import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -13,7 +12,6 @@ import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +33,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @Bean(name = "consumerForTransactionalReadOfFileToProcess")
     public Consumer<String, FileToProcess> consumerForTransactionalReadOfFileToProcess(
         @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${group.id}") String groupId
     ) {
         Properties settings = new Properties();
@@ -46,13 +45,12 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         settings.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        settings.put(
-            ConsumerConfig.ISOLATION_LEVEL_CONFIG,
-            IsolationLevel.READ_COMMITTED.toString()
-                .toLowerCase(Locale.ROOT));
+        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 50);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+
         Consumer<String, FileToProcess> consumer = new KafkaConsumer<>(settings);
         return consumer;
     }

@@ -27,13 +27,9 @@ public class HbaseExifDataOfImagesDAO extends GenericDAO<HbaseExifDataOfImages> 
         super.delete(hbaseData, this.getHbaseDataInformation());
     }
 
-    public void truncate() throws IOException {
-        super.truncate(this.getHbaseDataInformation());
-    }
+    public void truncate() throws IOException { super.truncate(this.getHbaseDataInformation()); }
 
-    public int count() throws Throwable {
-        return super.countWithCoprocessorJob(this.getHbaseDataInformation());
-    }
+    public long count() throws Throwable { return super.countWithCoprocessorJob(this.getHbaseDataInformation()); }
 
     public HbaseExifDataOfImages get(HbaseExifDataOfImages hbaseData) throws IOException {
         return super.get(hbaseData, this.getHbaseDataInformation());

@@ -1,5 +1,99 @@
 [ {
   "type" : "record",
+  "name" : "CollectionOfExchangedTiffData",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "dataCollection",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "ExchangedTiffData",
+        "fields" : [ {
+          "name" : "key",
+          "type" : "string"
+        }, {
+          "name" : "imageId",
+          "type" : "string"
+        }, {
+          "name" : "tag",
+          "type" : {
+            "type" : "int",
+            "java-class" : "java.lang.Short"
+          }
+        }, {
+          "name" : "fieldType",
+          "type" : {
+            "type" : "enum",
+            "name" : "FieldType",
+            "symbols" : [ "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL", "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE", "IFD", "WINDOWSXP", "UNKNOWN" ]
+          }
+        }, {
+          "name" : "length",
+          "type" : "int"
+        }, {
+          "name" : "path",
+          "type" : {
+            "type" : "array",
+            "items" : {
+              "type" : "int",
+              "java-class" : "java.lang.Short"
+            },
+            "java-class" : "[S"
+          }
+        }, {
+          "name" : "dataAsInt",
+          "type" : [ "null", {
+            "type" : "array",
+            "items" : "int",
+            "java-class" : "[I"
+          } ],
+          "default" : null
+        }, {
+          "name" : "dataAsShort",
+          "type" : [ "null", {
+            "type" : "array",
+            "items" : {
+              "type" : "int",
+              "java-class" : "java.lang.Short"
+            },
+            "java-class" : "[S"
+          } ],
+          "default" : null
+        }, {
+          "name" : "dataAsByte",
+          "type" : [ "null", {
+            "type" : "bytes",
+            "java-class" : "[B"
+          } ],
+          "default" : null
+        }, {
+          "name" : "intId",
+          "type" : "int"
+        }, {
+          "name" : "total",
+          "type" : "int"
+        }, {
+          "name" : "dataCreationDate",
+          "type" : "long"
+        }, {
+          "name" : "dataId",
+          "type" : [ "null", "string" ],
+          "default" : null
+        } ]
+      },
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "ComponentEvent",
   "namespace" : "com.workflow.model.events",
   "fields" : [ {
@@ -21,6 +115,14 @@
   }, {
     "name" : "message",
     "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "scannedFolder",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "[Ljava.lang.String;"
+    } ],
     "default" : null
   }, {
     "name" : "componentName",
@@ -60,6 +162,9 @@
     "type" : "long"
   }, {
     "name" : "importName",
+    "type" : "string"
+  }, {
+    "name" : "scanFolder",
     "type" : "string"
   }, {
     "name" : "dataCreationDate",
@@ -138,83 +243,7 @@
     "type" : [ "null", "string" ],
     "default" : null
   } ]
-}, "com.workflow.model.events.WfEventStep", {
-  "type" : "record",
-  "name" : "ExchangedTiffData",
-  "namespace" : "com.workflow.model",
-  "fields" : [ {
-    "name" : "key",
-    "type" : "string"
-  }, {
-    "name" : "imageId",
-    "type" : "string"
-  }, {
-    "name" : "tag",
-    "type" : {
-      "type" : "int",
-      "java-class" : "java.lang.Short"
-    }
-  }, {
-    "name" : "fieldType",
-    "type" : {
-      "type" : "enum",
-      "name" : "FieldType",
-      "symbols" : [ "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL", "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE", "IFD", "WINDOWSXP", "UNKNOWN" ]
-    }
-  }, {
-    "name" : "length",
-    "type" : "int"
-  }, {
-    "name" : "path",
-    "type" : {
-      "type" : "array",
-      "items" : {
-        "type" : "int",
-        "java-class" : "java.lang.Short"
-      },
-      "java-class" : "[S"
-    }
-  }, {
-    "name" : "dataAsInt",
-    "type" : [ "null", {
-      "type" : "array",
-      "items" : "int",
-      "java-class" : "[I"
-    } ],
-    "default" : null
-  }, {
-    "name" : "dataAsShort",
-    "type" : [ "null", {
-      "type" : "array",
-      "items" : {
-        "type" : "int",
-        "java-class" : "java.lang.Short"
-      },
-      "java-class" : "[S"
-    } ],
-    "default" : null
-  }, {
-    "name" : "dataAsByte",
-    "type" : [ "null", {
-      "type" : "bytes",
-      "java-class" : "[B"
-    } ],
-    "default" : null
-  }, {
-    "name" : "intId",
-    "type" : "int"
-  }, {
-    "name" : "total",
-    "type" : "int"
-  }, {
-    "name" : "dataCreationDate",
-    "type" : "long"
-  }, {
-    "name" : "dataId",
-    "type" : [ "null", "string" ],
-    "default" : null
-  } ]
-}, {
+}, "com.workflow.model.events.WfEventStep", "com.workflow.model.ExchangedTiffData", {
   "type" : "record",
   "name" : "FileToProcess",
   "namespace" : "com.workflow.model.files",
@@ -226,11 +255,18 @@
     "name" : "name",
     "type" : "string"
   }, {
+    "name" : "rootForNfs",
+    "type" : "string"
+  }, {
     "name" : "path",
     "type" : "string"
   }, {
     "name" : "host",
     "type" : "string"
+  }, {
+    "name" : "imageId",
+    "type" : [ "null", "string" ],
+    "default" : null
   }, {
     "name" : "compressedFile",
     "type" : "boolean"
@@ -260,8 +296,8 @@
     "type" : [ "null", "string" ],
     "default" : null
   }, {
-    "name" : "nbOfImages",
-    "type" : "int"
+    "name" : "nbOfElements",
+    "type" : "long"
   }, {
     "name" : "dataCreationDate",
     "type" : "long"
@@ -652,200 +688,11 @@
     "name" : "imageId",
     "type" : "string"
   }, {
-    "name" : "version",
-    "type" : {
-      "type" : "int",
-      "java-class" : "java.lang.Short"
-    }
-  }, {
     "name" : "imageName",
     "type" : "string"
   }, {
     "name" : "thumbName",
     "type" : "string"
-  }, {
-    "name" : "thumbnail",
-    "type" : {
-      "type" : "bytes",
-      "java-class" : "[B"
-    }
-  }, {
-    "name" : "path",
-    "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
-    "name" : "originalWidth",
-    "type" : "long"
-  }, {
-    "name" : "originalHeight",
-    "type" : "long"
-  }, {
-    "name" : "importDate",
-    "type" : "long"
-  }, {
-    "name" : "orientation",
-    "type" : "long"
-  }, {
-    "name" : "dataCreationDate",
-    "type" : "long"
-  }, {
-    "name" : "dataId",
-    "type" : [ "null", "string" ],
-    "default" : null
-  } ]
-}, {
-  "type" : "record",
-  "name" : "HbaseImagesOfKeywords",
-  "namespace" : "com.workflow.model",
-  "fields" : [ {
-    "name" : "keyword",
-    "type" : "string"
-  }, {
-    "name" : "creationDate",
-    "type" : "long"
-  }, {
-    "name" : "imageId",
-    "type" : "string"
-  }, {
-    "name" : "version",
-    "type" : {
-      "type" : "int",
-      "java-class" : "java.lang.Short"
-    }
-  }, {
-    "name" : "imageName",
-    "type" : "string"
-  }, {
-    "name" : "thumbName",
-    "type" : "string"
-  }, {
-    "name" : "thumbnail",
-    "type" : {
-      "type" : "bytes",
-      "java-class" : "[B"
-    }
-  }, {
-    "name" : "path",
-    "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
-    "name" : "originalWidth",
-    "type" : "long"
-  }, {
-    "name" : "originalHeight",
-    "type" : "long"
-  }, {
-    "name" : "importDate",
-    "type" : "long"
-  }, {
-    "name" : "orientation",
-    "type" : "long"
-  }, {
-    "name" : "dataCreationDate",
-    "type" : "long"
-  }, {
-    "name" : "dataId",
-    "type" : [ "null", "string" ],
-    "default" : null
-  } ]
-}, {
-  "type" : "record",
-  "name" : "HbaseImagesOfRatings",
-  "namespace" : "com.workflow.model",
-  "fields" : [ {
-    "name" : "ratings",
-    "type" : "int"
-  }, {
-    "name" : "creationDate",
-    "type" : "long"
-  }, {
-    "name" : "imageId",
-    "type" : "string"
-  }, {
-    "name" : "version",
-    "type" : {
-      "type" : "int",
-      "java-class" : "java.lang.Short"
-    }
-  }, {
-    "name" : "imageName",
-    "type" : "string"
-  }, {
-    "name" : "thumbName",
-    "type" : "string"
-  }, {
-    "name" : "thumbnail",
-    "type" : {
-      "type" : "bytes",
-      "java-class" : "[B"
-    }
-  }, {
-    "name" : "path",
-    "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
-    "name" : "originalWidth",
-    "type" : "long"
-  }, {
-    "name" : "originalHeight",
-    "type" : "long"
-  }, {
-    "name" : "importDate",
-    "type" : "long"
-  }, {
-    "name" : "orientation",
-    "type" : "long"
-  }, {
-    "name" : "dataCreationDate",
-    "type" : "long"
-  }, {
-    "name" : "dataId",
-    "type" : [ "null", "string" ],
-    "default" : null
-  } ]
-}, {
-  "type" : "record",
-  "name" : "HbaseImageThumbnail",
-  "namespace" : "com.workflow.model",
-  "fields" : [ {
-    "name" : "creationDate",
-    "type" : "long"
-  }, {
-    "name" : "imageId",
-    "type" : "string"
-  }, {
-    "name" : "version",
-    "type" : {
-      "type" : "int",
-      "java-class" : "java.lang.Short"
-    }
-  }, {
-    "name" : "imageName",
-    "type" : "string"
-  }, {
-    "name" : "thumbName",
-    "type" : "string"
-  }, {
-    "name" : "thumbnail",
-    "type" : {
-      "type" : "bytes",
-      "java-class" : "[B"
-    }
   }, {
     "name" : "path",
     "type" : "string"
@@ -929,6 +776,566 @@
     "type" : [ "null", "string" ],
     "default" : null
   }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfKeywords",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "keyword",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfMetadata",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfPersons",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "person",
+    "type" : "string"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfRatings",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "ratingValue",
+    "type" : "long"
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImageThumbnail",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "thumbnail",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "Pair7c22fee0302386d1",
+        "namespace" : "org.apache.avro.reflect",
+        "fields" : [ {
+          "name" : "key",
+          "type" : "int"
+        }, {
+          "name" : "value",
+          "type" : {
+            "type" : "bytes",
+            "java-class" : "[B"
+          }
+        } ]
+      },
+      "java-class" : "java.util.HashMap"
+    }
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
     "name" : "albums",
     "type" : [ "null", {
       "type" : "array",
@@ -945,8 +1352,21 @@
     } ],
     "default" : null
   }, {
+    "name" : "persons",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
+    "default" : null
+  }, {
     "name" : "ratings",
-    "type" : "int"
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "long",
+      "java-class" : "java.util.HashSet"
+    } ],
+    "default" : null
   }, {
     "name" : "dataCreationDate",
     "type" : "long"
@@ -987,6 +1407,27 @@
     "name" : "keyword",
     "type" : "string"
   }, {
+    "name" : "nbOfElements",
+    "type" : "long"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbasePersons",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "person",
+    "type" : "string"
+  }, {
+    "name" : "nbOfElements",
+    "type" : "long"
+  }, {
     "name" : "dataCreationDate",
     "type" : "long"
   }, {
@@ -1000,7 +1441,10 @@
   "namespace" : "com.workflow.model",
   "fields" : [ {
     "name" : "ratings",
-    "type" : "int"
+    "type" : "long"
+  }, {
+    "name" : "nbOfElements",
+    "type" : "long"
   }, {
     "name" : "dataCreationDate",
     "type" : "long"

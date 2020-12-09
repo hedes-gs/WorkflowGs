@@ -226,9 +226,30 @@ public class KafkaUtils {
             if (this.firstSplit) {
                 do {
                     nextRecords = this.consumer.poll(Duration.ofMillis(this.pollDurationInMs));
+
                     if (nextRecords == null) {
                         break;
                     }
+                    final ConsumerRecords<K, V> records = nextRecords;
+                    nextRecords.partitions()
+                        .forEach((p) -> {
+                            KafkaUtils.LOGGER.info(
+                                "pollDurationInMs is {}, batchSize is {} , fetched nbOfRecords {} -  Partition {} has max offset {}, min offset {} ",
+                                this.pollDurationInMs,
+                                this.batchSize,
+                                records.count(),
+                                p,
+                                records.records(p)
+                                    .stream()
+                                    .mapToLong((r) -> r.offset())
+                                    .max()
+                                    .orElse(Long.MIN_VALUE),
+                                records.records(p)
+                                    .stream()
+                                    .mapToLong((r) -> r.offset())
+                                    .min()
+                                    .orElse(Long.MIN_VALUE));
+                        });
                 } while (nextRecords.isEmpty());
                 if (nextRecords != null) {
                     if (this.timeMeasurement != null) {

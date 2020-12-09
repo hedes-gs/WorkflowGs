@@ -56,6 +56,8 @@ public class IFD {
         return nbOfTiffFields + nbOFChildren;
     }
 
+    public void setCurrentImageNumber(int currentImageNumber) { this.currentImageNumber = currentImageNumber; }
+
     public int getCurrentImageNumber() { return this.currentImageNumber; }
 
     public short[] getPath() { return this.path; }

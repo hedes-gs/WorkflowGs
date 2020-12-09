@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -35,13 +36,11 @@ import com.google.common.collect.ImmutableSet;
 import com.gs.photos.serializers.HbaseDataSerDe;
 import com.gs.photos.serializers.HbaseDataSerializer;
 import com.gs.photos.serializers.HbaseExifDataDeserializer;
-import com.gs.photos.serializers.HbaseExifDataOfImagesDeserializer;
 import com.gs.photos.serializers.HbaseImageThumbnailSerializer;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.FieldType;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
-import com.workflow.model.HbaseExifDataOfImages;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.events.WfEvents;
 
@@ -182,22 +181,26 @@ public class TestWfProcessAndPublishExifData {
         ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            TestWfProcessAndPublishExifData.PATH2,
             TestWfProcessAndPublishExifData.EXIF_ID,
             null);
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithWidthTag = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH,
             TestWfProcessAndPublishExifData.WIDTH_ID,
             new int[1024]);
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithHeightTag = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH,
             TestWfProcessAndPublishExifData.HEIGHT_ID,
             new int[768]);
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithCreationDateTag = this
             .createConsumerRecordForTopicExifData(
                 factoryForExchangedTiffData,
                 exifKey,
+                ApplicationConfig.EXIF_CREATION_DATE_ID_PATH,
                 TestWfProcessAndPublishExifData.CREATION_DATE_ID,
                 null);
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
@@ -243,6 +246,7 @@ public class TestWfProcessAndPublishExifData {
         ConsumerRecord<byte[], byte[]> inputExchangedTiffData = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            TestWfProcessAndPublishExifData.PATH2,
             TestWfProcessAndPublishExifData.EXIF_ID,
             null);
         ConsumerRecord<byte[], byte[]> inputFinalImage = this
@@ -250,17 +254,20 @@ public class TestWfProcessAndPublishExifData {
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithWidthTag = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH,
             TestWfProcessAndPublishExifData.WIDTH_ID,
             new int[] { 1024 });
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithCreationDateTag = this
             .createConsumerRecordForTopicExifData(
                 factoryForExchangedTiffData,
                 exifKey,
+                ApplicationConfig.EXIF_CREATION_DATE_ID_PATH,
                 TestWfProcessAndPublishExifData.CREATION_DATE_ID,
                 null);
         ConsumerRecord<byte[], byte[]> inputExchangedTiffDataWithHeightTag = this.createConsumerRecordForTopicExifData(
             factoryForExchangedTiffData,
             exifKey,
+            ApplicationConfig.EXIF_WIDTH_HEIGHT_PATH,
             TestWfProcessAndPublishExifData.HEIGHT_ID,
             new int[] { 768 });
         long time = System.currentTimeMillis();
@@ -289,27 +296,6 @@ public class TestWfProcessAndPublishExifData {
         Assert.assertEquals(1024, hbe.getWidth());
         Assert.assertEquals(TestWfProcessAndPublishExifData.IMGID, hbe.getImageId());
         Assert.assertEquals(TestWfProcessAndPublishExifData.THUMB_NAME, hbe.getThumbName());
-
-        ProducerRecord<String, HbaseExifDataOfImages> outputRecordHbaseExifDataOfImages = this.testDriver.readOutput(
-            this.topicExifImageDataToPerist,
-            Serdes.String()
-                .deserializer(),
-            new HbaseExifDataOfImagesDeserializer());
-        HbaseExifDataOfImages hedi = outputRecordHbaseExifDataOfImages.value();
-
-        Assert.assertEquals(
-            DateTimeHelper.toEpochMillis(TestWfProcessAndPublishExifData.EXIF_DATE),
-            DateTimeHelper.toEpochMillis(hedi.getCreationDate()));
-        Assert.assertEquals(TestWfProcessAndPublishExifData.EXIF_ID, hedi.getExifTag());
-        Assert.assertArrayEquals(
-            TestWfProcessAndPublishExifData.EXIF_DATE.getBytes(Charset.forName("UTF-8")),
-            hedi.getExifValueAsByte());
-        Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_INT, hedi.getExifValueAsInt());
-        Assert.assertArrayEquals(TestWfProcessAndPublishExifData.DATA_AS_SHORT, hedi.getExifValueAsShort());
-        Assert.assertEquals(768, hedi.getHeight());
-        Assert.assertEquals(1024, hedi.getWidth());
-        Assert.assertEquals(TestWfProcessAndPublishExifData.IMGID, hedi.getImageId());
-        Assert.assertEquals(TestWfProcessAndPublishExifData.THUMB_NAME, hedi.getThumbName());
 
         System.err.println(".... " + ((System.currentTimeMillis() - time) / 1000.0f));
 
@@ -340,6 +326,7 @@ public class TestWfProcessAndPublishExifData {
     protected ConsumerRecord<byte[], byte[]> createConsumerRecordForTopicExifData(
         ConsumerRecordFactory<String, HbaseData> factoryForExchangedTiffData,
         final String key,
+        final short[] path,
         final short tagId,
         int[] heightOrWidth
     ) {
@@ -354,7 +341,7 @@ public class TestWfProcessAndPublishExifData {
             .withKey(TestWfProcessAndPublishExifData.KEY2)
             .withLength(1260)
             .withTag(tagId)
-            .withPath(TestWfProcessAndPublishExifData.PATH2)
+            .withPath(path)
             .withTotal(12678);
 
         final ExchangedTiffData exchangedTiffData = builder.build();
@@ -367,6 +354,8 @@ public class TestWfProcessAndPublishExifData {
         ConsumerRecordFactory<String, HbaseImageThumbnail> factoryForHbaseImageThumbnail,
         String key
     ) {
+        HashMap<Integer, byte[]> map = new HashMap<>();
+        map.put(2, TestWfProcessAndPublishExifData.THUMBNAIL);
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         builder.withCreationDate(TestWfProcessAndPublishExifData.CREATION_DATE)
             .withHeight(TestWfProcessAndPublishExifData.HEIGHT)
@@ -374,9 +363,8 @@ public class TestWfProcessAndPublishExifData {
             .withImageId(TestWfProcessAndPublishExifData.IMGID)
             .withImageName(TestWfProcessAndPublishExifData.IMG_NAME)
             .withDataId(TestWfProcessAndPublishExifData.ID)
-            .withVersion((short) 2)
             .withPath(TestWfProcessAndPublishExifData.IMG_PATH)
-            .withThumbnail(TestWfProcessAndPublishExifData.THUMBNAIL)
+            .withThumbnail(map)
             .withThumbName(TestWfProcessAndPublishExifData.THUMB_NAME);
         HbaseImageThumbnail hbit = builder.build();
         ConsumerRecord<byte[], byte[]> outputHbaseImageThumbnail = factoryForHbaseImageThumbnail

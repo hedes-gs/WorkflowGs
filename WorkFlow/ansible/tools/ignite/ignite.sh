@@ -100,7 +100,7 @@ if [ -z "$JVM_OPTS" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
 fi
 
-JVM_OPTS="${JVM_OPTS} -DIGNITE_JETTY_PORT=10000"
+JVM_OPTS="${JVM_OPTS} -Xms1g -Xmx3g -server -XX:MaxMetaspaceSize=256m -DIGNITE_JETTY_PORT=10000"
 
 #
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.

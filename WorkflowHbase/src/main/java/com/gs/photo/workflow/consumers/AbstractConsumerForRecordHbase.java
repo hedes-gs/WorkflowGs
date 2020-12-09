@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.hadoop.hbase.NotServingRegionException;
+import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -36,7 +38,6 @@ import org.springframework.beans.factory.annotation.Value;
 import com.gs.photo.workflow.IBeanTaskExecutor;
 import com.gs.photo.workflow.TimeMeasurement;
 import com.gs.photo.workflow.TimeMeasurement.Step;
-import com.gs.photo.workflow.hbase.dao.GenericDAO;
 import com.gs.photo.workflow.impl.KafkaUtils;
 import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
 import com.gs.photo.workflow.internal.KafkaManagedHbaseData;
@@ -59,9 +60,6 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
     @Value("${topic.topicEvent}")
     protected String                                                                topicEvent;
-
-    @Value("${group.id}")
-    private String                                                                  groupId;
 
     @Value("${kafka.consumer.batchSizeForParallelProcessingIncomingRecords}")
     protected int                                                                   batchSizeForParallelProcessingIncomingRecords;
@@ -131,16 +129,19 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
     }
 
-    protected void processMessagesFromTopic(Consumer<String, T> consumer, String uniqueId) {
+    protected void processMessagesFromTopic(Consumer<String, T> consumer, String uniqueId, String groupId) {
 
-        this.propertiesForPublishingWfEvents.put(
+        Properties propertiesForPublishingWfEvents = (Properties) this.propertiesForPublishingWfEvents.clone();
+        propertiesForPublishingWfEvents.put(
             ProducerConfig.TRANSACTIONAL_ID_CONFIG,
             this.propertiesForPublishingWfEvents.get(ProducerConfig.TRANSACTIONAL_ID_CONFIG) + "-" + uniqueId);
-
-        this.producerForPublishingWfEvents = new KafkaProducer<>(this.propertiesForPublishingWfEvents);
+        AbstractConsumerForRecordHbase.LOGGER.info(
+            "[CONSUMER][{}] starting - ",
+            this.getConsumer(),
+            this.propertiesForPublishingWfEvents.get(ProducerConfig.TRANSACTIONAL_ID_CONFIG));
+        this.producerForPublishingWfEvents = new KafkaProducer<>(propertiesForPublishingWfEvents);
         this.producerForPublishingWfEvents.initTransactions();
         AbstractConsumerForRecordHbase.LOGGER.info("Start job {}", this);
-
         while (true) {
             try (
                 TimeMeasurement timeMeasurement = TimeMeasurement
@@ -152,8 +153,15 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
                     true,
                     (i) -> this.startTransactionForRecords(i),
                     timeMeasurement);
-                Stream<KafkaManagedHbaseData> kafkaManagedDataToProcess = recordsToProcess
-                    .map((rec) -> this.record(rec));
+                List<ConsumerRecord<String, T>> processedRecords = recordsToProcess.map((rec) -> this.record(rec))
+                    .collect(Collectors.toList());
+                this.postRecord(
+                    processedRecords.stream()
+                        .map((rec) -> rec.value())
+                        .collect(Collectors.toList()));
+                Stream<KafkaManagedHbaseData> kafkaManagedDataToProcess = processedRecords.stream()
+                    .map((rec) -> this.toKafkaManagedHbaseData(rec));
+
                 Map<TopicPartition, OffsetAndMetadata> offsets = null;
                 if (this.eventsShouldBeProduced()) {
                     Map<String, List<GenericKafkaManagedObject<?>>> eventsToSend = kafkaManagedDataToProcess
@@ -192,21 +200,57 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
                         (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
                         (r, t) -> this.merge(r, t));
                 }
-                this.flushAllDAO();
-                this.producerForPublishingWfEvents.sendOffsetsToTransaction(offsets, this.groupId);
-                this.producerForPublishingWfEvents.commitTransaction();
-            } catch (Exception e) {
-                AbstractConsumerForRecordHbase.LOGGER.warn("Unexpected error ", e);
+                boolean done = false;
+                int nbOfTimes = 0;
+                do {
+                    try {
+                        if (nbOfTimes > 0) {
+                            AbstractConsumerForRecordHbase.LOGGER.warn("Retrying again after {} fails", nbOfTimes);
+                        }
+                        this.flushAllDAO();
+                        if (nbOfTimes > 0) {
+                            AbstractConsumerForRecordHbase.LOGGER
+                                .warn("Retrying again after {}, finally succeed ", nbOfTimes);
+                            // TO do :
+                            // recordAgain().
+                        }
+                        done = true;
+                    } catch (
+                        RetriesExhaustedWithDetailsException |
+                        NotServingRegionException e) {
+                        AbstractConsumerForRecordHbase.LOGGER.warn("Retries error is detected", e);
+                        nbOfTimes++;
+                        Thread.sleep(1000);
+                    }
+                } while (!done && (nbOfTimes < 3));
+                if (nbOfTimes < 3) {
+                    AbstractConsumerForRecordHbase.LOGGER
+                        .info("[CONSUMER][{}]  Offsets to commit {}", this.getConsumer(), offsets);
+                    this.producerForPublishingWfEvents.sendOffsetsToTransaction(offsets, groupId);
+                    this.producerForPublishingWfEvents.commitTransaction();
+                } else {
+                    AbstractConsumerForRecordHbase.LOGGER
+                        .error("[CONSUMER][{}] Stopping process !!", this.getConsumer());
+                    this.producerForPublishingWfEvents.abortTransaction();
+                    break;
+                }
+            } catch (Throwable e) {
+                AbstractConsumerForRecordHbase.LOGGER
+                    .warn("[CONSUMER][{}] Unexpected error, stopping process ", this.getConsumer(), e);
+                this.producerForPublishingWfEvents.abortTransaction();
                 break;
             }
         }
 
     }
 
+    protected abstract String getConsumer();
+
     private void dummy(List<Step> d) {
         d.forEach((s) -> {
             if (s.getDuration() > 0.5f) {
-                AbstractConsumerForRecordHbase.LOGGER.warn("Long time proessing detected  {} , ", s.getDuration());
+                AbstractConsumerForRecordHbase.LOGGER
+                    .warn("[CONSUMER][{}] Long time proessing detected  {} , ", this.getConsumer(), s.getDuration());
             }
         });
     }
@@ -255,28 +299,26 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
     }
 
-    protected KafkaManagedHbaseData record(ConsumerRecord<String, T> rec) {
-        try {
-            this.getGenericDAO(
-                (Class<T>) rec.value()
-                    .getClass())
-                .put(
-                    rec.value(),
-                    (Class<T>) rec.value()
-                        .getClass());
-            return KafkaManagedHbaseData.builder()
-                .withKafkaOffset(rec.offset())
-                .withPartition(rec.partition())
-                .withTopic(rec.topic())
-                .withValue(rec.value())
-                .withImageKey(rec.key())
-                .build();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    protected ConsumerRecord<String, T> record(ConsumerRecord<String, T> rec) {
+        this.doRecord(rec.key(), rec.value());
+        return rec;
     }
 
-    private void startTransactionForRecords(int i) { this.producerForPublishingWfEvents.beginTransaction(); }
+    protected KafkaManagedHbaseData toKafkaManagedHbaseData(ConsumerRecord<String, T> rec) {
+        return KafkaManagedHbaseData.builder()
+            .withKafkaOffset(rec.offset())
+            .withPartition(rec.partition())
+            .withTopic(rec.topic())
+            .withValue(rec.value())
+            .withImageKey(rec.key())
+            .build();
+    }
+
+    private void startTransactionForRecords(int i) {
+        AbstractConsumerForRecordHbase.LOGGER
+            .info("[CONSUMER][{}] Start transactions, nb of elements {}", this.getConsumer(), i);
+        this.producerForPublishingWfEvents.beginTransaction();
+    }
 
     @PostConstruct
     protected void init() { this.beanTaskExecutor.execute(() -> this.processIncomingMessages()); }
@@ -285,9 +327,9 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
     protected abstract Optional<WfEvent> buildEvent(T x);
 
-    protected abstract void postRecord(List<T> v, Class<T> k);
+    protected abstract void postRecord(List<T> v);
 
-    protected abstract <X extends T> GenericDAO<X> getGenericDAO(Class<X> k);
+    protected abstract void doRecord(String key, T k);
 
     protected boolean eventsShouldBeProduced() { return true; }
 

@@ -20,6 +20,7 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ import com.gs.photo.workflow.IUserGroupInformationAction;
 import com.gs.photo.workflow.TimeMeasurement;
 import com.gs.photo.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.internal.KafkaManagedWfEvents;
-import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
@@ -167,11 +168,11 @@ public class BeanArchive implements IBeanArchive {
             .withProducer("ARCHIVE_PROCESS")
             .withEvents(
                 Collections.singleton(
-                    WfEvent.builder()
+                    WfEventRecorded.builder()
                         .withImgId(key)
                         .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_ARCHIVED_IN_HDFS)
                         .withDataId(key)
-                        .withParentDataId(key)
+                        .withParentDataId(key + "-copy")
                         .build()))
             .build();
     }
@@ -184,15 +185,15 @@ public class BeanArchive implements IBeanArchive {
         try {
             final PrivilegedAction<KafkaManagedWfEvents> action = () -> {
                 try {
-                    final Path folderWhereRecord = new Path(new Path(this.rootPath,
-                        value.getImportEvent()
-                            .getImportName()),
-                        new Path(key));
+                    String importName = value.getImportEvent()
+                        .getImportName();
+                    importName = Strings.isEmpty(importName) ? "DEFAULT_IMPORT" : importName;
+                    final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
                     boolean dirIsCreated = this.hdfsFileSystem.mkdirs(folderWhereRecord);
                     if (dirIsCreated) {
                         try (
                             FSDataOutputStream fdsOs = this.hdfsFileSystem
-                                .create(this.build(folderWhereRecord, value.getName()), true)) {
+                                .create(this.build(folderWhereRecord, "/" + value.getName()), true)) {
                             this.fileUtils.copyRemoteToLocal(value, fdsOs, BeanArchive.BUFFER_SIZE);
                             return KafkaManagedWfEvents.builder()
                                 .withKafkaOffset(rec.offset())

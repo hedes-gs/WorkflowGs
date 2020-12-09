@@ -6,6 +6,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,7 +34,8 @@ import com.workflow.model.HbaseTableName;
 
 public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> implements IGenericDAO<T> {
 
-    static Logger LOGGER = LoggerFactory.getLogger(GenericDAO.class);
+    static Logger               LOGGER = LoggerFactory.getLogger(GenericDAO.class);
+    protected AggregationClient aggregationClient;
 
     protected void put(Collection<T> hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
         this.checkForClass(hbaseDataInformation.getHbaseDataClass());
@@ -42,7 +44,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             List<Put> puts = hbaseData.stream()
                 .map((hb) -> {
                     Put put = this.createHbasePut(
-                        this.getKey(hb, hbaseDataInformation),
+                        GenericDAO.getKey(hb, hbaseDataInformation),
                         this.getCfList(hb, hbaseDataInformation));
                     return put;
                 })
@@ -59,6 +61,11 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     }
 
     @Override
+    public void put(T hbaseData) throws IOException {
+        this.put(Collections.singleton(hbaseData), this.getHbaseDataInformation());
+    }
+
+    @Override
     public void put(Collection<T> hbaseData, Class<T> cl) throws IOException {
         this.checkForClass(cl);
         HbaseDataInformation<T> hbaseDataInformation = this.getHbaseDataInformation();
@@ -68,7 +75,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
                 List<Put> puts = hbaseData.stream()
                     .map((hb) -> {
                         Put put = this.createHbasePut(
-                            this.getKey(hb, hbaseDataInformation),
+                            GenericDAO.getKey(hb, hbaseDataInformation),
                             this.getCfList(hb, hbaseDataInformation));
                         return put;
                     })
@@ -86,6 +93,22 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     }
 
     @Override
+    public void put(Put put) throws IOException {
+        try (
+            Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
+            table.put(put);
+        }
+    }
+
+    @Override
+    public void delete(Delete del) throws IOException {
+        try (
+            Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
+            table.delete(del);
+        }
+    }
+
+    @Override
     public void put(T[] hbaseData, Class<T> cl) throws IOException {
         this.checkForClass(cl);
         HbaseDataInformation<T> hbaseDataInformation = this.getHbaseDataInformation();
@@ -95,7 +118,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
                 List<Put> puts = Arrays.stream(hbaseData)
                     .map((hb) -> {
                         Put put = this.createHbasePut(
-                            this.getKey(hb, hbaseDataInformation),
+                            GenericDAO.getKey(hb, hbaseDataInformation),
                             this.getCfList(hb, hbaseDataInformation));
                         return put;
                     })
@@ -120,7 +143,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
             List<Delete> dels = Arrays.stream(hbaseData)
                 .map((hb) -> {
-                    Delete delete = this.createHbaseDelete(this.getKey(hb, hbaseDataInformation));
+                    Delete delete = this.createHbaseDelete(GenericDAO.getKey(hb, hbaseDataInformation));
                     return delete;
                 })
                 .collect(Collectors.toList());
@@ -141,7 +164,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
             List<Delete> dels = Arrays.stream(hbaseData)
                 .map((hb) -> {
-                    Delete delete = this.createHbaseDelete(this.getKey(hb, hbaseDataInformation));
+                    Delete delete = this.createHbaseDelete(GenericDAO.getKey(hb, hbaseDataInformation));
                     return delete;
                 })
                 .collect(Collectors.toList());
@@ -160,7 +183,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         this.checkForClass(hbaseDataInformation.getHbaseDataClass());
         try (
             Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
-            Delete delete = this.createHbaseDelete(this.getKey(hbaseData, hbaseDataInformation));
+            Delete delete = this.createHbaseDelete(GenericDAO.getKey(hbaseData, hbaseDataInformation));
             table.delete(delete);
         } catch (IOException e) {
             GenericDAO.LOGGER.warn(
@@ -178,7 +201,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         try (
             Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
             Put put = this.createHbasePut(
-                this.getKey(hbaseData, hbaseDataInformation),
+                GenericDAO.getKey(hbaseData, hbaseDataInformation),
                 this.getCfList(hbaseData, hbaseDataInformation));
             table.put(put);
 
@@ -197,7 +220,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
 
         try {
             Put put = this.createHbasePut(
-                this.getKey(hbaseData, hbaseDataInformation),
+                GenericDAO.getKey(hbaseData, hbaseDataInformation),
                 this.getCfList(hbaseData, hbaseDataInformation));
             this.bufferedMutator.mutate(put);
 
@@ -244,8 +267,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         return delete;
     }
 
-    protected byte[] getKey(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
-
+    protected static <T1 extends HbaseData> byte[] getKey(T1 hbaseData, HbaseDataInformation<T1> hbaseDataInformation) {
         byte[] keyValue = new byte[hbaseDataInformation.getKeyLength()];
         hbaseDataInformation.buildKey(hbaseData, keyValue);
         return keyValue;
@@ -263,10 +285,14 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     }
 
     @Override
+    public byte[] createKey(T hbi) { return this.getHbaseDataInformation()
+        .buildKey(hbi); }
+
+    @Override
     public T get(T hbaseData, Class<T> cl) throws IOException {
         HbaseDataInformation<T> hbaseDataInformation = this.getHbaseDataInformation();
         Get get;
-        byte[] key = this.getKey(hbaseData, hbaseDataInformation);
+        byte[] key = GenericDAO.getKey(hbaseData, hbaseDataInformation);
         get = new Get(key);
         try {
             try (
@@ -290,26 +316,50 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         GenericDAO.LOGGER.warn("Truncate table {}", hbaseDataInformation.getTable());
         Admin admin = this.connection.getAdmin();
         if (!admin.isTableDisabled(hbaseDataInformation.getTable())) {
-            admin.disableTable(hbaseDataInformation.getTable());
+            if (admin.isTableEnabled(hbaseDataInformation.getTable())) {
+                admin.disableTable(hbaseDataInformation.getTable());
+            }
         }
         admin.truncateTable(hbaseDataInformation.getTable(), false);
         if (admin.isTableDisabled(hbaseDataInformation.getTable())) {
             admin.enableTable(hbaseDataInformation.getTable());
         }
+        if (hbaseDataInformation.getPageTable() != null) {
+            if (!admin.isTableDisabled(hbaseDataInformation.getPageTable())) {
+                if (admin.isTableEnabled(hbaseDataInformation.getPageTable())) {
+                    admin.disableTable(hbaseDataInformation.getPageTable());
+                }
+            }
+            admin.truncateTable(hbaseDataInformation.getPageTable(), false);
+            if (admin.isTableDisabled(hbaseDataInformation.getPageTable())) {
+                admin.enableTable(hbaseDataInformation.getPageTable());
+            }
+            try (
+                Table table = this.connection.getTable(hbaseDataInformation.getPageTable())) {
+                this.initializePageTable(table);
+            } catch (Exception e) {
+                AbstractDAO.LOGGER.warn(
+                    "Error when creating table {}, table already created {} ",
+                    hbaseDataInformation.getPageTable(),
+                    ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
-    public int countWithCoprocessorJob(HbaseDataInformation<T> hbaseDataInformation) throws Throwable {
+    public Long countWithCoprocessorJob(HbaseDataInformation<T> hbaseDataInformation) throws Throwable {
         try (
             AggregationClient ac = new AggregationClient(HBaseConfiguration.create())) {
             long retValue = ac.rowCount(hbaseDataInformation.getTable(), new LongColumnInterpreter(), new Scan());
-            return (int) retValue;
+            return retValue;
         }
     }
 
     public T get(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) throws IOException {
         this.checkForClass(hbaseDataInformation.getHbaseDataClass());
         Get get;
-        byte[] key = this.getKey(hbaseData, hbaseDataInformation);
+        byte[] key = GenericDAO.getKey(hbaseData, hbaseDataInformation);
         get = new Get(key);
         try {
             try (
@@ -378,6 +428,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
 
     @PostConstruct
     protected void init() throws IOException {
+        GenericDAO.LOGGER.info("in init of {} ", this);
         Class<?> currentClass = this.getClass();
         Type param = currentClass.getGenericSuperclass();
         while (!(param instanceof ParameterizedType)) {

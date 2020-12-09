@@ -6,7 +6,7 @@
 ###########################################################################################################################
 
 ---
-- hosts: all
+- hosts: ignite
   become: true
   vars:
     ansible_become_pass: granada01
@@ -20,7 +20,22 @@
     - name: Install aptitude using apt
       shell: "apt install dirmngr --no-install-recommends"
       ignore_errors: yes
-
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/db/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/diagnostic/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/marshaller/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/binary_meta/
+        state: absent
     - name: copy ignite.repo 
       copy:
         src: ./tools/ignite/ignite.list
@@ -37,8 +52,10 @@
 #        state: present
 #        install_recommends: no
 #      ignore_errors: yes
-    - name: copy server.xml 
-      copy:
+    - name: copy server.xml
+      vars:
+        localAddress: "{{inventory_hostname }}"
+      template:
         src: ./tools/ignite/cluster-server.xml
         dest: "/etc/apache-ignite/cluster-server.xml"
     - name: copy ignite.sh 
@@ -49,3 +66,5 @@
       shell: "cp /usr/share/apache-ignite/libs/optional/ignite-rest-http/*.jar /usr/share/apache-ignite/libs"
     - name: start ignite 
       shell: "systemctl start apache-ignite@cluster-server.xml"
+    - name: activate ignite 
+      shell: "/usr/share/apache-ignite/bin/control.sh --activate"

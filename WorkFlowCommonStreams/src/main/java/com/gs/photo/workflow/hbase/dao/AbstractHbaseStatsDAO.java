@@ -1,6 +1,8 @@
 package com.gs.photo.workflow.hbase.dao;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
@@ -26,16 +29,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.gs.photo.workflow.hbase.HbaseDataInformation;
 import com.workflow.model.HbaseImageThumbnailKey;
 
-public abstract class AbstractHbaseStatsDAO extends GenericDAO<HbaseImageThumbnailKey> {
+public abstract class AbstractHbaseStatsDAO<T extends HbaseImageThumbnailKey> extends GenericDAO<T> {
 
-    private static final int      KEY_MONTH_LENGTH = 5;
-    private static final int      KEY_DAY_LENGTH   = 5;
-    private static final int      KEY_HOUR_LENGTH  = 5;
-    private static final int      KEY_MN_LENGTH    = 6;
-    private static final int      KEY_SEC_LENGTH   = 5;
-    private static final int      KEY_YEAR_LENGTH  = 6;
+    protected static final String TABLE_FAMILY_FSTATS          = "fstats";
+    protected static final String TABLE_FAMILY_IMGS            = "imgs";
+    protected static final byte[] TABLE_FAMILY_IMGS_AS_BYTES   = AbstractHbaseStatsDAO.TABLE_FAMILY_IMGS
+        .getBytes(Charset.forName("UTF-8"));
+    protected static final byte[] TABLE_FAMILY_FSTATS_AS_BYTES = AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS
+        .getBytes(Charset.forName("UTF-8"));
+    protected static final String COLUMN_STAT_NAME             = "stats";
+    protected static final byte[] COLUMN_STAT_AS_BYTES         = AbstractHbaseStatsDAO.COLUMN_STAT_NAME
+        .getBytes(Charset.forName("UTF-8"));
+    private static final int      KEY_MONTH_LENGTH             = 5;
+    private static final int      KEY_DAY_LENGTH               = 5;
+    private static final int      KEY_HOUR_LENGTH              = 5;
+    private static final int      KEY_MN_LENGTH                = 6;
+    private static final int      KEY_SEC_LENGTH               = 5;
+    private static final int      KEY_YEAR_LENGTH              = 6;
 
-    protected static final Logger LOGGER           = LoggerFactory.getLogger(AbstractHbaseStatsDAO.class);
+    protected static final Logger LOGGER                       = LoggerFactory.getLogger(AbstractHbaseStatsDAO.class);
 
     public static enum KeyEnumType {
         ALL, YEAR, MONTH, DAY, HOUR, MINUTE, SECOND
@@ -105,7 +117,7 @@ public abstract class AbstractHbaseStatsDAO extends GenericDAO<HbaseImageThumbna
         try (
             Table t = this.connection.getTable(tableName)) {
             Scan statsScan = new Scan().withStartRow(AbstractDAO.toBytes(key))
-                .addFamily(AbstractDAO.FAMILY_STATS_NAME_AS_BYTES); // we need only page visit stats, not a user info
+                .addFamily(AbstractDAO.FAMILY_INFOS_NAME_AS_BYTES); // we need only page visit stats, not a user info
             try (
                 ResultScanner scanner = t.getScanner(statsScan)) {
                 for (Result res : scanner) {
@@ -122,11 +134,34 @@ public abstract class AbstractHbaseStatsDAO extends GenericDAO<HbaseImageThumbna
         return 0;
     }
 
-    public List<HbaseImageThumbnailKey> getImages(String key, int maxSize) throws IOException {
+    public Map<String, Long> getAll() throws IOException {
+        AbstractHbaseStatsDAO.LOGGER.info("get images of key ");
+        TableName tableName = this.getHbaseDataInformation()
+            .getTable();
+        Map<String, Long> retValue = new HashMap<>();
+        try (
+            Table t = this.connection.getTable(tableName)) {
+            Scan statsScan = new Scan().addFamily(AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES);
+            try (
+                ResultScanner scanner = t.getScanner(statsScan)) {
+                for (Result res : scanner) {
+                    retValue.put(
+                        new String(res.getRow()),
+                        Bytes.toLong(
+                            res.getValue(
+                                AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES,
+                                AbstractHbaseStatsDAO.COLUMN_STAT_AS_BYTES)));
+                }
+            }
+        }
+        return retValue;
+    }
+
+    public List<T> getImages(String key, int maxSize) throws IOException {
         AbstractHbaseStatsDAO.LOGGER.info("get images of key {}, maxSize {}", key, maxSize);
         TableName tableName = this.getHbaseDataInformation()
             .getTable();
-        List<HbaseImageThumbnailKey> retValue = new ArrayList<>();
+        List<T> retValue = new ArrayList<>();
         try (
             Table t = this.connection.getTable(tableName)) {
             Scan statsScan = new Scan().withStartRow(AbstractDAO.toBytes(key))
@@ -137,7 +172,8 @@ public abstract class AbstractHbaseStatsDAO extends GenericDAO<HbaseImageThumbna
                 ResultScanner scanner = t.getScanner(statsScan)) {
                 for (Result res : scanner) {
                     for (Cell statCell : res.listCells()) {
-                        HbaseImageThumbnailKey hbaseData = new HbaseImageThumbnailKey();
+                        T hbaseData = this.getHbaseDataInformation()
+                            .newInstance();
                         retValue.add(
                             this.getHbaseDataInformation()
                                 .buildOnlyKey(hbaseData, CellUtil.cloneQualifier(statCell)));
@@ -147,16 +183,31 @@ public abstract class AbstractHbaseStatsDAO extends GenericDAO<HbaseImageThumbna
                         break;
                     }
                 }
+            } catch (
+                InstantiationException |
+                IllegalAccessException |
+                IllegalArgumentException |
+                InvocationTargetException |
+                NoSuchMethodException |
+                SecurityException e) {
+                AbstractHbaseStatsDAO.LOGGER.warn("Error {} ", ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
             }
         }
         return retValue;
     }
 
     @Override
-    protected TableName createTableIfNeeded(HbaseDataInformation<HbaseImageThumbnailKey> hdi) throws IOException {
-        Admin admin = this.connection.getAdmin();
-        AbstractDAO.createNameSpaceIFNeeded(admin, hdi.getNameSpace());
-        return AbstractDAO.createTableIfNeeded(admin, hdi.getTableName(), Arrays.asList("imgs", "fstats"));
+    protected void createTablesIfNeeded(HbaseDataInformation<T> hdi) throws IOException {
+        try (
+            Admin admin = this.connection.getAdmin()) {
+            AbstractDAO.createNameSpaceIFNeeded(admin, hdi.getNameSpace());
+            TableName tn = AbstractDAO.createTableIfNeeded(
+                admin,
+                hdi.getTableName(),
+                Arrays.asList(AbstractHbaseStatsDAO.TABLE_FAMILY_IMGS, AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS));
+            hdi.setTable(tn);
+        }
     }
 
     public static int getKeyLength(KeyEnumType keyType) {

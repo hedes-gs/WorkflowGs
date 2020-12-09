@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface IRatingRepository {
 
-    long count(int rating) throws IOException, Throwable;
+    long count(long rating) throws IOException, Throwable;
 
-    Map<String, Integer> countAll() throws IOException, Throwable;
+    Map<String, Long> countAll() throws IOException, Throwable;
 }

@@ -9,15 +9,22 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 @Target(FIELD)
 public @interface Column {
-	public String hbaseName();
+    public String hbaseName();
 
-	public boolean isPartOfRowkey() default false;
+    public boolean isPartOfRowkey() default false;
 
-	public int rowKeyNumber() default Integer.MAX_VALUE;
+    public int rowKeyNumber() default Integer.MAX_VALUE;
 
-	public Class<? extends ToByte<?>> toByte();
+    public Class<? extends ToByte<?>> toByte();
 
-	public String columnFamily() default "";
+    public String columnFamily() default "";
 
-	public int fixedWidth() default Integer.MAX_VALUE;
+    public int fixedWidth() default Integer.MAX_VALUE;
+
+    public String mapOnlyOneElement() default "";
+
+    public Class<?> mapKeyClass() default void.class;
+
+    public Class<?> mapValueClass() default void.class;
+
 }

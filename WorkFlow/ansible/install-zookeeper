@@ -30,10 +30,6 @@
         path: /var/lib/kafka/data
         state: directory
         owner: "{{ user_to_create }}"
-    - name: purge kafka
-      shell: "rm -rf /var/lib/kafka/data ; mkdir /var/lib/kafka/data ; chmod 777 /var/lib/kafka/data ; chown -R kafka:nogroup /var/lib/kafka/data"
-    - name: Purge zookeeper
-      shell: "rm -rf /var/lib/zookeeper; mkdir /var/lib/zookeeper; chown -R zookeeper:zookeeper /var/lib/zookeeper ; chmod 777 /var/lib/zookeeper"
     - name: Set Zookeeper Id
       shell: "echo {{ item.value.value }} > /var/lib/zookeeper/myid; chown -R zookeeper:zookeeper /var/lib/zookeeper/myid"
       loop: "{{ lookup('dict', zookeeper_ids) }}"

@@ -11,6 +11,7 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
@@ -33,10 +34,11 @@ import org.springframework.stereotype.Component;
 import com.gs.photo.workflow.DateTimeHelper;
 import com.gs.photo.workflow.hbase.dao.AbstractDAO;
 import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO;
+import com.workflow.model.HbaseImageThumbnailKey;
 import com.workflow.model.dtos.MinMaxDatesDto;
 
 @Component
-public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsDAO {
+public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey> implements IHbaseStatsDAO {
     protected static String       REG_EXP = "Y:([0-9]+)\\/M\\:([0-9]+)[ ]*\\/D\\:([0-9]+)[ ]*\\/H\\:([0-9]+)[ ]*\\/Mn\\:([0-9]+)[ ]*\\/S\\:([0-9]+)[ ]*";
     protected static final Logger LOGGER  = LoggerFactory.getLogger(HbaseStatsDAO.class);
 
@@ -168,28 +170,39 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
 
         TableName tableName = this.getHbaseDataInformation()
             .getTable();
-        AbstractHbaseStatsDAO.LOGGER.info("Start of countImages between min {} and max {} ", min, max);
+        HbaseStatsDAO.LOGGER.info("Start of countImages between min {} and max {} - type is {} ", min, max, type);
         long retValue = 0;
         try (
             Table t = this.connection.getTable(tableName)) {
             Scan statsScan = new Scan().withStartRow(AbstractDAO.toBytes(minAsString))
                 .withStopRow(AbstractDAO.toBytes(maxAsString), true)
-                .addFamily(AbstractDAO.FAMILY_STATS_NAME_AS_BYTES)
+                .addFamily(AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES)
                 .setFilter(
                     new RowFilter(CompareOperator.EQUAL,
                         new RegexStringComparator(AbstractHbaseStatsDAO.getRegexForIntervall(type),
                             Pattern.CASE_INSENSITIVE)));
             try (
                 ResultScanner scanner = t.getScanner(statsScan)) {
-                for (Result res : scanner) {
-                    for (Cell statCell : res.listCells()) {
-                        final long long1 = Bytes.toLong(CellUtil.cloneValue(statCell));
-                        retValue = retValue + long1;
-                    }
-                }
+                retValue = StreamSupport.stream(scanner.spliterator(), false)
+                    .peek(
+                        (res) -> HbaseStatsDAO.LOGGER.info(
+                            "Found row : {}, nb {} ",
+                            new String(res.getRow()),
+                            Bytes.toLong(
+                                CellUtil.cloneValue(
+                                    res.getColumnLatestCell(
+                                        AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES,
+                                        AbstractHbaseStatsDAO.COLUMN_STAT_AS_BYTES)))))
+                    .mapToLong(
+                        (res) -> Bytes.toLong(
+                            CellUtil.cloneValue(
+                                res.getColumnLatestCell(
+                                    AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES,
+                                    AbstractHbaseStatsDAO.COLUMN_STAT_AS_BYTES))))
+                    .sum();
             }
         }
-        AbstractHbaseStatsDAO.LOGGER
+        HbaseStatsDAO.LOGGER
             .info("-> end of countImages between min {} and max {} : found {} elements ", min, max, retValue);
         return retValue;
 
@@ -202,7 +215,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
             .getTable();
         try (
             Table t = this.connection.getTable(tableName)) {
-            Scan statsScan = new Scan().addFamily(AbstractDAO.FAMILY_STATS_NAME_AS_BYTES)
+            Scan statsScan = new Scan().addFamily(AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES)
                 .setFilter(
                     new RowFilter(CompareOperator.EQUAL,
                         new RegexStringComparator(AbstractHbaseStatsDAO.getRegexForIntervall(type),
@@ -212,7 +225,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
                 for (Result res : scanner) {
                     for (Cell statCell : res.listCells()) {
                         final long long1 = Bytes.toLong(CellUtil.cloneValue(statCell));
-                        AbstractHbaseStatsDAO.LOGGER
+                        HbaseStatsDAO.LOGGER
                             .info("countImages at intervall {} at {} : {}", type, new String(res.getRow()), long1);
                         retValue = retValue + long1;
                     }
@@ -226,13 +239,13 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
     public long countImages(String min, String max) throws IOException {
         TableName tableName = this.getHbaseDataInformation()
             .getTable();
-        AbstractHbaseStatsDAO.LOGGER.info("countImages between min {} and max {} ", min, max);
+        HbaseStatsDAO.LOGGER.info("countImages between min {} and max {} ", min, max);
         long retValue = 0;
         try (
             Table t = this.connection.getTable(tableName)) {
             Scan statsScan = new Scan().withStartRow(AbstractDAO.toBytes(min))
                 .withStopRow(AbstractDAO.toBytes(max), true)
-                .addFamily(AbstractDAO.FAMILY_STATS_NAME_AS_BYTES)
+                .addFamily(AbstractHbaseStatsDAO.TABLE_FAMILY_FSTATS_AS_BYTES)
                 .setFilter(
                     new RowFilter(CompareOperator.EQUAL,
                         new RegexStringComparator(AbstractHbaseStatsDAO.getRegexForIntervall(KeyEnumType.ALL),
@@ -242,7 +255,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
                 for (Result res : scanner) {
                     for (Cell statCell : res.listCells()) {
                         final long long1 = Bytes.toLong(CellUtil.cloneValue(statCell));
-                        AbstractHbaseStatsDAO.LOGGER.info(
+                        HbaseStatsDAO.LOGGER.info(
                             "countImages between min {} and max {} at {} : {}",
                             min,
                             max,
@@ -261,7 +274,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
         Pattern p = Pattern.compile(AbstractHbaseStatsDAO.getRegexForIntervall(KeyEnumType.ALL));
         OffsetDateTime retValue = OffsetDateTime.MAX;
         try {
-            AbstractHbaseStatsDAO.LOGGER.info(
+            HbaseStatsDAO.LOGGER.info(
                 "get first year, exploring {} rows ",
                 this.countWithCoprocessorJob(this.getHbaseDataInformation()));
             tableName = this.getHbaseDataInformation()
@@ -297,7 +310,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
                                 AbstractHbaseStatsDAO.getRegexForIntervall(KeyEnumType.ALL));
                         }
                     }
-                    AbstractHbaseStatsDAO.LOGGER.info("get first found {} ", retValue);
+                    HbaseStatsDAO.LOGGER.info("get first found {} ", retValue);
                     return retValue;
                 }
             }
@@ -344,12 +357,12 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
     }
 
     protected OffsetDateTime getMax() {
-        AbstractHbaseStatsDAO.LOGGER.info("get last year");
+        HbaseStatsDAO.LOGGER.info("get last year");
         TableName tableName;
         Pattern p = Pattern.compile(AbstractHbaseStatsDAO.getRegexForIntervall(KeyEnumType.ALL));
         OffsetDateTime retValue = OffsetDateTime.MIN;
         try {
-            AbstractHbaseStatsDAO.LOGGER
+            HbaseStatsDAO.LOGGER
                 .info("get max year, exploring {} rows ", this.countWithCoprocessorJob(this.getHbaseDataInformation()));
 
             tableName = this.getHbaseDataInformation()
@@ -371,7 +384,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
                     ResultScanner scanner = t.getScanner(statsScan)) {
                     for (Result res : scanner) {
                         String key = Bytes.toString(res.getRow());
-                        AbstractHbaseStatsDAO.LOGGER.info("get last year, exam {} vs {} ", key, retValue);
+                        HbaseStatsDAO.LOGGER.info("get last year, exam {} vs {} ", key, retValue);
                         try {
                             OffsetDateTime ldt = this.buildOffsetDateTimeFromKey(p, key);
                             if (retValue.isBefore(ldt)) {
@@ -384,7 +397,7 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO implements IHbaseStatsD
                                 AbstractHbaseStatsDAO.getRegexForIntervall(KeyEnumType.ALL));
                         }
                     }
-                    AbstractHbaseStatsDAO.LOGGER.info("get last found {} ", retValue);
+                    HbaseStatsDAO.LOGGER.info("get last found {} ", retValue);
                     return retValue;
                 }
             }

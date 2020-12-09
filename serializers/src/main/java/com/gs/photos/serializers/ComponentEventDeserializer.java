@@ -8,7 +8,7 @@ public class ComponentEventDeserializer extends AbstractModelSerializerAndDeseri
     implements Deserializer<ComponentEvent> {
 
     @Override
-    public ComponentEvent deserialize(String topic, byte[] data) { return this.fromBytesGeneric(data); }
+    public ComponentEvent deserialize(String topic, byte[] data) { return this.fromBytesGeneric(topic, data); }
 
     public ComponentEventDeserializer() { super(); }
 

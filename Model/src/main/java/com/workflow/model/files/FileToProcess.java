@@ -1,6 +1,7 @@
 package com.workflow.model.files;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.annotation.Generated;
 
@@ -15,8 +16,11 @@ public class FileToProcess extends HbaseData implements Serializable {
     @Nullable
     private FileToProcess     parent;
     private String            name;
+    private String            rootForNfs;
     private String            path;
     private String            host;
+    @Nullable
+    private String            imageId;
     private boolean           compressedFile;
     private long              importDate;
     private ImportEvent       importEvent;
@@ -27,12 +31,18 @@ public class FileToProcess extends HbaseData implements Serializable {
         this.dataId = builder.dataId;
         this.parent = builder.parent;
         this.name = builder.name;
+        this.rootForNfs = builder.rootForNfs;
         this.path = builder.path;
         this.host = builder.host;
+        this.imageId = builder.imageId;
         this.compressedFile = builder.compressedFile;
         this.importDate = builder.importDate;
         this.importEvent = builder.importEvent;
     }
+
+    public FileToProcess getParent() { return this.parent; }
+
+    public String getRootForNfs() { return this.rootForNfs; }
 
     public ImportEvent getImportEvent() { return this.importEvent; }
 
@@ -46,10 +56,33 @@ public class FileToProcess extends HbaseData implements Serializable {
 
     public boolean isCompressedFile() { return this.compressedFile; }
 
+    public String getImageId() { return this.imageId; }
+
+    public void setImageId(String imageId) { this.imageId = imageId; }
+
     @Override
     public String toString() {
-        return "FileToProcess [parent=" + this.parent + ", name=" + this.name + ", path=" + this.path + ", host="
-            + this.host + ", compressedFile=" + this.compressedFile + "]";
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("FileToProcess [parent=");
+        builder2.append(this.parent);
+        builder2.append(", name=");
+        builder2.append(this.name);
+        builder2.append(", rootForNfs=");
+        builder2.append(this.rootForNfs);
+        builder2.append(", path=");
+        builder2.append(this.path);
+        builder2.append(", host=");
+        builder2.append(this.host);
+        builder2.append(", imageId=");
+        builder2.append(this.imageId);
+        builder2.append(", compressedFile=");
+        builder2.append(this.compressedFile);
+        builder2.append(", importDate=");
+        builder2.append(this.importDate);
+        builder2.append(", importEvent=");
+        builder2.append(this.importEvent);
+        builder2.append("]");
+        return builder2.toString();
     }
 
     public FileToProcess() { super("<not set>",
@@ -59,10 +92,16 @@ public class FileToProcess extends HbaseData implements Serializable {
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = (prime * result) + ((this.host == null) ? 0 : this.host.hashCode());
-        result = (prime * result) + ((this.name == null) ? 0 : this.name.hashCode());
-        result = (prime * result) + ((this.parent == null) ? 0 : this.parent.hashCode());
-        result = (prime * result) + ((this.path == null) ? 0 : this.path.hashCode());
+        result = (prime * result) + Objects.hash(
+            this.compressedFile,
+            this.host,
+            this.imageId,
+            this.importDate,
+            this.importEvent,
+            this.name,
+            this.parent,
+            this.path,
+            this.rootForNfs);
         return result;
     }
 
@@ -72,24 +111,16 @@ public class FileToProcess extends HbaseData implements Serializable {
         if (!super.equals(obj)) { return false; }
         if (this.getClass() != obj.getClass()) { return false; }
         FileToProcess other = (FileToProcess) obj;
-        if (this.host == null) {
-            if (other.host != null) { return false; }
-        } else if (!this.host.equals(other.host)) { return false; }
-        if (this.name == null) {
-            if (other.name != null) { return false; }
-        } else if (!this.name.equals(other.name)) { return false; }
-        if (this.parent == null) {
-            if (other.parent != null) { return false; }
-        } else if (!this.parent.equals(other.parent)) { return false; }
-        if (this.path == null) {
-            if (other.path != null) { return false; }
-        } else if (!this.path.equals(other.path)) { return false; }
-        return true;
+        return (this.compressedFile == other.compressedFile) && Objects.equals(this.host, other.host)
+            && Objects.equals(this.imageId, other.imageId) && (this.importDate == other.importDate)
+            && Objects.equals(this.importEvent, other.importEvent) && Objects.equals(this.name, other.name)
+            && Objects.equals(this.parent, other.parent) && Objects.equals(this.path, other.path)
+            && Objects.equals(this.rootForNfs, other.rootForNfs);
     }
 
     /**
      * Creates builder to build {@link FileToProcess}.
-     * 
+     *
      * @return created builder
      */
     @Generated("SparkTools")
@@ -104,8 +135,10 @@ public class FileToProcess extends HbaseData implements Serializable {
         private String        dataId;
         private FileToProcess parent;
         private String        name;
+        private String        rootForNfs;
         private String        path;
         private String        host;
+        private String        imageId;
         private boolean       compressedFile;
         private long          importDate;
         private ImportEvent   importEvent;
@@ -114,7 +147,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -126,7 +159,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -138,7 +171,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for parent parameter.
-         * 
+         *
          * @param parent
          *            field to set
          * @return builder
@@ -150,7 +183,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for name parameter.
-         * 
+         *
          * @param name
          *            field to set
          * @return builder
@@ -161,8 +194,20 @@ public class FileToProcess extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for rootForNfs parameter.
+         *
+         * @param rootForNfs
+         *            field to set
+         * @return builder
+         */
+        public Builder withRootForNfs(String rootForNfs) {
+            this.rootForNfs = rootForNfs;
+            return this;
+        }
+
+        /**
          * Builder method for path parameter.
-         * 
+         *
          * @param path
          *            field to set
          * @return builder
@@ -174,7 +219,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for host parameter.
-         * 
+         *
          * @param host
          *            field to set
          * @return builder
@@ -185,8 +230,20 @@ public class FileToProcess extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for imageId parameter.
+         *
+         * @param imageId
+         *            field to set
+         * @return builder
+         */
+        public Builder withImageId(String imageId) {
+            this.imageId = imageId;
+            return this;
+        }
+
+        /**
          * Builder method for compressedFile parameter.
-         * 
+         *
          * @param compressedFile
          *            field to set
          * @return builder
@@ -198,7 +255,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for importDate parameter.
-         * 
+         *
          * @param importDate
          *            field to set
          * @return builder
@@ -210,7 +267,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for importEvent parameter.
-         * 
+         *
          * @param importEvent
          *            field to set
          * @return builder
@@ -222,7 +279,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public FileToProcess build() { return new FileToProcess(this); }

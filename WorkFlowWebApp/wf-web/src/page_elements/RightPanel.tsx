@@ -44,7 +44,7 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 
 import ChipInput from 'material-ui-chip-input'
-import ReactAutosuggestRemote from '../components/KeyWordsPersonsAutoSuggest'
+import { PersonsElement, KeywordsElement } from '../components/KeyWordsPersonsAutoSuggest'
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 
@@ -103,6 +103,9 @@ export const styles = {
         '.MuiTableCell-sizeSmall': {
             fontSize: '10px'
 
+        },
+        '.MuiToolbar-regular': {
+            minHeight: 'unset'
         },
         '.MuiTableRow-head': {
             backgroundColor: '#999999'
@@ -334,7 +337,9 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
         }
         const aroundKeywords: CSSProperties = {
             padding: '8px',
-            margin: '5px',
+            marginTop: '15px',
+            marginLeft: '5px',
+            marginRight: '5px',
             border: 'solid 1px rgba(255,255,255,0.5)',
             borderRadius: '7px',
             position: 'relative'
@@ -401,9 +406,9 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             <div >
                 <Grid container direction="row" >
                     <Grid item >
-                        <div style={{ margin: '5px' }}>
+                        <div style={{ marginLeft: '5px' }}>
                             <div style={{ position: 'relative' }}>
-                                <img src={this.getImgRef(exifsLink)} width={imgWidth} height={imgHeihgt} style={{ marginTop: '11px' }} />
+                                <img src={this.getImgRef(exifsLink)} width={imgWidth} height={imgHeihgt} />
                                 <div style={overLayStyleLeft}>
                                     <div style={{ float: 'left' }}> image id </div> <div>{img != null ? img.imageId : ' img not found'}</div>
                                     <div style={{ float: 'left' }}> version </div> <div>{img != null && img.data != null ? img.data.version : ''}</div>
@@ -438,7 +443,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                         <Toolbar classes={{ gutters: 'Local-MuiToolbar-gutters' }}>
                             <Grid
                                 container
-                                style={{ backgroundColor: '#555555', margin: '5px' }}
+                                style={{ backgroundColor: '#555555', marginLeft: '5px' }}
 
                             >
                                 <Grid item xs zeroMinWidth>
@@ -481,7 +486,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                 borderRadius: '5px',
                                 fontSize: '0.8em'
                             }}>Mots-clés</div>
-                            <ReactAutosuggestRemote />
+                            <KeywordsElement />
                         </div>
                         <div style={aroundPersons}>
                             <div style={{
@@ -496,7 +501,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                 borderRadius: '5px',
                                 fontSize: '0.8em'
                             }}>Personnes identifiées</div>
-                            <ReactAutosuggestRemote />
+                            <PersonsElement />
                         </div>
 
                         <div style={aroundPersons}>

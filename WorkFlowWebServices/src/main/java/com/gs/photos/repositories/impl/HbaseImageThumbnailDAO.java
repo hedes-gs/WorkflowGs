@@ -9,32 +9,36 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.PageFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.cache2k.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,41 +49,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.workflow.DateTimeHelper;
+import com.gs.photo.workflow.dao.IImageThumbnailDAO;
 import com.gs.photo.workflow.exif.FieldType;
 import com.gs.photo.workflow.exif.IExifService;
-import com.gs.photo.workflow.hbase.HbaseDataInformation;
+import com.gs.photo.workflow.hbase.dao.AbstractDAO;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseImageThumbnailDAO;
 import com.gs.photo.workflow.hbase.dao.GenericDAO;
 import com.gs.photos.repositories.IHbaseImageThumbnailDAO;
 import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset;
-import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset.TypeValue;
-import com.gsphotos.worflow.hbasefilters.FilterRowFindNextRowWithTwoFields;
 import com.workflow.model.HbaseImageThumbnail;
-import com.workflow.model.ModelConstants;
+import com.workflow.model.HbaseImagesOfMetadata;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.ImageKeyDto;
 import com.workflow.model.dtos.ImageVersionDto;
 
 @Component
-public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> implements IHbaseImageThumbnailDAO {
+public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO implements IHbaseImageThumbnailDAO {
     private static Logger                   LOGGER                   = LoggerFactory
         .getLogger(HbaseImageThumbnailDAO.class);
-    private static final byte[]             FAMILY_THB_BYTES         = "thb".getBytes();
-    private static final byte[]             FAMILY_SZ_BYTES          = "sz".getBytes();
-    private static final byte[]             FAMILY_IMG_BYTES         = "img".getBytes();
-    private static final byte[]             FAMILY_TECH_BYTES        = "tech".getBytes();
-    private static final byte[]             FAMILY_META_BYTES        = "meta".getBytes();
-    private static final byte[]             FAMILY_ALBUMS_BYTES      = "albums".getBytes();
-    private static final byte[]             FAMILY_KEYWORDS_BYTES    = "keywords".getBytes();
-
-    private static final byte[]             HEIGHT_BYTES             = "height".getBytes();
-    private static final byte[]             WIDTH_BYTES              = "width".getBytes();
-    private static final byte[]             ORIGINAL_HEIGHT_BYTES    = "originalHeight".getBytes();
-    private static final byte[]             ORIGINAL_WIDTH_BYTES     = "originalWidth".getBytes();
-    private static final byte[]             PATH_BYTES               = "path".getBytes();
-    private static final byte[]             TUMB_NAME_BYTES          = "thumb_name".getBytes();
-    private static final byte[]             IMAGE_NAME_BYTES         = "image_name".getBytes();
-    private static final byte[]             TUMBNAIL_BYTES           = "thumbnail".getBytes();
-    private static final byte[]             ORIENTATION_BYTES        = "orientation".getBytes();
 
     static protected ExecutorService        executorService          = Executors.newFixedThreadPool(64);
 
@@ -102,7 +89,10 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     @Autowired
     protected IHbaseImagesOfKeywordsDAO     hbaseImagesOfKeywordsDAO;
 
-    protected Map<Integer, PageDescription> currentDefaultLoadedPage = new TreeMap<>();
+    @Autowired
+    protected IHbaseImagesOfPersonsDAO      hbaseImagesOfPersonsDAO;
+
+    protected Map<Integer, PageDescription> currentDefaultLoadedPage = new ConcurrentHashMap<>();
 
     protected static class PageDescription {
         protected int                       hbasePageNumber;
@@ -123,29 +113,27 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     private final static int compareForSorting(HbaseImageThumbnail o1, HbaseImageThumbnail o2) {
         return Comparator.comparing(HbaseImageThumbnail::getCreationDate)
             .thenComparing(HbaseImageThumbnail::getImageId)
-            .thenComparingInt(HbaseImageThumbnail::getVersion)
             .compare(o1, o2);
     }
 
     @Override
     public List<ImageDto> findLastImages(int pageSize, int pageNumber) {
-        List<RegionInfo> regions = null;
         int countAll = 0;
         try {
-            try (
-                Admin admin = this.connection.getAdmin()) {
-                regions = admin.getRegions(
-                    this.getHbaseDataInformation()
-                        .getTable());
-            }
-            countAll = super.countWithCoprocessorJob(this.getHbaseDataInformation());
+            countAll = this.getNumberOfImages();
             HbaseImageThumbnailDAO.LOGGER.info("Total nb of elements {} ", countAll);
         } catch (Throwable e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
         }
-        final int pageSize2 = (pageSize % regions.size()) == 0 ? pageSize / regions.size()
-            : (int) Math.round((pageSize / regions.size()) + 1);
+        // final int pageSize2 = (pageSize % regions.size()) == 0 ? pageSize /
+        // regions.size()
+        // : (int) Math.round((pageSize / regions.size()) + 1);
+        return this.buildPage(pageSize, pageNumber, countAll);
+    }
+
+    protected List<ImageDto> buildPage(int pageSize, int pageNumber, int countAll) {
+        final int pageSize2 = pageSize;
         if (pageNumber > 0) {
             List<HbaseImageThumbnail> retValue = new ArrayList<>();
             try (
@@ -160,8 +148,7 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
                 int startPage = -1;
                 boolean startPageIsFound = false;
                 while ((totalLoadedElements < Math.min(countAll, pageSize * pageNumber))) {
-                    totalLoadedElements = totalLoadedElements
-                        + this.loadPages(table, currentPageNumber, pageSize2, regions);
+                    totalLoadedElements = totalLoadedElements + this.loadPages(table, currentPageNumber, pageSize2);
                     PageDescription pageDesc = this.currentDefaultLoadedPage.get(currentPageNumber);
                     if (((currentIndex + pageDesc.getPageSize()) >= firstRow) && !startPageIsFound) {
                         startPage = currentPageNumber;
@@ -184,7 +171,7 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
                     retValue.add(pageDesc.pageContent.get(k));
                 }
                 do {
-                    pageDesc = this.currentDefaultLoadedPage.get(startPage++);
+                    pageDesc = this.currentDefaultLoadedPage.get(++startPage);
                     if (pageDesc != null) {
                         for (int k = 0; (retValue.size() < pageSize) && (k < pageDesc.getPageSize()); k++) {
                             retValue.add(pageDesc.pageContent.get(k));
@@ -212,92 +199,77 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         }
     }
 
-    private int loadPages(Table table, int currentPageNumber, int pageSize, List<RegionInfo> regions) {
-        final HbaseImageThumbnail lastOfPrevious = this.getLastRowOfPreviousPage(currentPageNumber, regions);
+    @Override
+    public List<ImageDto> findLastImagesByKeyword(int pageSize, int pageNumber, String keyword) {
+        return this.hbaseImagesOfKeywordsDAO.getAllImagesOfMetadata(keyword, pageNumber, pageSize)
+            .stream()
+            .sorted((o1, o2) -> o2.compareTo(o1))
+            .map((r) -> this.toImageDTO(r))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ImageDto> findLastImagesByPerson(int pageSize, int pageNumber, String person) {
+        return this.hbaseImagesOfPersonsDAO.getAllImagesOfMetadata(person, pageNumber, pageSize)
+            .stream()
+            .sorted((o1, o2) -> o2.compareTo(o1))
+            .map((r) -> this.toImageDTO(r))
+            .collect(Collectors.toList());
+
+    }
+
+    private int loadPages(Table table, int currentPageNumber, int pageSize) {
+        HbaseImageThumbnailDAO.LOGGER.info("Loading page {} with page size : {} ", currentPageNumber, pageSize);
         PageDescription pageDescription = this.currentDefaultLoadedPage
-            .computeIfAbsent(currentPageNumber, (c) -> this.createPageDescription(table, c, pageSize, lastOfPrevious));
+            .computeIfAbsent(currentPageNumber, (c) -> this.createPageDescription(table, c, pageSize));
         if (pageDescription.getPageSize() == 0) {
-            lastOfPrevious.setVersion((short) (1000));
-            pageDescription = this.createPageDescription(table, currentPageNumber, pageSize, lastOfPrevious);
-            if (pageDescription.getPageSize() == 0) { throw new RuntimeException("Unable to cross a region..."); }
+            pageDescription = this.createPageDescription(table, currentPageNumber, pageSize);
             this.currentDefaultLoadedPage.put(currentPageNumber, pageDescription);
         }
         return pageDescription.getPageSize();
     }
 
-    private HbaseImageThumbnail getLastRowOfPreviousPage(int currentPageNumber, List<RegionInfo> regions) {
-        HbaseImageThumbnail lastOfPrevious = null;
-        if (this.currentDefaultLoadedPage.containsKey(currentPageNumber - 1)) {
-            PageDescription pageDescription = this.currentDefaultLoadedPage.get(currentPageNumber - 1);
-            if (pageDescription.getPageSize() > 0) {
-                lastOfPrevious = pageDescription.pageContent.get(0);
-            }
-        }
-        return lastOfPrevious;
-    }
+    private PageDescription createPageDescription(Table table, Integer currentPageNumber, int pageSize) {
+        HbaseImageThumbnailDAO.LOGGER
+            .info(" createPageDescription currentPageNumber = {},pageSize {} ", currentPageNumber, pageSize);
 
-    private PageDescription createPageDescription(
-        Table table,
-        Integer currentPageNumber,
-        int pageSize,
-        HbaseImageThumbnail lastOfPrevious
-    ) {
-        try {
+        try (
+            Table pageTable = this.connection.getTable(TableName.valueOf("prod:" + IImageThumbnailDAO.TABLE_PAGE));) {
             PageDescription retValue = new PageDescription(currentPageNumber);
-            Scan scan = this.createScanToGetAllColumnsWithoutImages();
-            scan.setReversed(true);
-            scan.setCaching(10000);
+            long pageNumber = (currentPageNumber * pageSize) / IImageThumbnailDAO.PAGE_SIZE;
 
-            if (lastOfPrevious != null) {
-                HbaseImageThumbnailDAO.LOGGER
-                    .info("Last presious to  [{}] - in page {} ", lastOfPrevious, currentPageNumber);
-                scan.withStartRow(this.getKey(lastOfPrevious), false);
-                HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
-                    .withCreationDate(0)
-                    .withImageId(" ")
-                    .withVersion((short) 0)
-                    .build();
-                scan.withStopRow(this.getKey(hbaseData));
-            } else {
-                HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
-                    .withCreationDate(Long.MAX_VALUE)
-                    .withImageId(" ")
-                    .withVersion((short) 0)
-                    .build();
-                scan.withStartRow(this.getKey(hbaseData));
-                hbaseData = HbaseImageThumbnail.builder()
-                    .withCreationDate(0)
-                    .withImageId(" ")
-                    .withVersion((short) 0)
-                    .build();
-                scan.withStopRow(this.getKey(hbaseData));
-            }
-            scan.setLimit(pageSize);
-            scan.setFilter(
-                new FilterList(new FilterRowByLongAtAGivenOffset(ModelConstants.FIXED_WIDTH_CREATION_DATE
-                    + ModelConstants.FIXED_WIDTH_IMAGE_ID, 1L, 1L, FilterRowByLongAtAGivenOffset.TypeValue.USHORT)));
+            Get get = new Get(AbstractDAO.convert(pageNumber));
+
+            List<byte[]> getsList = new ArrayList(pageTable.get(get)
+                .getFamilyMap(AbstractDAO.TABLE_PAGE_LIST_COLUMN_FAMILY)
+                .keySet());
+
+            long firstIndex = ((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE);
+            long lastIndex = (((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE) + pageSize) - 1;
+            HbaseImageThumbnailDAO.LOGGER.info(" Retrieving from {} to {} ", firstIndex, lastIndex);
+
             try (
-                ResultScanner rs = table.getScanner(scan)) {
-                rs.forEach((t) -> {
-                    HbaseImageThumbnail instance = new HbaseImageThumbnail();
-                    this.hbaseDataInformation.build(instance, t);
-                    retValue.add(instance);
-                });
-                retValue.pageContent = retValue.pageContent.stream()
-                    .sorted((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o1, o2))
+                Table thumbTable = this.connection.getTable(
+                    this.getHbaseDataInformation()
+                        .getTable())) {
+                Scan scan = this.createScanToGetAllColumnsWithoutImages()
+                    .withStartRow(getsList.get((int) firstIndex))
+                    .withStopRow(getsList.get((int) lastIndex), true);
+                List<HbaseImageThumbnail> pageContent = StreamSupport.stream(
+                    thumbTable.getScanner(scan)
+                        .spliterator(),
+                    false)
+                    .map((r) -> {
+                        HbaseImageThumbnail instance = new HbaseImageThumbnail();
+                        this.hbaseDataInformation.build(instance, r);
+                        return instance;
+                    })
                     .collect(Collectors.toList());
-                return retValue;
-            } finally {
-                HbaseImageThumbnailDAO.LOGGER.info(
-                    "Current page {} with page size {}, found {} ",
-                    currentPageNumber,
-                    pageSize,
-                    retValue.getPageSize());
-                retValue.pageContent.forEach(
-                    (e) -> HbaseImageThumbnailDAO.LOGGER
-                        .info("Current page {} with page size {}, found {} ", currentPageNumber, pageSize, e));
-
+                for (long k = 0; k < pageSize; k++) {
+                    retValue.add(pageContent.get((int) k));
+                }
             }
+            return retValue;
         } catch (IOException e) {
             HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
             throw new RuntimeException(e);
@@ -305,22 +277,23 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     }
 
     protected void saveInCacheMainJpegImagesName(HbaseImageThumbnail instance) {
-        if (this.isMainVersion(instance)) {
-            byte[] jpegImageToCache = instance.getThumbnail();
-            if (instance.getOrientation() == 8) {
-                try {
-                    BufferedImage bi = ImageIO.read(new ByteArrayInputStream(instance.getThumbnail()));
-                    bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
-                    ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
-                    ImageIO.write(bi, "jpg", os);
-                    jpegImageToCache = os.toByteArray();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        byte[] jpegImageToCache = instance.getThumbnail()
+            .get(1);
+        if (instance.getOrientation() == 8) {
+            try {
+                BufferedImage bi = ImageIO.read(
+                    new ByteArrayInputStream(instance.getThumbnail()
+                        .get(1)));
+                bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
+                ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
+                ImageIO.write(bi, "jpg", os);
+                jpegImageToCache = os.toByteArray();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            this.cacheManager.getCache(this.cacheMainJpegImagesName)
-                .putIfAbsent(instance.getImageId(), jpegImageToCache);
         }
+        this.cacheManager.getCache(this.cacheMainJpegImagesName)
+            .putIfAbsent(instance.getImageId(), jpegImageToCache);
     }
 
     @Override
@@ -341,7 +314,6 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
         HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
             .withImageId(id)
-            .withVersion((short) version)
             .build();
 
         List<HbaseImageThumbnail> listOfNext = this.getNextThumbNailsOf(hbaseData);
@@ -360,7 +332,6 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
         HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
             .withImageId(id)
-            .withVersion((short) version)
             .build();
         List<HbaseImageThumbnail> listOfPrevious = this.getPreviousThumbNailsOf(hbaseData);
         listOfPrevious.sort((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o1, o2));
@@ -398,10 +369,10 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     }
 
     @Override
-    public int count(OffsetDateTime firstDate, OffsetDateTime lastDate) { return 500; }
+    public long count(OffsetDateTime firstDate, OffsetDateTime lastDate) { return 500; }
 
     @Override
-    public int count() throws Throwable { return super.countWithCoprocessorJob(this.getHbaseDataInformation()); }
+    public long count() throws Throwable { return super.countWithCoprocessorJob(this.getHbaseDataInformation()); }
 
     @Override
     public List<ImageDto> getThumbNailsByDate(
@@ -427,22 +398,10 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
             Scan scan = this.createScanToGetAllColumns();
             FilterList fl = new FilterList(
                 new FilterRowByLongAtAGivenOffset(0, firstDateEpochMillis, mastDateEpochMilli));
-            if (versions != null) {
-                for (short v : versions) {
-                    if (v != 0) {
-                        fl.addFilter(
-                            new FilterRowByLongAtAGivenOffset(ModelConstants.FIXED_WIDTH_CREATION_DATE
-                                + ModelConstants.FIXED_WIDTH_IMAGE_ID, v, v, TypeValue.USHORT));
-                    }
-                }
-            }
-
             fl.addFilter(new PageFilter(page.getPageSize()));
-
             scan.setFilter(fl);
             HbaseImageThumbnail hbt = HbaseImageThumbnail.builder()
                 .withCreationDate(firstDateEpochMillis)
-                .withVersion((short) 0)
                 .withImageId(new String(""))
                 .build();
             byte[] keyStartValue = new byte[this.hbaseDataInformation.getKeyLength()];
@@ -452,7 +411,6 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
             scan.withStartRow(keyStartValue);
             hbt = HbaseImageThumbnail.builder()
                 .withCreationDate(mastDateEpochMilli)
-                .withVersion((short) 0)
                 .withImageId(new String(""))
                 .build();
             this.hbaseDataInformation.buildKey(hbt, keyStopValue);
@@ -494,29 +452,29 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         retValue.add(imageDTO);
 
         HbaseImageThumbnailDAO.executorService.submit(() -> {
-            if (this.isMainVersion(instance)) {
-                if (instance.getOrientation() == 8) {
-                    try {
-                        BufferedImage bi = ImageIO.read(new ByteArrayInputStream(instance.getThumbnail()));
-                        bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
-                        ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
-                        ImageIO.write(bi, "jpg", os);
-                        this.cacheManager.getCache(this.cacheMainJpegImagesName)
-                            .putIfAbsent(instance.getImageId(), os.toByteArray());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else {
+            if (instance.getOrientation() == 8) {
+                try {
+                    BufferedImage bi = ImageIO.read(
+                        new ByteArrayInputStream(instance.getThumbnail()
+                            .get(1)));
+                    bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
+                    ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
+                    ImageIO.write(bi, "jpg", os);
                     this.cacheManager.getCache(this.cacheMainJpegImagesName)
-                        .putIfAbsent(instance.getImageId(), instance.getThumbnail());
+                        .putIfAbsent(instance.getImageId(), os.toByteArray());
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+            } else {
+                this.cacheManager.getCache(this.cacheMainJpegImagesName)
+                    .putIfAbsent(instance.getImageId(), instance.getThumbnail());
             }
             org.cache2k.processor.EntryProcessor<String, Map<Integer, ImageVersionDto>, Boolean> p = (entry) -> {
                 if (!entry.exists()) {
                     entry.setValue(new HashMap<>());
                 }
                 entry.getValue()
-                    .put((int) instance.getVersion(), this.toImageVersionDTO(instance));
+                    .put(1, this.toImageVersionDTO(instance));
                 return true;
             };
             nativeCache.invoke(instance.getImageId(), p);
@@ -534,24 +492,26 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
 
     protected Scan createScanToGetAllColumns() {
         Scan scan = new Scan();
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_IMG_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_THB_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_TECH_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
+        scan.addColumn(IImageThumbnailDAO.FAMILY_THB_BYTES, "1".getBytes(Charset.forName("UTF-8")));
+        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_PERSONS_BYTES);
         return scan;
     }
 
     protected Scan createScanToGetAllColumnsWithoutImages() {
         Scan scan = new Scan();
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_SZ_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_THB_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_TECH_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
-        scan.addFamily(HbaseImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_PERSONS_BYTES);
         return scan;
     }
 
@@ -601,8 +561,9 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
             ImageVersionDto.Builder builderImageVersionDto = ImageVersionDto.builder();
             builderImageVersionDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
                 .withImageId(instance.getImageId())
-                .withVersion(instance.getVersion())
-                .withJpegContent(instance.getThumbnail())
+                .withJpegContent(
+                    instance.getThumbnail()
+                        .get(1))
                 .withOriginalHeight((int) instance.getOriginalHeight())
                 .withOriginalWidth((int) instance.getOriginalWidth())
                 .withImageName(instance.getImageName())
@@ -611,7 +572,9 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
 
             if (instance.getOrientation() == 8) {
                 try {
-                    BufferedImage bi = ImageIO.read(new ByteArrayInputStream(instance.getThumbnail()));
+                    BufferedImage bi = ImageIO.read(
+                        new ByteArrayInputStream(instance.getThumbnail()
+                            .get(1)));
                     bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
                     ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
                     ImageIO.write(bi, "jpg", os);
@@ -628,14 +591,12 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         }
     }
 
-    protected boolean isMainVersion(HbaseImageThumbnail instance) { return instance.getVersion() == 0; }
-
     private ImageDto toImageDTO(HbaseImageThumbnail instance) {
         ImageDto.Builder builderImageDto = ImageDto.builder();
         ImageKeyDto.Builder builderImageKeyDto = ImageKeyDto.builder();
         builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
             .withImageId(instance.getImageId())
-            .withVersion(instance.getVersion());
+            .withVersion(1);
 
         builderImageDto.withData(builderImageKeyDto.build())
             .withOrientation((int) instance.getOrientation())
@@ -647,6 +608,13 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
             .withSpeed(this.exifService.toString(FieldType.RATIONAL, instance.getSpeed()))
             .withAperture(this.exifService.toString(FieldType.RATIONAL, instance.getAperture()))
             .withIso(Short.toString(instance.getIsoSpeed()))
+            .withPersons(
+                (instance.getPersons() != null) && (instance.getPersons()
+                    .size() > 0) ? instance.getPersons()
+                        .toArray(
+                            new String[instance.getPersons()
+                                .size()])
+                        : null)
             .withAlbum(
                 instance.getAlbums()
                     .toString())
@@ -657,7 +625,30 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
                             .size()]))
             .withCamera(instance.getCamera())
             .withLens(new String(instance.getLens()))
-            .withRatings(instance.getRatings())
+            // .withRatings(instance.getRatings())
+            .withImageName(instance.getImageName());
+
+        return builderImageDto.build();
+    }
+
+    private ImageDto toImageDTO(HbaseImagesOfMetadata instance) {
+        ImageDto.Builder builderImageDto = ImageDto.builder();
+        ImageKeyDto.Builder builderImageKeyDto = ImageKeyDto.builder();
+        builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
+            .withImageId(instance.getImageId());
+
+        builderImageDto.withData(builderImageKeyDto.build())
+            .withOrientation((int) instance.getOrientation())
+            .withCreationDateAsString(DateTimeHelper.toDateTimeAsString(instance.getCreationDate()))
+            .withThumbnailHeight((int) instance.getHeight())
+            .withThumbnailWidth((int) instance.getWidth())
+            .withOriginalHeight((int) instance.getOriginalHeight())
+            .withOriginalWidth((int) instance.getOriginalWidth())
+            .withSpeed(this.exifService.toString(FieldType.RATIONAL, instance.getSpeed()))
+            .withAperture(this.exifService.toString(FieldType.RATIONAL, instance.getAperture()))
+            .withIso(Short.toString(instance.getIsoSpeed()))
+            .withCamera(instance.getCamera())
+            .withLens(new String(instance.getLens()))
             .withImageName(instance.getImageName());
 
         return builderImageDto.build();
@@ -668,11 +659,10 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
         HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
             .withImageId(id)
-            .withVersion((short) version)
             .build();
 
         Get get;
-        byte[] key = this.getKey(hbaseData, this.hbaseDataInformation);
+        byte[] key = GenericDAO.getKey(hbaseData, this.hbaseDataInformation);
         get = new Get(key);
         try {
             try (
@@ -698,7 +688,6 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
         HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
             .withImageId(id)
-            .withVersion((short) version)
             .build();
         try {
             Get get;
@@ -711,6 +700,11 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
                     HbaseImageThumbnail retValue = HbaseImageThumbnail.builder()
                         .build();
                     this.hbaseDataInformation.build(retValue, result);
+                    if (!retValue.getThumbnail()
+                        .containsKey(1)) {
+                        HbaseImageThumbnailDAO.LOGGER
+                            .error("Unable to find version 1 for {} - {} ", id, retValue.getPath());
+                    }
                     return Optional.of(this.toImageVersionDTO(retValue));
                 }
             }
@@ -729,32 +723,20 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
             Table table = this.connection.getTable(
                 this.getHbaseDataInformation()
                     .getTable())) {
-            byte[] key = this.getKey(initialKey, this.getHbaseDataInformation());
+            byte[] key = GenericDAO.getKey(initialKey, this.getHbaseDataInformation());
 
             Scan scan = this.createScanToGetAllColumns();
-            scan.setFilter(
-                new FilterList(
-                    new FilterRowFindNextRowWithTwoFields(ModelConstants.FIXED_WIDTH_CREATION_DATE,
-                        initialKey.getImageId()
-                            .getBytes("UTF-8"),
-                        ModelConstants.FIXED_WIDTH_CREATION_DATE + ModelConstants.FIXED_WIDTH_IMAGE_ID,
-                        (short) 1),
-                    new PageFilter(1)));
-            scan.withStartRow(key);
-            scan.setReversed(true);
+            scan.withStartRow(key)
+                .setLimit(2)
+                .setReversed(true);
             ResultScanner rs = table.getScanner(scan);
             rs.forEach((t) -> {
-
-                try {
-                    HbaseImageThumbnail instance = new HbaseImageThumbnail();
-                    this.getHbaseDataInformation()
-                        .build(instance, t);
-                    retValue.add(instance);
-                    HbaseImageThumbnailDAO.LOGGER
-                        .info("---> getNextThumbNailsOf of {}, found {}", initialKey, instance.getImageId());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                HbaseImageThumbnail instance = new HbaseImageThumbnail();
+                this.getHbaseDataInformation()
+                    .build(instance, t);
+                retValue.add(instance);
+                HbaseImageThumbnailDAO.LOGGER
+                    .info("---> getNextThumbNailsOf of {}, found {}", initialKey, instance.getImageId());
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -772,28 +754,17 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
                 this.getHbaseDataInformation()
                     .getTable())) {
 
-            byte[] key = this.getKey(initialKey, this.getHbaseDataInformation());
+            byte[] key = GenericDAO.getKey(initialKey, this.getHbaseDataInformation());
             Scan scan = this.createScanToGetAllColumns();
             scan.withStartRow(key);
-            scan.setFilter(
-                new FilterList(
-                    new FilterRowFindNextRowWithTwoFields(ModelConstants.FIXED_WIDTH_CREATION_DATE,
-                        initialKey.getImageId()
-                            .getBytes("UTF-8"),
-                        ModelConstants.FIXED_WIDTH_CREATION_DATE + ModelConstants.FIXED_WIDTH_IMAGE_ID,
-                        (short) 1),
-                    new PageFilter(1)));
+            scan.setLimit(2);
             ResultScanner rs = table.getScanner(scan);
             rs.forEach((t) -> {
 
                 HbaseImageThumbnail instance = new HbaseImageThumbnail();
                 retValue.add(instance);
-                try {
-                    this.getHbaseDataInformation()
-                        .build(instance, t);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                this.getHbaseDataInformation()
+                    .build(instance, t);
             });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -802,102 +773,48 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
     }
 
     @Override
-    public Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, int rating) {
+    public Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, long rating) {
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
         HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
             .withImageId(id)
-            .withVersion((short) version)
             .build();
-        HbaseImageThumbnail retValue = null;
-        Get get;
-        byte[] key = this.getKey(hbaseData, this.hbaseDataInformation);
-        get = new Get(key);
         try {
-            try (
-                Table table = this.connection.getTable(TableName.valueOf(this.hbaseDataInformation.getTableName()))) {
-                Result result = table.get(get);
-                if ((result != null) && !result.isEmpty()) {
-                    retValue = HbaseImageThumbnail.builder()
-                        .build();
-                    this.hbaseDataInformation.build(retValue, result);
-                    HbaseImageThumbnail previous = (HbaseImageThumbnail) retValue.clone();
-                    retValue.setRatings(rating);
-                    Put put = this.createHbasePut(
-                        this.getKey(retValue, this.hbaseDataInformation),
-                        this.getCfList(retValue, this.hbaseDataInformation));
-                    table.put(put);
-                    this.hbaseImagesOfRatingsDAO.updateMetadata(retValue, previous);
-                    return Optional.of(this.toImageDTO(retValue));
-                }
-            } finally {
-                try (
-                    Table table = this.connection
-                        .getTable(TableName.valueOf(this.hbaseDataInformation.getTableName()))) {
-                    Result result = table.get(get);
-                    retValue = HbaseImageThumbnail.builder()
-                        .build();
-                    this.hbaseDataInformation.build(retValue, result);
-                    HbaseImageThumbnailDAO.LOGGER
-                        .info("After updateRating keyword {}, hbase retrieved value {} ", rating, retValue);
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-
-            }
-        } catch (
-            IOException |
-            CloneNotSupportedException e) {
+            final HbaseImageThumbnail hbi = super.get(hbaseData);
+            hbi.getRatings()
+                .stream()
+                .findFirst()
+                .ifPresent((r) -> this.hbaseImagesOfRatingsDAO.deleteMetaData(hbi, r));
+            this.hbaseImagesOfRatingsDAO.addMetaData(hbi, rating);
+            HbaseImageThumbnail hbi2 = super.get(hbaseData);
+            return Optional.of(this.toImageDTO(hbi2));
+        } catch (IOException e) {
             HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
             throw new RuntimeException(e);
+        } finally {
+            HbaseImageThumbnailDAO.LOGGER.info("End of Adding rating {} to [{}]", rating, id);
         }
-        return Optional.empty();
     }
 
     @Override
     public Optional<ImageDto> addKeyword(String id, OffsetDateTime creationDate, int version, String keyword) {
         HbaseImageThumbnailDAO.LOGGER.info("Adding keyword {} to [{}]", keyword, id);
         keyword = keyword.trim();
+
         try {
             HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
             final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
             HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
                 .withImageId(id)
-                .withVersion((short) version)
                 .build();
-            HbaseImageThumbnail retValue = null;
-            Get get;
-            byte[] key = this.getKey(hbaseData, this.hbaseDataInformation);
-            get = new Get(key);
-            try {
-                try (
-                    Table table = this.connection
-                        .getTable(TableName.valueOf(this.hbaseDataInformation.getTableName()))) {
-                    Result result = table.get(get);
-                    if ((result != null) && !result.isEmpty()) {
-                        retValue = HbaseImageThumbnail.builder()
-                            .build();
-                        this.hbaseDataInformation.build(retValue, result);
-                        retValue.getKeyWords()
-                            .add(keyword);
-                        Put put = this.createHbasePut(retValue);
-                        put.addColumn(
-                            HbaseImageThumbnailDAO.FAMILY_KEYWORDS_BYTES,
-                            keyword.getBytes(Charset.forName("UTF-8")),
-                            HbaseDataInformation.TRUE_VALUE);
-                        this.bufferedMutator.mutate(put);
-                        this.hbaseImagesOfKeywordsDAO.updateMetadata(retValue, keyword);
-                        this.removeFromCache(id, creationDate, version);
-                        this.bufferedMutator.flush();
-                        return Optional.of(this.toImageDTO(retValue));
-                    }
-                }
-            } catch (IOException e) {
-                HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
-                throw new RuntimeException(e);
-            }
-            return Optional.empty();
+
+            HbaseImageThumbnail hbi = super.get(hbaseData);
+            this.hbaseImagesOfKeywordsDAO.addMetaData(hbi, keyword);
+            hbi = super.get(hbaseData);
+            return Optional.of(this.toImageDTO(hbi));
+        } catch (IOException e) {
+            HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
+            throw new RuntimeException(e);
         } finally {
             HbaseImageThumbnailDAO.LOGGER.info("End of Adding keyword {} to [{}]", keyword, id);
         }
@@ -905,66 +822,24 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
 
     @Override
     public Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword) {
-        keyword = keyword.trim();
         HbaseImageThumbnailDAO.LOGGER.info("Deleting keyword {} to [{}]", keyword, id);
+        keyword = keyword.trim();
+
         try {
             HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
             final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
             HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
                 .withImageId(id)
-                .withVersion((short) version)
                 .build();
-            HbaseImageThumbnail retValue = null;
-            Get get;
-            byte[] key = this.getKey(hbaseData, this.hbaseDataInformation);
-            get = new Get(key);
-            try {
-                try (
-                    Table table = this.connection
-                        .getTable(TableName.valueOf(this.hbaseDataInformation.getTableName()))) {
-                    Result result = table.get(get);
-                    if ((result != null) && !result.isEmpty()) {
-                        retValue = HbaseImageThumbnail.builder()
-                            .build();
-                        this.hbaseDataInformation.build(retValue, result);
-                        retValue.getKeyWords()
-                            .remove(keyword);
-                        HbaseImageThumbnailDAO.LOGGER
-                            .info("After keyword {} to [{}] : {}", keyword, id, retValue.getKeyWords());
-                        Delete delete = this.createHbaseDelete(this.getKey(retValue, this.hbaseDataInformation));
-                        delete.addColumns(
-                            HbaseImageThumbnailDAO.FAMILY_KEYWORDS_BYTES,
-                            keyword.getBytes(Charset.forName("UTF-8")));
-                        this.bufferedMutator.mutate(delete);
-                        this.hbaseImagesOfKeywordsDAO.removeFromMetadata(retValue, keyword);
-                        this.removeFromCache(id, creationDate, version);
-                        this.bufferedMutator.flush();
-                        return Optional.of(this.toImageDTO(retValue));
-                    }
-                }
-            } catch (IOException e) {
-                HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
-                throw new RuntimeException(e);
-            } finally {
-                try (
-                    Table table = this.connection
-                        .getTable(TableName.valueOf(this.hbaseDataInformation.getTableName()))) {
-                    Result result = table.get(get);
-                    retValue = HbaseImageThumbnail.builder()
-                        .build();
-                    this.hbaseDataInformation.build(retValue, result);
-                    HbaseImageThumbnailDAO.LOGGER
-                        .info("After deleting keyword {}, hbase retrieved value {} ", keyword, retValue);
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-
-            }
-            return Optional.empty();
+            HbaseImageThumbnail hbi = super.get(hbaseData);
+            this.hbaseImagesOfKeywordsDAO.deleteMetaData(hbi, keyword);
+            hbi = super.get(hbaseData);
+            return Optional.of(this.toImageDTO(hbi));
+        } catch (IOException e) {
+            HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
+            throw new RuntimeException(e);
         } finally {
-
-            HbaseImageThumbnailDAO.LOGGER.info("End of deleting keyword {} to [{}]", keyword, id);
+            HbaseImageThumbnailDAO.LOGGER.info("End of Deleting keyword {} to [{}]", keyword, id);
         }
     }
 
@@ -973,7 +848,6 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
         ImageKeyDto keyImageKeyDto = ImageKeyDto.builder()
             .withCreationDate(creationDate)
             .withImageId(id)
-            .withVersion(version)
             .build();
         cache.remove(keyImageKeyDto);
     }
@@ -983,6 +857,99 @@ public class HbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail> impl
 
     @Override
     public void delete(OffsetDateTime creationDate, String id, int version) { // TODO Auto-generated method stub
+    }
+
+    @Override
+    public Optional<ImageDto> addPerson(String id, OffsetDateTime creationDate, int version, String person) {
+        HbaseImageThumbnailDAO.LOGGER.info("Adding person {} to [{}]", person, id);
+        person = person.trim();
+        try {
+            HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
+            final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
+            HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
+                .withImageId(id)
+                .build();
+            HbaseImageThumbnail hbi = super.get(hbaseData);
+            this.hbaseImagesOfPersonsDAO.addMetaData(hbi, person);
+            hbi = super.get(hbaseData);
+            return Optional.of(this.toImageDTO(hbi));
+        } catch (IOException e) {
+            HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
+            throw new RuntimeException(e);
+        } finally {
+            HbaseImageThumbnailDAO.LOGGER.info("End of Deleting keyword {} to [{}]", person, id);
+        }
+    }
+
+    @Override
+    public Optional<ImageDto> deletePerson(String id, OffsetDateTime creationDate, int version, String person) {
+        HbaseImageThumbnailDAO.LOGGER.info("Deleting person {} to [{}]", person, id);
+        person = person.trim();
+        try {
+            HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
+            final long creationDateAsLong = DateTimeHelper.toEpochMillis(creationDate);
+            HbaseImageThumbnail hbaseData = builder.withCreationDate(creationDateAsLong)
+                .withImageId(id)
+                .build();
+            HbaseImageThumbnail hbi = super.get(hbaseData);
+            this.hbaseImagesOfPersonsDAO.deleteMetaData(hbi, person);
+            hbi = super.get(hbaseData);
+            return Optional.of(this.toImageDTO(hbi));
+        } catch (IOException e) {
+            HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
+            throw new RuntimeException(e);
+        } finally {
+            HbaseImageThumbnailDAO.LOGGER.info("End of Deleting keyword {} to [{}]", person, id);
+        }
+    }
+
+    protected int getNumberOfImages() throws IOException {
+        try (
+            Table pageTable = this.connection.getTable(TableName.valueOf("prod:" + IImageThumbnailDAO.TABLE_PAGE));) {
+
+            Scan scan = new Scan().addFamily(AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY);
+            long retValue = StreamSupport.stream(
+                pageTable.getScanner(scan)
+                    .spliterator(),
+                false)
+                .mapToLong(
+                    (c) -> Bytes.toLong(
+                        CellUtil.cloneValue(
+                            c.getColumnLatestCell(
+                                AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY,
+                                AbstractDAO.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS))))
+                .sum();
+            return (int) retValue;
+        }
+    }
+
+    @PostConstruct
+    protected void initLocal() throws IOException, InterruptedException {
+        long countAll = 0;
+        try {
+            countAll = super.countWithCoprocessorJob(this.getHbaseDataInformation());
+            HbaseImageThumbnailDAO.LOGGER.info("Total nb of elements {} ", countAll);
+        } catch (Throwable e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        ForkJoinPool forkJoinPool = new ForkJoinPool(70);
+        Collection<Callable<Integer>> recursiveTasks = new ArrayList<>();
+        try (
+            final Table table = this.connection.getTable(
+                this.getHbaseDataInformation()
+                    .getTable())) {
+
+            for (int k = 0; k < 70; k++) {
+                final int page = k;
+                recursiveTasks.add(() -> this.loadPages(table, page, 100));
+            }
+            forkJoinPool.invokeAll(recursiveTasks);
+            forkJoinPool.shutdown();
+            forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+            HbaseImageThumbnailDAO.LOGGER.info("End of loading {} ", countAll);
+        }
     }
 
 }

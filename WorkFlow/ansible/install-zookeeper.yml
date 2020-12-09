@@ -9,18 +9,18 @@
         shell: /bin/bash
         createhome: yes
         home: /home/zookeeper
-    - name: start zookeeper service
+    - name: stop zookeeper service
       shell: "systemctl stop zookeeper"
     - name: Download zookeeper {{ zookeeper_version }}
       get_url: 
-        url: https://www-us.apache.org/dist/zookeeper/zookeeper-{{ zookeeper_version }}/zookeeper-{{ zookeeper_version }}.tar.gz
+        url: https://downloads.apache.org/zookeeper/zookeeper-{{ zookeeper_version }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz
         owner: "{{ user_to_create }}"
-        dest: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}.tgz"
+        dest: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}-bin.tgz"
         mode: 0644
         force: no
     - name: Unpack the tar
       unarchive:
-        src: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}.tgz"
+        src: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}-bin.tgz"
         dest: "{{ zookeeper_install_folder }}"
         remote_src: true
     - name: remove symlink {{ zookeeper_install_folder }}/latest to this version
@@ -44,13 +44,13 @@
     - name: Symlink {{ zookeeper_install_folder }}/latest to this version
       file:
         path: "{{ zookeeper_install_folder }}"
-        src: "{{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}"
+        src: "{{ zookeeper_install_folder }}/apache-zookeeper-{{ zookeeper_version }}-bin"
         dest: "{{ zookeeper_install_folder }}/latest"
         owner: "{{ user_to_create }}"
         state: link
         force: yes
     - name: chown
-      shell: " chown -R {{ user_to_create }}:nogroup {{ zookeeper_install_folder }}/zookeeper-{{ zookeeper_version }}"
+      shell: " chown -R {{ user_to_create }}:nogroup {{ zookeeper_install_folder }}/apache-zookeeper-{{ zookeeper_version }}-bin"
     - name: copy zoo.cfg
       copy:
         src: ./tools/zookeeper/zoo.cfg
@@ -98,7 +98,7 @@
     user_to_create: zookeeper
     PWD: "{{ lookup('env', 'PWD') }}"
     zookeeper_install_folder: /home/zookeeper
-    zookeeper_version: 3.4.14
+    zookeeper_version: 3.6.2
     
     
     PWD: "{{ lookup('env', 'PWD') }}"

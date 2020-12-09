@@ -41,6 +41,18 @@ class ArrayImageDtoLinksSerializerDeserializer implements Deserializer, Serializ
     }
 }
 
+@CacheKey("ArrayMetadataSerializerDeserializer")
+class ArrayMetadataSerializerDeserializer implements Deserializer, Serializer {
+
+    deserialize = (json: string): Metadata[] => {
+        return ObjectMapper.deserializeArray(Metadata, json);
+    }
+    serialize = (json: Metadata[]): string => {
+        return ObjectMapper.serialize(json).toString();
+    }
+}
+
+
 @CacheKey("MomentSerializerDeserializer")
 class MomentSerializerDeserializer implements Deserializer, Serializer {
 
@@ -75,7 +87,11 @@ export class MomentType {
 }
 
 export class ImageKeyDto {
-    @JsonProperty({ type: MomentType, deserializer: MomentSerializerDeserializer, serializer: MomentSerializerDeserializer })
+    @JsonProperty({
+        type: MomentType,
+        deserializer: MomentSerializerDeserializer,
+        serializer: MomentSerializerDeserializer
+    })
     creationDate?: Moment | null = null;
     version: number = 0;
     imageId: string = '';
@@ -97,6 +113,29 @@ export class ImageLinks extends DefaultLink {
     _upd?: PageLink | null = null;
 }
 
+export class MetadataLinks {
+    _page: PageLink | null = null;
+}
+
+export class Metadata {
+    content: string = '';
+    _links: MetadataLinks | null = null;
+}
+
+export class StringsOfMetadata {
+    @JsonProperty({
+        type: Metadata,
+        deserializer: ArrayMetadataSerializerDeserializer,
+        serializer: ArrayMetadataSerializerDeserializer
+    })
+    strings: Metadata[] = [];
+}
+
+export class MetadataWrapper {
+    _embedded: StringsOfMetadata | null = null;
+}
+
+
 export class ImageDto {
 
     @JsonProperty({ type: ImageKeyDto })
@@ -113,6 +152,7 @@ export class ImageDto {
     speed: string = '';
     iso: string = '';
     keywords: string[] = [];
+    persons: string[] = [];
     albums: string[] = [];
     camera: string = '';
     lens: string = '';
@@ -167,6 +207,15 @@ export class PageLinks {
     prev: PageLink | null = null;
 }
 
+export class ComponentEvent {
+    dataId: string | null = null;
+    status: string | null = null;
+    componentType: string | null = null;
+    message: string | null = null;
+    scannedFolder: string[] | null = null;
+    componentName: string | null = null;
+}
+
 
 export class PageContent {
     @JsonProperty({ type: ImageDto, deserializer: ArrayImageDtoLinksSerializerDeserializer, serializer: ArrayImageDtoLinksSerializerDeserializer })
@@ -187,6 +236,12 @@ export function toImageDto(json: string): ImageDto[] {
     let imgDtos: ImageDto[] = ObjectMapper.deserializeArray(ImageDto, json);
     return imgDtos;
 }
+
+export function toMetadataDto(json: string): Metadata[] {
+    let metadata: MetadataWrapper = ObjectMapper.deserialize(MetadataWrapper, json);
+    return metadata._embedded != null ? metadata._embedded.strings : [];
+}
+
 
 export function toPageOfImageDto(json: string): PageOfImageDto {
     let imgDtos: PageOfImageDto = ObjectMapper.deserialize(PageOfImageDto, json);
@@ -216,3 +271,13 @@ export function toArrayOfString(json: string): string[] {
     let retValue: String[] = ObjectMapper.deserializeArray(String, json);
     return retValue.map((s) => s.toString());
 }
+
+export function toArrayOfComponentEvent(json: string): ComponentEvent[] {
+    let retValue: ComponentEvent[] = ObjectMapper.deserializeArray(ComponentEvent, json);
+    return retValue;
+}
+export function toComponentEvent(json: string): ComponentEvent {
+    let retValue: ComponentEvent = ObjectMapper.deserialize(ComponentEvent, json);
+    return retValue;
+}
+

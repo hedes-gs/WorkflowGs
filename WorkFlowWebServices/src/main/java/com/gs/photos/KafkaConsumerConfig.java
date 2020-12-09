@@ -34,6 +34,7 @@ public class KafkaConsumerConfig {
     @Bean
     public Map<String, Object> consumerConfigs(
         @Value("${bootstrap.servers}") String bootstrapServer,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${group.id}") String groupId
     ) {
         Map<String, Object> config = new HashMap<String, Object>();
@@ -44,24 +45,28 @@ public class KafkaConsumerConfig {
         config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         config.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name());
         config.put("sasl.kerberos.service.name", "kafka");
+        config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+
         return config;
     }
 
     @Bean
     public ConsumerFactory<String, ComponentEvent> consumerFactory(
         @Value("${bootstrap.servers}") String bootstrapServer,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${group.id}") String groupId
     ) {
-        return new DefaultKafkaConsumerFactory<>(this.consumerConfigs(bootstrapServer, groupId));
+        return new DefaultKafkaConsumerFactory<>(this.consumerConfigs(bootstrapServer, sessionTimeoutMs, groupId));
     }
 
     @Bean
     public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, ComponentEvent>> kafkaListenerContainerFactory(
         @Value("${bootstrap.servers}") String bootstrapServer,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${group.id}") String groupId
     ) {
         ConcurrentKafkaListenerContainerFactory<String, ComponentEvent> factory = new ConcurrentKafkaListenerContainerFactory();
-        factory.setConsumerFactory(this.consumerFactory(bootstrapServer, groupId));
+        factory.setConsumerFactory(this.consumerFactory(bootstrapServer, sessionTimeoutMs, groupId));
         return factory;
 
     }

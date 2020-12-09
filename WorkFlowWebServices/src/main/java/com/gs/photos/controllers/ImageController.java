@@ -215,7 +215,18 @@ public class ImageController {
         @PathVariable String keyword
     ) throws IOException {
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
-        Optional<Page<ImageDto>> entity = Optional.of(this.repository.findLastImages(p));
+        Optional<Page<ImageDto>> entity = Optional.of(this.repository.findImagesByKeyword(p, keyword));
+        return pagedAssembler.toModel(entity.orElseThrow(), this.imageAssembler);
+    }
+
+    @GetMapping("/images/person/{person}")
+    public @ResponseBody PagedModel<EntityModel<ImageDto>> getImagesByPerson(
+        @PageableDefault GsPageRequest p,
+        PageImageAssembler pagedAssembler,
+        @PathVariable String person
+    ) throws IOException {
+        if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
+        Optional<Page<ImageDto>> entity = Optional.of(this.repository.findImagesByPerson(p, person));
         return pagedAssembler.toModel(entity.orElseThrow(), this.imageAssembler);
     }
 
@@ -308,6 +319,32 @@ public class ImageController {
     @PostMapping(path = "/keywords/deleteInImage/{keyword}")
     public ResponseEntity<?> deleteKeyword(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
         Optional<ImageDto> retValue = this.repository.deleteKeyword(
+            imageDto.getData()
+                .getImageId(),
+            imageDto.getData()
+                .getCreationDate(),
+            imageDto.getData()
+                .getVersion(),
+            keyword);
+        return ResponseEntity.ok(this.imageAssembler.toModel(retValue.orElseThrow()));
+    }
+
+    @PostMapping(path = "/persons/addToImage/{person}")
+    public ResponseEntity<?> addPerson(@RequestBody ImageDto imageDto, @PathVariable String person) {
+        Optional<ImageDto> retValue = this.repository.addPerson(
+            imageDto.getData()
+                .getImageId(),
+            imageDto.getData()
+                .getCreationDate(),
+            imageDto.getData()
+                .getVersion(),
+            person);
+        return ResponseEntity.ok(this.imageAssembler.toModel(retValue.orElseThrow()));
+    }
+
+    @PostMapping(path = "/persons/deleteInImage/{keyword}")
+    public ResponseEntity<?> deletePerson(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+        Optional<ImageDto> retValue = this.repository.deletePerson(
             imageDto.getData()
                 .getImageId(),
             imageDto.getData()

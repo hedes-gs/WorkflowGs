@@ -17,7 +17,15 @@ public interface IHbaseImagesOfMetadataDAO<T extends HbaseData, T1> {
 
     public List<T> getAllImagesOfMetadata(T1 key, int first, int pageSize);
 
-    void updateMetadata(HbaseImageThumbnail hbi, HbaseImageThumbnail previous) throws IOException;
+    void addMetaData(HbaseImageThumbnail hbi, T1 medataData);
 
-    void updateMetadata(HbaseImageThumbnail hbi, T1 medataData);
+    void deleteMetaData(HbaseImageThumbnail hbi, T1 metaData);
+
+    void flush() throws IOException;
+
+    public long countAll() throws IOException, Throwable;
+
+    public long countAll(T metaData) throws IOException, Throwable;
+
+    public long countAll(T1 key) throws IOException, Throwable;
 }

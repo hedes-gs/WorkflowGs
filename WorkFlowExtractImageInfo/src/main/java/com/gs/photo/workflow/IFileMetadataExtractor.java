@@ -1,10 +1,11 @@
 package com.gs.photo.workflow;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import com.gs.photos.workflow.metadata.IFD;
 
 public interface IFileMetadataExtractor {
 
-    Collection<IFD> readIFDs(String filePath);
+    Optional<Collection<IFD>> readIFDs(String filePath);
 }

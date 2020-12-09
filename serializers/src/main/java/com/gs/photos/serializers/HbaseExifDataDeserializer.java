@@ -9,7 +9,7 @@ public class HbaseExifDataDeserializer extends AbstractModelSerializerAndDeseria
 
 	@Override
 	public HbaseExifData deserialize(String topic, byte[] data) {
-		return this.fromBytesGeneric(data);
+		return this.fromBytesGeneric(topic, data);
 	}
 
 	public HbaseExifDataDeserializer() {

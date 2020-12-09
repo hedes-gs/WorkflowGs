@@ -3,6 +3,7 @@ package com.gs.photo.workflow.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -36,10 +37,13 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
     protected IExifService  exifService;
 
     @Override
-    public Collection<IFD> readIFDs(String key) {
-        return this.iIgniteDAO.get(key)
-            .map((buffer) -> this.processFile(buffer, key))
-            .orElseThrow(() -> new IllegalArgumentException("Key " + key + " is not present in cache"));
+    public Optional<Collection<IFD>> readIFDs(String key) {
+        Optional<byte[]> igniteValue = this.iIgniteDAO.get(key);
+        igniteValue.ifPresentOrElse(
+            (t) -> {},
+            () -> BeanFileMetadataExtractor.LOGGER.warn("Unable to get key " + key + " in Ignite"));
+        Optional<Collection<IFD>> values = igniteValue.map((b) -> this.processFile(b, key));
+        return values;
     }
 
     private Collection<IFD> processFile(byte[] buffer, String key) {
@@ -61,7 +65,7 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
         } catch (IOException e) {
             BeanFileMetadataExtractor.LOGGER
                 .error("Error when processing {} : {} ", key, ExceptionUtils.getStackTrace(e));
-            throw new RuntimeException(e);
+            return null;
         }
     }
 
@@ -75,7 +79,8 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
         } else if (endian == IOUtils.LITTLE_ENDIAN) {
             rin.setReadStrategy(ReadStrategyII.getInstance());
         } else {
-            throw new RuntimeException("Invalid TIFF byte order");
+            throw new IOException("Invalid TIFF byte order : " + Integer.toHexString(endian) + " expected value "
+                + Integer.toHexString(IOUtils.BIG_ENDIAN) + " or " + Integer.toHexString(IOUtils.LITTLE_ENDIAN));
         }
         // Read TIFF identifier
         rin.position(offset);

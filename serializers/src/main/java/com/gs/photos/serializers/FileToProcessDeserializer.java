@@ -10,6 +10,6 @@ public class FileToProcessDeserializer extends AbstractModelSerializerAndDeseria
     public FileToProcessDeserializer() { super(); }
 
     @Override
-    public FileToProcess deserialize(String topic, byte[] t) { return super.fromBytesGeneric(t); }
+    public FileToProcess deserialize(String topic, byte[] t) { return super.fromBytesGeneric(topic, t); }
 
 }

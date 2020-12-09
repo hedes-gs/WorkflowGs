@@ -14,9 +14,17 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
@@ -32,7 +40,12 @@ import com.workflow.model.files.FileToProcess;
 @Service
 public class FileUtils {
 
-    static String LOCAL_ADDRESSES;
+    private static final int    NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
+
+    protected static Logger     LOGGER                               = LoggerFactory.getLogger(FileUtils.class);
+    protected Map<String, Nfs3> mapOfNfs3client                      = new ConcurrentHashMap<>();
+
+    static String               LOCAL_ADDRESSES;
     static {
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -102,13 +115,55 @@ public class FileUtils {
 
     public byte[] readFirstBytesOfFile(FileToProcess file, int bufferSize) throws IOException {
         byte[] retValue = new byte[bufferSize];
-        Nfs3 nfs3 = new Nfs3(file.getHost(), file.getPath(), new CredentialUnix(0, 0, null), 3);
-        Nfs3File nfs3File = new Nfs3File(nfs3, file.getName());
+        Nfs3 nfs3 = new Nfs3(file.getHost(), file.getRootForNfs(), new CredentialUnix(0, 0, null), 3);
+        Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
         try (
             NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File, bufferSize)) {
             inputStream.read(retValue);
         } catch (IOException e) {
             throw e;
+        }
+        return retValue;
+    }
+
+    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
+        FileUtils.LOGGER.debug(" readFirstBytesOfFile of {}", file);
+        byte[] retValue = new byte[FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
+        String root = file.getRootForNfs();
+        Nfs3 nfs3 = new Nfs3(file.getHost(), root, new CredentialUnix(0, 0, null), 3);
+        Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
+        if (!file.isCompressedFile()) {
+            try (
+                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
+                    FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
+                inputStream.read(retValue);
+            } catch (IOException e) {
+                FileUtils.LOGGER.error(
+                    "ERROR : unable to compute hash key for {} error is {} ",
+                    file,
+                    ExceptionUtils.getStackTrace(e));
+                throw e;
+            }
+        } else {
+            try (
+                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
+                    FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                ZipInputStream zis = new ZipInputStream(inputStream)) {
+                ZipEntry entry = zis.getNextEntry();
+                do {
+                    if (FilenameUtils.isExtension(entry.getName(), "ARW")) {
+                        zis.read(retValue);
+                        break;
+                    }
+                } while ((entry = zis.getNextEntry()) != null);
+
+            } catch (IOException e) {
+                FileUtils.LOGGER.error(
+                    "ERROR : unable to compute hash key for {} error is {} ",
+                    file,
+                    ExceptionUtils.getStackTrace(e));
+                throw e;
+            }
         }
         return retValue;
     }
@@ -134,11 +189,9 @@ public class FileUtils {
             }
         } else {
             byte[] buffer = new byte[bufferSize];
-            String mountPoint = remoteFolder.substring(0, remoteFolder.indexOf("/", 1));
-            Nfs3 nfs3 = new Nfs3(remoteHostName, mountPoint, new CredentialUnix(0, 0, null), 3);
-            Nfs3File nfs3File = new Nfs3File(nfs3,
-                file.getPath()
-                    .substring(mountPoint.length()));
+            String mountPoint = file.getRootForNfs();
+            Nfs3 nfs3 = this.createNFS3client(file, mountPoint);
+            Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
             try (
                 NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File, bufferSize)) {
                 int nbOfBytes = inputStream.read(buffer);
@@ -240,6 +293,87 @@ public class FileUtils {
             })
             .map((p) -> p.toFile());
         return stream;
+    }
+
+    public Stream<File> toStream(String coordinates, String filePath, final String... extensions) throws IOException {
+        Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
+        Nfs3File file = new Nfs3File(nfs3, filePath);
+        FileUtils.LOGGER.info("NFS STREAM coordinates are : {}, filePath is {}", coordinates, filePath);
+        return file.listFiles()
+            .stream()
+            .peek((e) -> FileUtils.LOGGER.info("Processing sub file {}", e))
+            .filter((f) -> this.filteNFSFile(f, extensions))
+            .flatMap((f) -> this.toNFSStream(f, extensions))
+            .map((s) -> this.toFile(s, nfs3));
+
+    }
+
+    private Stream<Nfs3File> toNFSStream(Nfs3File file, final String... extensions) {
+        try {
+            if (file.isDirectory()) {
+                try {
+                    return file.listFiles()
+                        .stream()
+                        .filter((f) -> this.filteNFSFile(f, extensions))
+                        .flatMap((f) -> this.toNFSStream(f, extensions));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return Stream.of(file);
+    }
+
+    protected boolean filteNFSFile(Nfs3File f, final String... extensions) {
+        try {
+            if (!f.isDirectory()) {
+                for (String e : extensions) {
+                    if (f.getName()
+                        .toLowerCase()
+                        .endsWith(e.toLowerCase())) { return true; }
+                }
+                return false;
+            }
+            return true;
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private File toFile(final Nfs3File s, final Nfs3 nfs3) {
+        return new File(s.getPath()) {
+
+            @Override
+            public String getName() { return s.getName(); }
+
+            @Override
+            public String getAbsolutePath() { return s.getPath(); }
+
+            @Override
+            public boolean isDirectory() {
+                try {
+                    return s.isDirectory();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        };
+
+    }
+
+    protected Nfs3 createNFS3client(FileToProcess file, String root) throws IOException {
+        return this.mapOfNfs3client.computeIfAbsent(file.getHost() + "/root", (e) -> {
+            try {
+                FileUtils.LOGGER.info("Creating a Nfs3 client {} , {}", file.getHost(), root);
+                return new Nfs3(file.getHost(), root, new CredentialUnix(0, 0, null), 3);
+            } catch (IOException e1) {
+                throw new RuntimeException(e1);
+            }
+        });
     }
 
 }

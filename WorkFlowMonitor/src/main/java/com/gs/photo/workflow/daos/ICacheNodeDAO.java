@@ -1,9 +1,9 @@
 package com.gs.photo.workflow.daos;
 
-import com.workflow.model.events.WfEvents;
+public interface ICacheNodeDAO<K, V> {
+    public V addOrCreate(K key, V events);
 
-public interface ICacheNodeDAO {
-    public void addOrCreate(WfEvents events);
+    public boolean allEventsAreReceivedForAnImage(K imgId);
 
-    public boolean allEventsAreReceivedForAnImage(String imgId);
+    public void init();
 }

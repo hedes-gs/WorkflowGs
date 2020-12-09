@@ -8,7 +8,7 @@ public class WfEventsSerializer extends AbstractModelSerializerAndDeserializer<W
     implements Serializer<WfEvents> {
 
     @Override
-    public byte[] serialize(String topic, WfEvents data) { return super.toBytesGeneric(data); }
+    public byte[] serialize(String topic, WfEvents data) { return super.toBytesGeneric(topic, data); }
 
     public WfEventsSerializer() { super(); }
 

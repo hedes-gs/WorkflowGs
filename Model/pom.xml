@@ -60,6 +60,7 @@
 						<class>com.workflow.model.dtos.ImageDto</class>
 						<class>com.workflow.model.dtos.ExifDTO</class>
 						<class>com.workflow.model.events.ImportEvent</class>
+						<class>com.workflow.model.events.ComponentEvent</class>
 					</classes>
 				</configuration>
 			</plugin>

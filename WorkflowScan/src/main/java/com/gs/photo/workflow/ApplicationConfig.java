@@ -81,6 +81,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
     public Consumer<String, ImportEvent> consumerForImportEvent(
         @Value("${group.id}") String groupId,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${bootstrap.servers}") String bootstrapServers
     ) {
         Properties settings = new Properties();
@@ -93,6 +94,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+
         Consumer<String, ImportEvent> producer = new KafkaConsumer<>(settings);
         return producer;
     }

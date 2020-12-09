@@ -23,12 +23,23 @@ public class IgniteDAO implements IIgniteDAO {
 
     @Override
     public boolean save(String key, byte[] rawFile) {
-        final IgniteCache<String, byte[]> igniteCache2 = this.igniteCacheFactory.getIgniteCache(byte[].class);
-        boolean saved = igniteCache2.putIfAbsent(key, rawFile);
-        if (!saved) {
-            this.LOGGER.warn("Warning : file with key {} already exist", key);
-        }
+        boolean saved = false;
+        boolean done = false;
+        do {
+            final IgniteCache<String, byte[]> igniteCache2 = this.igniteCacheFactory.getIgniteCache(byte[].class);
+            try {
+                saved = igniteCache2.putIfAbsent(key, rawFile);
+                done = true;
+            } catch (Exception e) {
+
+                done = false;
+            }
+            if (!saved) {
+                this.LOGGER.warn("Warning : file with key {} already exist", key);
+            }
+        } while (!done);
         return saved;
+
     }
 
     @Override
@@ -51,7 +62,8 @@ public class IgniteDAO implements IIgniteDAO {
 
     @Override
     public Optional<byte[]> get(String key) {
-        final IgniteCache<String, byte[]> igniteCache2 = this.igniteCacheFactory.getIgniteCache(byte[].class);
+        final IgniteCache<String, byte[]> igniteCache2 = this.igniteCacheFactory.getIgniteCacheBinary(byte[].class);
+
         return Optional.ofNullable(igniteCache2.get(key));
     }
 

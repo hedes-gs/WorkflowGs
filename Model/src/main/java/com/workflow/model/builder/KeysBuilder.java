@@ -11,6 +11,8 @@ import com.google.common.hash.Hashing;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseExifDataOfImages;
+import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.storm.FinalImage;
 
 public class KeysBuilder {
 
@@ -314,6 +316,32 @@ public class KeysBuilder {
                         sink.putShort(t);
                     }
                 })
+                .hash()
+                .toString();
+            return hbedoiHashCode;
+        }
+    }
+
+    public static class HbaseImageThumbnailKeyBuilder {
+        public static String build(HbaseImageThumbnail hbeodi) {
+            HashFunction hf = Hashing.murmur3_128();
+            String hbedoiHashCode = hf.newHasher()
+                .putString(hbeodi.getImageId(), Charset.forName("UTf-8"))
+                .putString(hbeodi.getPath(), Charset.forName("UTf-8"))
+                .putString(hbeodi.getThumbName(), Charset.forName("UTf-8"))
+                .hash()
+                .toString();
+            return hbedoiHashCode;
+        }
+    }
+
+    public static class FinalImageKeyBuilder {
+        public static String build(FinalImage hbeodi, String version) {
+            HashFunction hf = Hashing.murmur3_128();
+            String hbedoiHashCode = hf.newHasher()
+                .putString(hbeodi.getDataId(), Charset.forName("UTf-8"))
+                .putString(version, Charset.forName("UTf-8"))
+                .putBytes(hbeodi.getCompressedImage())
                 .hash()
                 .toString();
             return hbedoiHashCode;

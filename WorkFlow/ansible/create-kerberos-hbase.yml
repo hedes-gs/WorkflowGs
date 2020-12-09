@@ -3,44 +3,44 @@
   tasks:
     - debug:
         msg: create kerberos
-    - name: del princip hbase@GS.COM
-      shell: kadmin.local -q 'delprinc -force  hbase@GS.COM' 
-    - name: del princip
-      shell: kadmin.local -q 'delprinc -force  hbase/{{ item }}@GS.COM' 
-      loop:
-        - ipc0
-        - ipc1
-        - ipc2
-        - ipc3
-        - ipc5
-        - ipc6     
-    - name: ADd princip
-      shell: kadmin.local -q 'addprinc  -pw hbase hbase/{{ item }}@GS.COM' 
-      loop:
-        - ipc0
-        - ipc1
-        - ipc2
-        - ipc3
-        - ipc5
-        - ipc6     
+#    - name: del princip hbase@GS.COM
+#      shell: kadmin.local -q 'delprinc -force  hbase@GS.COM' 
+#    - name: del princip
+##      shell: kadmin.local -q 'delprinc -force  hbase/{{ item }}@GS.COM' 
+#      loop:
+#        - ipc0
+#        - ipc1
+#        - ipc2
+#        - ipc3
+#        - ipc5
+#        - ipc6     
+#    - name: ADd princip
+#      shell: kadmin.local -q 'addprinc  -pw hbase hbase/{{ item }}@GS.COM' 
+#      loop:
+#        - ipc0
+#        - ipc1
+#        - ipc2
+#        - ipc3
+#        - ipc5
+#        - ipc6     
 
-    - name: add princip hbase
-      shell: kadmin.local -q 'addprinc  -pw hbase hbase@GS.COM' 
+#    - name: add princip hbase
+#      shell: /home/user/bin/addPrincip.sh hbase
       
-    - name: rm keytab
-      shell: rm -f /home/user/keytabs/hbase_all.keytab
+#    - name: rm keytab
+#      shell: rm -f /home/user/keytabs/hbase_all.keytab
       
-    - name: create keytab hbase -1
-      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hbase_all.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  hbase@GS.COM'
-    - name: create keytab
-      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hbase_all.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  hbase/{{ item }}@GS.COM'
-      loop:
-        - ipc0
-        - ipc1
-        - ipc2
-        - ipc3
-        - ipc5
-        - ipc6
+#    - name: create keytab hbase -1
+#      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hbase_all.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  hbase@GS.COM'
+#    - name: create keytab
+#      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/hbase_all.keytab -e aes256-cts-hmac-sha1-96:normal,aes128-cts-hmac-sha1-96:normal,arcfour-hmac-md5:normal  hbase/{{ item }}@GS.COM'
+#      loop:
+#        - ipc0
+#        - ipc1
+#        - ipc2
+#        - ipc3
+#        - ipc5
+#        - ipc6
     - name: get keytab hbase@GS.COM
       fetch:
         src: /home/user/keytabs/hbase_all.keytab

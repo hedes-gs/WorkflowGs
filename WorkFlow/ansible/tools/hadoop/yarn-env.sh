@@ -168,4 +168,4 @@
 # export YARN_SERVICE_EXAMPLES_DIR = $HADOOP_YARN_HOME/share/hadoop/yarn/yarn-service-examples
 # export YARN_CONTAINER_RUNTIME_DOCKER_RUN_OVERRIDE_DISABLE=true
 
-YARN_NODEMANAGER_OPTS="$YARN_NODEMANAGER_OPTS  -Dyarn.root.logger=DEBUG,console  -Dhadoop.root.logger=DEBUG,console  -agentlib:jdwp=transport=dt_socket,server=y,address=0.0.0.0:8005,suspend=n"
+YARN_NODEMANAGER_OPTS="$YARN_NODEMANAGER_OPTS  -agentlib:jdwp=transport=dt_socket,server=y,address=0.0.0.0:8005,suspend=n"

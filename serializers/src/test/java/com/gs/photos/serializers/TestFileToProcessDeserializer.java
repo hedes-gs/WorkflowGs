@@ -18,6 +18,7 @@ public class TestFileToProcessDeserializer {
             FileToProcessDeserializer deser = new FileToProcessDeserializer()) {
             FileToProcess data = FileToProcess.builder()
                 .withCompressedFile(true)
+                .withRootForNfs("/root")
                 .withDataId("MonFile.ARW")
                 .withDataCreationDate(0)
                 .withHost("IPC3")
@@ -28,9 +29,10 @@ public class TestFileToProcessDeserializer {
                         .withAlbum("MyAlbum")
                         .withImportName("Mon import")
                         .withKeyWords(Arrays.asList("kw1", "kw2"))
+                        .withScanFolder("Scan folder")
                         .build())
                 .build();
-            byte[] serValue = ser.toBytesGeneric(data);
+            byte[] serValue = ser.toBytesGeneric("Mon topic", data);
             FileToProcess data2 = deser.deserialize("topic", serValue);
             Assert.assertEquals(data, data2);
         }
@@ -43,7 +45,7 @@ public class TestFileToProcessDeserializer {
             FileToProcessSerializer ser = new FileToProcessSerializer();
             FileToProcessDeserializer deser = new FileToProcessDeserializer()) {
             FileToProcess data = this.buildFileToProcess(new File("pom.xml"), false);
-            byte[] serValue = ser.toBytesGeneric(data);
+            byte[] serValue = ser.toBytesGeneric("Mon topic", data);
             FileToProcess data2 = deser.deserialize("topic", serValue);
             Assert.assertEquals(data, data2);
         }
@@ -54,6 +56,7 @@ public class TestFileToProcessDeserializer {
         return FileToProcess.builder()
             .withDataId(file.getName())
             .withName(file.getName())
+            .withRootForNfs("/root")
             .withHost("IPC3")
             .withPath(file.getAbsolutePath())
             .withCompressedFile(isCompressed)
@@ -62,6 +65,7 @@ public class TestFileToProcessDeserializer {
                     .withAlbum("MyAlbum")
                     .withImportName("Mon import")
                     .withKeyWords(Arrays.asList("kw1", "kw2"))
+                    .withScanFolder("Scan folder")
                     .build())
             .build();
     }

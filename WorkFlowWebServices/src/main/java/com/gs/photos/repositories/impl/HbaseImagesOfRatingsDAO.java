@@ -11,6 +11,8 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,7 @@ import com.workflow.model.HbaseImagesOfRatings;
 import com.workflow.model.ModelConstants;
 
 @Component
-public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Integer>
+public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Long>
     implements IHbaseImagesOfRatingsDAO {
 
     protected Logger           LOGGER = LoggerFactory.getLogger(HbaseImagesOfRatingsDAO.class);
@@ -33,58 +35,7 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
     protected IHbaseRatingsDAO hbaseRatingsDAO;
 
     @Override
-    public void updateMetadata(HbaseImageThumbnail hbi, HbaseImageThumbnail previous) throws IOException {
-        HbaseImagesOfRatings hba = HbaseImagesOfRatings.builder()
-            .withRatings(hbi.getRatings())
-            .withCreationDate(hbi.getCreationDate())
-            .withHeight(hbi.getHeight())
-            .withImageId(hbi.getImageId())
-            .withImageName(hbi.getImageName())
-            .withImportDate(hbi.getImportDate())
-            .withOrientation(hbi.getOrientation())
-            .withOriginalHeight(hbi.getOriginalHeight())
-            .withOriginalWidth(hbi.getOriginalWidth())
-            .withPath(hbi.getPath())
-            .withThumbnail(hbi.getThumbnail())
-            .withThumbName(hbi.getThumbName())
-            .withVersion(hbi.getVersion())
-            .withWidth(hbi.getWidth())
-            .build();
-        try {
-            this.LOGGER.info("updateMetadata current {}, previous {}", hbi, previous);
-            super.put(hba, super.getHbaseDataInformation());
-            this.incrementNbOfImages(hba.getRatings());
-            hba = HbaseImagesOfRatings.builder()
-                .withRatings(previous.getRatings())
-                .withCreationDate(previous.getCreationDate())
-                .withHeight(previous.getHeight())
-                .withImageId(previous.getImageId())
-                .withImageName(previous.getImageName())
-                .withImportDate(previous.getImportDate())
-                .withOrientation(previous.getOrientation())
-                .withOriginalHeight(previous.getOriginalHeight())
-                .withOriginalWidth(previous.getOriginalWidth())
-                .withPath(previous.getPath())
-                .withThumbnail(previous.getThumbnail())
-                .withThumbName(previous.getThumbName())
-                .withVersion(previous.getVersion())
-                .withWidth(previous.getWidth())
-                .build();
-            super.delete(hba, super.getHbaseDataInformation());
-            this.decrementNbOfImages(previous.getRatings());
-            this.LOGGER.info("updateMetadata current {}, previous {} : done ", hbi, previous);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-    }
-
-    protected void incrementNbOfImages(int key) throws IOException { this.hbaseRatingsDAO.incrementNbOfImages(key); }
-
-    protected void decrementNbOfImages(int key) throws IOException { this.hbaseRatingsDAO.decrementNbOfImages(key); }
-
-    @Override
-    public List<HbaseImagesOfRatings> getAllImagesOfMetadata(Integer keyword) {
+    public List<HbaseImagesOfRatings> getAllImagesOfMetadata(Long keyword) {
         List<HbaseImagesOfRatings> retValue = new ArrayList<>();
         try (
             Table table = this.connection.getTable(
@@ -99,7 +50,6 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
                 .withRatings(keyword)
                 .withCreationDate(0)
                 .withImageId("")
-                .withVersion((short) 0)
                 .build();
             byte[] keyStartValue = new byte[this.hbaseDataInformation.getKeyLength()];
 
@@ -119,15 +69,10 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
     }
 
     protected void buildImagesOfKeyword(List<HbaseImagesOfRatings> retValue, Result t) {
-        try {
-            HbaseImagesOfRatings instance = new HbaseImagesOfRatings();
-            this.getHbaseDataInformation()
-                .build(instance, t);
-            retValue.add(instance);
-        } catch (IOException e) {
-            this.LOGGER.warn("Error ", e);
-            throw new RuntimeException(e);
-        }
+        HbaseImagesOfRatings instance = new HbaseImagesOfRatings();
+        this.getHbaseDataInformation()
+            .build(instance, t);
+        retValue.add(instance);
     }
 
     @Override
@@ -137,20 +82,12 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
     }
 
     @Override
-    public Map<String, Integer> countAllPerRatings() throws IOException, Throwable {
-        Map<String, Integer> retValue = new HashMap<>();
-        for (int k = 1; k <= 5; k++) {
-            retValue.put(Integer.toString(k), (int) this.hbaseRatingsDAO.countAll(k));
+    public Map<String, Long> countAllPerRatings() throws IOException, Throwable {
+        Map<String, Long> retValue = new HashMap<>();
+        for (long k = 1; k <= 5; k++) {
+            retValue.put(Long.toString(k), this.hbaseRatingsDAO.countAll(k));
         }
         return retValue;
-    }
-
-    @Override
-    protected Scan createScanToGetAllColumns() {
-        Scan scan = new Scan().addFamily(HbaseImagesOfMetadataDAO.FAMILY_IMG_AS_BYTES)
-            .addFamily(HbaseImagesOfMetadataDAO.FAMILY_THB_AS_BYTES)
-            .addFamily(HbaseImagesOfMetadataDAO.FAMILY_SZ_AS_BYTES);
-        return scan;
     }
 
     @Override
@@ -170,10 +107,32 @@ public class HbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImage
     }
 
     @Override
-    public void updateMetadata(HbaseImageThumbnail hbi, Integer medataData) { // TODO Auto-generated method stub
+    public void addMetaData(HbaseImageThumbnail hbi, Long medataData) {}
+
+    @Override
+    protected long getNbOfElements(Long key) {
+        try {
+            return this.hbaseRatingsDAO.countAll(key);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
-    public List<HbaseImagesOfRatings> getAllImagesOfMetadata(Integer key, int first, int pageSize) { return null; }
+    protected Filter getFilterFor(Long key) { return new PrefixFilter(Bytes.toBytes(key)); }
+
+    @Override
+    public void deleteMetaData(HbaseImageThumbnail hbi, Long metaData) { // TODO Auto-generated method stub
+    }
+
+    @Override
+    protected byte[] getMinRowProvider() { // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    protected byte[] getMaxRowProvider() { // TODO Auto-generated method stub
+        return null;
+    }
 
 }

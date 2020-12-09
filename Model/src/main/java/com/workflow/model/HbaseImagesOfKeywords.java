@@ -1,56 +1,29 @@
 package com.workflow.model;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 
 import javax.annotation.Generated;
 
-@HbaseTableName("images_keyword")
-public class HbaseImagesOfKeywords extends HbaseData {
+@HbaseTableName(value = "images_keyword", page_table = true)
+public class HbaseImagesOfKeywords extends HbaseImagesOfMetadata {
 
     private static final long serialVersionUID = 1L;
 
     @Column(hbaseName = "keyword", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_KEYWORD)
     protected String          keyword;
-    @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
-    protected long            creationDate;
-    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
-    protected String          imageId;
-    @Column(hbaseName = "version", isPartOfRowkey = true, rowKeyNumber = 3, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
-    protected short           version;
-
-    @Column(hbaseName = "image_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 100)
-    protected String          imageName        = "";
-    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 101)
-    protected String          thumbName        = "";
-    @Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 102)
-    protected byte[]          thumbnail        = {};
-    @Column(hbaseName = "path", rowKeyNumber = 103, toByte = ToByteString.class, columnFamily = "img")
-    protected String          path             = "";
-    @Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            width;
-    @Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            height;
-    @Column(hbaseName = "originalWidth", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            originalWidth;
-    @Column(hbaseName = "originalHeight", rowKeyNumber = 107, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            originalHeight;
-    @Column(hbaseName = "importDate", rowKeyNumber = 108, toByte = ToByteLong.class, columnFamily = "img")
-    protected long            importDate;
-    @Column(hbaseName = "orientation", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 109)
-    protected long            orientation;
 
     @Generated("SparkTools")
     private HbaseImagesOfKeywords(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
-        this.keyword = builder.keyword;
         this.creationDate = builder.creationDate;
         this.imageId = builder.imageId;
-        this.version = builder.version;
         this.imageName = builder.imageName;
         this.thumbName = builder.thumbName;
-        this.thumbnail = builder.thumbnail;
         this.path = builder.path;
         this.width = builder.width;
         this.height = builder.height;
@@ -58,61 +31,100 @@ public class HbaseImagesOfKeywords extends HbaseData {
         this.originalHeight = builder.originalHeight;
         this.importDate = builder.importDate;
         this.orientation = builder.orientation;
+        this.lens = builder.lens;
+        this.focalLens = builder.focalLens;
+        this.speed = builder.speed;
+        this.aperture = builder.aperture;
+        this.isoSpeed = builder.isoSpeed;
+        this.camera = builder.camera;
+        this.shiftExpo = builder.shiftExpo;
+        this.copyright = builder.copyright;
+        this.artist = builder.artist;
+        this.importName = builder.importName;
+        this.keyword = builder.keyword;
     }
 
-    public long getCreationDate() { return this.creationDate; }
+    @Override
+    public String toString() {
+        final int maxLen = 10;
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("HbaseImagesOfKeywords [keyword=");
+        builder2.append(this.keyword);
+        builder2.append(", creationDate=");
+        builder2.append(this.creationDate);
+        builder2.append(", imageId=");
+        builder2.append(this.imageId);
+        builder2.append(", imageName=");
+        builder2.append(this.imageName);
+        builder2.append(", thumbName=");
+        builder2.append(this.thumbName);
+        builder2.append(", path=");
+        builder2.append(this.path);
+        builder2.append(", width=");
+        builder2.append(this.width);
+        builder2.append(", height=");
+        builder2.append(this.height);
+        builder2.append(", originalWidth=");
+        builder2.append(this.originalWidth);
+        builder2.append(", originalHeight=");
+        builder2.append(this.originalHeight);
+        builder2.append(", importDate=");
+        builder2.append(this.importDate);
+        builder2.append(", orientation=");
+        builder2.append(this.orientation);
+        builder2.append(", lens=");
+        builder2.append(
+            this.lens != null ? Arrays.toString(Arrays.copyOf(this.lens, Math.min(this.lens.length, maxLen))) : null);
+        builder2.append(", focalLens=");
+        builder2.append(
+            this.focalLens != null
+                ? Arrays.toString(Arrays.copyOf(this.focalLens, Math.min(this.focalLens.length, maxLen)))
+                : null);
+        builder2.append(", speed=");
+        builder2.append(
+            this.speed != null ? Arrays.toString(Arrays.copyOf(this.speed, Math.min(this.speed.length, maxLen)))
+                : null);
+        builder2.append(", aperture=");
+        builder2.append(
+            this.aperture != null
+                ? Arrays.toString(Arrays.copyOf(this.aperture, Math.min(this.aperture.length, maxLen)))
+                : null);
+        builder2.append(", isoSpeed=");
+        builder2.append(this.isoSpeed);
+        builder2.append(", camera=");
+        builder2.append(this.camera);
+        builder2.append(", shiftExpo=");
+        builder2.append(
+            this.shiftExpo != null
+                ? Arrays.toString(Arrays.copyOf(this.shiftExpo, Math.min(this.shiftExpo.length, maxLen)))
+                : null);
+        builder2.append(", copyright=");
+        builder2.append(this.copyright);
+        builder2.append(", artist=");
+        builder2.append(this.artist);
+        builder2.append(", importName=");
+        builder2.append(this.importName);
+        builder2.append(", dataCreationDate=");
+        builder2.append(this.dataCreationDate);
+        builder2.append(", dataId=");
+        builder2.append(this.dataId);
+        builder2.append("]");
+        return builder2.toString();
+    }
 
-    public void setCreationDate(long creationDate) { this.creationDate = creationDate; }
-
-    public String getImageId() { return this.imageId; }
-
-    public void setImageId(String imageId) { this.imageId = imageId; }
-
-    public short getVersion() { return this.version; }
-
-    public void setVersion(short version) { this.version = version; }
-
-    public String getImageName() { return this.imageName; }
-
-    public void setImageName(String imageName) { this.imageName = imageName; }
-
-    public String getThumbName() { return this.thumbName; }
-
-    public void setThumbName(String thumbName) { this.thumbName = thumbName; }
-
-    public byte[] getThumbnail() { return this.thumbnail; }
-
-    public void setThumbnail(byte[] thumbnail) { this.thumbnail = thumbnail; }
-
-    public String getPath() { return this.path; }
-
-    public void setPath(String path) { this.path = path; }
-
-    public long getWidth() { return this.width; }
-
-    public void setWidth(long width) { this.width = width; }
-
-    public long getHeight() { return this.height; }
-
-    public void setHeight(long height) { this.height = height; }
-
-    public long getOriginalWidth() { return this.originalWidth; }
-
-    public void setOriginalWidth(long originalWidth) { this.originalWidth = originalWidth; }
-
-    public long getOriginalHeight() { return this.originalHeight; }
-
-    public void setOriginalHeight(long originalHeight) { this.originalHeight = originalHeight; }
-
-    public long getImportDate() { return this.importDate; }
-
-    public void setImportDate(long importDate) { this.importDate = importDate; }
-
-    public long getOrientation() { return this.orientation; }
-
-    public void setOrientation(long orientation) { this.orientation = orientation; }
-
-    public static long getSerialversionuid() { return HbaseImagesOfKeywords.serialVersionUID; }
+    private String toString(Collection<?> collection, int maxLen) {
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("[");
+        int i = 0;
+        for (Iterator<?> iterator = collection.iterator(); iterator.hasNext() && (i < maxLen); i++) {
+            if (i > 0) {
+                builder2.append(", ");
+            }
+            builder2.append(iterator.next());
+        }
+        builder2.append("]");
+        return builder2.toString();
+    }
 
     public String getKeyword() { return this.keyword; }
 
@@ -134,21 +146,7 @@ public class HbaseImagesOfKeywords extends HbaseData {
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
-        result = (prime * result) + Arrays.hashCode(this.thumbnail);
-        result = (prime * result) + Objects.hash(
-            this.creationDate,
-            this.height,
-            this.imageId,
-            this.imageName,
-            this.importDate,
-            this.keyword,
-            this.orientation,
-            this.originalHeight,
-            this.originalWidth,
-            this.path,
-            this.thumbName,
-            this.version,
-            this.width);
+        result = (prime * result) + Objects.hash(this.keyword);
         return result;
     }
 
@@ -158,22 +156,7 @@ public class HbaseImagesOfKeywords extends HbaseData {
         if (!super.equals(obj)) { return false; }
         if (this.getClass() != obj.getClass()) { return false; }
         HbaseImagesOfKeywords other = (HbaseImagesOfKeywords) obj;
-        return (this.creationDate == other.creationDate) && (this.height == other.height)
-            && Objects.equals(this.imageId, other.imageId) && Objects.equals(this.imageName, other.imageName)
-            && (this.importDate == other.importDate) && Objects.equals(this.keyword, other.keyword)
-            && (this.orientation == other.orientation) && (this.originalHeight == other.originalHeight)
-            && (this.originalWidth == other.originalWidth) && Objects.equals(this.path, other.path)
-            && Objects.equals(this.thumbName, other.thumbName) && Arrays.equals(this.thumbnail, other.thumbnail)
-            && (this.version == other.version) && (this.width == other.width);
-    }
-
-    @Override
-    public String toString() {
-        return "HbaseKeyword [keyword=" + this.keyword + ", creationDate=" + this.creationDate + ", imageId="
-            + this.imageId + ", version=" + this.version + ", imageName=" + this.imageName + ", thumbName="
-            + this.thumbName + ", thumbnail=" + Arrays.toString(this.thumbnail) + ", path=" + this.path + ", width="
-            + this.width + ", height=" + this.height + ", originalWidth=" + this.originalWidth + ", originalHeight="
-            + this.originalHeight + ", importDate=" + this.importDate + ", orientation=" + this.orientation + "]";
+        return Objects.equals(this.keyword, other.keyword);
     }
 
     /**
@@ -189,24 +172,66 @@ public class HbaseImagesOfKeywords extends HbaseData {
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private long   dataCreationDate;
-        private String dataId;
-        private String keyword;
-        private long   creationDate;
-        private String imageId;
-        private short  version;
-        private String imageName;
-        private String thumbName;
-        private byte[] thumbnail;
-        private String path;
-        private long   width;
-        private long   height;
-        private long   originalWidth;
-        private long   originalHeight;
-        private long   importDate;
-        private long   orientation;
+        private long            dataCreationDate;
+        private String          dataId;
+        private long            creationDate;
+        private String          imageId;
+        private String          imageName;
+        private String          thumbName;
+        private String          path;
+        private long            width;
+        private long            height;
+        private long            originalWidth;
+        private long            originalHeight;
+        private long            importDate;
+        private long            orientation;
+        private byte[]          lens;
+        private int[]           focalLens;
+        private int[]           speed;
+        private int[]           aperture;
+        private short           isoSpeed;
+        private String          camera;
+        private int[]           shiftExpo;
+        private String          copyright;
+        private String          artist;
+        private String          importName;
+        private HashSet<String> albums;
+        private HashSet<String> keyWords;
+        private HashSet<String> persons;
+        private HashSet<Long>   ratingsOfImage;
+        private String          keyword;
 
         private Builder() {}
+
+        public Builder withThumbNailImage(HbaseImageThumbnail hbi) {
+            return this.withAlbums(hbi.getAlbums())
+                .withAperture(hbi.getAperture())
+                .withArtist(hbi.getArtist())
+                .withCamera(hbi.getCamera())
+                .withCopyright(hbi.getCopyright())
+                .withCreationDate(hbi.getCreationDate())
+                // .withDataCreationDate(hbi.getDataCreationDate())
+                .withDataId(hbi.getDataId())
+                .withFocalLens(hbi.getFocalLens())
+                .withHeight(hbi.getHeight())
+                .withImageId(hbi.getImageId())
+                .withImageName(hbi.getImageName())
+                .withImportDate(hbi.getImportDate())
+                .withImportName(hbi.getImportName())
+                .withIsoSpeed(hbi.getIsoSpeed())
+                .withKeyWords(hbi.getKeyWords())
+                .withLens(hbi.getLens())
+                .withOrientation(hbi.getOrientation())
+                .withOriginalHeight(hbi.getOriginalHeight())
+                .withOriginalWidth(hbi.getOriginalWidth())
+                .withPath(hbi.getPath())
+                .withPersons(hbi.getPersons())
+                .withRatingsOfImage(hbi.getRatings())
+                .withShiftExpo(hbi.getShiftExpo())
+                .withSpeed(hbi.getSpeed())
+                .withThumbName(hbi.getThumbName())
+                .withWidth(hbi.getWidth());
+        }
 
         /**
          * Builder method for dataCreationDate parameter.
@@ -229,18 +254,6 @@ public class HbaseImagesOfKeywords extends HbaseData {
          */
         public Builder withDataId(String dataId) {
             this.dataId = dataId;
-            return this;
-        }
-
-        /**
-         * Builder method for keyword parameter.
-         *
-         * @param keyword
-         *            field to set
-         * @return builder
-         */
-        public Builder withKeyword(String keyword) {
-            this.keyword = keyword;
             return this;
         }
 
@@ -269,18 +282,6 @@ public class HbaseImagesOfKeywords extends HbaseData {
         }
 
         /**
-         * Builder method for version parameter.
-         *
-         * @param version
-         *            field to set
-         * @return builder
-         */
-        public Builder withVersion(short version) {
-            this.version = version;
-            return this;
-        }
-
-        /**
          * Builder method for imageName parameter.
          *
          * @param imageName
@@ -301,18 +302,6 @@ public class HbaseImagesOfKeywords extends HbaseData {
          */
         public Builder withThumbName(String thumbName) {
             this.thumbName = thumbName;
-            return this;
-        }
-
-        /**
-         * Builder method for thumbnail parameter.
-         *
-         * @param thumbnail
-         *            field to set
-         * @return builder
-         */
-        public Builder withThumbnail(byte[] thumbnail) {
-            this.thumbnail = thumbnail;
             return this;
         }
 
@@ -397,6 +386,186 @@ public class HbaseImagesOfKeywords extends HbaseData {
          */
         public Builder withOrientation(long orientation) {
             this.orientation = orientation;
+            return this;
+        }
+
+        /**
+         * Builder method for lens parameter.
+         *
+         * @param lens
+         *            field to set
+         * @return builder
+         */
+        public Builder withLens(byte[] lens) {
+            this.lens = lens;
+            return this;
+        }
+
+        /**
+         * Builder method for focalLens parameter.
+         *
+         * @param focalLens
+         *            field to set
+         * @return builder
+         */
+        public Builder withFocalLens(int[] focalLens) {
+            this.focalLens = focalLens;
+            return this;
+        }
+
+        /**
+         * Builder method for speed parameter.
+         *
+         * @param speed
+         *            field to set
+         * @return builder
+         */
+        public Builder withSpeed(int[] speed) {
+            this.speed = speed;
+            return this;
+        }
+
+        /**
+         * Builder method for aperture parameter.
+         *
+         * @param aperture
+         *            field to set
+         * @return builder
+         */
+        public Builder withAperture(int[] aperture) {
+            this.aperture = aperture;
+            return this;
+        }
+
+        /**
+         * Builder method for isoSpeed parameter.
+         *
+         * @param isoSpeed
+         *            field to set
+         * @return builder
+         */
+        public Builder withIsoSpeed(short isoSpeed) {
+            this.isoSpeed = isoSpeed;
+            return this;
+        }
+
+        /**
+         * Builder method for camera parameter.
+         *
+         * @param camera
+         *            field to set
+         * @return builder
+         */
+        public Builder withCamera(String camera) {
+            this.camera = camera;
+            return this;
+        }
+
+        /**
+         * Builder method for shiftExpo parameter.
+         *
+         * @param shiftExpo
+         *            field to set
+         * @return builder
+         */
+        public Builder withShiftExpo(int[] shiftExpo) {
+            this.shiftExpo = shiftExpo;
+            return this;
+        }
+
+        /**
+         * Builder method for copyright parameter.
+         *
+         * @param copyright
+         *            field to set
+         * @return builder
+         */
+        public Builder withCopyright(String copyright) {
+            this.copyright = copyright;
+            return this;
+        }
+
+        /**
+         * Builder method for artist parameter.
+         *
+         * @param artist
+         *            field to set
+         * @return builder
+         */
+        public Builder withArtist(String artist) {
+            this.artist = artist;
+            return this;
+        }
+
+        /**
+         * Builder method for importName parameter.
+         *
+         * @param importName
+         *            field to set
+         * @return builder
+         */
+        public Builder withImportName(String importName) {
+            this.importName = importName;
+            return this;
+        }
+
+        /**
+         * Builder method for albums parameter.
+         *
+         * @param albums
+         *            field to set
+         * @return builder
+         */
+        public Builder withAlbums(HashSet<String> albums) {
+            this.albums = albums;
+            return this;
+        }
+
+        /**
+         * Builder method for keyWords parameter.
+         *
+         * @param keyWords
+         *            field to set
+         * @return builder
+         */
+        public Builder withKeyWords(HashSet<String> keyWords) {
+            this.keyWords = keyWords;
+            return this;
+        }
+
+        /**
+         * Builder method for persons parameter.
+         *
+         * @param persons
+         *            field to set
+         * @return builder
+         */
+        public Builder withPersons(HashSet<String> persons) {
+            this.persons = persons;
+            return this;
+        }
+
+        /**
+         * Builder method for ratingsOfImage parameter.
+         *
+         * @param ratingsOfImage
+         *            field to set
+         * @return builder
+         */
+        public Builder withRatingsOfImage(HashSet<Long> ratingsOfImage) {
+            this.ratingsOfImage = ratingsOfImage;
+            return this;
+        }
+
+        /**
+         * Builder method for keyword parameter.
+         *
+         * @param keyword
+         *            field to set
+         * @return builder
+         */
+        public Builder withKeyword(String keyword) {
+            this.keyword = keyword;
             return this;
         }
 

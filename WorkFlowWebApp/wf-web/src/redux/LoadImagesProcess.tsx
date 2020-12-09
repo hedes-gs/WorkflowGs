@@ -1,4 +1,4 @@
-import { ApplicationEvent, DownloadSelectedImageEvent } from './Actions'
+import { PayloadLoadedImagesEvent, ApplicationEvent, DownloadSelectedImageEvent, LoadImagesOfMetadataEvent, LoadAllPersonsEvent } from './Actions'
 import ApplicationSate from './State'
 
 import Actions from "./ActionsType";
@@ -29,7 +29,12 @@ const initialState: ApplicationSate = {
         isLoading: false
     },
     displayKeywords: {
+        state: '',
         keywords: []
+    },
+    displayPersons: {
+        state: '',
+        persons: []
     }
 };
 
@@ -81,6 +86,47 @@ export function reducerDisplayedExif(state: ApplicationSate, action: Application
     return initialState;
 }
 
+
+export function reducerMetadata(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
+    switch (action.payloadType) {
+        case PayloadLoadedImagesEvent: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    displayPersons: {
+                        state: 'METADATA_UNSELECTED',
+                        persons: []
+                    }
+                }
+            );
+            return returnedTarget;
+
+        }
+        case LoadAllPersonsEvent: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    displayPersons: {
+                        state: 'METADATA_SELECTED',
+                        persons: []
+                    }
+
+                }
+            );
+            return returnedTarget;
+
+        }
+    }
+    if (state != null) {
+        return state;
+    }
+
+    return initialState;
+}
+
+
 export function reducerImagesList(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
 
     switch (action.payloadType) {
@@ -98,6 +144,23 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                         max: max,
                         intervallType: intervallType
                     }
+                },
+            );
+            return returnedTarget;
+        }
+        case LoadImagesOfMetadataEvent: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imagesLoaded: {
+                        state: 'LOADING',
+                        images: null,
+                        urlNext: '',
+                        urlPrev: '',
+                        pageNumber: 1
+                    },
+
                 },
             );
             return returnedTarget;
@@ -334,4 +397,30 @@ export function reducerDisplayKeywords(state: ApplicationSate, action: Applicati
 
     return initialState;
 }
+
+export function reducerDisplayPersons(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
+    switch (action.type) {
+        case Actions.ALL_PERSONS_ARE_LOADED: {
+            switch (action.payloadType) {
+                case '26': {
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+                            displayPersons: {
+                                persons: action.payload.persons
+                            }
+                        });
+                    return returnedTarget;
+                }
+            }
+        }
+    }
+    if (state != null) {
+        return state;
+    }
+
+    return initialState;
+}
+
 

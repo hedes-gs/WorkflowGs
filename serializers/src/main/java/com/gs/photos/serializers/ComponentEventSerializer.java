@@ -7,7 +7,7 @@ import com.workflow.model.events.ComponentEvent;
 public class ComponentEventSerializer extends AbstractModelSerializerAndDeserializer<ComponentEvent>
     implements Serializer<ComponentEvent> {
     @Override
-    public byte[] serialize(String topic, ComponentEvent data) { return super.toBytesGeneric(data); }
+    public byte[] serialize(String topic, ComponentEvent data) { return super.toBytesGeneric(topic, data); }
 
     public ComponentEventSerializer() { super(); }
 

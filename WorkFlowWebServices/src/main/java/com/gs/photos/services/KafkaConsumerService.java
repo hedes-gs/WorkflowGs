@@ -26,7 +26,7 @@ public class KafkaConsumerService {
     @KafkaListener(topics = "${topic.topicComponentStatus}")
     public void consume(@Payload(required = false) ComponentEvent message) {
         if (message != null) {
-            this.template.convertAndSend("/topic/componentStatus", message.getComponentName());
+            this.template.convertAndSend("/topic/componentStatus", message);
         } else {
             KafkaConsumerService.LOGGER.warn("Kafka : Receive message null !");
         }
