@@ -9,9 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
@@ -121,16 +121,19 @@ public class BeanCopyFile implements ICopyFile {
                 Map<TopicPartition, OffsetAndMetadata> offsets = filesToCopyStream.map((r) -> this.copyToLocal(r))
                     .map((r) -> this.sendToNext(r))
                     .collect(
-                        () -> new HashMap<TopicPartition, OffsetAndMetadata>(),
+                        () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
                         (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
                         (r, t) -> this.merge(r, t));
                 BeanCopyFile.LOGGER.info("Offset to commit {} ", offsets.toString());
                 BeanCopyFile.this.producerForTopicWithFileToProcessValue
                     .sendOffsetsToTransaction(offsets, BeanCopyFile.this.groupId);
                 BeanCopyFile.this.producerForTopicWithFileToProcessValue.commitTransaction();
-            } catch (IOException e) {
+            } catch (Throwable e) {
+                BeanCopyFile.LOGGER.error("Unexpected error {}, closing ", ExceptionUtils.getStackTrace(e));
+                break;
             }
         }
+        this.consumerForTopicWithFileToProcessValue.close();
     }
 
     private void merge(Map<TopicPartition, OffsetAndMetadata> r, Map<TopicPartition, OffsetAndMetadata> t) {
@@ -226,8 +229,10 @@ public class BeanCopyFile implements ICopyFile {
                     Optional.of(
                         FileToProcess.builder()
                             .withCompressedFile(origin.isCompressedFile())
+                            .withImportEvent(origin.getImportEvent())
                             .withDataId(origin.getDataId())
                             .withHost(this.hostname)
+                            .withRootForNfs(this.repository)
                             .withPath(
                                 destPath.toAbsolutePath()
                                     .toString())

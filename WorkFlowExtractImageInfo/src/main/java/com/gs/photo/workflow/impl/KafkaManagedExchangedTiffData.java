@@ -6,13 +6,14 @@ import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.builder.KeysBuilder;
 import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 
 public class KafkaManagedExchangedTiffData extends GenericKafkaManagedObject<ExchangedTiffData> {
 
     @Override
     public WfEvent createWfEvent() {
-        return WfEvent.builder()
+        return WfEventProduced.builder()
             .withImgId(this.imageKey)
             .withParentDataId(
                 this.getValue()

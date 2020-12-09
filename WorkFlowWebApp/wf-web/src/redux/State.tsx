@@ -1,4 +1,4 @@
-import { ImageDto, PageOfImageDto, ImageKeyDto, ExifOfImages } from "../model/ImageDto";
+import { ImageDto, PageOfImageDto, ImageKeyDto, ExifOfImages, Metadata } from "../model/ImageDto";
 
 export interface ApplicationState {
     lastIntervallRequested: {
@@ -29,7 +29,12 @@ export interface ApplicationState {
         ratings: Map<string, number>
     }
     displayKeywords: {
-        keywords: string[]
+        state: string;
+        keywords: Metadata[]
+    }
+    displayPersons: {
+        state: string;
+        persons: Metadata[]
     }
     imageIsSelectedToBeDisplayed: {
         isLoading: boolean,
@@ -38,14 +43,15 @@ export interface ApplicationState {
 };
 
 export interface ClientApplicationState {
+    reducerMetadata: ApplicationState,
     reducerImagesList: ApplicationState,
     reducerImagesToDelete: ApplicationState,
     reducerImagesToDownload: ApplicationState,
     reducerDisplayedExif: ApplicationState,
     reducerDisplayRatings: ApplicationState,
     reducerDisplayKeywords: ApplicationState,
+    reducerDisplayPersons: ApplicationState,
     reducerImageIsSelectedToBeDisplayed: ApplicationState,
 }
-
 
 export default ApplicationState;

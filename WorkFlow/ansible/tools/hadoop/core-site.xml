@@ -58,9 +58,25 @@
 	</property>
 	<property>
 		<name>hadoop.proxyuser.admin.groups</name>
-		<value>nogroup</value>
+		<value>*</value>
 	</property>
-	
+	<property>
+		<name>hadoop.proxyuser.root.hosts</name>
+		<value>*</value>
+	</property>
+	<property>
+		<name>hadoop.proxyuser.root.groups</name>
+		<value>*</value>
+	</property>
+	<property>
+		<name>hadoop.proxyuser.hbase.hosts</name>
+		<value>*</value>
+	</property>
+	<property>
+		<name>hadoop.proxyuser.hbase.groups</name>
+		<value>*</value>
+	</property>
+
 	<property>
 		<name>hadoop.user.group.static.mapping.overrides</name>
 		<value>sn=supergroup;nn=supergroup;dn=supergroup</value>

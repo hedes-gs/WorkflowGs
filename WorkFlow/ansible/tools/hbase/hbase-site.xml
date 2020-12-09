@@ -105,7 +105,7 @@
 	</property>
 	<property>
 		<name>hbase.hregion.max.filesize</name>
-		<value>10737418240</value>
+		<value>5368709120</value>
 	</property>
 	<property>
 		<name>hbase.hregion.majorcompaction</name>
@@ -127,6 +127,11 @@
 		<name>hbase.region.replica.replication.enabled</name>
 		<value>true</value>
 	</property>
+	<property>
+		<name>hbase.regionserver.compaction.enabled</name>
+		<value>false</value>
+	</property>
+	
 
 	<property>
 		<name>hbase.security.authentication</name>
@@ -137,16 +142,27 @@
 		<value>true</value>
 	</property>
 	<property>
+	
 		<name>hbase.coprocessor.region.classes</name>
-		<value>org.apache.hadoop.hbase.security.token.TokenProvider,org.apache.hadoop.hbase.coprocessor.AggregateImplementation</value>
+		<value>
+			org.apache.hadoop.hbase.security.token.TokenProvider,
+			org.apache.hadoop.hbase.coprocessor.AggregateImplementation,
+			com.gs.workflow.coprocessor.PaginationCoprocessor,
+			com.gs.workflow.coprocessor.KeyWordMetadataStringCoprocessor,
+			com.gs.workflow.coprocessor.PersonMetadataStringCoprocessor,
+			com.gs.workflow.coprocessor.AlbumMetadataStringCoprocessor,
+			com.gs.workflow.coprocessor.RatingsMetadataStringCoprocessor,
+			com.gs.workflow.coprocessor.CoprocessorForHbaseExifData
+		</value>
 	</property>
+
 	<property>
 		<name>hbase.client.keytab.file</name>
 		<value>/home/hbase/latest/conf/hbase_all.keytab</value>
 	</property>
 	<property>
 		<name>hbase.client.keytab.principal</name>
-		<value>hbase@GS.COM</value>
+		<value>hbase/{{ hbase_slave_host }}@GS.COM</value>
 	</property>
 
 

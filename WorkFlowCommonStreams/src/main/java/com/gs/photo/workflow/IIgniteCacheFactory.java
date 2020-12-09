@@ -8,4 +8,6 @@ public interface IIgniteCacheFactory {
 
     public boolean isReady();
 
+    <V> IgniteCache<String, V> getIgniteCacheBinary(Class<V> cl);
+
 }

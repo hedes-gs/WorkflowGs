@@ -7,18 +7,16 @@ import java.util.StringJoiner;
 
 import javax.annotation.PostConstruct;
 
-import org.springframework.stereotype.Component;
-
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.gs.photo.workflow.daos.ICacheNodeDAO;
 import com.gs.photo.workflow.daos.impl.tree.Node;
 import com.gs.photo.workflow.daos.impl.tree.Node.HashKeyCompute;
 import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 
-@Component
 public class CacheNodeDAO implements ICacheNodeDAO {
 
     protected static final HashFunction HASH_FUNCTION = Hashing.goodFastHash(256);
@@ -90,7 +88,7 @@ public class CacheNodeDAO implements ICacheNodeDAO {
 
     @PostConstruct
     protected void init() {
-        WfEvent eventRoot = WfEvent.builder()
+        WfEvent eventRoot = WfEventProduced.builder()
             .withDataId("")
             .withImgId("")
             .withParentDataId("")
@@ -99,16 +97,19 @@ public class CacheNodeDAO implements ICacheNodeDAO {
     }
 
     @Override
-    public void addOrCreate(WfEvents events) { events.getEvents()
-        .forEach((evt) -> this.addOrCreate(evt)); }
+    public WfEvents addOrCreate(String key, WfEvents events) {
+        events.getEvents()
+            .forEach((evt) -> this.addOrCreate(evt));
+        return events;
+    }
 
     private void addOrCreate(WfEvent event) {
-        WfEvent eventImgId = WfEvent.builder()
+        WfEvent eventImgId = WfEventProduced.builder()
             .withDataId(event.getImgId())
             .withImgId(event.getImgId())
             .withParentDataId(event.getImgId())
             .build();
-        WfEvent parentDataId = WfEvent.builder()
+        WfEvent parentDataId = WfEventProduced.builder()
             .withDataId(event.getParentDataId())
             .withImgId(event.getImgId())
             .withParentDataId(event.getImgId())
@@ -132,8 +133,9 @@ public class CacheNodeDAO implements ICacheNodeDAO {
         }
     }
 
+    @Override
     public boolean allEventsAreReceivedForAnImage(String imgId) {
-        WfEvent eventImgId = WfEvent.builder()
+        WfEvent eventImgId = WfEventProduced.builder()
             .withDataId(imgId)
             .withImgId(imgId)
             .withParentDataId(imgId)

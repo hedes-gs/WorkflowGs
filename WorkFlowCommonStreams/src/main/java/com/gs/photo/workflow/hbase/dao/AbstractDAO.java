@@ -2,44 +2,56 @@ package com.gs.photo.workflow.hbase.dao;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.NamespaceNotFoundException;
+import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.BufferedMutatorParams;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.gs.photo.workflow.hbase.HbaseDataFieldInformation;
 import com.gs.photo.workflow.hbase.HbaseDataInformation;
-import com.workflow.model.Column;
 import com.workflow.model.HbaseData;
-import com.workflow.model.ToByte;
 
 public abstract class AbstractDAO<T extends HbaseData> {
+
+    protected static Logger           LOGGER                               = LoggerFactory.getLogger(AbstractDAO.class);
 
     // Common name when stats are needed (nb of elements for a collection for
     // instance)
 
-    protected static final String     COLUMN_STAT_NAME           = "stats";
-    protected static final String     FAMILY_IMGS_NAME           = "imgs";
-    protected static final String     FAMILY_STATS_NAME          = "fstats";
-    protected static final byte[]     COLUMN_STAT_AS_BYTES       = AbstractDAO.COLUMN_STAT_NAME
+    public static final byte[]        TABLE_PAGE_DESC_COLUMN_FAMILY        = "max_min".getBytes();
+    public static final byte[]        TABLE_PAGE_LIST_COLUMN_FAMILY        = "list".getBytes();
+    public static final byte[]        TABLE_PAGE_INFOS_COLUMN_FAMILY       = "infos".getBytes();
+    public static final byte[]        TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS  = "nbOfElements".getBytes();
+    public static final byte[]        TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER  = "max".getBytes();
+    public static final byte[]        TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER  = "min".getBytes();
+    protected static final String     FAMILY_INFOS_COL_NB_OF_ELEM          = "nbOfElements";
+    protected static final String     FAMILY_IMGS_NAME                     = "imgs";
+    protected static final String     FAMILY_INFOS_NAME                    = "infos";
+
+    protected static final byte[]     FAMILY_INFOS_COL_NB_OF_ELEM_AS_BYTES = AbstractDAO.FAMILY_INFOS_COL_NB_OF_ELEM
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[]     FAMILY_IMGS_NAME_AS_BYTES  = AbstractDAO.FAMILY_IMGS_NAME
+    protected static final byte[]     FAMILY_IMGS_NAME_AS_BYTES            = AbstractDAO.FAMILY_IMGS_NAME
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[]     FAMILY_STATS_NAME_AS_BYTES = AbstractDAO.FAMILY_STATS_NAME
+    protected static final byte[]     FAMILY_INFOS_NAME_AS_BYTES           = AbstractDAO.FAMILY_INFOS_NAME
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[]     TRUE_VALUE                 = new byte[] { 1 };
+    protected static final byte[]     TRUE_VALUE                           = new byte[] { 1 };
 
     @Autowired
     protected Connection              connection;
@@ -51,52 +63,140 @@ public abstract class AbstractDAO<T extends HbaseData> {
 
     protected BufferedMutator         bufferedMutator;
 
-    public HbaseDataInformation<T> getHbaseDataInformation() throws IOException {
-        return this.hbaseDataInformation;
-    }
+    public HbaseDataInformation<T> getHbaseDataInformation() { return this.hbaseDataInformation; }
 
-    public void flush() throws IOException { this.bufferedMutator.flush(); }
+    public void flush() throws IOException {
+        try {
+
+            this.bufferedMutator.flush();
+        } catch (RetriesExhaustedWithDetailsException e) {
+            AbstractDAO.LOGGER.error(" Retries error ! {}", ExceptionUtils.getStackTrace(e));
+            throw e;
+        } catch (IOException e) {
+            throw e;
+        }
+
+    }
 
     protected void createHbaseDataInformation(Class<T> cl) throws IOException {
         if (this.hbaseDataInformation == null) {
             this.hbaseDataInformation = new HbaseDataInformation<>(cl, this.nameSpace);
-            AbstractDAO.buildHbaseDataInformation(cl, this.hbaseDataInformation);
-            TableName tableName = this.createTableIfNeeded(this.hbaseDataInformation);
-            if (tableName == null) {
-                throw new IllegalArgumentException("Unable to get table name for " + this.hbaseDataInformation);
-            }
-            this.hbaseDataInformation.setTable(tableName);
-            this.bufferedMutator = AbstractDAO.getBufferedMutator(this.connection, tableName);
+            HbaseDataInformation.buildHbaseDataInformation(cl, this.hbaseDataInformation);
+            this.createTablesIfNeeded(this.hbaseDataInformation);
+            this.bufferedMutator = AbstractDAO
+                .getBufferedMutator(this.connection, this.hbaseDataInformation.getTable());
         }
     }
 
-    protected static <T extends HbaseData> void buildHbaseDataInformation(
-        Class<T> cl,
-        HbaseDataInformation<T> hbaseDataInformation
-    ) {
-        Arrays.asList(cl.getDeclaredFields())
-            .forEach((field) -> {
-                if (field.isAnnotationPresent(Column.class)) {
-                    try {
-                        Column cv = field.getAnnotation(Column.class);
-                        Class<? extends ToByte<Object>> transformClass = (Class<? extends ToByte<Object>>) cv.toByte();
-                        field.setAccessible(true);
-                        HbaseDataFieldInformation value = new HbaseDataFieldInformation(field, transformClass, cv);
-                        hbaseDataInformation.addField(value);
-                    } catch (
-                        IllegalArgumentException |
-                        SecurityException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        hbaseDataInformation.endOfInit();
+    protected void createTablesIfNeeded(HbaseDataInformation<T> hdi) throws IOException {
+        try (
+            Admin admin = this.connection.getAdmin()) {
+            AbstractDAO.LOGGER.info("Creating table {} and {}", hdi.getTableName(), hdi.getPageTableName());
+            AbstractDAO.createNameSpaceIFNeeded(admin, hdi.getNameSpace());
+            TableName tn = AbstractDAO.createTableIfNeeded(admin, hdi.getTableName(), hdi.getFamilies());
+            hdi.setTable(tn);
+            if (hdi.getPageTableName() != null) {
+                AbstractDAO.LOGGER.info("Creating page table {}", hdi.getPageTableName());
+                TableName pageTn = this.createPageTableIfNeeded(admin, hdi.getPageTableName());
+                hdi.setPageTable(pageTn);
+            }
+
+        }
     }
 
-    protected TableName createTableIfNeeded(HbaseDataInformation<T> hdi) throws IOException {
-        Admin admin = this.connection.getAdmin();
-        AbstractDAO.createNameSpaceIFNeeded(admin, hdi.getNameSpace());
-        return AbstractDAO.createTableIfNeeded(admin, hdi.getTableName(), hdi.getFamilies());
+    protected TableName createPageTableIfNeeded(HbaseDataInformation<T> hdi) throws IOException {
+        try (
+            Admin admin = this.connection.getAdmin()) {
+            return this.createPageTableIfNeeded(admin, hdi.getPageTableName());
+        }
+    }
+
+    protected static byte[] convert(Long p) {
+        byte[] retValue = new byte[8];
+        Bytes.putLong(retValue, 0, p);
+        return retValue;
+    }
+
+    protected TableName createPageTableIfNeeded(final Admin admin, String tableName) throws IOException {
+        TableName hbaseTable = TableName.valueOf(tableName);
+        if (!admin.tableExists(hbaseTable)) {
+
+            TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
+            builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_DESC_COLUMN_FAMILY))
+                .setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_LIST_COLUMN_FAMILY))
+                .setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY));
+            try {
+                admin.createTable(builder.build());
+                try (
+                    Table table = this.connection.getTable(hbaseTable)) {
+                    this.initializePageTable(table);
+                } catch (Exception e) {
+                    AbstractDAO.LOGGER.warn(
+                        "Error when creating table {}, table already created {} ",
+                        tableName,
+                        ExceptionUtils.getStackTrace(e));
+                    throw new RuntimeException(e);
+                }
+            } catch (TableExistsException e) {
+                AbstractDAO.LOGGER.warn(
+                    "Error when creating table {}, table already created {} ",
+                    tableName,
+                    ExceptionUtils.getStackTrace(e));
+            } catch (Exception e) {
+                AbstractDAO.LOGGER
+                    .warn("Error when creating table {} : {} ", tableName, ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
+        }
+        return hbaseTable;
+    }
+
+    protected void initializePageTable(Table table) throws IOException {
+        byte[] key = AbstractDAO.convert(0L);
+        Put put = new Put(key)
+            .addColumn(
+                AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY,
+                AbstractDAO.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS,
+                AbstractDAO.convert(0l))
+            .addColumn(
+                AbstractDAO.TABLE_PAGE_DESC_COLUMN_FAMILY,
+                AbstractDAO.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER,
+                AbstractDAO.convert(0L))
+            .addColumn(
+                AbstractDAO.TABLE_PAGE_DESC_COLUMN_FAMILY,
+                AbstractDAO.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER,
+                AbstractDAO.convert(Long.MAX_VALUE));
+        table.put(put);
+    }
+
+    protected static TableName createTableIfNeeded(
+        final Admin admin,
+        String tableName,
+        Collection<String> values,
+        byte[] firstRow,
+        byte[] lastRow,
+        int nbOfRegions
+    ) throws IOException {
+        TableName hbaseTable = TableName.valueOf(tableName);
+        if (!admin.tableExists(hbaseTable)) {
+
+            TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
+
+            values.forEach((cfName) -> { builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(cfName)); });
+            try {
+                admin.createTable(builder.build(), firstRow, lastRow, nbOfRegions);
+            } catch (TableExistsException e) {
+                AbstractDAO.LOGGER.warn(
+                    "Error when creating table {}, table already created {} ",
+                    tableName,
+                    ExceptionUtils.getStackTrace(e));
+            } catch (Exception e) {
+                AbstractDAO.LOGGER
+                    .warn("Error when creating table {} : {} ", tableName, ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
+        }
+        return hbaseTable;
     }
 
     protected static TableName createTableIfNeeded(final Admin admin, String tableName, Collection<String> values)
@@ -105,21 +205,37 @@ public abstract class AbstractDAO<T extends HbaseData> {
         if (!admin.tableExists(hbaseTable)) {
 
             TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
-
+            builder.setRegionReplication(1);
             values.forEach((cfName) -> {
                 builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(cfName));
 
             });
-            admin.createTable(builder.build());
+            try {
+                admin.createTable(builder.build());
+            } catch (TableExistsException e) {
+                AbstractDAO.LOGGER.warn(
+                    "Error when creating table {}, table already created {} ",
+                    tableName,
+                    ExceptionUtils.getStackTrace(e));
+            } catch (Exception e) {
+                AbstractDAO.LOGGER
+                    .warn("Error when creating table {} : {} ", tableName, ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
         }
         return hbaseTable;
     }
 
     protected static void createNameSpaceIFNeeded(final Admin admin, String nameSpace) throws IOException {
         if (!AbstractDAO.namespaceExists(admin, nameSpace)) {
-            admin.createNamespace(
-                NamespaceDescriptor.create(nameSpace)
-                    .build());
+            try {
+                admin.createNamespace(
+                    NamespaceDescriptor.create(nameSpace)
+                        .build());
+            } catch (Exception e) {
+                AbstractDAO.LOGGER.warn("Error when creating name space {} ", ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
         }
     }
 

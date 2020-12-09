@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import javax.annotation.Generated;
 
-@HbaseTableName("keywords")
+@HbaseTableName(value = "keywords")
 public class HbaseKeywords extends HbaseData {
 
     /**
@@ -14,6 +14,9 @@ public class HbaseKeywords extends HbaseData {
 
     @Column(hbaseName = "keyword", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_KEYWORD)
     protected String          keyword;
+
+    @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
+    protected long            nbOfElements;
 
     @Generated("SparkTools")
     private HbaseKeywords(Builder builder) {
@@ -33,6 +36,10 @@ public class HbaseKeywords extends HbaseData {
     public String getKeyword() { return this.keyword; }
 
     public void setKeyword(String keyword) { this.keyword = keyword; }
+
+    public long getNbOfElements() { return this.nbOfElements; }
+
+    public void setNbOfElements(long nbOfElements) { this.nbOfElements = nbOfElements; }
 
     @Override
     public int hashCode() {

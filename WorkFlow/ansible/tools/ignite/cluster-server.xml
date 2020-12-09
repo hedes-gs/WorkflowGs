@@ -21,22 +21,36 @@
 						class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
 						<property name="addresses">
 							<list>
-								<value>IPC0:47500..47510</value>
-								<value>IPC1:47500..47510</value>
-								<value>IPC2:47500..47510</value>
-								<value>IPC3:47500..47510</value>
-								<value>IPC5:47500..47510</value>
-								<value>IPC6:47500..47510</value>
+								<value>192.168.1.205:47500..47510</value>
+								<value>192.168.1.206:47500..47510</value>
+								<value>192.168.1.200:47500..47510</value>
+								<value>192.168.1.202:47500..47510</value>
 							</list>
 						</property>
 					</bean>
 				</property>
+				<property name="ackTimeout" value="30000"/>
+					
+			</bean>
+		</property>
+		<property name="communicationSpi">
+			<bean
+				class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+				<property name="messageQueueLimit" value="128" />
+				<property name="ackSendThreshold" value="4" />
+				<property name="localAddress" value="{{ localAddress }}" />
+				<property name="socketWriteTimeout" value="60000" />
 			</bean>
 		</property>
 
 		<property name="dataStorageConfiguration">
 			<bean
 				class="org.apache.ignite.configuration.DataStorageConfiguration">
+				<property name="pageSize" value="16384" />
+				<property name="walArchivePath"
+					value="/usr/share/apache-ignite/work/db" />
+				<property name="walPath"
+					value="/usr/share/apache-ignite/work/db" />
 				<property name="defaultDataRegionConfiguration">
 					<bean
 						class="org.apache.ignite.configuration.DataRegionConfiguration">
@@ -55,10 +69,11 @@
 							<property name="initialSize"
 								value="#{1 * 1024 * 1024 * 1024}" />
 							<!-- 500 MB maximum size. -->
-							<property name="maxSize" value="8589934592" />
+							<property name="maxSize" value="3221225472" />
 							<!-- Enabling persistence for the region. -->
 							<property name="persistenceEnabled" value="false" />
 							<property name="pageEvictionMode" value="RANDOM_2_LRU" />
+							<property name="emptyPagesPoolSize" value="1500" />
 						</bean>
 					</list>
 				</property>
@@ -73,13 +88,23 @@
 					<property name="cacheMode" value="PARTITIONED" />
 					<property name="atomicityMode" value="ATOMIC" />
 					<property name="backups" value="1" />
-					<property name="readFromBackup" value="true" />
+					<property name="readFromBackup" value="false" />
 					<property name="copyOnRead" value="true" />
 					<property name="partitionLossPolicy"
 						value="READ_ONLY_SAFE" />
 					<property name="writeSynchronizationMode"
-						value="FULL_SYNC" />
+						value="PRIMARY_SYNC" />
 					<property name="dataRegionName" value="1GB_Region" />
+					<!-- Enabling on-heap caching for this distributed cache. -->
+					<property name="onheapCacheEnabled" value="true" />
+					<property name="evictionPolicy">
+						<!-- FIFO eviction policy. -->
+						<bean
+							class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
+							<!-- Set the maximum cache size to 1 million (default is 100,000). -->
+							<property name="maxSize" value="500" />
+						</bean>
+					</property>
 				</bean>
 				<bean
 					class="org.apache.ignite.configuration.CacheConfiguration">
@@ -87,13 +112,17 @@
 					<property name="cacheMode" value="PARTITIONED" />
 					<property name="atomicityMode" value="ATOMIC" />
 					<property name="backups" value="1" />
-					<property name="readFromBackup" value="true" />
+					<property name="readFromBackup" value="false" />
 					<property name="copyOnRead" value="true" />
-					<property name="partitionLossPolicy"
-						value="READ_ONLY_SAFE" />
-					<property name="writeSynchronizationMode"
-						value="FULL_SYNC" />
-					<property name="dataRegionName" value="1GB_Region" />
+					<property name="onheapCacheEnabled" value="true" />
+					<property name="evictionPolicy">
+						<!-- FIFO eviction policy. -->
+						<bean
+							class="org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy">
+							<!-- Set the maximum cache size to 1 million (default is 100,000). -->
+							<property name="maxSize" value="100" />
+						</bean>
+					</property>
 				</bean>
 
 			</list>

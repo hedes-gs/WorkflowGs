@@ -11,9 +11,9 @@ public class HbaseGenericSerializerDeserializer<T extends HbaseData> extends Abs
     public HbaseGenericSerializerDeserializer() { super(); }
 
     @Override
-    public T deserialize(String topic, byte[] t) { return super.fromBytesGeneric(t); }
+    public T deserialize(String topic, byte[] t) { return super.fromBytesGeneric(topic, t); }
 
     @Override
-    public byte[] serialize(String topic, T data) { return super.toBytesGeneric(data); }
+    public byte[] serialize(String topic, T data) { return super.toBytesGeneric(topic, data); }
 
 }

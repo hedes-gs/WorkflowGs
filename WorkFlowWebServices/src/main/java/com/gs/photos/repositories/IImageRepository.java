@@ -23,6 +23,10 @@ public interface IImageRepository {
 
     Page<ImageDto> findLastImages(Pageable page) throws IOException;
 
+    Page<ImageDto> findImagesByKeyword(Pageable page, String keyword) throws IOException;
+
+    Page<ImageDto> findImagesByPerson(Pageable page, String person) throws IOException;
+
     public byte[] getJpegImage(OffsetDateTime creationDate, String id, int version);
 
     public MinMaxDatesDto getDatesLimit();
@@ -120,12 +124,16 @@ public interface IImageRepository {
 
     long countAllOf(String intervalType) throws IOException;
 
-    Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, int rating);
+    Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, long rating);
 
     Optional<ImageDto> addKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
 
     void addAlbum(String id, OffsetDateTime creationDate, int version, String album);
 
     Optional<ImageDto> deleteKeyword(String imageId, OffsetDateTime creationDate, int version, String keyword);
+
+    Optional<ImageDto> addPerson(String imageId, OffsetDateTime creationDate, int version, String person);
+
+    Optional<ImageDto> deletePerson(String imageId, OffsetDateTime creationDate, int version, String keyword);
 
 }

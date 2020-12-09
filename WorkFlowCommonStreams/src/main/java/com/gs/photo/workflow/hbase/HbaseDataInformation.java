@@ -1,13 +1,13 @@
 package com.gs.photo.workflow.hbase;
 
-import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -18,9 +18,11 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Objects;
 import com.workflow.model.Column;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseTableName;
@@ -37,10 +39,24 @@ public class HbaseDataInformation<T extends HbaseData> {
     private int                                  keyLength  = 0;
     private final String                         tableName;
     private TableName                            table;
+    private String                               pageTableName;
+    private TableName                            pageTable;
     private Class<T>                             hbaseDataClass;
     private final String                         nameSpace;
 
     public int getKeyLength() { return this.keyLength; }
+
+    public byte[] getMinKey() {
+        byte[] retValue = new byte[this.getKeyLength()];
+        Arrays.fill(retValue, (byte) 0);
+        return retValue;
+    }
+
+    public byte[] getMaxKey() {
+        byte[] retValue = new byte[this.getKeyLength()];
+        Arrays.fill(retValue, (byte) 0xff);
+        return retValue;
+    }
 
     public void setKeyLength(int keyLength) { this.keyLength = keyLength; }
 
@@ -70,6 +86,11 @@ public class HbaseDataInformation<T extends HbaseData> {
         }
         this.tableName = prefix + ":" + cl.getAnnotation(HbaseTableName.class)
             .value();
+        this.pageTableName = cl.getAnnotation(HbaseTableName.class)
+            .page_table()
+                ? prefix + ":page_" + cl.getAnnotation(HbaseTableName.class)
+                    .value()
+                : null;
         this.hbaseDataClass = cl;
         this.nameSpace = prefix;
     }
@@ -116,9 +137,7 @@ public class HbaseDataInformation<T extends HbaseData> {
                                 (a) -> value.addColumn(
                                     a.getKey()
                                         .toString(),
-                                    a.getValue()
-                                        .toString()
-                                        .getBytes()));
+                                    hdfi.toByte(a.getValue())));
                     } else {
                         byte[] convertedValue = hdfi.toByte(valueToConvert);
                         value.addColumn(hdfi.hbaseName, convertedValue);
@@ -136,9 +155,15 @@ public class HbaseDataInformation<T extends HbaseData> {
 
     }
 
+    public byte[] buildKey(T hbaseData) {
+        byte[] retValue = new byte[this.getKeyLength()];
+        this.buildKey(hbaseData, retValue);
+        return retValue;
+    }
+
     public T buildKey(T hbaseData, byte[] keyValue) {
 
-        Arrays.fill(keyValue, (byte) 0x20);
+        Arrays.fill(keyValue, (byte) 0x00);
         this.keyFieldsData.forEach((hdfi) -> {
             try {
                 hdfi.field.setAccessible(true);
@@ -181,7 +206,15 @@ public class HbaseDataInformation<T extends HbaseData> {
                 Set<?> collection = new HashSet<>();
                 for (Cell statCell : res.listCells()) {
                     if (hdfi.columnFamily.equals(new String(CellUtil.cloneFamily(statCell)))) {
-                        collection.add(hdfi.fromByte(CellUtil.cloneQualifier(statCell)));
+                        try {
+                            collection.add(hdfi.fromByte(CellUtil.cloneQualifier(statCell)));
+                        } catch (Exception e) {
+                            HbaseDataInformation.LOGGER.warn(
+                                "Unable to add to collection of family {} : {} ",
+                                hdfi.columnFamily,
+                                CellUtil.cloneQualifier(statCell));
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
                 try {
@@ -192,15 +225,26 @@ public class HbaseDataInformation<T extends HbaseData> {
                     e.printStackTrace();
                 }
             } else if (Map.class.isAssignableFrom(hdfi.field.getType())) {
-                Map<String, String> collection = new HashMap<>();
+                Map<Object, ?> collection = new HashMap<>();
                 for (Cell statCell : res.listCells()) {
                     if (hdfi.columnFamily.equals(
                         new String(statCell.getFamilyArray(),
                             statCell.getFamilyOffset(),
                             statCell.getFamilyLength()))) {
-                        collection.put(
-                            new String(CellUtil.cloneQualifier(statCell)),
-                            new String(CellUtil.cloneValue(statCell)));
+                        Object key = null;
+                        if (hdfi.column.mapKeyClass() == Integer.class) {
+                            key = Integer.parseInt(new String(CellUtil.cloneQualifier(statCell)));
+                        } else {
+                            key = new String(CellUtil.cloneQualifier(statCell));
+                        }
+                        if (!Strings.isEmpty(hdfi.column.mapOnlyOneElement())) {
+                            if (Objects.equal(hdfi.column.mapOnlyOneElement(), key)) {
+                                collection.put(key, hdfi.fromByte(CellUtil.cloneValue(statCell)));
+                            }
+                        } else {
+                            collection.put(key, hdfi.fromByte(CellUtil.cloneValue(statCell)));
+                        }
+
                     }
                 }
                 try {
@@ -248,6 +292,14 @@ public class HbaseDataInformation<T extends HbaseData> {
 
     public void setTable(TableName table) { this.table = table; }
 
+    public TableName getPageTable() { return this.pageTable; }
+
+    public void setPageTable(TableName pageTable) { this.pageTable = pageTable; }
+
+    public String getPageTableName() { return this.pageTableName; }
+
+    public void setPageTableName(String pageTableName) { this.pageTableName = pageTableName; }
+
     public Class<T> getHbaseDataClass() {
         // TODO Auto-generated method stub
         return this.hbaseDataClass;
@@ -259,42 +311,35 @@ public class HbaseDataInformation<T extends HbaseData> {
         Class<T> cl,
         HbaseDataInformation<T> hbaseDataInformation
     ) {
-        Arrays.asList(cl.getDeclaredFields())
+        HbaseDataInformation.getAllFieldsAnnotatedWithColumn(new ArrayList<>(), cl)
             .forEach((field) -> {
-                if (field.isAnnotationPresent(Column.class)) {
-                    try {
-                        Column cv = field.getAnnotation(Column.class);
-                        Class<? extends ToByte<Object>> transformClass = (Class<? extends ToByte<Object>>) cv.toByte();
-                        field.setAccessible(true);
-
-                        @SuppressWarnings("unchecked")
-                        ToByte<Object> toByteInterface = (ToByte<Object>) Proxy.newProxyInstance(
-                            Thread.currentThread()
-                                .getContextClassLoader(),
-                            new Class[] { transformClass },
-                            (proxy, method, args) -> {
-
-                                Constructor<Lookup> constructor = Lookup.class.getDeclaredConstructor(Class.class);
-                                constructor.setAccessible(true);
-                                return constructor.newInstance(transformClass)
-                                    .in(transformClass)
-                                    .unreflectSpecial(method, transformClass)
-                                    .bindTo(proxy)
-                                    .invokeWithArguments(args);
-
-                            });
-                        HbaseDataFieldInformation value = new HbaseDataFieldInformation(field, transformClass, cv);
-                        hbaseDataInformation.addField(value);
-                    } catch (
-                        IllegalArgumentException |
-                        SecurityException e) {
-                        e.printStackTrace();
-                    }
+                try {
+                    Column cv = field.getAnnotation(Column.class);
+                    Class<? extends ToByte<Object>> transformClass = (Class<? extends ToByte<Object>>) cv.toByte();
+                    field.setAccessible(true);
+                    HbaseDataFieldInformation value = new HbaseDataFieldInformation(field, transformClass, cv);
+                    hbaseDataInformation.addField(value);
+                } catch (
+                    IllegalArgumentException |
+                    SecurityException e) {
+                    e.printStackTrace();
                 }
             });
-        int offset = 0;
         hbaseDataInformation.endOfInit();
+    }
 
+    protected static List<Field> getAllFieldsAnnotatedWithColumn(List<Field> currentFieldsList, Class<?> cl) {
+        HbaseDataInformation.LOGGER.info("Examining class {} for fields ", cl);
+        for (Field f : cl.getDeclaredFields()) {
+            if (f.isAnnotationPresent(Column.class)) {
+                HbaseDataInformation.LOGGER.info("Adding field {} to  class {} for ", f, cl);
+                currentFieldsList.add(f);
+            }
+        }
+        if (cl.getSuperclass() != Object.class) {
+            return HbaseDataInformation.getAllFieldsAnnotatedWithColumn(currentFieldsList, cl.getSuperclass());
+        }
+        return currentFieldsList;
     }
 
     @Override

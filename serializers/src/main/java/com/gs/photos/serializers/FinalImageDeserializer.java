@@ -13,7 +13,7 @@ public class FinalImageDeserializer extends AbstractModelSerializerAndDeserializ
 
 	@Override
 	public FinalImage deserialize(String topic, byte[] t) {
-		return super.fromBytesGeneric(t);
+		return super.fromBytesGeneric(topic, t);
 	}
 
 }

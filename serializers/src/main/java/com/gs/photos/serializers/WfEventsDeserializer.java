@@ -8,7 +8,7 @@ public class WfEventsDeserializer extends AbstractModelSerializerAndDeserializer
     implements Deserializer<WfEvents> {
 
     @Override
-    public WfEvents deserialize(String topic, byte[] data) { return this.fromBytesGeneric(data); }
+    public WfEvents deserialize(String topic, byte[] data) { return this.fromBytesGeneric(topic, data); }
 
     public WfEventsDeserializer() { super(); }
 

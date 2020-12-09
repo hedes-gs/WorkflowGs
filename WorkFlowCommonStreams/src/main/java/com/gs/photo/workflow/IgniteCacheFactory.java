@@ -48,4 +48,10 @@ public class IgniteCacheFactory implements IIgniteCacheFactory {
         return this.beanIgnite.getOrCreateCache(this.defaultCache);
     }
 
+    @Override
+    public <V> IgniteCache<String, V> getIgniteCacheBinary(Class<V> cl) {
+        return this.beanIgnite.getOrCreateCache(this.defaultCache)
+            .withKeepBinary();
+    }
+
 }

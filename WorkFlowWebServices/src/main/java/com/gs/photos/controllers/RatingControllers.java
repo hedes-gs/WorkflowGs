@@ -28,7 +28,7 @@ public class RatingControllers {
     }
 
     @GetMapping("/ratings/count/all")
-    public @ResponseBody ResponseEntity<Map<String, Integer>> countAll() throws IOException, Throwable {
+    public @ResponseBody ResponseEntity<Map<String, Long>> countAll() throws IOException, Throwable {
         return ResponseEntity.ok(this.ratingRepository.countAll());
     }
 

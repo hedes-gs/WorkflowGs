@@ -2,6 +2,7 @@ package com.gs.photos.serializers;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 
 import org.junit.Assert;
@@ -19,7 +20,7 @@ public class TestHbaseImageThumbnailSerDeUT {
             .withImageName("<img test>")
             .withPath("<path>")
             .withDataId("<dataId>")
-            .withThumbnail(new byte[] {})
+            .withThumbnail(new HashMap<>())
             .withAlbums(new HashSet<>(Collections.singleton("Mon album")))
             .withAperture(new int[] { 0, 1 })
             .withArtist("Mwa")
@@ -47,13 +48,15 @@ public class TestHbaseImageThumbnailSerDeUT {
     public void test002_shouldSerializeAndDeserializeSuccessWithValuedPojo() {
         HbaseImageThumbnailSerializer ser = new HbaseImageThumbnailSerializer();
         final HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
+        HashMap<Integer, byte[]> thumbNails = new HashMap<>();
+        thumbNails.put(1, new byte[] { 0, 1, 2 });
         HbaseImageThumbnail hbaseImageThumbnail = builder.withCreationDate(100)
             .withHeight(768)
             .withWidth(1024)
             .withImageId("<img>")
             .withPath("/test")
             .withDataId("<dataId>")
-            .withThumbnail(new byte[] { 0, 1, 2 })
+            .withThumbnail(thumbNails)
             .withThumbName("img-1")
             .withImageName("<img name>")
             .withAlbums(new HashSet<>(Collections.singleton("Mon album")))

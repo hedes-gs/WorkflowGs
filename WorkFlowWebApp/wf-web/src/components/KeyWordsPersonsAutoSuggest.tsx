@@ -15,13 +15,19 @@ import * as Autosuggest from "react-autosuggest";
 import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";
 import KeywordsServiceImpl, { KeywordsService } from '../services/KeywordsServices'
+import PersonsServiceImpl, { PersonsService } from "../services/PersonsServices";
+
 import {
     ApplicationThunkDispatch,
     ApplicationEvent,
     addKeywords,
     deleteKeywords,
+    addPerson,
+    deletePerson,
     dispatchAddKeywordEvent,
     dispatchDeleteKeywordEvent,
+    dispatchAddPersonEvent,
+    dispatchDeletePersonEvent,
     selectedImageIsLoading
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
@@ -30,11 +36,12 @@ import { toArrayOfString, ImageDto } from '../model/ImageDto';
 interface ReactAutosuggestRemoteProp {
     id?: number,
     image?: ImageDto,
-    addKeywords?(img: ImageDto, keyword: string): ApplicationEvent,
-    deleteKeywords?(img: ImageDto, keyword: string): ApplicationEvent,
-    thunkActionForAddKeyword?: (x: ApplicationEvent) => Promise<ApplicationEvent>
-    thunkActionForDeleteKeyword?: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => Promise<ApplicationEvent>
-
+    elements?: string[],
+    addElement?(img: ImageDto, keyword: string): ApplicationEvent,
+    deleteElement?(img: ImageDto, keyword: string): ApplicationEvent,
+    thunkActionForAddElement?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
+    thunkActionForDeleteElement?: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => Promise<ApplicationEvent>,
+    thunkActionForGetElement?: (x: string) => Promise<string>
 }
 
 interface ReactAutosuggestRemoteStat {
@@ -44,11 +51,13 @@ interface ReactAutosuggestRemoteStat {
 };
 
 var globalId: number;
+const keywordsService: KeywordsService = new KeywordsServiceImpl();
+const personsService: PersonsService = new PersonsServiceImpl();
+
 
 
 class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp, ReactAutosuggestRemoteStat> {
 
-    keywordsService: KeywordsService;
 
     constructor(props: ReactAutosuggestRemoteProp) {
         super(props);
@@ -65,14 +74,13 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         this.handleDeleteChip = this.handleDeleteChip.bind(this);
         this.renderSuggestion = this.renderSuggestion.bind(this);
         this.handleSuggestionsClearRequested = this.handleSuggestionsClearRequested.bind(this);
-        this.keywordsService = new KeywordsServiceImpl();
     }
 
     static getDerivedStateFromProps(props: ReactAutosuggestRemoteProp, state: ReactAutosuggestRemoteStat): ReactAutosuggestRemoteStat {
-        if (props != null && props.image != null) {
+        if (props != null && props.image != null && props.elements != null) {
             return {
                 suggestions: state.suggestions,
-                value: props.image.keywords.flatMap((s) => s),
+                value: props.elements,
                 textFieldInput: state.textFieldInput
             }
         } else {
@@ -105,8 +113,8 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
     }
 
     handleSuggestionsFetchRequested(request: SuggestionsFetchRequestedParams) {
-        if (request.value.length >= 3) {
-            this.keywordsService.getKeywordsLike(request.value).then(json => {
+        if (request.value.length >= 3 && this.props.thunkActionForGetElement != null) {
+            this.props.thunkActionForGetElement(request.value).then(json => {
                 var listOfCountries = toArrayOfString(json);
                 listOfCountries.push(request.value)
                 this.setState({
@@ -136,8 +144,8 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
     };
 
     handleAddChip(chip: string) {
-        if (this.props.thunkActionForAddKeyword != null && this.props.image != null) {
-            this.props.thunkActionForAddKeyword(addKeywords(this.props.image, chip));
+        if (this.props.thunkActionForAddElement != null && this.props.image != null && this.props.addElement != null) {
+            this.props.thunkActionForAddElement(this.props.addElement(this.props.image, chip));
         }
         // the value in state object should be updated when the value is returned by the server
         /*        this.setState({
@@ -192,13 +200,14 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
     }
 
     handleDeleteChip(chip: string, index: number) {
-        if (this.props.thunkActionForDeleteKeyword != null &&
+        if (this.props.thunkActionForDeleteElement != null &&
             this.props.image != null &&
             this.props.image._links != null &&
             this.props.image._links.self != null &&
-            this.props.image._links._exif != null) {
-            this.props.thunkActionForDeleteKeyword(
-                deleteKeywords(this.props.image, chip),
+            this.props.image._links._exif != null &&
+            this.props.deleteElement != null) {
+            this.props.thunkActionForDeleteElement(
+                this.props.deleteElement(this.props.image, chip),
                 selectedImageIsLoading(this.props.image._links.self.href, this.props.image._links._exif.href));
         }
 
@@ -258,7 +267,7 @@ const mapStateToProps = (state: ClientApplicationState, previousState: ReactAuto
         return {
             id: globalId++,
             image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
-            addKeywords: addKeywords,
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.keywords.flatMap((s) => s),
 
         };
     }
@@ -267,17 +276,62 @@ const mapStateToProps = (state: ClientApplicationState, previousState: ReactAuto
 
 const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
     return {
-        thunkActionForAddKeyword: (x: ApplicationEvent) => {
+        addElement: addKeywords,
+        deleteElement: deleteKeywords,
+        thunkActionForAddElement: (x: ApplicationEvent) => {
             const r = dispatchAddKeywordEvent(x);
             return dispatch(r);
         },
-        thunkActionForDeleteKeyword: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
+        thunkActionForDeleteElement: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
             dispatch(loadingEvent);
             const r = dispatchDeleteKeywordEvent(x);
             return dispatch(r);
+        },
+        thunkActionForGetElement: (x: string) => {
+            return keywordsService.getKeywordsLike(x);
         }
-
     }
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(ReactAutosuggestRemote);
+const mapStateToPropsForPerson = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
+
+    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+        return {
+            id: globalId++,
+            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.persons.flatMap((s) => s),
+
+        };
+    }
+    return previousState;
+};
+
+const mapDispatchToPropsForPerson = (dispatch: ApplicationThunkDispatch) => {
+    return {
+        addElement: addPerson,
+        deleteElement: deletePerson,
+        thunkActionForAddElement: (x: ApplicationEvent) => {
+            const r = dispatchAddPersonEvent(x);
+            return dispatch(r);
+        },
+        thunkActionForDeleteElement: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
+            dispatch(loadingEvent);
+            const r = dispatchDeletePersonEvent(x);
+            return dispatch(r);
+        },
+        thunkActionForGetElement: (x: string) => {
+            return personsService.getPersonsLike(x);
+        }
+    }
+};
+
+
+function fetch() {
+    return ReactAutosuggestRemote;
+}
+
+const KeywordsElement = connect(mapStateToProps, mapDispatchToProps)(fetch());
+const PersonsElement = connect(mapStateToPropsForPerson, mapDispatchToPropsForPerson)(fetch());
+
+export { KeywordsElement, PersonsElement }
+

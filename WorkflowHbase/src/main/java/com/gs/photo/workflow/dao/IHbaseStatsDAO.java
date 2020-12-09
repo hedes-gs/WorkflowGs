@@ -7,8 +7,6 @@ import com.workflow.model.HbaseImageThumbnailKey;
 
 public interface IHbaseStatsDAO {
 
-    void incrementDateInterval(String dateIntervall, HbaseImageThumbnailKey hbaseImageThumbnailKey) throws IOException;
-
     long countImages(String dateIntervall) throws IOException;
 
     List<HbaseImageThumbnailKey> getImages(String dateIntervall, int maxSize) throws IOException;
@@ -16,5 +14,7 @@ public interface IHbaseStatsDAO {
     void truncate() throws IOException;
 
     void flush() throws IOException;
+
+    public void put(HbaseImageThumbnailKey key);
 
 }

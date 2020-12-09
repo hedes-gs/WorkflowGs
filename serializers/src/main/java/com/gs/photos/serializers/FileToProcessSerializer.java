@@ -10,6 +10,6 @@ public class FileToProcessSerializer extends AbstractModelSerializerAndDeseriali
     public FileToProcessSerializer() { super(); }
 
     @Override
-    public byte[] serialize(String topic, FileToProcess data) { return super.toBytesGeneric(data); }
+    public byte[] serialize(String topic, FileToProcess data) { return super.toBytesGeneric(topic, data); }
 
 }

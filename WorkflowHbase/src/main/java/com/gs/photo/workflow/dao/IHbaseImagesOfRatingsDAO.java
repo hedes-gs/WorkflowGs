@@ -2,12 +2,6 @@ package com.gs.photo.workflow.dao;
 
 import java.io.IOException;
 
-import com.gs.photo.workflow.hbase.dao.IHbaseImagesOfMetadataDAO;
-import com.workflow.model.HbaseImagesOfRatings;
+import com.gs.photo.workflow.hbase.dao.IImagesOfRatingsDAO;
 
-public interface IHbaseImagesOfRatingsDAO extends IHbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Integer> {
-    void flush() throws IOException;
-
-    void truncate() throws IOException;
-
-}
+public interface IHbaseImagesOfRatingsDAO extends IImagesOfRatingsDAO { void truncate() throws IOException; }

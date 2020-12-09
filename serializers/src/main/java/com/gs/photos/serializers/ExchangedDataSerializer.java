@@ -9,7 +9,7 @@ public class ExchangedDataSerializer extends AbstractModelSerializerAndDeseriali
 
 	@Override
 	public byte[] serialize(String topic, ExchangedTiffData data) {
-		return this.toBytesGeneric(data);
+		return this.toBytesGeneric(topic, data);
 	}
 
 	public ExchangedDataSerializer() {

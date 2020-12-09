@@ -36,7 +36,9 @@ components:
               "security.protocol": "SASL_PLAINTEXT",
               "group.id": "wf-storm-group",
               "client.id": "wf-storm-client",
-              "sasl.kerberos.service.name": "kafka"
+              "sasl.kerberos.service.name": "kafka",
+              "fetch.max.bytes": "4194304",
+              "session.timeout.ms": "45000"
             }   
   - id: "spoutConfig"
     className: "org.apache.storm.kafka.spout.KafkaSpoutConfig"

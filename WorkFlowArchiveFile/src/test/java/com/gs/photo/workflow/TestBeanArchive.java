@@ -32,6 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.workflow.impl.BeanArchive;
 import com.gs.photo.workflow.impl.FileUtils;
+import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 
@@ -84,7 +85,8 @@ public class TestBeanArchive {
             .execute((Runnable) ArgumentMatchers.any());
         Mockito.doAnswer(invocation -> {
             PrivilegedAction<?> arg = (PrivilegedAction<?>) invocation.getArgument(0);
-            return arg.run();
+            if (arg != null) { return arg.run(); }
+            return null;
         })
             .when(this.userGroupInformationAction)
             .run((PrivilegedAction<?>) ArgumentMatchers.any());
@@ -103,6 +105,10 @@ public class TestBeanArchive {
                     .withHost("localhost")
                     .withName("file")
                     .withPath("/")
+                    .withImportEvent(
+                        ImportEvent.builder()
+                            .withImportName("import test")
+                            .build())
                     .build()));
         mapOfRecords.put(new TopicPartition("topic", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
@@ -135,6 +141,10 @@ public class TestBeanArchive {
                     .withHost("localhost")
                     .withName("file")
                     .withPath("/")
+                    .withImportEvent(
+                        ImportEvent.builder()
+                            .withImportName("import test")
+                            .build())
                     .build()));
         mapOfRecords.put(new TopicPartition("topic", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
@@ -166,6 +176,10 @@ public class TestBeanArchive {
                     .withHost("localhost")
                     .withName("file")
                     .withPath("/")
+                    .withImportEvent(
+                        ImportEvent.builder()
+                            .withImportName("import test")
+                            .build())
                     .build()));
         mapOfRecords.put(new TopicPartition("topic", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);

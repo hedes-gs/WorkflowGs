@@ -22,6 +22,7 @@ topic.topicExifSizeOfImageStream=topic-exif-size-of-image-stream
 topic.processedThumbTopic=
 topic.topicComponentStatus=topic-component-status
 topic.topicImportEvent=topic-import-event
+topic.topicFullyProcessedImage=topic-fully-processed-image
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
@@ -55,11 +56,18 @@ hbase.table.stats.name={{ hbase_table_stats_name | default('<not used>') }}
 consumer.string.string={{ consumer_string_string | default('false') }}
 producer.string.string={{ producer_string_string | default('false') }}
 kafka.consumer.batchSizeForParallelProcessingIncomingRecords={{ kafka_consumer_batchSizeForParallelProcessingIncomingRecords | default('15') }} 
+kafka.consumer.consumerFetchMaxBytes={{ kafka_consumer_consumerFetchMaxBytes | default('4194304') }}
 kafka.consumer.batchRecords={{ kafka_consumer_batchRecords | default('500') }}
 kafka.producer.maxBlockMsConfig={{ kafka_producer_maxBlockMsConfig| default('180000') }}
+kafka.producer.maxRequestSize={{ kafka_producer_maxRequestSize | default('4194304') }}
 kafka.stream.commit.interval.ms={{ kafka_stream_commit_interval_ms | default('UNSET') }}
 kafka.stream.metadata.age.ms={{ kafka_stream_metadata_age_ms | default('60000') }}
 kafka.stream.nb.of.threads={{ kafka_stream_nb_of_threads | default('UNSET') }}
+
+kafka.consumer.retryBackoffMsmaxRequestSize={{ kafka_consumer_retryBackoffMsmaxRequestSize | default('250') }}
+kafka.consumer.reconnectBackoffMs={{kafka_consumer_reconnectBackoffMs  | default('100') }}
+kafka.consumer.heartbeatIntervalMs={{kafka_consumer_heartbeatIntervalMs | default('30000') }}
+kafka.consumer.sessionTimeoutMs={{kafka_consumer_sessionTimeoutMs | default('180000') }}
 
 
 ignite.is.used={{ignite_is_used | default('false') }}
@@ -81,7 +89,7 @@ unit-test=false
 wf.hdfs.rootPath={{ wf_hdfs_rootPath | default('unset')  }}
 scan.heartBeatTimeInSeconds={{scan_heartBeatTimeInSeconds| default('not used') }}
 
-kafka.pollTimeInMillisecondes={{ kafka_poll_time_in_millisecondes| default('86400000') }}
+kafka.pollTimeInMillisecondes={{ kafka_poll_time_in_millisecondes| default('300000') }}
 kafkastreams.windowsOfEventsInMs={{ kafkastreams_windows_of_events_in_ms| default('20') }}
 
 

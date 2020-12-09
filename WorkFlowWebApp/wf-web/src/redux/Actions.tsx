@@ -1,21 +1,27 @@
 import Actions from "./ActionsType";
 import { ThunkAction, ThunkDispatch } from 'redux-thunk'
 import ApplicationState from "./State";
-import { ImageDto, toImageDto, ExifOfImages, toExif, toPageOfImageDto, toSingleImageDto, PageOfImageDto, ImageKeyDto, toMap, toArrayOfString } from '../model/ImageDto';
+import {
+    ImageDto, toImageDto, toMetadataDto,
+    ExifOfImages, toExif, toPageOfImageDto,
+    toSingleImageDto, PageOfImageDto, ImageKeyDto,
+    toMap, Metadata
+} from '../model/ImageDto';
 import ImagesServiceImpl, { ImagesService } from "../services/ImagesService";
 import ExifImagesServiceImpl, { ExifImagesService } from "../services/ExifImagesService";
 
 import MomentTimezone from 'moment-timezone';
-import { Moment } from 'moment-timezone';
 import RatingsServiceImpl, { RatingsService } from "../services/RatingsServices";
 import KeywordsServiceImpl, { KeywordsService } from "../services/KeywordsServices";
-import { string } from "prop-types";
+import PersonsServiceImpl, { PersonsService } from "../services/PersonsServices";
+
 
 
 const imagesService: ImagesService = new ImagesServiceImpl();
 const ratingsService: RatingsService = new RatingsServiceImpl();
 const exifImagesService: ExifImagesService = new ExifImagesServiceImpl();
 const keywordService: KeywordsService = new KeywordsServiceImpl();
+const personService: PersonsService = new PersonsServiceImpl();
 
 export type ThunkResult<R> = ThunkAction<R, ApplicationState, undefined, ApplicationEvent>;
 export type ApplicationThunkDispatch = ThunkDispatch<ApplicationState, undefined, ApplicationEvent>;
@@ -24,9 +30,16 @@ export const PayloadIntervalDatesSelectedEvent = "1";
 export const PayloadLoadedImagesEvent = '2'
 export const SaveImageEvent = '12'
 export const AddKeywordEvent = '15'
+export const DeleteKeywordEvent = '17'
+
 export const SelectedImageEvent = '16';
-export const LoadPagesOfImagesEvent = '21' 
+export const LoadImagesOfMetadataEvent = '20';
+export const LoadPagesOfImagesEvent = '21'
 export const DownloadSelectedImageEvent = '22'
+export const AddPersonEvent = '23'
+export const DeletePersonEvent = '24'
+export const LoadAllPersonsEvent = '25'
+export const AllPersonsAreLoadedEvent = '26'
 
 export interface UnknownSelectedEvent {
     payloadType: typeof UnknownSelectedEventValue,
@@ -158,6 +171,24 @@ export interface AddKeywordEvent {
     }
 }
 
+export interface AddPersonEvent {
+    payloadType: typeof AddPersonEvent,
+    type: Actions,
+    payload: {
+        image: ImageDto,
+        person: string
+    }
+}
+
+export interface DeletePersonEvent {
+    payloadType: typeof DeletePersonEvent,
+    type: Actions,
+    payload: {
+        image: ImageDto,
+        person: string
+    }
+}
+
 export interface SelectedImageEvent {
     payloadType: typeof SelectedImageEvent,
     type: Actions,
@@ -170,7 +201,7 @@ export interface SelectedImageEvent {
 }
 
 export interface DeleteKeywordEvent {
-    payloadType: "17",
+    payloadType: typeof DeleteKeywordEvent,
     type: Actions,
     payload: {
         image: ImageDto,
@@ -185,25 +216,41 @@ export interface LoadAllKeywordsEvent {
     }
 }
 
+export interface AllPersonsAreLoadedEvent {
+    payloadType: typeof AllPersonsAreLoadedEvent,
+    type: Actions,
+    payload: {
+        persons: Metadata[]
+    }
+}
+
+
+export interface LoadAllPersonsEvent {
+    payloadType: typeof LoadAllPersonsEvent,
+    type: Actions,
+    payload: {
+    }
+}
 
 export interface AllKeywordsAreLoadedEvent {
     payloadType: "19",
     type: Actions,
     payload: {
-        keywords: string[]
+        keywords: Metadata[]
     }
 }
 
-export interface LoadImagesOfKeywordEvent {
-    payloadType: "20",
+export interface LoadImagesOfMetadataEvent {
+    payloadType: typeof LoadImagesOfMetadataEvent,
     type: Actions,
     payload: {
-        url: string
+        url: string,
+        titleOfImagesList: string
     }
 }
 
 export interface LoadPagesOfImagesEvent {
-    payloadType: typeof LoadPagesOfImagesEvent ,
+    payloadType: typeof LoadPagesOfImagesEvent,
     type: Actions,
     payload: {
         url: string,
@@ -244,11 +291,15 @@ export type ApplicationEvent =
     SelectedImageEvent |
     AddKeywordEvent |
     LoadAllKeywordsEvent |
+    LoadAllPersonsEvent |
     AllKeywordsAreLoadedEvent |
-    LoadImagesOfKeywordEvent |
+    AllPersonsAreLoadedEvent |
+    LoadImagesOfMetadataEvent |
     LoadPagesOfImagesEvent |
     DeleteKeywordEvent |
-    DownloadSelectedImageEvent;
+    DownloadSelectedImageEvent |
+    AddPersonEvent |
+    DeletePersonEvent;
 
 const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     type: Actions.UNDEFINED,
@@ -256,7 +307,7 @@ const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     payload: {}
 };
 
-export const loadImagesInterval = (min: number, max: number, intervallType: string,titleOfImagesList: string): ApplicationEvent => {
+export const loadImagesInterval = (min: number, max: number, intervallType: string, titleOfImagesList: string): ApplicationEvent => {
     return {
         payloadType: PayloadIntervalDatesSelectedEvent,
         type: Actions.IMAGES_LOADING,
@@ -272,11 +323,11 @@ export const loadImagesInterval = (min: number, max: number, intervallType: stri
 
 export const loadImages = (json: string, titleOfImagesList: string): ApplicationEvent => {
     return {
-        payloadType: "2",
+        payloadType: PayloadLoadedImagesEvent,
         type: Actions.IMAGES_ARE_LOADED,
         payload: {
             images: toPageOfImageDto(json),
-            titleOfImagesList: titleOfImagesList 
+            titleOfImagesList: titleOfImagesList
         }
     }
 };
@@ -312,7 +363,7 @@ export const loadExif = (json: string): ApplicationEvent => {
     }
 };
 
-export const loadLastImages = (pageNumber: number,titleOfImagesList: string): ApplicationEvent => {
+export const loadLastImages = (pageNumber: number, titleOfImagesList: string): ApplicationEvent => {
     return {
         payloadType: "7",
         type: Actions.LAST_IMAGES_LOADING,
@@ -370,11 +421,22 @@ export const loadingRatings = (): ApplicationEvent => {
 
 export const addKeywords = (img: ImageDto, keyword: string): ApplicationEvent => {
     return {
-        payloadType: "15",
+        payloadType: AddKeywordEvent,
         type: Actions.ADDING_KEYWORDS,
         payload: {
             image: img,
             keyword: keyword
+        }
+    }
+};
+
+export const addPerson = (img: ImageDto, person: string): ApplicationEvent => {
+    return {
+        payloadType: AddPersonEvent,
+        type: Actions.ADDING_PERSONS,
+        payload: {
+            image: img,
+            person: person
         }
     }
 };
@@ -444,11 +506,22 @@ export const prevImageToLoad = (url: string): ApplicationEvent => {
 
 export const deleteKeywords = (img: ImageDto, keyword: string): ApplicationEvent => {
     return {
-        payloadType: "17",
+        payloadType: DeleteKeywordEvent,
         type: Actions.DELETE_KEYWORDS,
         payload: {
             image: img,
             keyword: keyword
+        }
+    }
+};
+
+export const deletePerson = (img: ImageDto, person: string): ApplicationEvent => {
+    return {
+        payloadType: DeletePersonEvent,
+        type: Actions.DELETE_KEYWORDS,
+        payload: {
+            image: img,
+            person: person
         }
     }
 };
@@ -462,28 +535,48 @@ export const loadAllKeywords = (): ApplicationEvent => {
     }
 };
 
+export const loadAllPersons = (): ApplicationEvent => {
+    return {
+        payloadType: LoadAllPersonsEvent,
+        type: Actions.LOAD_ALL_PERSONS,
+        payload: {
+        }
+    }
+};
+
+
 export const allKeywordsAreLoaded = (json: string): ApplicationEvent => {
     return {
         payloadType: "19",
         type: Actions.ALL_KEYWORDS_ARE_LOADED,
         payload: {
-            keywords: toArrayOfString(json)
+            keywords: toMetadataDto(json)
         }
     }
 };
 
-
-export const loadImagesOfKeyword = (url: string): ApplicationEvent => {
+export const allPersonsAreLoaded = (json: string): ApplicationEvent => {
     return {
-        payloadType: "20",
-        type: Actions.LOAD_IMAGES_OF_KEYWORD,
+        payloadType: AllPersonsAreLoadedEvent,
+        type: Actions.ALL_PERSONS_ARE_LOADED,
         payload: {
-            url: url
+            persons: toMetadataDto(json)
         }
     }
 };
 
-export const loadPagesOfImages = (url: string,titleOfImagesList: string): ApplicationEvent => {
+export const loadImagesOfMetadata = (url: string, titleOfImagesList: string): ApplicationEvent => {
+    return {
+        payloadType: LoadImagesOfMetadataEvent,
+        type: Actions.LOAD_IMAGES_OF_METADATA,
+        payload: {
+            url: url,
+            titleOfImagesList: titleOfImagesList
+        }
+    }
+};
+
+export const loadPagesOfImages = (url: string, titleOfImagesList: string): ApplicationEvent => {
     return {
         payloadType: LoadPagesOfImagesEvent,
         type: Actions.IMAGES_LOADING,
@@ -532,10 +625,10 @@ export function dispatchLastImages(x: ApplicationEvent): ThunkResult<Promise<App
 
 export function dispatchNewSelectedDateImagesInterval(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == PayloadIntervalDatesSelectedEvent ) {
+        if (x.payloadType == PayloadIntervalDatesSelectedEvent) {
             dispatch(x);
             return imagesService.getImagesByDate(MomentTimezone(x.payload.min), MomentTimezone(x.payload.max), x.payload.intervallType)
-                .then(json => dispatch(loadImages(json,x.payload.titleOfImagesList)));
+                .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)));
 
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
@@ -628,9 +721,21 @@ export function dispatchAddKeywordEvent(x: ApplicationEvent): ThunkResult<Promis
     };
 }
 
+export function dispatchAddPersonEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == AddPersonEvent) {
+            dispatch(x);
+            return personService.addPerson(x.payload.person, x.payload.image)
+                .then(json => dispatch(selectedImageIsLoaded(json)))
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
+
 export function dispatchDeleteKeywordEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == '17') {
+        if (x.payloadType == DeleteKeywordEvent) {
             dispatch(x);
             if (x.payload.image._links != null && x.payload.image._links._img != null && x.payload.image._links._exif != null) {
                 dispatch(selectedImageIsLoading(x.payload.image._links._img.href, x.payload.image._links._exif.href))
@@ -641,6 +746,21 @@ export function dispatchDeleteKeywordEvent(x: ApplicationEvent): ThunkResult<Pro
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };
 }
+
+export function dispatchDeletePersonEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == DeletePersonEvent) {
+            dispatch(x);
+            if (x.payload.image._links != null && x.payload.image._links._img != null && x.payload.image._links._exif != null) {
+                dispatch(selectedImageIsLoading(x.payload.image._links._img.href, x.payload.image._links._exif.href))
+                return personService.deletePerson(x.payload.person, x.payload.image)
+                    .then(json => dispatch(selectedImageIsLoaded(json)));
+            }
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
 
 export function dispatchDeselectImageEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
@@ -661,21 +781,34 @@ export function dispatchLoadAllKeywords(x: ApplicationEvent): ThunkResult<Promis
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };
 }
-
-export function dispatchLoadImagesOfKeyword(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+export function dispatchLoadAllPersons(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == '20') {
+        if (x.payloadType == LoadAllPersonsEvent) {
             dispatch(x);
-            return imagesService.getNextImage(x.payload.url)
-                .then(json => dispatch(allKeywordsAreLoaded(json)))
+            return personService.getAll()
+                .then(json => dispatch(allPersonsAreLoaded(json)))
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };
 }
 
+
+export function dispatchLoadImagesOfMetadata(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == LoadImagesOfMetadataEvent) {
+            dispatch(x);
+            return imagesService.getPageOfImages(x.payload.url)
+                .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
+
+
 export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == LoadPagesOfImagesEvent ) {
+        if (x.payloadType == LoadPagesOfImagesEvent) {
             dispatch(x);
             return imagesService.getPageOfImages(x.payload.url)
                 .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
@@ -686,10 +819,10 @@ export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<Appli
 
 export function dispatchPrevPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == LoadPagesOfImagesEvent ) {
+        if (x.payloadType == LoadPagesOfImagesEvent) {
             dispatch(x);
             return imagesService.getPageOfImages(x.payload.url)
-                .then(json => dispatch(loadImages(json,x.payload.titleOfImagesList)))
+                .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };

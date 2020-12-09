@@ -2,6 +2,7 @@ package com.gs.photos.repositories.impl;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,13 +32,16 @@ public class ImageRepositoryImpl implements IImageRepository {
     protected IHbaseImagesOfKeywordsDAO ihbaseImagesOfKeywordsDAO;
 
     @Autowired
+    protected IHbaseImagesOfPersonsDAO  ihbaseImagesOfPersonsDAO;
+
+    @Autowired
     protected IHFileServices            ihFileServices;
 
     @Override
     public long countAll() throws IOException {
         MinMaxDatesDto minMaxDatesDto = this.getDatesLimit();
         return this.ihbaseStatsDAO
-            .countImages(minMaxDatesDto.getMinDate(), minMaxDatesDto.getMaxDate(), KeyEnumType.SECOND);
+            .countImages(minMaxDatesDto.getMinDate(), minMaxDatesDto.getMaxDate(), KeyEnumType.YEAR);
     }
 
     @Override
@@ -196,6 +200,30 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
+    public Page<ImageDto> findImagesByKeyword(Pageable page, String keyword) throws IOException {
+        List<ImageDto> images = this.hbaseImageThumbnailDAO
+            .findLastImagesByKeyword(page.getPageSize(), page.getPageNumber(), keyword);
+        GsPageImpl retValue = new GsPageImpl(images, page, this.countAllImagesWithKeyword(keyword));
+        return retValue;
+    }
+
+    private long countAllImagesWithKeyword(String keyword) { return 0; }
+
+    @Override
+    public Page<ImageDto> findImagesByPerson(Pageable page, String person) throws IOException {
+        List<ImageDto> images = this.hbaseImageThumbnailDAO
+            .findLastImagesByPerson(page.getPageSize(), page.getPageNumber(), person);
+        if (images.size() > 0) {
+            GsPageImpl retValue = new GsPageImpl(images, page, this.countAllImagesWithPerson(person));
+            return retValue;
+        }
+        GsPageImpl retValue = new GsPageImpl(Collections.EMPTY_LIST, page, this.countAllImagesWithPerson(person));
+        return retValue;
+    }
+
+    private long countAllImagesWithPerson(String person) { return 0; }
+
+    @Override
     public MinMaxDatesDto getDatesLimit() { return this.ihbaseStatsDAO.getMinMaxDates(); }
 
     @Override
@@ -235,7 +263,7 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
-    public Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, int rating) {
+    public Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, long rating) {
         return this.hbaseImageThumbnailDAO.updateRating(id, creationDate, version, rating);
     }
 
@@ -247,6 +275,16 @@ public class ImageRepositoryImpl implements IImageRepository {
     @Override
     public Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword) {
         return this.hbaseImageThumbnailDAO.deleteKeyword(id, creationDate, version, keyword);
+    }
+
+    @Override
+    public Optional<ImageDto> addPerson(String imageId, OffsetDateTime creationDate, int version, String person) {
+        return this.hbaseImageThumbnailDAO.addPerson(imageId, creationDate, version, person);
+    }
+
+    @Override
+    public Optional<ImageDto> deletePerson(String imageId, OffsetDateTime creationDate, int version, String person) {
+        return this.hbaseImageThumbnailDAO.deletePerson(imageId, creationDate, version, person);
     }
 
     @Override
@@ -309,8 +347,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         final ImageDto imageToDelete = this.hbaseImageThumbnailDAO.findById(creationDate, id, version);
         this.ihFileServices.delete(imageToDelete);
         this.hbaseImageThumbnailDAO.delete(creationDate, id, version);
-        this.ihbaseStatsDAO.decrement(creationDate);
-        this.ihbaseImagesOfKeywordsDAO.deleteReferences(imageToDelete);
+
     }
 
 }
