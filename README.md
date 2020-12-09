@@ -1,6 +1,6 @@
 # WorkflowGs
 
-This project describe the way to archive and quickly retrieve your RAW sony images with some big data technologies :
+This project describes the way to archive and quickly retrieve your RAW sony images with some big data technologies :
 - kafka, kafka stream
 - hadoop, hbase
 - apache storm
