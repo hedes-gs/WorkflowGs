@@ -34,6 +34,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue(
         @Value("${kafka.consumer.batchRecords}") int batchOfReadFiles,
         @Value("${group.id}") String groupId,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${bootstrap.servers}") String bootstrapServers
     ) {
         Properties settings = new Properties();
@@ -48,6 +49,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         Consumer<String, FileToProcess> producer = new KafkaConsumer<>(settings);
         return producer;
     }

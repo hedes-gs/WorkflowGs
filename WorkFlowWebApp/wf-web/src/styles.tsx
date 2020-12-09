@@ -14,7 +14,8 @@ export type CommonState = {
 const useParagraphTitleStyles = makeStyles({
 	paragraphStyle: (props: CommonProps) => (
 		{
-			fontSize: props.size != null ? props.size : '12px',
+            fontSize: props.size != null ? props.size : '12px',
+            marginTop: '1em',
 			color: props.color != null ? props.color : 'rgba(255, 255, 255, 0.7)'
 		}),
 });
@@ -22,7 +23,8 @@ const useParagraphTitleStyles = makeStyles({
 const useParagraphTitleTreeStyles = makeStyles({
 	paragraphStyle: (props: CommonProps) => (
 		{
-			fontSize: props.size != null ? props.size : '12px'
+            fontSize: props.size != null ? props.size : '12px',
+            marginTop: '1em'
 		}),
 });
 

@@ -2,12 +2,12 @@
 
 
 
-PID=`ps axo user:20,pid,command | grep java | grep wf_cmp_hashkey | grep java | grep -v grep | awk '{print $2}'`
+PID=`ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'`
 count=0
 while [  ! -z $PID  ] && [ $count -lt 20 ]
 do
    kill $PID
-   PID=`ps axo user:20,pid,command | grep java | grep wf_cmp_hashkey | grep java | grep -v grep | awk '{print $2}'`
+   PID=`ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'`
    if [ -z $PID]
    then
     sleep 1

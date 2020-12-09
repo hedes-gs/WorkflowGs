@@ -8,7 +8,7 @@ public class HbaseDataSerializer extends AbstractModelSerializerAndDeserializer<
 		implements Serializer<HbaseData> {
 	@Override
 	public byte[] serialize(String topic, HbaseData data) {
-		return this.toBytesGeneric(data);
+		return this.toBytesGeneric(topic, data);
 	}
 
 	public HbaseDataSerializer() {

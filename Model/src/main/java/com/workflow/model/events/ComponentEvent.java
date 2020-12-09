@@ -23,7 +23,21 @@ public class ComponentEvent extends HbaseData implements Serializable {
     protected ComponentType   componentType;
     @Nullable
     protected String          message;
+    @Nullable
+    protected String[]        scannedFolder;
+
     protected String          componentName;
+
+    @Generated("SparkTools")
+    private ComponentEvent(Builder builder) {
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
+        this.status = builder.status;
+        this.componentType = builder.componentType;
+        this.message = builder.message;
+        this.scannedFolder = builder.scannedFolder;
+        this.componentName = builder.componentName;
+    }
 
     public ComponentEvent() { super(); }
 
@@ -33,15 +47,9 @@ public class ComponentEvent extends HbaseData implements Serializable {
     ) { super(dataId,
         dataCreationDate); }
 
-    @Generated("SparkTools")
-    private ComponentEvent(Builder builder) {
-        this.dataCreationDate = builder.dataCreationDate;
-        this.dataId = builder.dataId;
-        this.status = builder.status;
-        this.componentType = builder.componentType;
-        this.message = builder.message;
-        this.componentName = builder.componentName;
-    }
+    public String[] getScannedFolder() { return this.scannedFolder; }
+
+    public void setScannedFolder(String[] scannedFolder) { this.scannedFolder = scannedFolder; }
 
     public String getComponentName() { return this.componentName; }
 
@@ -61,7 +69,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link ComponentEvent}.
-     *
+     * 
      * @return created builder
      */
     @Generated("SparkTools")
@@ -77,13 +85,14 @@ public class ComponentEvent extends HbaseData implements Serializable {
         private ComponentStatus status;
         private ComponentType   componentType;
         private String          message;
+        private String[]        scannedFolder;
         private String          componentName;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -95,7 +104,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -107,7 +116,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for status parameter.
-         *
+         * 
          * @param status
          *            field to set
          * @return builder
@@ -119,7 +128,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for componentType parameter.
-         *
+         * 
          * @param componentType
          *            field to set
          * @return builder
@@ -131,7 +140,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for message parameter.
-         *
+         * 
          * @param message
          *            field to set
          * @return builder
@@ -142,8 +151,20 @@ public class ComponentEvent extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for scannedFolder parameter.
+         * 
+         * @param scannedFolder
+         *            field to set
+         * @return builder
+         */
+        public Builder withScannedFolder(String[] scannedFolder) {
+            this.scannedFolder = scannedFolder;
+            return this;
+        }
+
+        /**
          * Builder method for componentName parameter.
-         *
+         * 
          * @param componentName
          *            field to set
          * @return builder
@@ -155,7 +176,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public ComponentEvent build() { return new ComponentEvent(this); }

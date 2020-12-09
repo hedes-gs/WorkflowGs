@@ -4,7 +4,7 @@ import javax.annotation.Generated;
 
 import org.apache.avro.reflect.Nullable;
 
-@HbaseTableName("album")
+@HbaseTableName(value = "album")
 public class HbaseAlbum extends HbaseData {
 
     /**
@@ -19,8 +19,8 @@ public class HbaseAlbum extends HbaseData {
     @Nullable
     protected String          description;
 
-    @Column(hbaseName = "description", rowKeyNumber = 101, toByte = ToByteString.class, columnFamily = "stats")
-    protected int             nbOfImages;
+    @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
+    protected long            nbOfElements;
 
     @Generated("SparkTools")
     private HbaseAlbum(Builder builder) {
@@ -28,7 +28,7 @@ public class HbaseAlbum extends HbaseData {
         this.dataId = builder.dataId;
         this.albumName = builder.albumName;
         this.description = builder.description;
-        this.nbOfImages = builder.nbOfImages;
+        this.nbOfElements = builder.nbOfElements;
     }
 
     public HbaseAlbum() { super(); }
@@ -47,9 +47,9 @@ public class HbaseAlbum extends HbaseData {
 
     public void setDescription(String description) { this.description = description; }
 
-    public int getNbOfImages() { return this.nbOfImages; }
+    public long getNbOfElements() { return this.nbOfElements; }
 
-    public void setNbOfImages(int nbOfImages) { this.nbOfImages = nbOfImages; }
+    public void setNbOfElements(long nbOfElements) { this.nbOfElements = nbOfElements; }
 
     /**
      * Creates builder to build {@link HbaseAlbum}.
@@ -68,7 +68,7 @@ public class HbaseAlbum extends HbaseData {
         private String dataId;
         private String albumName;
         private String description;
-        private int    nbOfImages;
+        private long   nbOfElements;
 
         private Builder() {}
 
@@ -121,14 +121,14 @@ public class HbaseAlbum extends HbaseData {
         }
 
         /**
-         * Builder method for nbOfImages parameter.
+         * Builder method for nbOfElements parameter.
          *
-         * @param nbOfImages
+         * @param nbOfElements
          *            field to set
          * @return builder
          */
-        public Builder withNbOfImages(int nbOfImages) {
-            this.nbOfImages = nbOfImages;
+        public Builder withNbOfElements(long nbOfElements) {
+            this.nbOfElements = nbOfElements;
             return this;
         }
 

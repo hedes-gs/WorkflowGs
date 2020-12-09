@@ -9,7 +9,7 @@ public class HbaseImageThumbnailSerializer extends AbstractModelSerializerAndDes
 
 	@Override
 	public byte[] serialize(String topic, HbaseImageThumbnail data) {
-		return this.toBytesGeneric(data);
+		return this.toBytesGeneric(topic, data);
 	}
 
 	public HbaseImageThumbnailSerializer() {

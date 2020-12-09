@@ -31,6 +31,9 @@ public class HbaseImageImportProject extends HbaseData {
     @Column(hbaseName = "height", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
     protected long            height;
 
+    public HbaseImageImportProject() { super(null,
+        System.currentTimeMillis()); }
+
     @Generated("SparkTools")
     private HbaseImageImportProject(Builder builder) {
         super(builder.dataId,

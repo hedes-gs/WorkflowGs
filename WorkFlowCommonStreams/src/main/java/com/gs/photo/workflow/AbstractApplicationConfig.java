@@ -1,7 +1,6 @@
 package com.gs.photo.workflow;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -15,7 +14,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.requests.IsolationLevel;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -207,6 +205,7 @@ public abstract class AbstractApplicationConfig {
     @ConditionalOnProperty(name = "consumer.string.string", havingValue = "true")
     public Consumer<String, String> consumerForTopicWithStringKey(
         @Value("${group.id}") String groupId,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${bootstrap.servers}") String bootstrapServers
     ) {
         Properties settings = new Properties();
@@ -219,6 +218,8 @@ public abstract class AbstractApplicationConfig {
         settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+
         settings.put("sasl.kerberos.service.name", "kafka");
         Consumer<String, String> producer = new KafkaConsumer<>(settings);
         return producer;
@@ -228,6 +229,7 @@ public abstract class AbstractApplicationConfig {
     @ConditionalOnProperty(name = "consumer.string.string.transactional", havingValue = "true")
     public Consumer<String, String> consumerForTransactionalCopyForTopicWithStringKey(
         @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${copy.group.id}") String copyGroupId
     ) {
         Properties settings = new Properties();
@@ -239,10 +241,8 @@ public abstract class AbstractApplicationConfig {
         settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         settings.put(ConsumerConfig.GROUP_ID_CONFIG, copyGroupId);
         settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        settings.put(
-            ConsumerConfig.ISOLATION_LEVEL_CONFIG,
-            IsolationLevel.READ_COMMITTED.toString()
-                .toLowerCase(Locale.ROOT));
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
+        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
@@ -253,6 +253,7 @@ public abstract class AbstractApplicationConfig {
     @Bean(name = "consumerCommonKafkaProperties")
     public Properties consumerCommonKafkaProperties(
         @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${copy.group.id}") String copyGroupId
     ) {
         Properties settings = new Properties();
@@ -261,13 +262,11 @@ public abstract class AbstractApplicationConfig {
         settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         settings.put(ConsumerConfig.GROUP_ID_CONFIG, copyGroupId);
         settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        settings.put(
-            ConsumerConfig.ISOLATION_LEVEL_CONFIG,
-            IsolationLevel.READ_COMMITTED.toString()
-                .toLowerCase(Locale.ROOT));
+        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
         settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
+        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         return settings;
     }
 
@@ -276,8 +275,8 @@ public abstract class AbstractApplicationConfig {
         final ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
 
         // threadPoolTaskExecutor.setDaemon(false);
-        threadPoolTaskExecutor.setCorePoolSize(4);
-        threadPoolTaskExecutor.setMaxPoolSize(10);
+        threadPoolTaskExecutor.setCorePoolSize(6);
+        threadPoolTaskExecutor.setMaxPoolSize(16);
         threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
         threadPoolTaskExecutor.initialize();
         return threadPoolTaskExecutor;

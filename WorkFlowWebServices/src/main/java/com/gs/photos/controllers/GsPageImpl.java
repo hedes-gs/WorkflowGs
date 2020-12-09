@@ -31,10 +31,12 @@ public class GsPageImpl extends PageImpl<ImageDto> {
         super(content,
             pageable,
             total);
-        this.first = content.get(0)
-            .getData();
-        this.last = content.get(content.size() - 1)
-            .getData();
+        if (content.size() > 0) {
+            this.first = content.get(0)
+                .getData();
+            this.last = content.get(content.size() - 1)
+                .getData();
+        }
     }
 
     /**

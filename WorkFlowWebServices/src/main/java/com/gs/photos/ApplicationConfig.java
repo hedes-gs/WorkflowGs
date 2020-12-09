@@ -29,6 +29,7 @@ import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.format.support.FormattingConversionService;
 
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
@@ -184,6 +185,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             super(OffsetDateTime.class,
                 DateTimeHelper.EXIF_VALUE_DATE_TIME_FORMATTER);
         }
+
+        @Override
+        protected JSR310DateTimeDeserializerBase<OffsetDateTime> withShape(Shape shape) { return this; }
 
         @Override
         protected JSR310DateTimeDeserializerBase<OffsetDateTime> withDateFormat(DateTimeFormatter dtf) { return this; }

@@ -1,10 +1,9 @@
 package com.gs.photo.workflow.impl;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -99,15 +98,17 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                     .map((r) -> this.saveInIgnite(r))
                     .map((r) -> this.sendToNext(r))
                     .collect(
-                        () -> new HashMap<TopicPartition, OffsetAndMetadata>(),
+                        () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
                         (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
                         (r, t) -> this.merge(r, t));
                 this.LOGGER.info("Offset to commit {} ", offsets);
                 this.consumerForTopicWithFileToProcessValue.commitSync(offsets);
                 this.producerForTopicWithFileToProcessValue.flush();
-            } catch (IOException e) {
+            } catch (Throwable e) {
+                this.LOGGER.error("Unexpected error {} ", ExceptionUtils.getStackTrace(e));
             }
         }
+        this.LOGGER.info("!! END OF PROCESS !!");
     }
 
     private void merge(Map<TopicPartition, OffsetAndMetadata> r, Map<TopicPartition, OffsetAndMetadata> t) {
@@ -130,9 +131,11 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 
     private KafkaManagedFileToProcess sendToNext(KafkaManagedFileToProcess fileToProcess) {
         fileToProcess.getOrigin()
-            .ifPresentOrElse(
-                (o) -> this.producerForTopicWithFileToProcessValue.send(
-                    new ProducerRecord<String, FileToProcess>(this.topicHashKeyOutput, fileToProcess.getHashKey(), o)),
+            .ifPresentOrElse((o) -> {
+                o.setImageId(fileToProcess.getHashKey());
+                this.producerForTopicWithFileToProcessValue.send(
+                    new ProducerRecord<String, FileToProcess>(this.topicHashKeyOutput, fileToProcess.getHashKey(), o));
+            },
                 () -> this.LOGGER.warn(
                     "Error : offset {} of partition {} of topic {} is not processed",
                     fileToProcess.getKafkaOffset(),
@@ -159,6 +162,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
         try {
             byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(f.value());
             String key = this.beanImageFileHelper.computeHashKey(rawFile);
+
             this.LOGGER.info("[EVENT][{}] getting bytes to compute hash key, length is {}", key, rawFile.length);
             return KafkaManagedFileToProcess.builder()
                 .withHashKey(key)
@@ -167,7 +171,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                 .withKafkaOffset(f.offset())
                 .withPartition(f.partition())
                 .build();
-        } catch (IOException e) {
+        } catch (Throwable e) {
             this.LOGGER.warn("[EVENT][{}] Error {}", f, ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         }

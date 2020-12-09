@@ -13,7 +13,7 @@
       loop: "{{ lookup('dict', ids) }}"
       when:  inventory_hostname == item.value.key
     - name: Start kafka
-      shell: "systemctl start kafka.service"
+      shell: "systemctl restart kafka.service"
       register: running_processes
   vars:
     ansible_become_pass: granada01

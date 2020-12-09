@@ -9,7 +9,7 @@ public class FinalImageSerializer extends AbstractModelSerializerAndDeserializer
 
 	@Override
 	public byte[] serialize(String topic, FinalImage data) {
-		return super.toBytesGeneric(data);
+		return super.toBytesGeneric(topic, data);
 	}
 
 	public FinalImageSerializer() {

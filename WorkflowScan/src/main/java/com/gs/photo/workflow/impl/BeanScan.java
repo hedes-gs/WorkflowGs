@@ -1,11 +1,11 @@
 package com.gs.photo.workflow.impl;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,7 +124,7 @@ public class BeanScan implements IScan {
     protected String                           topicImportEvent;
 
     @Value("${scan.folder}")
-    protected String                           folder;
+    protected String[]                         scannedFolder;
 
     @Value("${scan.heartBeatTimeInSeconds}")
     protected int                              heartBeatTime;
@@ -142,8 +142,6 @@ public class BeanScan implements IScan {
 
     protected Map<String, String>              mapOfFiles             = new HashMap<>();
 
-    protected String                           hostname;
-
     @Autowired
     protected IBeanTaskExecutor                beanTaskExecutor;
 
@@ -157,47 +155,79 @@ public class BeanScan implements IScan {
 
     @PostConstruct
     protected void init() {
-
-        try {
-            String[] splitFolder = this.folder.split("\\:");
-            if ((splitFolder != null) && (splitFolder.length == 2)) {
-                this.hostname = splitFolder[0];
-                this.folder = splitFolder[1];
-            } else {
-            }
-            InetAddress ip = InetAddress.getLocalHost();
-            this.hostname = ip.getHostName();
-        } catch (IOException e) {
-            BeanScan.LOGGER.warn("Unable to start due to : ", e);
-            throw new RuntimeException(e);
+        BeanScan.LOGGER.info("init and this.scannedFolder are {}", Arrays.asList(this.scannedFolder));
+        for (String element : this.scannedFolder) {
+            BeanScan.LOGGER.info("Starting a task exeuctor for ", element);
+            this.beanTaskExecutor.execute(() -> this.scan());
         }
         this.filesProcessed = ConcurrentHashMap.newKeySet();
-        this.beanTaskExecutor.execute(() -> this.scan());
         this.beanTaskExecutor.execute(() -> this.waitForImportEvent());
-
     }
 
     private void scan() {
+        boolean nfsIsUsed = false;
+        String hostname;
+        String rootFolderForNfs = "<not set>";
         while (true) {
             try {
                 ImportEvent importEvent = this.waitForStarting();
-                BeanScan.LOGGER.info("Start scan for {}", this.createScanName);
-                try (
-                    Stream<File> stream = this.fileUtils.toStream(
-                        Paths.get(this.folder),
-                        BeanScan.EXTENSTION_EIP,
-                        BeanScan.EXTENSION_ARW_COMASK,
-                        BeanScan.EXTENSION_ARW_COS,
-                        BeanScan.EXTENSION_ARW_COP,
-                        BeanScan.EXTENSION_FILE_ARW_COF,
-                        BeanScan.EXTENSION_FILE_ARW)) {
-                    stream.filter((f) -> this.isNotAlreadyProcessed(f))
-                        .parallel()
-                        .forEach((f) -> this.processFoundFile(importEvent, f));
+                String[] splitFolder = importEvent.getScanFolder()
+                    .split("\\:");
+                if ((splitFolder != null) && (splitFolder.length == 2)) {
+                    hostname = splitFolder[0];
+                    rootFolderForNfs = splitFolder[1];
+                    nfsIsUsed = true;
+                } else {
+                    InetAddress ip = InetAddress.getLocalHost();
+                    hostname = ip.getHostName();
+                    rootFolderForNfs = importEvent.getScanFolder();
                 }
+                BeanScan.LOGGER.info(
+                    "Start scan for {}, hostname is {} , root folder for nfs {}, nfs is used {} -  test mode is {} - nb max {}",
+                    this.createScanName,
+                    hostname,
+                    rootFolderForNfs,
+                    nfsIsUsed,
+                    importEvent.isForTest(),
+                    importEvent.getNbMaxOfImages());
+                final String folder = rootFolderForNfs;
+                final String usedHostname = hostname;
+                if (!nfsIsUsed) {
+
+                    try (
+                        Stream<File> stream = this.fileUtils.toStream(
+                            Paths.get(rootFolderForNfs),
+                            BeanScan.EXTENSTION_EIP,
+                            BeanScan.EXTENSION_ARW_COMASK,
+                            BeanScan.EXTENSION_ARW_COS,
+                            BeanScan.EXTENSION_ARW_COP,
+                            BeanScan.EXTENSION_FILE_ARW_COF,
+                            BeanScan.EXTENSION_FILE_ARW)) {
+                        stream.filter((f) -> this.isNotAlreadyProcessed(f))
+                            .takeWhile((f) -> this.isNotTestModeOrMaxNbOfElementsReached(importEvent))
+                            .parallel()
+                            .forEach((f) -> this.processFoundFile(importEvent, f, folder, usedHostname));
+                    }
+                } else {
+                    try (
+                        Stream<File> stream = this.fileUtils.toStream(
+                            hostname + ":" + rootFolderForNfs,
+                            "/",
+                            BeanScan.EXTENSTION_EIP,
+                            BeanScan.EXTENSION_ARW_COMASK,
+                            BeanScan.EXTENSION_ARW_COS,
+                            BeanScan.EXTENSION_ARW_COP,
+                            BeanScan.EXTENSION_FILE_ARW_COF,
+                            BeanScan.EXTENSION_FILE_ARW)) {
+                        stream.filter((f) -> this.isNotAlreadyProcessed(f))
+                            .takeWhile((f) -> this.isNotTestModeOrMaxNbOfElementsReached(importEvent))
+                            .forEach((f) -> this.processFoundFile(importEvent, f, folder, usedHostname));
+                    }
+                }
+                BeanScan.LOGGER.info("End of Scan ");
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof NoSuchFileException) {
-                    BeanScan.LOGGER.warn("Warning : {} is not available..", this.folder);
+                    BeanScan.LOGGER.warn("Warning : {} is not available..", rootFolderForNfs);
                 } else {
                     BeanScan.LOGGER.warn("Unexpected error ", e);
                 }
@@ -213,6 +243,17 @@ public class BeanScan implements IScan {
         }
     }
 
+    private boolean isNotTestModeOrMaxNbOfElementsReached(ImportEvent importEvent) {
+        this.lock.readLock()
+            .lock();
+        try {
+            return !importEvent.isForTest() || (this.filesProcessed.size() <= importEvent.getNbMaxOfImages());
+        } finally {
+            this.lock.readLock()
+                .unlock();
+        }
+    }
+
     private ImportEvent waitForStarting() throws InterruptedException {
         try {
             return this.importEventMailbox.read();
@@ -225,33 +266,41 @@ public class BeanScan implements IScan {
 
     private void waitForImportEvent() {
         this.consumerForComponentEvent.subscribe(Collections.singleton(this.topicImportEvent));
-        while (true) {
-            ConsumerRecords<String, ImportEvent> records = this.consumerForComponentEvent
-                .poll(Duration.ofSeconds(this.heartBeatTime));
-            this.consumerForComponentEvent.commitSync();
-            for (ConsumerRecord<String, ImportEvent> rec : records) {
+        BeanScan.LOGGER.info("Starting heartbeat");
 
-                if (Objects.equal(
-                    rec.value()
-                        .getScanners()
-                        .get(0),
-                    this.createScanName)) {
-                    BeanScan.LOGGER.info(
-                        "[COMPONENT][{}]Start import event : {}",
-                        this.createScanName,
+        while (true) {
+            try {
+                ConsumerRecords<String, ImportEvent> records = this.consumerForComponentEvent
+                    .poll(Duration.ofSeconds(this.heartBeatTime));
+                this.consumerForComponentEvent.commitSync();
+                for (ConsumerRecord<String, ImportEvent> rec : records) {
+
+                    if (Objects.equal(
                         rec.value()
-                            .toString());
-                    this.importEventMailbox.post(rec.value());
+                            .getScanners()
+                            .get(0),
+                        this.createScanName)) {
+                        BeanScan.LOGGER.info(
+                            "[COMPONENT][{}]Start import event : {}",
+                            this.createScanName,
+                            rec.value()
+                                .toString());
+                        this.importEventMailbox.post(rec.value());
+                    }
                 }
+                this.producerForComponentEvent.send(
+                    new ProducerRecord<>(this.topicComponentStatus,
+                        ComponentEvent.builder()
+                            .withMessage("Component started !")
+                            .withScannedFolder(this.scannedFolder)
+                            .withComponentName(this.createScanName)
+                            .withComponentType(ComponentType.SCAN)
+                            .withStatus(ComponentStatus.ALIVE)
+                            .build()));
+            } catch (Exception e) {
+                BeanScan.LOGGER.warn("Error received {} - stopping", ExceptionUtils.getStackTrace(e));
+                break;
             }
-            this.producerForComponentEvent.send(
-                new ProducerRecord<>(this.topicComponentStatus,
-                    ComponentEvent.builder()
-                        .withMessage("Component started !")
-                        .withComponentName(this.createScanName)
-                        .withComponentType(ComponentType.SCAN)
-                        .withStatus(ComponentStatus.ALIVE)
-                        .build()));
         }
     }
 
@@ -266,7 +315,7 @@ public class BeanScan implements IScan {
         }
     }
 
-    public void processFoundFile(ImportEvent importEvent, File f) {
+    public void processFoundFile(ImportEvent importEvent, File f, String rootFolderForNfs, String hostname) {
         this.lock.writeLock()
             .lock();
         try {
@@ -284,18 +333,18 @@ public class BeanScan implements IScan {
                     // TODO : copy on local, and uncompress it
                     // FileUtils.copyRemoteToLocal(coordinates, filePath, os, bufferSize);
                     // FileUtils.copyRemoteToLocal(coordinates, filePath, os, bufferSize);
-                    this.publishMainFile(importEvent, f, true);
+                    this.publishMainFile(importEvent, f, true, rootFolderForNfs, hostname);
                     break;
                 }
                 case BeanScan.EXTENSION_FILE_ARW: {
-                    this.publishMainFile(importEvent, f, false);
+                    this.publishMainFile(importEvent, f, false, rootFolderForNfs, hostname);
                     break;
                 }
                 case BeanScan.EXTENSION_FILE_ARW_COF:
                 case BeanScan.EXTENSION_ARW_COP:
                 case BeanScan.EXTENSION_ARW_COS:
                 case BeanScan.EXTENSION_ARW_COMASK: {
-                    this.publishSubFile(importEvent, f);
+                    this.publishSubFile(importEvent, f, rootFolderForNfs, hostname);
                     break;
                 }
             }
@@ -309,8 +358,16 @@ public class BeanScan implements IScan {
         }
     }
 
-    private void publishMainFile(ImportEvent importEvent, File mainFile, boolean isCompressed) {
-        this.publishFile(this.buildFileToProcess(importEvent, mainFile, isCompressed), this.outputTopic);
+    private void publishMainFile(
+        ImportEvent importEvent,
+        File mainFile,
+        boolean isCompressed,
+        String rootFolderForNfs,
+        String hostname
+    ) {
+        this.publishFile(
+            this.buildFileToProcess(importEvent, mainFile, isCompressed, rootFolderForNfs, hostname),
+            this.outputTopic);
     }
 
     private void publishFile(FileToProcess fileToProcess, String topic) {
@@ -325,23 +382,38 @@ public class BeanScan implements IScan {
         this.producerForPublishingOnFileTopic.flush();
     }
 
-    private FileToProcess buildFileToProcess(ImportEvent importEvent, File file, boolean isCompressed) {
+    private FileToProcess buildFileToProcess(
+        ImportEvent importEvent,
+        File file,
+        boolean isCompressed,
+        String rootFolderForNfs,
+        String hostname
+    ) {
         return FileToProcess.builder()
+            .withRootForNfs(rootFolderForNfs)
             .withDataId(file.getName())
             .withName(file.getName())
-            .withHost(this.hostname)
+            .withHost(hostname)
+            .withImageId("<UNSET>")
             .withPath(file.getAbsolutePath())
             .withCompressedFile(isCompressed)
             .withImportEvent(importEvent)
             .build();
     }
 
-    private FileToProcess buildFileToProcess(ImportEvent importEvent, File file, File associatedFile) {
+    private FileToProcess buildFileToProcess(
+        ImportEvent importEvent,
+        File file,
+        File associatedFile,
+        String rootFolderForNfs,
+        String hostname
+    ) {
         return FileToProcess.builder()
             .withCompressedFile(false)
+            .withRootForNfs(rootFolderForNfs)
             .withDataId(file.getName())
             .withName(file.getName())
-            .withHost(this.hostname)
+            .withHost(hostname)
             .withPath(file.getAbsolutePath())
             .withImportDate(System.currentTimeMillis())
             .withImportEvent(importEvent)
@@ -349,11 +421,13 @@ public class BeanScan implements IScan {
                 this.buildFileToProcess(
                     importEvent,
                     associatedFile,
-                    BeanScan.EXTENSTION_EIP.equals(FilenameUtils.getExtension(associatedFile.getName()))))
+                    BeanScan.EXTENSTION_EIP.equals(FilenameUtils.getExtension(associatedFile.getName())),
+                    rootFolderForNfs,
+                    hostname))
             .build();
     }
 
-    private void publishSubFile(ImportEvent importEvent, File file) {
+    private void publishSubFile(ImportEvent importEvent, File file, String rootFolderForNfs, String hostname) {
         File parentFolder = file.getParentFile()
             .getParentFile();
         if (parentFolder.exists()) {
@@ -365,7 +439,9 @@ public class BeanScan implements IScan {
                             .indexOf("."))
                     + BeanScan.EXTENSION_FILE_ARW);
             if (associatedFile.exists()) {
-                this.publishFile(this.buildFileToProcess(importEvent, file, associatedFile), this.outputParentTopic);
+                this.publishFile(
+                    this.buildFileToProcess(importEvent, file, associatedFile, rootFolderForNfs, hostname),
+                    this.outputParentTopic);
             }
         }
     }

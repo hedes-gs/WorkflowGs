@@ -8,6 +8,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
 import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 
 public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImageToSend> {
@@ -47,7 +48,7 @@ public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImage
     }
 
     private WfEvent buildEvent(String imageKey, String dataId, int version) {
-        return WfEvent.builder()
+        return WfEventProduced.builder()
             .withImgId(imageKey)
             .withParentDataId(dataId)
             .withDataId(dataId + "-" + version)

@@ -8,7 +8,7 @@ public class ImportEventSerializer extends AbstractModelSerializerAndDeserialize
     implements Serializer<ImportEvent> {
 
     @Override
-    public byte[] serialize(String topic, ImportEvent data) { return super.toBytesGeneric(data); }
+    public byte[] serialize(String topic, ImportEvent data) { return super.toBytesGeneric(topic, data); }
 
     public ImportEventSerializer() { super(); }
 

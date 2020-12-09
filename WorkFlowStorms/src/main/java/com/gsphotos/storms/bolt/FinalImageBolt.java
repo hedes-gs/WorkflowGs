@@ -7,11 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -24,7 +26,10 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.gs.photos.serializers.FinalImageSerializer;
 import com.gs.photos.serializers.WfEventsSerializer;
+import com.workflow.model.builder.KeysBuilder.FinalImageKeyBuilder;
 import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventProduced;
+import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.storm.FinalImage;
@@ -111,6 +116,7 @@ public class FinalImageBolt extends BaseRichBolt {
             .put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, FinalImageSerializer.class.getName());
         this.settingForFinalImage.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         this.settingForFinalImage.put("sasl.kerberos.service.name", "kafka");
+        this.settingForFinalImage.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 4194304);
         this.producerOfFinalImage = new KafkaProducer<>(this.settingForFinalImage);
 
         this.settingForWfEvents.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, this.kafkaBrokers);
@@ -119,10 +125,9 @@ public class FinalImageBolt extends BaseRichBolt {
         this.settingForWfEvents.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, WfEventsSerializer.class.getName());
         this.settingForWfEvents.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         this.settingForWfEvents.put("sasl.kerberos.service.name", "kafka");
+        this.settingForWfEvents.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 4194304);
         this.producerOfEvents = new KafkaProducer<>(this.settingForWfEvents);
-
         this.buildComponentConfiguration();
-
     }
 
     protected void buildComponentConfiguration() {
@@ -174,7 +179,6 @@ public class FinalImageBolt extends BaseRichBolt {
     protected void doExecute(List<Tuple> tuples) {
         Multimap<String, WfEvent> multiMapOfEvents = ArrayListMultimap.create();
         tuples.forEach((input) -> {
-            FinalImage finalImage = null;
 
             FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.FINAL_IMAGE);
             FinalImageBolt.LOGGER.info("[EVENT][{}] receive one bolt FinalImageBolt", currentImage.getDataId());
@@ -188,11 +192,12 @@ public class FinalImageBolt extends BaseRichBolt {
                 .withWidth(dim.getWidth())
                 .withVersion(version)
                 .withDataId(currentImage.getDataId());
-            finalImage = builder.build();
+            FinalImage finalImage = builder.build();
 
-            this.producerOfFinalImage.send(new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage));
-            final WfEvent wfEvent = this
-                .buildEvent(imgKey, finalImage.getDataId(), finalImage.getDataId() + "-" + version);
+            this.producerOfFinalImage.send(
+                new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage),
+                (a, e) -> this.process(finalImage.getDataId() + "-" + version, a, e));
+            final WfEvent wfEvent = this.buildEvent(imgKey, finalImage, Short.toString(version));
             multiMapOfEvents.put(imgKey, wfEvent);
             FinalImageBolt.LOGGER
                 .info("[EVENT][{}] Produce finalImage, version is {}", finalImage.getDataId(), finalImage.getVersion());
@@ -211,8 +216,27 @@ public class FinalImageBolt extends BaseRichBolt {
         this.producerOfEvents.flush();
     }
 
+    private WfEvent buildEvent(String imgKey, FinalImage finalImage, String version) {
+        String hbdHashCode = FinalImageKeyBuilder.build(finalImage, version);
+        return WfEventRecorded.builder()
+            .withImgId(imgKey)
+            .withParentDataId(finalImage.getDataId())
+            .withDataId(hbdHashCode)
+            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMG_PROCESSOR)
+            .build();
+    }
+
+    private void process(String imgId, RecordMetadata a, Exception e) {
+        if (e != null) {
+            FinalImageBolt.LOGGER
+                .warn("[EVENT][{}] finalImage not sent due to the error", imgId, ExceptionUtils.getStackFrames(e));
+        } else {
+            FinalImageBolt.LOGGER.info("[EVENT][{}] finalImage, sent at offset {}", imgId, a.toString());
+        }
+    }
+
     private WfEvent buildEvent(String imageKey, String parentDataId, String dataId) {
-        return WfEvent.builder()
+        return WfEventProduced.builder()
             .withDataId(dataId)
             .withParentDataId(parentDataId)
             .withImgId(imageKey)

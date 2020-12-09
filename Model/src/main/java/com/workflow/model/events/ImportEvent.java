@@ -19,6 +19,9 @@ public class ImportEvent extends HbaseData implements Serializable {
     private String            album;
     private long              importDate;
     private String            importName;
+    private String            scanFolder;
+    private boolean           forTest;
+    private int               nbMaxOfImages;
 
     @Generated("SparkTools")
     private ImportEvent(Builder builder) {
@@ -29,6 +32,9 @@ public class ImportEvent extends HbaseData implements Serializable {
         this.album = builder.album;
         this.importDate = builder.importDate;
         this.importName = builder.importName;
+        this.scanFolder = builder.scanFolder;
+        this.forTest = builder.forTest;
+        this.nbMaxOfImages = builder.nbMaxOfImages;
     }
 
     public List<String> getKeyWords() { return this.keyWords; }
@@ -50,6 +56,18 @@ public class ImportEvent extends HbaseData implements Serializable {
     public String getImportName() { return this.importName; }
 
     public void setImportName(String importName) { this.importName = importName; }
+
+    public String getScanFolder() { return this.scanFolder; }
+
+    public void setScanFolder(String scanFolder) { this.scanFolder = scanFolder; }
+
+    public boolean isForTest() { return this.forTest; }
+
+    public void setForTest(boolean forTest) { this.forTest = forTest; }
+
+    public int getNbMaxOfImages() { return this.nbMaxOfImages; }
+
+    public void setNbMaxOfImages(int nbMaxOfImages) { this.nbMaxOfImages = nbMaxOfImages; }
 
     @Override
     public String toString() {
@@ -96,7 +114,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link ImportEvent}.
-     *
+     * 
      * @return created builder
      */
     @Generated("SparkTools")
@@ -114,12 +132,15 @@ public class ImportEvent extends HbaseData implements Serializable {
         private String       album;
         private long         importDate;
         private String       importName;
+        private String       scanFolder;
+        private boolean      forTest;
+        private int          nbMaxOfImages;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -131,7 +152,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -143,7 +164,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for keyWords parameter.
-         *
+         * 
          * @param keyWords
          *            field to set
          * @return builder
@@ -155,7 +176,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for scanners parameter.
-         *
+         * 
          * @param scanners
          *            field to set
          * @return builder
@@ -167,7 +188,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for album parameter.
-         *
+         * 
          * @param album
          *            field to set
          * @return builder
@@ -179,7 +200,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for importDate parameter.
-         *
+         * 
          * @param importDate
          *            field to set
          * @return builder
@@ -191,7 +212,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for importName parameter.
-         *
+         * 
          * @param importName
          *            field to set
          * @return builder
@@ -202,8 +223,44 @@ public class ImportEvent extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for scanFolder parameter.
+         * 
+         * @param scanFolder
+         *            field to set
+         * @return builder
+         */
+        public Builder withScanFolder(String scanFolder) {
+            this.scanFolder = scanFolder;
+            return this;
+        }
+
+        /**
+         * Builder method for forTest parameter.
+         * 
+         * @param forTest
+         *            field to set
+         * @return builder
+         */
+        public Builder withForTest(boolean forTest) {
+            this.forTest = forTest;
+            return this;
+        }
+
+        /**
+         * Builder method for nbMaxOfImages parameter.
+         * 
+         * @param nbMaxOfImages
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbMaxOfImages(int nbMaxOfImages) {
+            this.nbMaxOfImages = nbMaxOfImages;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public ImportEvent build() { return new ImportEvent(this); }

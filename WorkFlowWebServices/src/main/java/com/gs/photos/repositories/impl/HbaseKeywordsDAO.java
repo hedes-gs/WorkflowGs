@@ -18,11 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.gs.photo.workflow.hbase.dao.AbstractMetaDataDAO;
+import com.gs.photo.workflow.hbase.dao.AbstractHbaseKeywordsDAO;
 import com.workflow.model.HbaseKeywords;
 
 @Component
-public class HbaseKeywordsDAO extends AbstractMetaDataDAO<HbaseKeywords, String> implements IHbaseKeywordsDAO {
+public class HbaseKeywordsDAO extends AbstractHbaseKeywordsDAO implements IHbaseKeywordsDAO {
 
     protected static Logger LOGGER = LoggerFactory.getLogger(HbaseKeywordsDAO.class);
 
@@ -68,16 +68,6 @@ public class HbaseKeywordsDAO extends AbstractMetaDataDAO<HbaseKeywords, String>
     @Override
     public long countAll() throws IOException, Throwable {
         return super.countWithCoprocessorJob(this.getHbaseDataInformation());
-    }
-
-    @Override
-    public void incrementNbOfImages(HbaseKeywords metaData) throws IOException {
-        super.incrementNbOfImages(metaData.getKeyword());
-    }
-
-    @Override
-    public void decrementNbOfImages(HbaseKeywords metaData) throws IOException {
-        super.decrementNbOfImages(metaData.getKeyword());
     }
 
     @Override

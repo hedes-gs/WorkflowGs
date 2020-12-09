@@ -21,13 +21,15 @@ import { withStyles } from '@material-ui/core/styles';
 import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox';
 import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
 import { ImportEvent } from '../model/WfEvents'
+import { toComponentEvent, ComponentEvent } from '../model/ImageDto'
+
 
 export interface ComponentStatusProps {
 }
 
 export interface ComponentStatusState {
     dialogIsOpened: boolean;
-    message: Set<string>;
+    message: Map<string, ComponentEvent>;
 };
 const StyledTableRow = withStyles((theme) => ({
     root: {
@@ -44,16 +46,19 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
     private importName: string;
     private keywords: string;
     private album: string;
+    private scanFolder: string;
     private scans: Set<string>
+    private importEvents: Map<String, ImportEvent>;
     private wfEventsServices: WfEventsServices = new WfEventsServicesImpl();
 
     constructor(props: ComponentStatusProps) {
         super(props);
-        this.state = { message: new Set(), dialogIsOpened: false };
+        this.state = { message: new Map(), dialogIsOpened: false };
         this.importName = '';
         this.album = '';
         this.keywords = '';
-
+        this.scanFolder = '';
+        this.importEvents = new Map();
         const client = new Client({
             brokerURL: "ws://192.168.1.128:8080/app/websocket",
             connectHeaders: {
@@ -92,13 +97,16 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
 
     handler(msg: IMessage) {
         const message = this.state.message;
-        message.add(msg.body);
-        this.setState(
-            {
-                message: message,
-                dialogIsOpened: this.state.dialogIsOpened
-            }
-        )
+        const componentEvent = toComponentEvent(JSON.parse(msg.body));
+        if (componentEvent.componentName != null) {
+            message.set(componentEvent.componentName, componentEvent);
+            this.setState(
+                {
+                    message: message,
+                    dialogIsOpened: this.state.dialogIsOpened
+                }
+            )
+        }
     };
 
 
@@ -120,8 +128,17 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
         )
     };
 
-    handleAddScanToStart(scan: string) {
-        this.scans.add(scan)
+    handleAddScanToStart(key: string, folder: string) {
+        const event: ImportEvent = {
+            dataId: '',
+            keyWords: this.keywords.split(','),
+            scanners: [key],
+            scanFolder: folder,
+            album: this.album,
+            importDate: 0,
+            importName: this.importName
+        }
+        this.importEvents.set(key, event);
     }
 
     handleSetImportName(importName: string) {
@@ -135,15 +152,8 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
     }
 
     handleSartScan() {
-        const event: ImportEvent = {
-            dataId: '',
-            keyWords: this.keywords.split(','),
-            scanners: Array.from(this.scans),
-            album: this.album,
-            importDate: 0,
-            importName: this.importName
-        }
-        this.wfEventsServices.startScan(event);
+        Array.from(this.importEvents.values()).forEach((v: ImportEvent) => { this.wfEventsServices.startScan(v); });
+
     }
 
 
@@ -163,7 +173,7 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
             display: 'table'
         }
         const open = this.state.dialogIsOpened;
-        const message: Set<string> = this.state.message;
+        const message: Map<string, ComponentEvent> = this.state.message;
         return (
             <div>
                 <Button onClick={this.handleClickOpen}>
@@ -211,16 +221,40 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {Array.from(message.values()).map((row: string) => (
-                                                <StyledTableRow key={row}>
-                                                    <TableCell component="th" scope="row">
-                                                        {row}
-                                                    </TableCell>
-                                                    <TableCell align="right">
-                                                        <Checkbox onClick={(e) => this.handleAddScanToStart(row)} />
-                                                    </TableCell>
-                                                </StyledTableRow>
-                                            ))}
+                                            {Array.from(message.entries()).map(([key, value]) => {
+                                                return (
+                                                    <StyledTableRow key={key}>
+                                                        <TableCell component="th" scope="row">
+                                                            {key}
+                                                        </TableCell>
+                                                        <TableCell align="right">
+                                                            <Table>
+                                                                <TableBody>
+                                                                    {value.scannedFolder != null &&
+                                                                        value.scannedFolder.map((folder) => {
+                                                                            return (
+
+                                                                                <StyledTableRow key={key + '-' + folder}>
+                                                                                    <TableCell component="th" scope="row">
+                                                                                        {folder}
+                                                                                    </TableCell>
+
+                                                                                    <TableCell align="right">
+                                                                                        <Checkbox onClick={(e) => this.handleAddScanToStart(key, folder)} />
+                                                                                    </TableCell>
+                                                                                </StyledTableRow>
+
+                                                                            )
+                                                                        })
+                                                                    }
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableCell>
+                                                    </StyledTableRow>
+                                                )
+                                            }
+                                            )
+                                            }
                                         </TableBody>
                                     </Table>
                                 </TableContainer>

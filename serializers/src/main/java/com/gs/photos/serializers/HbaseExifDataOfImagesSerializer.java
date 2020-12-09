@@ -9,7 +9,7 @@ public class HbaseExifDataOfImagesSerializer extends AbstractModelSerializerAndD
 
 	@Override
 	public byte[] serialize(String topic, HbaseExifDataOfImages data) {
-		return this.toBytesGeneric(data);
+		return this.toBytesGeneric(topic, data);
 	}
 
 	HbaseExifDataOfImagesSerializer() {

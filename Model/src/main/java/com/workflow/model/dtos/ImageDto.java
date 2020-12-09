@@ -25,10 +25,11 @@ public class ImageDto implements Serializable {
     protected String          aperture;
     protected String          speed;
     protected String[]        keywords;
+    protected String[]        persons;
     protected String          album;
     protected String          camera;
     protected String          lens;
-    protected int             ratings;
+    protected long            ratings;
 
     @Generated("SparkTools")
     private ImageDto(Builder builder) {
@@ -46,15 +47,20 @@ public class ImageDto implements Serializable {
         this.aperture = builder.aperture;
         this.speed = builder.speed;
         this.keywords = builder.keywords;
+        this.persons = builder.persons;
         this.album = builder.album;
         this.camera = builder.camera;
         this.lens = builder.lens;
         this.ratings = builder.ratings;
     }
 
-    public int getRatings() { return this.ratings; }
+    public String[] getPersons() { return this.persons; }
 
-    public void setRatings(int ratings) { this.ratings = ratings; }
+    public void setPersons(String[] persons) { this.persons = persons; }
+
+    public long getRatings() { return this.ratings; }
+
+    public void setRatings(long ratings) { this.ratings = ratings; }
 
     public String[] getKeywords() { return this.keywords; }
 
@@ -138,7 +144,7 @@ public class ImageDto implements Serializable {
 
     /**
      * Creates builder to build {@link ImageDto}.
-     * 
+     *
      * @return created builder
      */
     @Generated("SparkTools")
@@ -163,16 +169,17 @@ public class ImageDto implements Serializable {
         private String        aperture;
         private String        speed;
         private String[]      keywords;
+        private String[]      persons;
         private String        album;
         private String        camera;
         private String        lens;
-        private int           ratings;
+        private long          ratings;
 
         private Builder() {}
 
         /**
          * Builder method for data parameter.
-         * 
+         *
          * @param data
          *            field to set
          * @return builder
@@ -184,7 +191,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for imageName parameter.
-         * 
+         *
          * @param imageName
          *            field to set
          * @return builder
@@ -196,7 +203,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for creationDateAsString parameter.
-         * 
+         *
          * @param creationDateAsString
          *            field to set
          * @return builder
@@ -208,7 +215,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for importDate parameter.
-         * 
+         *
          * @param importDate
          *            field to set
          * @return builder
@@ -220,7 +227,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for thumbnailWidth parameter.
-         * 
+         *
          * @param thumbnailWidth
          *            field to set
          * @return builder
@@ -232,7 +239,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for thumbnailHeight parameter.
-         * 
+         *
          * @param thumbnailHeight
          *            field to set
          * @return builder
@@ -244,7 +251,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for originalWidth parameter.
-         * 
+         *
          * @param originalWidth
          *            field to set
          * @return builder
@@ -256,7 +263,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for originalHeight parameter.
-         * 
+         *
          * @param originalHeight
          *            field to set
          * @return builder
@@ -268,7 +275,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for orientation parameter.
-         * 
+         *
          * @param orientation
          *            field to set
          * @return builder
@@ -280,7 +287,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for caption parameter.
-         * 
+         *
          * @param caption
          *            field to set
          * @return builder
@@ -292,7 +299,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for iso parameter.
-         * 
+         *
          * @param iso
          *            field to set
          * @return builder
@@ -304,7 +311,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for aperture parameter.
-         * 
+         *
          * @param aperture
          *            field to set
          * @return builder
@@ -316,7 +323,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for speed parameter.
-         * 
+         *
          * @param speed
          *            field to set
          * @return builder
@@ -328,7 +335,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for keywords parameter.
-         * 
+         *
          * @param keywords
          *            field to set
          * @return builder
@@ -339,8 +346,20 @@ public class ImageDto implements Serializable {
         }
 
         /**
+         * Builder method for persons parameter.
+         *
+         * @param persons
+         *            field to set
+         * @return builder
+         */
+        public Builder withPersons(String[] persons) {
+            this.persons = persons;
+            return this;
+        }
+
+        /**
          * Builder method for album parameter.
-         * 
+         *
          * @param album
          *            field to set
          * @return builder
@@ -352,7 +371,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for camera parameter.
-         * 
+         *
          * @param camera
          *            field to set
          * @return builder
@@ -364,7 +383,7 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for lens parameter.
-         * 
+         *
          * @param lens
          *            field to set
          * @return builder
@@ -376,19 +395,19 @@ public class ImageDto implements Serializable {
 
         /**
          * Builder method for ratings parameter.
-         * 
+         *
          * @param ratings
          *            field to set
          * @return builder
          */
-        public Builder withRatings(int ratings) {
+        public Builder withRatings(long ratings) {
             this.ratings = ratings;
             return this;
         }
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public ImageDto build() { return new ImageDto(this); }

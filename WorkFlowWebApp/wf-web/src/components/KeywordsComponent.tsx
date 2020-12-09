@@ -4,28 +4,34 @@ import Rating from '@material-ui/lab/Rating';
 import { connect } from "react-redux";
 import Chip from '@material-ui/core/Chip';
 import Paper from '@material-ui/core/Paper';
+import { CSSProperties } from '@material-ui/styles';
 
 import { ClientApplicationState } from '../redux/State';
+import { Metadata } from '../model/ImageDto'
 import {
     ApplicationThunkDispatch,
     ApplicationEvent,
     loadAllKeywords,
     dispatchLoadAllKeywords,
-    loadImagesOfKeyword,
-    dispatchLoadImagesOfKeyword
+    loadAllPersons,
+    dispatchLoadAllPersons,
+    dispatchLoadImagesOfMetadata,
+    loadImagesOfMetadata
 } from '../redux/Actions';
 import { withStyles } from '@material-ui/core/styles';
+import { Divider } from '@material-ui/core';
 
 
-interface KeywordsCmpProp {
-    keywords?: string[] | null;
-    loadAllKeywords?(): ApplicationEvent;
-    loadImagesOfKeyword?(): ApplicationEvent;
-    thunkActionToLoadAllKeywords?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
-    thunkActionToLoadImagesOfKeyword?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
+interface MetadataCmpProp {
+    title: string;
+    Metadata?: Metadata[] | null;
+    loadAllMetadata?(): ApplicationEvent;
+    loadImagesOfMetadata?(url: string, title: string): ApplicationEvent;
+    thunkActionToLoadAllMetadata?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
+    thunkActionToLoadImagesOfMetadata?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
 }
 
-interface KeywordsCmpStat {
+interface MetadataCmpStat {
 };
 
 
@@ -37,48 +43,79 @@ export const styles = {
     }
 }
 
-class KeywordsCmpList extends React.Component<KeywordsCmpProp, KeywordsCmpStat> {
+class MetadataCmpList extends React.Component<MetadataCmpProp, MetadataCmpStat> {
 
 
-    constructor(props: KeywordsCmpProp) {
+    constructor(props: MetadataCmpProp) {
         super(props);
         this.state = {};
         this.handleChipClick = this.handleChipClick.bind(this)
     }
 
-    handleChipClick(keyword: string) {
-        console.log('Search for keyword ' + keyword)
+    handleChipClick(metadata: Metadata) {
+        console.log('Search for keyword ' + metadata)
+        if (this.props.loadImagesOfMetadata != null &&
+            this.props.thunkActionToLoadImagesOfMetadata != null &&
+            this.props.loadImagesOfMetadata != null &&
+            metadata._links != null &&
+            metadata._links._page) {
+            this.props.thunkActionToLoadImagesOfMetadata(this.props.loadImagesOfMetadata(
+                metadata._links._page.href, "Dernières images pour " + metadata.content))
+        }
     }
 
     componentDidMount() {
-        if (this.props.loadAllKeywords != null && this.props.thunkActionToLoadAllKeywords != null) {
-            this.props.thunkActionToLoadAllKeywords(this.props.loadAllKeywords())
+        if (this.props.loadAllMetadata != null && this.props.thunkActionToLoadAllMetadata != null) {
+            this.props.thunkActionToLoadAllMetadata(this.props.loadAllMetadata())
         }
     }
     render() {
-        if (this.props.keywords != null) {
+        if (this.props.Metadata != null) {
+            const aroundKeywords: CSSProperties = {
+                padding: '8px',
+                marginTop: '15px',
+                marginLeft: '5px',
+                marginRight: '5px',
+                border: 'solid 1px rgba(255,255,255,0.5)',
+                borderRadius: '7px',
+                position: 'relative'
+            }
             return (
                 <React.Fragment>
-
-                    <Paper component="ul" style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        flexWrap: 'wrap',
-                        listStyle: 'none',
-                        maxWidth: '10em'
-                    }}>
-                        {this.props.keywords.map((data) => {
-                            return (
-                                <li key={data}>
-                                    <Chip
-                                        onClick={(e) => { this.handleChipClick(data) }}
-                                        style={{ margin: '5px' }}
-                                        label={data}
-                                    />
-                                </li>
-                            );
-                        })}
-                    </Paper>
+                    <div style={aroundKeywords}>
+                        <div style={{
+                            position: 'absolute',
+                            top: '-0.8em',
+                            backgroundColor: 'rgba(81, 81, 81, 1)',
+                            color: 'rgba(255, 255, 255, 0.3)',
+                            paddingRight: '15px',
+                            paddingLeft: '15px',
+                            marginTop: '0.4em',
+                            paddingBottom: '0.2em',
+                            borderRadius: '5px',
+                            fontSize: '0.8em'
+                        }}>{this.props.title}</div>
+                        <Paper component="ul" style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            flexWrap: 'wrap',
+                            listStyle: 'none',
+                            maxWidth: '10em',
+                            marginBlockEnd: '0'
+                        }}>
+                            {this.props.Metadata.map((data) => {
+                                return (
+                                    <li >
+                                        <Chip
+                                            onClick={(e) => { this.handleChipClick(data) }}
+                                            style={{ margin: '5px' }}
+                                            label={data.content}
+                                        />
+                                    </li>
+                                );
+                            })}
+                        </Paper>
+                    </div>
                 </ React.Fragment >
             );
         }
@@ -88,11 +125,12 @@ class KeywordsCmpList extends React.Component<KeywordsCmpProp, KeywordsCmpStat> 
     }
 }
 
-const mapStateToProps = (state: ClientApplicationState, previousState: KeywordsCmpProp): KeywordsCmpProp => {
+const mapStateToProps = (state: ClientApplicationState, previousState: MetadataCmpProp): MetadataCmpProp => {
 
     if (state.reducerDisplayKeywords.displayKeywords.keywords.length > 0) {
         return {
-            keywords: state.reducerDisplayKeywords.displayKeywords.keywords
+            Metadata: state.reducerDisplayKeywords.displayKeywords.keywords,
+            title: "Mots-clé"
         };
     }
     return previousState;
@@ -100,26 +138,52 @@ const mapStateToProps = (state: ClientApplicationState, previousState: KeywordsC
 
 const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
     return {
-        loadAllKeywords: loadAllKeywords,
-        thunkActionToLoadAllKeywords: (x: ApplicationEvent) => {
+        loadAllMetadata: loadAllKeywords,
+        loadImagesOfMetadata: loadImagesOfMetadata,
+        thunkActionToLoadImagesOfMetadata: (x: ApplicationEvent) => {
+            const r = dispatchLoadImagesOfMetadata(x);
+            return dispatch(r);
+        },
+        thunkActionToLoadAllMetadata: (x: ApplicationEvent) => {
             const r = dispatchLoadAllKeywords(x);
             return dispatch(r);
         }
     }
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(KeywordsCmpList));
+const mapStateToPropsForPerson = (state: ClientApplicationState, previousState: MetadataCmpProp): MetadataCmpProp => {
+
+    if (state.reducerDisplayPersons.displayPersons.persons.length > 0) {
+        return {
+            Metadata: state.reducerDisplayPersons.displayPersons.persons,
+            title: "Personnes"
+        };
+    }
+    return previousState;
+};
+
+const mapDispatchToPropsforPerson = (dispatch: ApplicationThunkDispatch) => {
+    return {
+        loadAllMetadata: loadAllPersons,
+        loadImagesOfMetadata: loadImagesOfMetadata,
+        thunkActionToLoadImagesOfMetadata: (x: ApplicationEvent) => {
+            const r = dispatchLoadImagesOfMetadata(x);
+            return dispatch(r);
+        },
+        thunkActionToLoadAllMetadata: (x: ApplicationEvent) => {
+            const r = dispatchLoadAllPersons(x);
+            return dispatch(r);
+        }
+    }
+};
 
 
 
+function fetch() {
+    return MetadataCmpList;
+}
 
+const KeywordsComponent = connect(mapStateToProps, mapDispatchToProps)(fetch());
+const PersonsComponent = connect(mapStateToPropsForPerson, mapDispatchToPropsforPerson)(fetch());
 
-
-
-
-
-
-
-
-
-
+export { KeywordsComponent, PersonsComponent }

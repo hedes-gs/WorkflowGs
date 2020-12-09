@@ -18,10 +18,10 @@ public class RatingRepository implements IRatingRepository {
     protected IHbaseImagesOfRatingsDAO hbaseImagesOfRatingsDAO;
 
     @Override
-    public long count(int rating) throws IOException, Throwable { return this.hbaseRatingsDAO.countAll(rating); }
+    public long count(long rating) throws IOException, Throwable { return this.hbaseRatingsDAO.countAll(rating); }
 
     @Override
-    public Map<String, Integer> countAll() throws IOException, Throwable {
+    public Map<String, Long> countAll() throws IOException, Throwable {
         return this.hbaseImagesOfRatingsDAO.countAllPerRatings();
     }
 

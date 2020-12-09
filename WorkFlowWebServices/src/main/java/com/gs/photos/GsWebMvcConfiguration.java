@@ -8,18 +8,11 @@ import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguratio
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.MethodParameter;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.HateoasPageableHandlerMethodArgumentResolver;
 import org.springframework.data.web.HateoasSortHandlerMethodArgumentResolver;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.format.support.FormattingConversionService;
-import org.springframework.lang.Nullable;
-import org.springframework.web.bind.support.WebDataBinderFactory;
-import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
-import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 import com.gs.photo.workflow.DateTimeHelper;
@@ -71,23 +64,6 @@ public class GsWebMvcConfiguration extends WebMvcConfigurationSupport {
     @Configuration(proxyBeanMethods = false)
     public static class GsWebWebMvcAutoConfiguration extends WebMvcAutoConfiguration {
 
-    }
-
-    @Bean
-    public HateoasPageableHandlerMethodArgumentResolver pageableResolver() {
-
-        HateoasPageableHandlerMethodArgumentResolver pageableResolver = new HateoasPageableHandlerMethodArgumentResolver() {
-            @Override
-            public Pageable resolveArgument(
-                MethodParameter methodParameter,
-                @Nullable ModelAndViewContainer mavContainer,
-                NativeWebRequest webRequest,
-                @Nullable WebDataBinderFactory binderFactory
-            ) {
-                return super.resolveArgument(methodParameter, mavContainer, webRequest, binderFactory);
-            }
-        };
-        return pageableResolver;
     }
 
 }
