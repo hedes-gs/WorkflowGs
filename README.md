@@ -1,4 +1,4 @@
-# WorkflowGs
+# Archive and manage your RAW Sony images
 
 This project describes the way to archive and quickly retrieve your RAW sony images with some big data technologies :
 - kafka, kafka stream
@@ -10,4 +10,4 @@ Currently, it is validated on a cluster of 6 machines like https://www.fit-pc.co
 Ansible scripts are used to deploy the binaries and to update the versions of kafka, hbase, hadoop and storm in the cluster.
 
 
-See our wikir https://github.com/hedes-gs/WorkflowGs/wiki for the Architecture diagrams.
+See our wiki https://github.com/hedes-gs/WorkflowGs/wiki for the Architecture diagrams.
