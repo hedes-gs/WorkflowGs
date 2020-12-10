@@ -20,5 +20,6 @@ the big data technologies used are :
 
 Ansible scripts are used to deploy the binaries and to update the versions of kafka, hbase, hadoop and storm in the cluster.
 
+Today only Sony RAW images are supported.
 
 See our wiki https://github.com/hedes-gs/WorkflowGs/wiki for the Architecture diagrams.
