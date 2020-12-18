@@ -25,7 +25,7 @@
 		<kafka.version>2.6.0</kafka.version>
 	<!-- <JAVA_8_HOME>D:/jdk-8.0.252.09-hotspot</JAVA_8_HOME>  -->	
 		<JAVA_8_HOME>G:/eclipse-workspace-gsworkflow/java/adopt-jdk-8.0.252.09-hotspot</JAVA_8_HOME>
-		
+		<com.nurkiewicz.typeof>0.0.1</com.nurkiewicz.typeof>
 		
 	</properties>
 	<packaging>pom</packaging>
@@ -156,6 +156,11 @@
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
 				<version>${guava.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.nurkiewicz.typeof</groupId>
+				<artifactId>typeof</artifactId>
+				<version>${com.nurkiewicz.typeof}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

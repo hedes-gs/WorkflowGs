@@ -18,90 +18,97 @@ import org.apache.avro.reflect.Nullable;
 @HbaseTableName(value = "image_thumbnail", page_table = true)
 public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseImageThumbnail> {
 
-    public static final String         TABLE_FAMILY_ALBUMS            = "albums";
-    public static final byte[]         TABLE_FAMILY_ALBUMS_AS_BYTES   = "albums".getBytes(Charset.forName("UTF-8"));
-    public static final String         TABLE_FAMILY_KEYWORDS          = "keywords";
-    public static final byte[]         TABLE_FAMILY_KEYWORDS_AS_BYTES = "keywords".getBytes(Charset.forName("UTF-8"));
-    public static final String         TABLE_FAMILY_RATINGS           = "ratings";
-    public static final byte[]         TABLE_FAMILY_RATINGS_AS_BYTES  = "ratings".getBytes(Charset.forName("UTF-8"));
-    public static final String         TABLE_FAMILY_PERSONS           = "persons";
-    public static final byte[]         TABLE_FAMILY_PERSONS_AS_BYTES  = "persons".getBytes(Charset.forName("UTF-8"));
+    public static final String                     TABLE_FAMILY_ALBUMS            = "albums";
+    public static final byte[]                     TABLE_FAMILY_ALBUMS_AS_BYTES   = "albums"
+        .getBytes(Charset.forName("UTF-8"));
+    public static final String                     TABLE_FAMILY_KEYWORDS          = "keywords";
+    public static final byte[]                     TABLE_FAMILY_KEYWORDS_AS_BYTES = "keywords"
+        .getBytes(Charset.forName("UTF-8"));
+    public static final String                     TABLE_FAMILY_RATINGS           = "ratings";
+    public static final byte[]                     TABLE_FAMILY_RATINGS_AS_BYTES  = "ratings"
+        .getBytes(Charset.forName("UTF-8"));
+    public static final String                     TABLE_FAMILY_PERSONS           = "persons";
+    public static final byte[]                     TABLE_FAMILY_PERSONS_AS_BYTES  = "persons"
+        .getBytes(Charset.forName("UTF-8"));
+    public static final String                     TABLE_FAMILY_THB               = "thb";
+    public static final byte[]                     TABLE_FAMILY_THB_AS_BYTES      = HbaseImageThumbnail.TABLE_FAMILY_THB
+        .getBytes(Charset.forName("UTF-8"));
 
-    private static final long          serialVersionUID               = 1L;
+    private static final long                      serialVersionUID               = 1L;
 
     // Row key
     @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
-    protected long                     creationDate;
+    protected long                                 creationDate;
     @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
-    protected String                   imageId;
+    protected String                               imageId;
 
     // Data
     @Column(hbaseName = "image_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 100)
-    protected String                   imageName                      = "";
+    protected String                               imageName                      = "";
     @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 101)
-    protected String                   thumbName                      = "";
+    protected String                               thumbName                      = "";
     @Column(hbaseName = "path", rowKeyNumber = 103, toByte = ToByteString.class, columnFamily = "img")
-    protected String                   path                           = "";
+    protected String                               path                           = "";
     @Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long                     width;
+    protected long                                 width;
     @Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long                     height;
+    protected long                                 height;
     @Column(hbaseName = "originalWidth", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long                     originalWidth;
+    protected long                                 originalWidth;
     @Column(hbaseName = "originalHeight", rowKeyNumber = 107, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long                     originalHeight;
+    protected long                                 originalHeight;
     @Column(hbaseName = "importDate", rowKeyNumber = 108, toByte = ToByteLong.class, columnFamily = "img")
-    protected long                     importDate;
+    protected long                                 importDate;
     @Column(hbaseName = "orientation", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 109)
-    protected long                     orientation;
+    protected long                                 orientation;
 
-    @Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 102, mapKeyClass = Integer.class)
-    protected HashMap<Integer, byte[]> thumbnail                      = new HashMap<>();
+    @Column(hbaseName = "thumbnail", toByte = ToByteObject.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_THB, rowKeyNumber = 102, mapKeyClass = Integer.class)
+    protected HashMap<Integer, SizeAndJpegContent> thumbnail                      = new HashMap<>();
 
     @Nullable
     @Column(hbaseName = "lens", toByte = ToByteIdempotent.class, columnFamily = "tech", rowKeyNumber = 110)
-    protected byte[]                   lens;
+    protected byte[]                               lens;
     @Nullable
     @Column(hbaseName = "focalLens", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 111)
-    protected int[]                    focalLens;
+    protected int[]                                focalLens;
     @Nullable
     @Column(hbaseName = "speed", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 112)
-    protected int[]                    speed;
+    protected int[]                                speed;
     @Nullable
     @Column(hbaseName = "aperture", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 113)
-    protected int[]                    aperture;
+    protected int[]                                aperture;
     @Column(hbaseName = "isoSpeed", toByte = ToByteShort.class, columnFamily = "tech", rowKeyNumber = 114)
-    protected short                    isoSpeed;
+    protected short                                isoSpeed;
     @Nullable
     @Column(hbaseName = "camera", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 115)
-    protected String                   camera;
+    protected String                               camera;
     @Column(hbaseName = "shiftExpo", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 116)
     @Nullable
-    protected int[]                    shiftExpo;
+    protected int[]                                shiftExpo;
     @Column(hbaseName = "copyright", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 117)
     @Nullable
-    protected String                   copyright;
+    protected String                               copyright;
     @Column(hbaseName = "artist", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 118)
     @Nullable
-    protected String                   artist;
+    protected String                               artist;
     @Column(hbaseName = "importName", toByte = ToByteString.class, columnFamily = "meta", rowKeyNumber = 119)
     @Nullable
-    protected String                   importName;
+    protected String                               importName;
     @Column(hbaseName = HbaseImageThumbnail.TABLE_FAMILY_ALBUMS, toByte = ToByteString.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_ALBUMS, rowKeyNumber = 120)
     @Nullable
-    protected HashSet<String>          albums;
+    protected HashSet<String>                      albums;
 
     @Nullable
     @Column(hbaseName = "keyWords", toByte = ToByteString.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_KEYWORDS, rowKeyNumber = 121)
-    protected HashSet<String>          keyWords;
+    protected HashSet<String>                      keyWords;
 
     @Nullable
     @Column(hbaseName = "persons", toByte = ToByteString.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_PERSONS, rowKeyNumber = 123)
-    protected HashSet<String>          persons;
+    protected HashSet<String>                      persons;
 
     @Nullable
     @Column(hbaseName = "ratings", toByte = ToByteLong.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_RATINGS, rowKeyNumber = 122)
-    protected HashSet<Long>            ratings;
+    protected HashSet<Long>                        ratings;
 
     @Generated("SparkTools")
     private HbaseImageThumbnail(Builder builder) {
@@ -147,9 +154,9 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
     public void setCreationDate(long creationDate) { this.creationDate = creationDate; }
 
-    public HashMap<Integer, byte[]> getThumbnail() { return this.thumbnail; }
+    public HashMap<Integer, SizeAndJpegContent> getThumbnail() { return this.thumbnail; }
 
-    public void setThumbnail(HashMap<Integer, byte[]> thumbnail) { this.thumbnail = thumbnail; }
+    public void setThumbnail(HashMap<Integer, SizeAndJpegContent> thumbnail) { this.thumbnail = thumbnail; }
 
     public String getPath() { return this.path; }
 
@@ -313,10 +320,10 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
             && this.compareMap(other.thumbnail) && (this.width == other.width);
     }
 
-    protected boolean compareMap(Map<Integer, byte[]> m) {
-        for (Entry<Integer, byte[]> e : this.thumbnail.entrySet()) {
+    protected boolean compareMap(Map<Integer, SizeAndJpegContent> m) {
+        for (Entry<Integer, SizeAndJpegContent> e : this.thumbnail.entrySet()) {
             Integer key = e.getKey();
-            byte[] value = e.getValue();
+            SizeAndJpegContent value = e.getValue();
             if (value == null) {
                 if (!((m.get(key) == null) && m.containsKey(key))) { return false; }
             } else {
@@ -425,34 +432,34 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private long                     dataCreationDate;
-        private String                   dataId;
-        private long                     creationDate;
-        private String                   imageId;
-        private String                   imageName;
-        private String                   thumbName;
-        private String                   path;
-        private long                     width;
-        private long                     height;
-        private long                     originalWidth;
-        private long                     originalHeight;
-        private long                     importDate;
-        private long                     orientation;
-        private HashMap<Integer, byte[]> thumbnail;
-        private byte[]                   lens;
-        private int[]                    focalLens;
-        private int[]                    speed;
-        private int[]                    aperture;
-        private short                    isoSpeed;
-        private String                   camera;
-        private int[]                    shiftExpo;
-        private String                   copyright;
-        private String                   artist;
-        private String                   importName;
-        private HashSet<String>          albums;
-        private HashSet<String>          keyWords;
-        private HashSet<String>          persons;
-        private HashSet<Long>            ratings;
+        private long                                 dataCreationDate;
+        private String                               dataId;
+        private long                                 creationDate;
+        private String                               imageId;
+        private String                               imageName;
+        private String                               thumbName;
+        private String                               path;
+        private long                                 width;
+        private long                                 height;
+        private long                                 originalWidth;
+        private long                                 originalHeight;
+        private long                                 importDate;
+        private long                                 orientation;
+        private HashMap<Integer, SizeAndJpegContent> thumbnail;
+        private byte[]                               lens;
+        private int[]                                focalLens;
+        private int[]                                speed;
+        private int[]                                aperture;
+        private short                                isoSpeed;
+        private String                               camera;
+        private int[]                                shiftExpo;
+        private String                               copyright;
+        private String                               artist;
+        private String                               importName;
+        private HashSet<String>                      albums;
+        private HashSet<String>                      keyWords;
+        private HashSet<String>                      persons;
+        private HashSet<Long>                        ratings;
 
         private Builder() {}
 
@@ -619,7 +626,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
          *            field to set
          * @return builder
          */
-        public Builder withThumbnail(HashMap<Integer, byte[]> thumbnail) {
+        public Builder withThumbnail(HashMap<Integer, SizeAndJpegContent> thumbnail) {
             this.thumbnail = thumbnail;
             return this;
         }

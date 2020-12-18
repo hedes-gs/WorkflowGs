@@ -52,6 +52,7 @@ import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventCopy;
 import com.workflow.model.events.WfEventFinal;
 import com.workflow.model.events.WfEventInitial;
+import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 
@@ -129,6 +130,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 this.doProcessFile();
             } catch (Throwable e) {
                 BeanProcessIncomingFile.LOGGER.error("An error is raised", e);
+                ready = !((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException));
             } finally {
                 try {
                     this.consumerForTopicWithFileToProcessValue.close();
@@ -137,17 +139,19 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     BeanProcessIncomingFile.LOGGER.error("Error on closing consumer and producer...", e);
                 }
             }
-            try {
-                BeanProcessIncomingFile.LOGGER.info("Waiting for ignite... again.. ");
-                ready = this.waitForIgnite();
-                TimeUnit.SECONDS.sleep(1);
-                this.consumerForTopicWithFileToProcessValue = this.context
-                    .getBean("consumerForTopicWithFileToProcessValue", Consumer.class);
-                this.producerForTransactionPublishingOnExifOrImageTopic = this.context
-                    .getBean("producerForTransactionPublishingOnExifOrImageTopic", Producer.class);
-            } catch (InterruptedException e) {
-                BeanProcessIncomingFile.LOGGER.warn("Interrupted, stopping", e);
-                break;
+            if (ready) {
+                try {
+                    BeanProcessIncomingFile.LOGGER.info("Waiting for ignite... again.. ");
+                    ready = this.waitForIgnite();
+                    TimeUnit.SECONDS.sleep(1);
+                    this.consumerForTopicWithFileToProcessValue = this.context
+                        .getBean("consumerForTopicWithFileToProcessValue", Consumer.class);
+                    this.producerForTransactionPublishingOnExifOrImageTopic = this.context
+                        .getBean("producerForTransactionPublishingOnExifOrImageTopic", Producer.class);
+                } catch (InterruptedException e) {
+                    BeanProcessIncomingFile.LOGGER.warn("Interrupted, stopping", e);
+                    break;
+                }
             }
         }
     }
@@ -186,7 +190,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .collect(Collectors.groupingByConcurrent(GenericKafkaManagedObject::getImageKey));
 
                 eventsToSend.entrySet()
-                    .forEach((e) -> this.createInitEvent(e.getValue()));
+                    .forEach((e) -> this.createInitEvent(e.getKey(), e.getValue()));
                 long eventsNumber = eventsToSend.keySet()
                     .stream()
                     .map(
@@ -586,7 +590,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         return kmo;
     }
 
-    private void createInitEvent(List<GenericKafkaManagedObject<? extends WfEvent>> list) {
+    private void createInitEvent(String parentDataId, List<GenericKafkaManagedObject<? extends WfEvent>> list) {
         if (list.size() > 0) {
             GenericKafkaManagedObject<?> elem = list.get(0);
             list.add(
@@ -597,6 +601,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .withPartition(elem.getPartition())
                     .withValue(
                         WfEventInitial.builder()
+                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
+                            .withParentDataId(parentDataId)
                             .withDataId(elem.getImageKey())
                             .withImgId(elem.getImageKey())
                             .build())
@@ -609,6 +615,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .withPartition(elem.getPartition())
                     .withValue(
                         WfEventFinal.builder()
+                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
+                            .withParentDataId(parentDataId)
                             .withDataId(elem.getImageKey())
                             .withImgId(elem.getImageKey())
                             .build())
@@ -621,13 +629,13 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .withPartition(elem.getPartition())
                     .withValue(
                         WfEventCopy.builder()
+                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
+                            .withParentDataId(parentDataId)
                             .withDataId(elem.getImageKey() + "-copy")
                             .withImgId(elem.getImageKey())
                             .build())
                     .withTopic(this.topicEvent)
                     .build());
-
         }
-
     }
 }

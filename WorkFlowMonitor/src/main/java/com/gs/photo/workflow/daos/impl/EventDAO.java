@@ -14,7 +14,6 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.jdbc.object.GenericStoredProcedure;
 import org.springframework.jdbc.object.StoredProcedure;
-import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.Gson;
@@ -24,8 +23,6 @@ import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 
-@Repository
-@Transactional
 public class EventDAO extends JdbcDaoSupport implements IEventDAO {
 
     private static final Logger LOGGER        = LoggerFactory.getLogger(EventDAO.class);

@@ -23,6 +23,7 @@ topic.processedThumbTopic=
 topic.topicComponentStatus=topic-component-status
 topic.topicImportEvent=topic-import-event
 topic.topicFullyProcessedImage=topic-fully-processed-image
+topic.finalTopic=topic-fully-processed-images
 
 security.protocol=SASL_PLAINTEXT
 sasl.kerberos.service.name="kafka"
@@ -115,3 +116,7 @@ spring.mvc.date-format={{ spring_mvc_date_format | default('unset')  }}
 spring.jackson.date-format={{ spring_jackson_date_format | default('unset')  }}
 exif.files=sony-exif.csv,standard-exif.csv
 exifservice.is.used=true
+
+
+monitor.store.retentionPeriodInMs={{ monitor_store_retentionPeriodInMs | default('unset')  }}
+monitor.store.windowSizeInMs={{ monitor_store_windowSizeInMs | default('unset')  }}

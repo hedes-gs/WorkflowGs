@@ -24,9 +24,13 @@ public interface IGenericDAO<T extends HbaseData> {
 
     public void put(Put put) throws IOException;
 
+    public void append(T hbaseData) throws IOException;
+
     public void delete(Delete del) throws IOException;
 
     byte[] createKey(T hbi);
 
     public void put(T hbaseData) throws IOException;
+
+    void append(T hbaseData, String... familiesToInclude);
 }

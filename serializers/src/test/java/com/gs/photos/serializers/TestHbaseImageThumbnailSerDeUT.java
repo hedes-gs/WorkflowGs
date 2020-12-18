@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.SizeAndJpegContent;
 
 public class TestHbaseImageThumbnailSerDeUT {
 
@@ -48,8 +49,14 @@ public class TestHbaseImageThumbnailSerDeUT {
     public void test002_shouldSerializeAndDeserializeSuccessWithValuedPojo() {
         HbaseImageThumbnailSerializer ser = new HbaseImageThumbnailSerializer();
         final HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
-        HashMap<Integer, byte[]> thumbNails = new HashMap<>();
-        thumbNails.put(1, new byte[] { 0, 1, 2 });
+        HashMap<Integer, SizeAndJpegContent> thumbNails = new HashMap<>();
+        thumbNails.put(
+            1,
+            SizeAndJpegContent.builder()
+                .withJpegContent(new byte[] { 0, 1, 2 })
+                .withHeight(1024)
+                .withWidth(768)
+                .build());
         HbaseImageThumbnail hbaseImageThumbnail = builder.withCreationDate(100)
             .withHeight(768)
             .withWidth(1024)

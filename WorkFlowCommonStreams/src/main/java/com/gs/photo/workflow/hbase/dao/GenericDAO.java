@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Append;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
@@ -60,9 +62,62 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         }
     }
 
+    protected void append(Collection<T> hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
+        this.checkForClass(hbaseDataInformation.getHbaseDataClass());
+        try (
+            Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
+            List<Append> appends = hbaseData.stream()
+                .map((hb) -> {
+                    Append append = this.createHbaseAppend(
+                        GenericDAO.getKey(hb, hbaseDataInformation),
+                        this.getCfList(hb, hbaseDataInformation));
+                    return append;
+                })
+                .map((app) -> {
+                    try {
+                        table.append(app);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return app;
+                })
+                .collect(Collectors.toList());
+            appends.clear();
+        } catch (IOException e) {
+            GenericDAO.LOGGER.warn(
+                "Unable to record some data in {}, error is {}",
+                hbaseDataInformation.getTable(),
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void put(T hbaseData) throws IOException {
         this.put(Collections.singleton(hbaseData), this.getHbaseDataInformation());
+    }
+
+    @Override
+    public void append(T hbaseData, String... familiesToInclude) {
+        this.checkForClass(this.hbaseDataInformation.getHbaseDataClass());
+        try (
+            Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
+            Append append = this.createHbaseAppend(
+                GenericDAO.getKey(hbaseData, this.hbaseDataInformation),
+                this.getCfList(hbaseData, this.hbaseDataInformation, familiesToInclude));
+            table.append(append);
+        } catch (IOException e) {
+            GenericDAO.LOGGER.warn(
+                "Unable to record some data in {}, error is {}",
+                this.hbaseDataInformation.getTable(),
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void append(T hbaseData) throws IOException {
+        this.append(Collections.singleton(hbaseData), this.getHbaseDataInformation());
     }
 
     @Override
@@ -257,6 +312,20 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         return put;
     }
 
+    protected Append createHbaseAppend(byte[] rowKey, Map<String, ColumnFamily> cfList) {
+        Append append = new Append(rowKey);
+        cfList.entrySet()
+            .forEach((cf) -> {
+                byte[] bytesOfCfName = cf.getKey()
+                    .getBytes();
+                cf.getValue()
+                    .getValues()
+                    .entrySet()
+                    .forEach((q) -> { append.addColumn(bytesOfCfName, q.getKey(), q.getValue()); });
+            });
+        return append;
+    }
+
     protected Put createHbasePut(T hbaseData) throws IOException {
         Put put = new Put(this.getKey(hbaseData));
         return put;
@@ -282,6 +351,19 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
 
     protected Map<String, ColumnFamily> getCfList(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
         return hbaseDataInformation.buildValue(hbaseData);
+    }
+
+    protected Map<String, ColumnFamily> getCfList(
+        T hbaseData,
+        HbaseDataInformation<T> hbaseDataInformation,
+        String... families
+    ) {
+        List<String> familiesToInclude = Arrays.asList(families);
+        return hbaseDataInformation.buildValue(hbaseData)
+            .entrySet()
+            .stream()
+            .filter(((e) -> familiesToInclude.contains(e.getKey())))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     @Override

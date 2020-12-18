@@ -34,7 +34,7 @@ components:
               "value.deserializer": "org.apache.kafka.common.serialization.BytesDeserializer",
               "isolation.level": "read_committed",
               "security.protocol": "SASL_PLAINTEXT",
-              "group.id": "wf-storm-group",
+              "group.id": "wf-storm-group-1",
               "client.id": "wf-storm-client",
               "sasl.kerberos.service.name": "kafka",
               "fetch.max.bytes": "4194304",

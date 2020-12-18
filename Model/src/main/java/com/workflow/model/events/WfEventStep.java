@@ -4,7 +4,9 @@ import java.io.Serializable;
 
 import javax.annotation.Generated;
 
-public class WfEventStep implements Serializable {
+import com.workflow.model.HbaseData;
+
+public class WfEventStep extends HbaseData implements Serializable {
 
     public final static String      CREATED_FROM_STEP_IMAGE_FILE_READ             = "CREATED_FROM_STEP_EXTRACT_IMAGE_FILE";
     public final static String      CREATED_FROM_STEP_IMG_PROCESSOR               = "CREATED_FROM_STEP_IMG_PROCESSOR";

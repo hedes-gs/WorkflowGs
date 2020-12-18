@@ -4,6 +4,8 @@ import javax.annotation.Generated;
 
 public class WfEventCopy extends WfEvent {
 
+    public WfEventCopy() {}
+
     /**
      *
      */
@@ -20,7 +22,7 @@ public class WfEventCopy extends WfEvent {
 
     /**
      * Creates builder to build {@link WfEventCopy}.
-     * 
+     *
      * @return created builder
      */
     @Generated("SparkTools")
@@ -41,7 +43,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -53,7 +55,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -65,7 +67,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         * 
+         *
          * @param imgId
          *            field to set
          * @return builder
@@ -77,7 +79,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         * 
+         *
          * @param parentDataId
          *            field to set
          * @return builder
@@ -89,7 +91,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         * 
+         *
          * @param step
          *            field to set
          * @return builder
@@ -101,7 +103,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public WfEventCopy build() { return new WfEventCopy(this); }

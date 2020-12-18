@@ -37,6 +37,10 @@
 			<groupId>javax.annotation</groupId>
 			<artifactId>javax.annotation-api</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.nurkiewicz.typeof</groupId>
+			<artifactId>typeof</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

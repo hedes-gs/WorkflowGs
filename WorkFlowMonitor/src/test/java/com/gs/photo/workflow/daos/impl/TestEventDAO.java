@@ -5,28 +5,22 @@ import java.util.Arrays;
 import org.apache.kafka.clients.producer.Producer;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Ignore;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.ApplicationConfig;
 import com.gs.photo.workflow.daos.IEventDAO;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 
-@RunWith(SpringRunner.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@SpringBootTest(classes = { ApplicationConfig.class, EventDAO.class })
+// @RunWith(SpringRunner.class)
+//@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+//@SpringBootTest(classes = { ApplicationConfig.class, EventDAO.class })
+@Ignore
 class TestEventDAO {
 
     @Autowired
@@ -39,8 +33,6 @@ class TestEventDAO {
     @Qualifier("producerForPublishingWfEvents")
     protected Producer<String, WfEvents> producerForPublishingWfEvents;
 
-    @Test
-    @Ignore
     void testCreateEvent() {
         this.eventDAO.truncate();
         WfEvents events = WfEvents.builder()

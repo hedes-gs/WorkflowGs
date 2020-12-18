@@ -1,26 +1,63 @@
 package com.workflow.model.events;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.Objects;
 
 import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
+import com.nurkiewicz.typeof.TypeOf;
 import com.workflow.model.HbaseData;
 
 public class WfEvents extends HbaseData implements Serializable {
 
-    private static final long     serialVersionUID = 1L;
+    private static final long             serialVersionUID = 1L;
 
     @Nullable
-    protected String              producer;
-    protected Collection<WfEvent> events;
+    protected String                      producer;
+
+    protected Collection<WfEventInitial>  initialEvents    = new ArrayList<>();
+    protected Collection<WfEventCopy>     copyEvents       = new ArrayList<>();
+    protected Collection<WfEventProduced> producedEvents   = new ArrayList<>();
+    protected Collection<WfEventFinal>    finalEvents      = new ArrayList<>();
+    protected Collection<WfEventRecorded> recordedEvents   = new ArrayList<>();
 
     @Override
     public String toString() {
-        return "WfEvents [producer=" + this.producer + ", dataId " + this.getDataId() + ", nb of events="
-            + this.events.size() + "]";
+        final int maxLen = 10;
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("WfEvents [producer=");
+        builder2.append(this.producer);
+        builder2.append(", initialEvents=");
+        builder2.append(this.initialEvents != null ? this.toString(this.initialEvents, maxLen) : null);
+        builder2.append(", copyEvents=");
+        builder2.append(this.copyEvents != null ? this.toString(this.copyEvents, maxLen) : null);
+        builder2.append(", producedEvents=");
+        builder2.append(this.producedEvents != null ? this.toString(this.producedEvents, maxLen) : null);
+        builder2.append(", finalEvents=");
+        builder2.append(this.finalEvents != null ? this.toString(this.finalEvents, maxLen) : null);
+        builder2.append(", recordedEvents=");
+        builder2.append(this.recordedEvents != null ? this.toString(this.recordedEvents, maxLen) : null);
+        builder2.append("]");
+        return builder2.toString();
+    }
+
+    private String toString(Collection<?> collection, int maxLen) {
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("[");
+        int i = 0;
+        for (Iterator<?> iterator = collection.iterator(); iterator.hasNext() && (i < maxLen); i++) {
+            if (i > 0) {
+                builder2.append(", ");
+            }
+            builder2.append(iterator.next());
+        }
+        builder2.append("]");
+        return builder2.toString();
     }
 
     public WfEvents() { super(null,
@@ -31,19 +68,68 @@ public class WfEvents extends HbaseData implements Serializable {
         super(builder.dataId,
             builder.dataCreationDate);
         this.producer = builder.producer;
-        this.events = builder.events;
+        builder.events.forEach((c) -> this.dispatch(c));
     }
 
-    public Collection<WfEvent> getEvents() { return this.events; }
+    private void dispatch(WfEvent c) {
+        TypeOf.whenTypeOf(c)
+            .is(WfEventInitial.class)
+            .then((e) -> this.initialEvents.add(e))
+            .is(WfEventCopy.class)
+            .then((e) -> this.copyEvents.add(e))
+            .is(WfEventProduced.class)
+            .then((e) -> this.producedEvents.add(e))
+            .is(WfEventFinal.class)
+            .then((e) -> this.finalEvents.add(e))
+            .is(WfEventRecorded.class)
+            .then((e) -> this.recordedEvents.add(e));
+    }
 
-    public WfEvents addEvent(WfEvent wfe) {
-        this.events.add(wfe);
+    public Collection<WfEvent> getEvents() {
+        Collection<WfEvent> retValue = new ArrayList<>();
+        retValue.addAll(this.initialEvents);
+        retValue.addAll(this.copyEvents);
+        retValue.addAll(this.producedEvents);
+        retValue.addAll(this.finalEvents);
+        retValue.addAll(this.recordedEvents);
+        return Collections.unmodifiableCollection(retValue);
+    }
+
+    public <T extends WfEvent> WfEvents addEvent(T wfe) {
+        this.dispatch(wfe);
         return this;
     }
 
-    public WfEvents addEvents(Collection<WfEvent> wfe) {
-        this.events.addAll(wfe);
+    public WfEvents addEvents(Collection<? extends WfEvent> wfe) {
+        wfe.forEach((w) -> this.dispatch(w));
         return this;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = (prime * result) + Objects.hash(
+            this.copyEvents,
+            this.finalEvents,
+            this.initialEvents,
+            this.producedEvents,
+            this.producer,
+            this.recordedEvents);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) { return true; }
+        if (!super.equals(obj)) { return false; }
+        if (this.getClass() != obj.getClass()) { return false; }
+        WfEvents other = (WfEvents) obj;
+        return Objects.equals(this.copyEvents, other.copyEvents) && Objects.equals(this.finalEvents, other.finalEvents)
+            && Objects.equals(this.initialEvents, other.initialEvents)
+            && Objects.equals(this.producedEvents, other.producedEvents)
+            && Objects.equals(this.producer, other.producer)
+            && Objects.equals(this.recordedEvents, other.recordedEvents);
     }
 
     /**

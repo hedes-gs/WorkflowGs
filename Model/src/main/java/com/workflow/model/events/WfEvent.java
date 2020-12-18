@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import com.workflow.model.HbaseData;
 
-public abstract class WfEvent extends HbaseData implements Serializable, Comparable<WfEvent> {
+public class WfEvent extends HbaseData implements Serializable, Comparable<WfEvent> {
 
     private static final long serialVersionUID = 1L;
     protected String          imgId;

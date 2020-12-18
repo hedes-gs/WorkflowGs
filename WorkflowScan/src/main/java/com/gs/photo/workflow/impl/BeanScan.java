@@ -192,6 +192,7 @@ public class BeanScan implements IScan {
                     importEvent.getNbMaxOfImages());
                 final String folder = rootFolderForNfs;
                 final String usedHostname = hostname;
+                int nbOfImages = 0;
                 if (!nfsIsUsed) {
 
                     try (
@@ -223,8 +224,8 @@ public class BeanScan implements IScan {
                             .takeWhile((f) -> this.isNotTestModeOrMaxNbOfElementsReached(importEvent))
                             .forEach((f) -> this.processFoundFile(importEvent, f, folder, usedHostname));
                     }
+                    BeanScan.LOGGER.info("End of Scan ");
                 }
-                BeanScan.LOGGER.info("End of Scan ");
             } catch (RuntimeException e) {
                 if (e.getCause() instanceof NoSuchFileException) {
                     BeanScan.LOGGER.warn("Warning : {} is not available..", rootFolderForNfs);

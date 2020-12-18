@@ -59,6 +59,7 @@ import com.gs.photos.repositories.IHbaseImageThumbnailDAO;
 import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfMetadata;
+import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.ImageKeyDto;
 import com.workflow.model.dtos.ImageVersionDto;
@@ -245,7 +246,9 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
                 .keySet());
 
             long firstIndex = ((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE);
-            long lastIndex = (((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE) + pageSize) - 1;
+            long lastIndex = Math.min(
+                getsList.size() - 1,
+                (((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE) + pageSize) - 1);
             HbaseImageThumbnailDAO.LOGGER.info(" Retrieving from {} to {} ", firstIndex, lastIndex);
 
             try (
@@ -265,7 +268,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
                         return instance;
                     })
                     .collect(Collectors.toList());
-                for (long k = 0; k < pageSize; k++) {
+                for (long k = 0; k < Math.min(pageSize, pageContent.size()); k++) {
                     retValue.add(pageContent.get((int) k));
                 }
             }
@@ -278,12 +281,14 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
 
     protected void saveInCacheMainJpegImagesName(HbaseImageThumbnail instance) {
         byte[] jpegImageToCache = instance.getThumbnail()
-            .get(1);
+            .get(1)
+            .getJpegContent();
         if (instance.getOrientation() == 8) {
             try {
                 BufferedImage bi = ImageIO.read(
                     new ByteArrayInputStream(instance.getThumbnail()
-                        .get(1)));
+                        .get(1)
+                        .getJpegContent()));
                 bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
                 ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
                 ImageIO.write(bi, "jpg", os);
@@ -438,17 +443,18 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
         long initTime = System.currentTimeMillis();
         HbaseImageThumbnailDAO.LOGGER.info("-> Start {} ", Instant.now());
         final HbaseImageThumbnail instance = new HbaseImageThumbnail();
-
         this.hbaseDataInformation.build(instance, t);
         final ImageDto imageDTO = this.toImageDTO(instance);
         HbaseImageThumbnailDAO.LOGGER.info(
-            "-> Found {} at date {}, epoch {} [duration build : {}]",
+            "-> Found {} at date {}, epoch {} [duration build : {}], [thumbnails:{}]",
             imageDTO.getData()
                 .getImageId(),
             imageDTO.getCreationDateAsString(),
             imageDTO.getData()
                 .getCreationDate(),
-            (System.currentTimeMillis() - initTime) / 1000.0f);
+            (System.currentTimeMillis() - initTime) / 1000.0f,
+            instance.getThumbnail()
+                .keySet());
         retValue.add(imageDTO);
 
         HbaseImageThumbnailDAO.executorService.submit(() -> {
@@ -456,7 +462,8 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
                 try {
                     BufferedImage bi = ImageIO.read(
                         new ByteArrayInputStream(instance.getThumbnail()
-                            .get(1)));
+                            .get(1)
+                            .getJpegContent()));
                     bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
                     ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
                     ImageIO.write(bi, "jpg", os);
@@ -558,12 +565,16 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
     private ImageVersionDto toImageVersionDTO(HbaseImageThumbnail instance) {
         long initTime = System.currentTimeMillis();
         try {
+            final SizeAndJpegContent sizeAndJpegContent = instance.getThumbnail()
+                .get(1);
+            HbaseImageThumbnailDAO.LOGGER.info("[{}]Image size is {}", instance.getImageId(), sizeAndJpegContent);
             ImageVersionDto.Builder builderImageVersionDto = ImageVersionDto.builder();
+            final byte[] jpegContent = sizeAndJpegContent.getJpegContent();
             builderImageVersionDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
                 .withImageId(instance.getImageId())
-                .withJpegContent(
-                    instance.getThumbnail()
-                        .get(1))
+                .withThumbnailHeight(sizeAndJpegContent.getHeight())
+                .withThumbnailWidth(sizeAndJpegContent.getWidth())
+                .withJpegContent(jpegContent)
                 .withOriginalHeight((int) instance.getOriginalHeight())
                 .withOriginalWidth((int) instance.getOriginalWidth())
                 .withImageName(instance.getImageName())
@@ -572,9 +583,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
 
             if (instance.getOrientation() == 8) {
                 try {
-                    BufferedImage bi = ImageIO.read(
-                        new ByteArrayInputStream(instance.getThumbnail()
-                            .get(1)));
+                    BufferedImage bi = ImageIO.read(new ByteArrayInputStream(jpegContent));
                     bi = HbaseImageThumbnailDAO.rotateAntiCw(bi);
                     ByteArrayOutputStream os = new ByteArrayOutputStream(16384);
                     ImageIO.write(bi, "jpg", os);
@@ -597,16 +606,18 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
         builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
             .withImageId(instance.getImageId())
             .withVersion(1);
+        final SizeAndJpegContent sizeAndJpegContent = instance.getThumbnail()
+            .get(1);
 
         builderImageDto.withData(builderImageKeyDto.build())
             .withOrientation((int) instance.getOrientation())
             .withCreationDateAsString(DateTimeHelper.toDateTimeAsString(instance.getCreationDate()))
-            .withThumbnailHeight((int) instance.getHeight())
-            .withThumbnailWidth((int) instance.getWidth())
             .withOriginalHeight((int) instance.getOriginalHeight())
             .withOriginalWidth((int) instance.getOriginalWidth())
             .withSpeed(this.exifService.toString(FieldType.RATIONAL, instance.getSpeed()))
             .withAperture(this.exifService.toString(FieldType.RATIONAL, instance.getAperture()))
+            .withThumbnailHeight(sizeAndJpegContent != null ? sizeAndJpegContent.getHeight() : 0)
+            .withThumbnailWidth(sizeAndJpegContent != null ? sizeAndJpegContent.getWidth() : 0)
             .withIso(Short.toString(instance.getIsoSpeed()))
             .withPersons(
                 (instance.getPersons() != null) && (instance.getPersons()

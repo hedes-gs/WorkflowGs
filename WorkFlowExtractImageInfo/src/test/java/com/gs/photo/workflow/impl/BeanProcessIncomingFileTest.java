@@ -85,6 +85,30 @@ public class BeanProcessIncomingFileTest {
 
     protected static class ExceptionEndOfTest extends RuntimeException {
 
+        public ExceptionEndOfTest() { this(new InterruptedException()); }
+
+        public ExceptionEndOfTest(
+            String message,
+            Throwable cause,
+            boolean enableSuppression,
+            boolean writableStackTrace
+        ) {
+            super(message,
+                cause,
+                enableSuppression,
+                writableStackTrace);
+        }
+
+        public ExceptionEndOfTest(
+            String message,
+            Throwable cause
+        ) { super(message,
+            cause); }
+
+        public ExceptionEndOfTest(String message) { super(message); }
+
+        public ExceptionEndOfTest(Throwable cause) { super(cause); }
+
     }
 
     @Before
@@ -266,7 +290,7 @@ public class BeanProcessIncomingFileTest {
         offsets.put(new TopicPartition("topic-dup-filtered-file", 1), new OffsetAndMetadata(9));
 
         Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic)
-            .sendOffsetsToTransaction(ArgumentMatchers.eq(offsets), ArgumentMatchers.any());
+            .sendOffsetsToTransaction(ArgumentMatchers.eq(offsets), (String) ArgumentMatchers.any());
 
     }
 

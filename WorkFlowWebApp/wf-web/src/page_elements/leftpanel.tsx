@@ -147,7 +147,7 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
                         <ParagraphTitle text={'Annee ' + (min != null ? min.format('yyyy') : null)} size='14px' />
                         <TreeView>
                             <TreeLimitDates
-                                parentNodeType="year"
+                                parentNodeType="init"
                                 min={min.valueOf()}
                                 max={max.valueOf()}
                                 ref={this.refToTreeLimitDatesElement}
@@ -167,18 +167,15 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
 }
 
 const mapStateToProps = (state: ClientApplicationState, ownProps: LeftPanelProps): LeftPanelProps => {
-    if (state.reducerMetadata.displayKeywords.state == 'METADATA_SELECTED' ||
-        state.reducerMetadata.displayPersons.state == 'METADATA_SELECTED') {
+
+    if (state.reducerImagesList.imagesLoaded.state == 'LOADED') {
         return {
-            isOpenedStateId: globalId++,
-            drawerIsOpen: true
-        };
-    } else {
-        return {
-            isOpenedStateId: globalId++,
             drawerIsOpen: false
         };
     }
+    return {
+        drawerIsOpen: false
+    };
 };
 
 const initialProps = (dispatch: ApplicationThunkDispatch) => {

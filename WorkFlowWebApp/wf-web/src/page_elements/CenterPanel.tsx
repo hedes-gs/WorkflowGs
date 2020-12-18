@@ -117,7 +117,6 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
 
     }
 
-
     updateWindowDimensions() {
         if (this.state != null) {
             this.setState({
@@ -308,7 +307,7 @@ const mapStateToProps = (state: ClientApplicationState): CenterPanelProps => {
         }
         case 'LOADED': {
             return {
-                id: idGlobal,
+                id: idGlobal++,
                 status: state.reducerImagesList.imagesLoaded.state,
                 min: state.reducerImagesList.lastIntervallRequested.min,
                 max: state.reducerImagesList.lastIntervallRequested.min,

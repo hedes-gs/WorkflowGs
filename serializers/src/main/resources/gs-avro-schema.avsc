@@ -94,6 +94,36 @@
   } ]
 }, {
   "type" : "record",
+  "name" : "CollectionOfHbaseData",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "dataCollection",
+    "type" : {
+      "type" : "array",
+      "items" : {
+        "type" : "record",
+        "name" : "HbaseData",
+        "fields" : [ {
+          "name" : "dataCreationDate",
+          "type" : "long"
+        }, {
+          "name" : "dataId",
+          "type" : [ "null", "string" ],
+          "default" : null
+        } ]
+      },
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "ComponentEvent",
   "namespace" : "com.workflow.model.events",
   "fields" : [ {
@@ -167,6 +197,12 @@
     "name" : "scanFolder",
     "type" : "string"
   }, {
+    "name" : "forTest",
+    "type" : "boolean"
+  }, {
+    "name" : "nbMaxOfImages",
+    "type" : "int"
+  }, {
     "name" : "dataCreationDate",
     "type" : "long"
   }, {
@@ -197,22 +233,120 @@
       "fields" : [ {
         "name" : "step",
         "type" : "string"
+      }, {
+        "name" : "dataCreationDate",
+        "type" : "long"
+      }, {
+        "name" : "dataId",
+        "type" : [ "null", "string" ],
+        "default" : null
       } ]
     }
   }, {
-    "name" : "parentPath",
-    "type" : {
-      "type" : "array",
-      "items" : "string",
-      "java-class" : "java.util.List"
-    }
+    "name" : "dataCreationDate",
+    "type" : "long"
   }, {
-    "name" : "createdEvents",
-    "type" : {
-      "type" : "array",
-      "items" : "WfEvent",
-      "java-class" : "java.util.Collection"
-    }
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEventCopy",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEventFinal",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEventInitial",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEventProduced",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "WfEventRecorded",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
   }, {
     "name" : "dataCreationDate",
     "type" : "long"
@@ -229,10 +363,38 @@
     "name" : "producer",
     "type" : "string"
   }, {
-    "name" : "events",
+    "name" : "initialEvents",
     "type" : {
       "type" : "array",
-      "items" : "WfEvent",
+      "items" : "WfEventInitial",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "copyEvents",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEventCopy",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "producedEvents",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEventProduced",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "finalEvents",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEventFinal",
+      "java-class" : "java.util.Collection"
+    }
+  }, {
+    "name" : "recordedEvents",
+    "type" : {
+      "type" : "array",
+      "items" : "WfEventRecorded",
       "java-class" : "java.util.Collection"
     }
   }, {
@@ -306,19 +468,7 @@
     "type" : [ "null", "string" ],
     "default" : null
   } ]
-}, {
-  "type" : "record",
-  "name" : "HbaseData",
-  "namespace" : "com.workflow.model",
-  "fields" : [ {
-    "name" : "dataCreationDate",
-    "type" : "long"
-  }, {
-    "name" : "dataId",
-    "type" : [ "null", "string" ],
-    "default" : null
-  } ]
-}, {
+}, "com.workflow.model.HbaseData", {
   "type" : "record",
   "name" : "HbaseExif",
   "namespace" : "com.workflow.model",
@@ -415,8 +565,21 @@
   }, {
     "name" : "thumbnail",
     "type" : [ "null", {
-      "type" : "bytes",
-      "java-class" : "[B"
+      "type" : "record",
+      "name" : "SizeAndJpegContent",
+      "fields" : [ {
+        "name" : "height",
+        "type" : "int"
+      }, {
+        "name" : "width",
+        "type" : "int"
+      }, {
+        "name" : "jpegContent",
+        "type" : {
+          "type" : "bytes",
+          "java-class" : "[B"
+        }
+      } ]
     } ],
     "default" : null
   }, {
@@ -1259,17 +1422,14 @@
       "type" : "array",
       "items" : {
         "type" : "record",
-        "name" : "Pair7c22fee0302386d1",
+        "name" : "Pair73fd3e0696dd2ee4",
         "namespace" : "org.apache.avro.reflect",
         "fields" : [ {
           "name" : "key",
           "type" : "int"
         }, {
           "name" : "value",
-          "type" : {
-            "type" : "bytes",
-            "java-class" : "[B"
-          }
+          "type" : "com.workflow.model.SizeAndJpegContent"
         } ]
       },
       "java-class" : "java.util.HashMap"

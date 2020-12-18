@@ -59,6 +59,7 @@ import com.workflow.model.CollectionOfExchangedTiffData;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImageThumbnailKey;
+import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
@@ -791,14 +792,20 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         HbaseImageThumbnail v_hbaseImageThumbnail
     ) {
         try {
-            HashMap<Integer, byte[]> thb = new HashMap<>();
-            thb.put((int) v_FinalImage.getVersion(), v_FinalImage.getCompressedImage());
+            HashMap<Integer, SizeAndJpegContent> thb = new HashMap<>();
+            thb.put(
+                (int) v_FinalImage.getVersion(),
+                SizeAndJpegContent.builder()
+                    .withJpegContent(v_FinalImage.getCompressedImage())
+                    .withHeight(v_FinalImage.getHeight())
+                    .withWidth(v_FinalImage.getWidth())
+                    .build());
             HbaseImageThumbnail retValue = (HbaseImageThumbnail) v_hbaseImageThumbnail.clone();
             retValue = v_hbaseImageThumbnail;
             retValue.setDataId(v_FinalImage.getDataId());
             retValue.setThumbnail(thb);
-            retValue.setHeight(v_FinalImage.getHeight());
-            retValue.setWidth(v_FinalImage.getWidth());
+            // retValue.setHeight(v_FinalImage.getHeight());
+            // retValue.setWidth(v_FinalImage.getWidth());
             return retValue;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);

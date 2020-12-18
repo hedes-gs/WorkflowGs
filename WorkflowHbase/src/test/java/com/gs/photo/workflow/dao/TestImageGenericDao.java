@@ -47,6 +47,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.gs.photo.workflow.WorkflowHbaseApplication;
 import com.gs.photo.workflow.hbase.dao.AbstractDAO;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.events.WfEvents;
 
 @RunWith(SpringRunner.class)
@@ -97,8 +98,14 @@ public class TestImageGenericDao {
         HashSet<String> persons = new HashSet<>();
         HashSet<Long> ratings = new HashSet<>();
 
-        HashMap<Integer, byte[]> map = new HashMap<>();
-        map.put(version, new byte[] { 0, 1, 2, 3, 4 });
+        HashMap<Integer, SizeAndJpegContent> map = new HashMap<>();
+        map.put(
+            version,
+            SizeAndJpegContent.builder()
+                .withJpegContent(new byte[] { 0, 1, 2, 3, 4 })
+                .withHeight(1024)
+                .withWidth(768)
+                .build());
 
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
             .withCreationDate(creationDate)
@@ -150,6 +157,7 @@ public class TestImageGenericDao {
             .withCreationDate(1)
             .withImageId("ABCDEF_3")
             .build();
+
         hbaseData = this.hbaseImageThumbnailDAO.get(hbaseDataGet);
         Assert.assertEquals(this.buildVersionHbaseImageThumbnail((short) 3, 1, 1), hbaseData);
 
@@ -586,8 +594,16 @@ public class TestImageGenericDao {
     protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(long creationDate, short v) {
         HashSet<String> albums = new HashSet<>(Arrays.asList("album1", "album2"));
         HashSet<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
-        HashMap<Integer, byte[]> map = new HashMap<>();
-        map.put((int) v, new byte[] { 0, 1, 2, 3, 4 });
+
+        HashMap<Integer, SizeAndJpegContent> map = new HashMap<>();
+        map.put(
+            (int) v,
+            SizeAndJpegContent.builder()
+                .withJpegContent(new byte[] { 0, 1, 2, 3, 4 })
+                .withHeight(1024)
+                .withWidth(768)
+                .build());
+
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
             .withCreationDate(creationDate)
             .withImageId("ABCDEF_" + v)
@@ -595,8 +611,6 @@ public class TestImageGenericDao {
             .withPath("Mon path")
             .withThumbnail(map)
             .withThumbName("Thumbnail_1.jpg")
-            .withHeight(1024)
-            .withWidth(768)
             .withOriginalHeight(5000)
             .withOriginalHeight(7000)
             .withAlbums(albums)
@@ -619,8 +633,16 @@ public class TestImageGenericDao {
     protected HbaseImageThumbnail buildVersionHbaseImageThumbnail(String id, long creationDate, short v) {
         HashSet<String> albums = new HashSet<>(Arrays.asList("album1", "album2"));
         HashSet<String> keywords = new HashSet<>(Arrays.asList("keyword1", "keyword2"));
-        HashMap<Integer, byte[]> map = new HashMap<>();
-        map.put((int) v, new byte[] { 0, 1, 2, 3, 4 });
+
+        HashMap<Integer, SizeAndJpegContent> map = new HashMap<>();
+        map.put(
+            (int) v,
+            SizeAndJpegContent.builder()
+                .withJpegContent(new byte[] { 0, 1, 2, 3, 4 })
+                .withHeight(1024)
+                .withWidth(768)
+                .build());
+
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
             .withCreationDate(creationDate)
             .withImageId(id + '_' + v)

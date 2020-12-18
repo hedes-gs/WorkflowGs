@@ -17,7 +17,7 @@ import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 
-public class CacheNodeDAO implements ICacheNodeDAO {
+public class CacheNodeDAO implements ICacheNodeDAO<String, WfEvents> {
 
     protected static final HashFunction HASH_FUNCTION = Hashing.goodFastHash(256);
 
@@ -86,8 +86,9 @@ public class CacheNodeDAO implements ICacheNodeDAO {
 
     protected Node<WfEventNode> treeNode;
 
+    @Override
     @PostConstruct
-    protected void init() {
+    public void init() {
         WfEvent eventRoot = WfEventProduced.builder()
             .withDataId("")
             .withImgId("")

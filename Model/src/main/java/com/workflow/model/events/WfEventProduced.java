@@ -4,6 +4,10 @@ import javax.annotation.Generated;
 
 public class WfEventProduced extends WfEvent {
 
+    public WfEventProduced() {
+
+    }
+
     /**
      *
      */
@@ -20,7 +24,7 @@ public class WfEventProduced extends WfEvent {
 
     /**
      * Creates builder to build {@link WfEventProduced}.
-     * 
+     *
      * @return created builder
      */
     @Generated("SparkTools")
@@ -41,7 +45,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -53,7 +57,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -65,7 +69,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         * 
+         *
          * @param imgId
          *            field to set
          * @return builder
@@ -77,7 +81,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         * 
+         *
          * @param parentDataId
          *            field to set
          * @return builder
@@ -89,7 +93,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         * 
+         *
          * @param step
          *            field to set
          * @return builder
@@ -101,7 +105,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public WfEventProduced build() { return new WfEventProduced(this); }

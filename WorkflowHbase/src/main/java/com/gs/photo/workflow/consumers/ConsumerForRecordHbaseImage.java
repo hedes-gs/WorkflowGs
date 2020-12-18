@@ -123,9 +123,19 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
 
     @Override
     protected void doRecord(String key, HbaseImageThumbnail k) {
-        ConsumerForRecordHbaseImage.LOGGER.info("[CONSUMER][{}][EVENT][{}] recording ", this.getConsumer(), key);
+        ConsumerForRecordHbaseImage.LOGGER.info(
+            "[CONSUMER][{}][EVENT][{}] recording thumbs {}",
+            this.getConsumer(),
+            key,
+            k.getThumbnail()
+                .keySet());
         try {
-            this.hbaseImageThumbnailDAO.put(k);
+            if (k.getThumbnail()
+                .containsKey(1)) {
+                this.hbaseImageThumbnailDAO.append(k);
+            } else {
+                this.hbaseImageThumbnailDAO.append(k, HbaseImageThumbnail.TABLE_FAMILY_THB);
+            }
         } catch (IOException e) {
             ConsumerForRecordHbaseImage.LOGGER.warn("[CONSUMER][{}] unable to record {} ", this.getConsumer(), k);
             throw new RuntimeException(e);

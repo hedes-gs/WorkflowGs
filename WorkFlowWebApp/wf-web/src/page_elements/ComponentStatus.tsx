@@ -22,6 +22,7 @@ import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox';
 import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
 import { ImportEvent } from '../model/WfEvents'
 import { toComponentEvent, ComponentEvent } from '../model/ImageDto'
+import { Badge } from '@material-ui/core';
 
 
 export interface ComponentStatusProps {
@@ -35,14 +36,36 @@ const StyledTableRow = withStyles((theme) => ({
     root: {
         '&:nth-of-type(odd)': {
             backgroundColor: theme.palette.action.hover,
+            fontSize: "0.5rem",
+            padding : "unset"
         },
+        '&:nth-of-type(even)': {
+            fontSize: "0.5rem",
+            padding : "unset"
+        }
     },
 }))(TableRow);
+
+
+const StyledTableCell = withStyles((theme) => ({
+    root: {
+            fontSize: "0.5rem",
+            padding : "unset"
+        }
+}))(TableCell);
+
+const StyledTableBody = withStyles((theme) => ({
+    root: {
+        padding : "unset"
+    }
+}))(TableBody);
+
 
 
 
 export default class ComponentStatus extends React.Component<ComponentStatusProps, ComponentStatusState> {
 
+    
     private importName: string;
     private keywords: string;
     private album: string;
@@ -53,7 +76,10 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
 
     constructor(props: ComponentStatusProps) {
         super(props);
-        this.state = { message: new Map(), dialogIsOpened: false };
+        var SortedMap = require("collections/sorted-map");
+        this.state = {
+            message: new SortedMap(),
+            dialogIsOpened: false };
         this.importName = '';
         this.album = '';
         this.keywords = '';
@@ -109,7 +135,6 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
         }
     };
 
-
     handleClickOpen() {
         this.setState(
             {
@@ -156,8 +181,6 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
 
     }
 
-
-
     render() {
         const tableStyle = {
         }
@@ -173,12 +196,14 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
             display: 'table'
         }
         const open = this.state.dialogIsOpened;
-        const message: Map<string, ComponentEvent> = this.state.message;
+        const message = this.state.message;
         return (
             <div>
+                <Badge color="primary" style={{ display: 'table-cell', margin: '5px', padding: '5px' }} >
                 <Button onClick={this.handleClickOpen}>
                     <CloudUploadIcon />
                 </Button>
+                </Badge>
                 <Dialog
                     open={open}
                     onClose={this.handleClose}
@@ -193,15 +218,11 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
                                     label="Intitulé de l'import"
                                     onChange={(e) => this.handleSetImportName(e.target.value)}
                                 />
-                            </div>
-                            <div>
                                 <TextField
                                     defaultValue="<key word>"
                                     label="Mots clés"
                                     onChange={(e) => this.handleSetKeyWords(e.target.value)}
                                 />
-                            </div>
-                            <div>
                                 <TextField
                                     defaultValue="Album"
                                     label="Album"
@@ -215,47 +236,47 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
                                 <TableContainer style={tableStyle} component={Paper}>
                                     <Table stickyHeader size="small" >
                                         <TableHead>
-                                            <TableRow>
-                                                <TableCell align="right">Scanner</TableCell>
-                                                <TableCell align="right">Démarrer</TableCell>
-                                            </TableRow>
+                                            <StyledTableRow>
+                                                <StyledTableCell align="right">Scanner</StyledTableCell>
+                                                <StyledTableCell align="right">Démarrer</StyledTableCell>
+                                            </StyledTableRow>
                                         </TableHead>
-                                        <TableBody>
+                                        <StyledTableBody>
                                             {Array.from(message.entries()).map(([key, value]) => {
                                                 return (
                                                     <StyledTableRow key={key}>
-                                                        <TableCell component="th" scope="row">
+                                                        <StyledTableCell component="th" scope="row">
                                                             {key}
-                                                        </TableCell>
-                                                        <TableCell align="right">
+                                                        </StyledTableCell>
+                                                        <StyledTableCell align="right">
                                                             <Table>
-                                                                <TableBody>
+                                                                <StyledTableBody>
                                                                     {value.scannedFolder != null &&
                                                                         value.scannedFolder.map((folder) => {
                                                                             return (
 
-                                                                                <StyledTableRow key={key + '-' + folder}>
-                                                                                    <TableCell component="th" scope="row">
+                                                                                <TableRow key={key + '-' + folder}>
+                                                                                    <StyledTableCell component="th" scope="row">
                                                                                         {folder}
-                                                                                    </TableCell>
+                                                                                    </StyledTableCell>
 
-                                                                                    <TableCell align="right">
+                                                                                    <StyledTableCell align="right">
                                                                                         <Checkbox onClick={(e) => this.handleAddScanToStart(key, folder)} />
-                                                                                    </TableCell>
-                                                                                </StyledTableRow>
+                                                                                    </StyledTableCell>
+                                                                                </TableRow>
 
                                                                             )
                                                                         })
                                                                     }
-                                                                </TableBody>
+                                                                </StyledTableBody>
                                                             </Table>
-                                                        </TableCell>
+                                                        </StyledTableCell>
                                                     </StyledTableRow>
                                                 )
                                             }
                                             )
                                             }
-                                        </TableBody>
+                                        </StyledTableBody>
                                     </Table>
                                 </TableContainer>
                             </Grid>

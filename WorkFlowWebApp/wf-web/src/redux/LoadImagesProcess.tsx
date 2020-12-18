@@ -138,6 +138,10 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                 {},
                 state,
                 {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: false,
+                        image: null
+                    },
                     lastIntervallRequested: {
                         state: 'LOADING',
                         min: min,
@@ -153,6 +157,10 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                 {},
                 state,
                 {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: false,
+                        image: null
+                    },
                     imagesLoaded: {
                         state: 'LOADING',
                         images: null,
@@ -170,6 +178,10 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                 {},
                 state,
                 {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: false,
+                        image: null
+                    },
                     imagesLoaded: {
                         state: 'LOADING',
                         images: null,
@@ -182,13 +194,17 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
             );
             return returnedTarget;
         }
-        case '2': {
+        case PayloadLoadedImagesEvent: {
             switch (action.type) {
                 case Actions.IMAGES_ARE_LOADED: {
                     const returnedTarget = Object.assign(
                         {},
                         state,
                         {
+                            imageIsSelectedToBeDisplayed: {
+                                isLoading: false,
+                                image: null
+                            },
                             lastIntervallRequested: {
                                 state: 'LOADED'
                             },
@@ -220,7 +236,7 @@ export function reducerInformImagesAreLoaded(state: ApplicationSate, action: App
     switch (action.type) {
         case Actions.IMAGES_ARE_LOADED: {
             switch (action.payloadType) {
-                case '2': {
+                case PayloadLoadedImagesEvent: {
                     const returnedTarget = Object.assign(
                         {},
                         state,
@@ -300,6 +316,22 @@ export function reducerImagesToDownload(state: ApplicationSate, action: Applicat
 
 export function reducerImageIsSelectedToBeDisplayed(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
     switch (action.payloadType) {
+        case '1':
+        case '7':
+        case PayloadLoadedImagesEvent:
+        case LoadImagesOfMetadataEvent:
+            {
+                const returnedTarget = Object.assign(
+                    {},
+                    state,
+                    {
+                        imageIsSelectedToBeDisplayed: {
+                            isLoading: false,
+                            image: null
+                        }
+                    });
+                return returnedTarget;
+            }
         case '16': {
             switch (action.type) {
                 case Actions.DESELECT_IMAGE_TO_DISPLAY: {

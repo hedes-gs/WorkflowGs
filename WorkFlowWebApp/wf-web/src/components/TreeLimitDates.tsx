@@ -38,6 +38,7 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
 		this.handleClickOnLabel = this.handleClickOnLabel.bind(this);
 		this.dateNodeFormat = 'YYYY';
 		switch (props.parentNodeType) {
+			case 'init': nodeType = 'year'; this.dateNodeFormat = 'YYYY'; break;
 			case 'year': nodeType = 'month'; this.dateNodeFormat = 'MMMM'; break;
 			case 'month': nodeType = 'day'; this.dateNodeFormat = 'ddd DD'; break;
 			case 'day': nodeType = 'hour'; this.dateNodeFormat = 'HH:00'; break;
@@ -58,6 +59,7 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
 	handleClickOnLabel(min: number, max: number) {
 		var nodeType: string = '';
 		switch (this.state.nodeType) {
+			case 'init': nodeType = 'year';break;
 			case 'year': nodeType = 'month';break;
 			case 'month': nodeType = 'day'; break;
 			case 'day': nodeType = 'hour'; break;

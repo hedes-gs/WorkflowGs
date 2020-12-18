@@ -10,39 +10,39 @@ import org.apache.avro.reflect.Nullable;
 @HbaseTableName("image_exif")
 public class HbaseExifData extends HbaseData implements Serializable, Cloneable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long    serialVersionUID = 1L;
 
     // Row key
     @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
-    protected short           exifTag;
+    protected short              exifTag;
     @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
-    protected short[]         exifPath;
+    protected short[]            exifPath;
     @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
-    protected String          imageId;
+    protected String             imageId;
 
     // Data
 
     @Nullable
     @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
-    protected byte[]          exifValueAsByte;
+    protected byte[]             exifValueAsByte;
     @Nullable
     @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 101)
-    protected int[]           exifValueAsInt;
+    protected int[]              exifValueAsInt;
     @Nullable
     @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 102)
-    protected short[]         exifValueAsShort;
+    protected short[]            exifValueAsShort;
     @Nullable
     @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 103)
-    protected String          thumbName        = "";
+    protected String             thumbName        = "";
     @Column(hbaseName = "creation_date", toByte = ToByteLong.class, columnFamily = "imd", rowKeyNumber = 104)
-    protected long            creationDate;
+    protected long               creationDate;
     @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 105)
-    protected long            width;
+    protected long               width;
     @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
-    protected long            height;
+    protected long               height;
     @Nullable
-    @Column(hbaseName = "thumbnail", toByte = ToByteIdempotent.class, columnFamily = "thb", rowKeyNumber = 107)
-    protected byte[]          thumbnail        = {};
+    @Column(hbaseName = "thumbnail", toByte = ToByteObject.class, columnFamily = "thb", rowKeyNumber = 107)
+    protected SizeAndJpegContent thumbnail;
 
     @Override
     public Object clone() throws CloneNotSupportedException {
@@ -105,9 +105,9 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
     public void setCreationDate(long creationDate) { this.creationDate = creationDate; }
 
-    public byte[] getThumbnail() { return this.thumbnail; }
+    public SizeAndJpegContent getThumbnail() { return this.thumbnail; }
 
-    public void setThumbnail(byte[] thumbnail) { this.thumbnail = thumbnail; }
+    public void setThumbnail(SizeAndJpegContent thumbnail) { this.thumbnail = thumbnail; }
 
     @Override
     public int hashCode() {
@@ -154,19 +154,19 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private String  dataId;
-        private long    dataCreationDate;
-        private short   exifTag;
-        private short[] exifPath;
-        private String  imageId;
-        private byte[]  exifValueAsByte;
-        private int[]   exifValueAsInt;
-        private short[] exifValueAsShort;
-        private String  thumbName;
-        private long    creationDate;
-        private long    width;
-        private long    height;
-        private byte[]  thumbnail;
+        private String             dataId;
+        private long               dataCreationDate;
+        private short              exifTag;
+        private short[]            exifPath;
+        private String             imageId;
+        private byte[]             exifValueAsByte;
+        private int[]              exifValueAsInt;
+        private short[]            exifValueAsShort;
+        private String             thumbName;
+        private long               creationDate;
+        private long               width;
+        private long               height;
+        private SizeAndJpegContent thumbnail;
 
         private Builder() {}
 
@@ -321,7 +321,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
          *            field to set
          * @return builder
          */
-        public Builder withThumbnail(byte[] thumbnail) {
+        public Builder withThumbnail(SizeAndJpegContent thumbnail) {
             this.thumbnail = thumbnail;
             return this;
         }

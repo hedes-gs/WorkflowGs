@@ -167,35 +167,35 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private long            dataCreationDate;
-        private String          dataId;
-        private long            creationDate;
-        private String          imageId;
-        private String          imageName;
-        private String          thumbName;
-        private byte[]          thumbnail;
-        private String          path;
-        private long            width;
-        private long            height;
-        private long            originalWidth;
-        private long            originalHeight;
-        private long            importDate;
-        private long            orientation;
-        private byte[]          lens;
-        private int[]           focalLens;
-        private int[]           speed;
-        private int[]           aperture;
-        private short           isoSpeed;
-        private String          camera;
-        private int[]           shiftExpo;
-        private String          copyright;
-        private String          artist;
-        private String          importName;
-        private HashSet<String> albums;
-        private HashSet<String> keyWords;
-        private HashSet<String> persons;
-        private HashSet<Long>   ratingsOfImage;
-        private String          person;
+        private long               dataCreationDate;
+        private String             dataId;
+        private long               creationDate;
+        private String             imageId;
+        private String             imageName;
+        private String             thumbName;
+        private SizeAndJpegContent thumbnail;
+        private String             path;
+        private long               width;
+        private long               height;
+        private long               originalWidth;
+        private long               originalHeight;
+        private long               importDate;
+        private long               orientation;
+        private byte[]             lens;
+        private int[]              focalLens;
+        private int[]              speed;
+        private int[]              aperture;
+        private short              isoSpeed;
+        private String             camera;
+        private int[]              shiftExpo;
+        private String             copyright;
+        private String             artist;
+        private String             importName;
+        private HashSet<String>    albums;
+        private HashSet<String>    keyWords;
+        private HashSet<String>    persons;
+        private HashSet<Long>      ratingsOfImage;
+        private String             person;
 
         public Builder withThumbNailImage(HbaseImageThumbnail hbi) {
             return this.withAlbums(hbi.getAlbums())
@@ -311,7 +311,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
          *            field to set
          * @return builder
          */
-        public Builder withThumbnail(byte[] thumbnail) {
+        public Builder withThumbnail(SizeAndJpegContent thumbnail) {
             this.thumbnail = thumbnail;
             return this;
         }
