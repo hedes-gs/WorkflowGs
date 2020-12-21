@@ -29,7 +29,6 @@ import com.gs.photos.serializers.WfEventsSerializer;
 import com.workflow.model.builder.KeysBuilder.FinalImageKeyBuilder;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventProduced;
-import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.storm.FinalImage;
@@ -193,11 +192,11 @@ public class FinalImageBolt extends BaseRichBolt {
                 .withVersion(version)
                 .withDataId(currentImage.getDataId());
             FinalImage finalImage = builder.build();
-
+            finalImage.setDataId(FinalImageKeyBuilder.build(finalImage, Short.toString(version)));
             this.producerOfFinalImage.send(
                 new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage),
                 (a, e) -> this.process(finalImage.getDataId() + "-" + version, a, e));
-            final WfEvent wfEvent = this.buildEvent(imgKey, finalImage, Short.toString(version));
+            final WfEvent wfEvent = this.buildEvent(imgKey, finalImage, currentImage.getDataId());
             multiMapOfEvents.put(imgKey, wfEvent);
             FinalImageBolt.LOGGER
                 .info("[EVENT][{}] Produce finalImage, version is {}", finalImage.getDataId(), finalImage.getVersion());
@@ -216,12 +215,11 @@ public class FinalImageBolt extends BaseRichBolt {
         this.producerOfEvents.flush();
     }
 
-    private WfEvent buildEvent(String imgKey, FinalImage finalImage, String version) {
-        String hbdHashCode = FinalImageKeyBuilder.build(finalImage, version);
-        return WfEventRecorded.builder()
+    private WfEvent buildEvent(String imgKey, FinalImage finalImage, String parentImageId) {
+        return WfEventProduced.builder()
             .withImgId(imgKey)
-            .withParentDataId(finalImage.getDataId())
-            .withDataId(hbdHashCode)
+            .withParentDataId(parentImageId)
+            .withDataId(finalImage.getDataId())
             .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMG_PROCESSOR)
             .build();
     }

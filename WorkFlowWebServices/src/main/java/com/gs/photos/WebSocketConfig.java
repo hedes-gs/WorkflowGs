@@ -1,5 +1,7 @@
 package com.gs.photos;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -15,6 +17,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/app")
             .setAllowedOrigins("*")
             .withSockJS();
+    }
+
+    @Override
+    public boolean configureMessageConverters(
+        List<org.springframework.messaging.converter.MessageConverter> messageConverters
+    ) {
+        messageConverters.add(new HalMessageConverter());
+        return false;
     }
 
     @Override

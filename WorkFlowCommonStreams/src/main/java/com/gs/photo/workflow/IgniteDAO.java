@@ -31,10 +31,10 @@ public class IgniteDAO implements IIgniteDAO {
                 saved = igniteCache2.putIfAbsent(key, rawFile);
                 done = true;
             } catch (Exception e) {
-
                 done = false;
+                this.LOGGER.warn("ERROR when saving data in cache", e);
             }
-            if (!saved) {
+            if (done && !saved) {
                 this.LOGGER.warn("Warning : file with key {} already exist", key);
             }
         } while (!done);

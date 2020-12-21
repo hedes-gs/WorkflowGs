@@ -22,7 +22,6 @@ import org.springframework.context.annotation.Scope;
 
 import com.gs.photos.serializers.FileToProcessDeserializer;
 import com.gs.photos.serializers.FileToProcessSerializer;
-import com.gs.photos.serializers.HbaseExifOrImageOrWfEventsSerializer;
 import com.workflow.model.files.FileToProcess;
 
 @Configuration
@@ -30,13 +29,10 @@ import com.workflow.model.files.FileToProcess;
 @PropertySource("file:${user.home}/config/application.properties")
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    private static final String KAFAK_FILE_TO_PROCESS_DESERIALIZER         = FileToProcessDeserializer.class.getName();
-    private static final String KAFKA_FILE_TO_PROCESS_SERIALIZER           = FileToProcessSerializer.class.getName();
+    private static final String KAFAK_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
+    private static final String KAFKA_FILE_TO_PROCESS_SERIALIZER   = FileToProcessSerializer.class.getName();
 
-    public static final String  KAFKA_EXIF_OR_IMAGE_OR_WFEVENTS_SERIALIZER = HbaseExifOrImageOrWfEventsSerializer.class
-        .getName();
-    protected static Logger     LOGGER                                     = LoggerFactory
-        .getLogger(ApplicationConfig.class);
+    protected static Logger     LOGGER                             = LoggerFactory.getLogger(ApplicationConfig.class);
 
     @Bean("producerForTransactionPublishingOnExifOrImageTopic")
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
@@ -57,9 +53,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
-        settings.put(
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-            ApplicationConfig.KAFKA_EXIF_OR_IMAGE_OR_WFEVENTS_SERIALIZER);
+        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_MULTIPLE_SERIALIZER);
         settings.put("sasl.kerberos.service.name", "kafka");
         settings.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, consumerFetchMaxBytes);
         Producer<String, Object> producer = new KafkaProducer<>(settings);

@@ -4,7 +4,7 @@ import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
-import DialogContentText from '@material-ui/core/DialogContentText';
+import { connect } from "react-redux";
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Paper, { PaperProps } from '@material-ui/core/Paper';
 import CloudUploadIcon from '@material-ui/icons/CloudUpload';
@@ -19,13 +19,17 @@ import TableRow from '@material-ui/core/TableRow';
 import { CSSProperties } from '@material-ui/styles';
 import { withStyles } from '@material-ui/core/styles';
 import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox';
-import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
 import { ImportEvent } from '../model/WfEvents'
 import { toComponentEvent, ComponentEvent } from '../model/ImageDto'
 import { Badge } from '@material-ui/core';
+import { ClientApplicationState } from '../redux/State';
+import { ApplicationThunkDispatch, ApplicationEvent, dispatchLoadRealtimeImages, loadRealTimeImages } from '../redux/Actions';
+import { Console } from 'console';
 
 
 export interface ComponentStatusProps {
+    thunkActionForImportEvent?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
+
 }
 
 export interface ComponentStatusState {
@@ -37,11 +41,11 @@ const StyledTableRow = withStyles((theme) => ({
         '&:nth-of-type(odd)': {
             backgroundColor: theme.palette.action.hover,
             fontSize: "0.5rem",
-            padding : "unset"
+            padding: "unset"
         },
         '&:nth-of-type(even)': {
             fontSize: "0.5rem",
-            padding : "unset"
+            padding: "unset"
         }
     },
 }))(TableRow);
@@ -49,48 +53,45 @@ const StyledTableRow = withStyles((theme) => ({
 
 const StyledTableCell = withStyles((theme) => ({
     root: {
-            fontSize: "0.5rem",
-            padding : "unset"
-        }
+        fontSize: "0.5rem",
+        padding: "unset"
+    }
 }))(TableCell);
 
 const StyledTableBody = withStyles((theme) => ({
     root: {
-        padding : "unset"
+        padding: "unset"
     }
 }))(TableBody);
 
 
 
 
-export default class ComponentStatus extends React.Component<ComponentStatusProps, ComponentStatusState> {
+class ComponentStatus extends React.Component<ComponentStatusProps, ComponentStatusState> {
 
-    
+
     private importName: string;
     private keywords: string;
     private album: string;
-    private scanFolder: string;
-    private scans: Set<string>
     private importEvents: Map<String, ImportEvent>;
-    private wfEventsServices: WfEventsServices = new WfEventsServicesImpl();
 
     constructor(props: ComponentStatusProps) {
         super(props);
         var SortedMap = require("collections/sorted-map");
         this.state = {
             message: new SortedMap(),
-            dialogIsOpened: false };
+            dialogIsOpened: false
+        };
         this.importName = '';
         this.album = '';
         this.keywords = '';
-        this.scanFolder = '';
         this.importEvents = new Map();
         const client = new Client({
             brokerURL: "ws://192.168.1.128:8080/app/websocket",
             connectHeaders: {
             },
             debug: function (str: string) {
-                console.log(str);
+                // console.log(str);
             },
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
@@ -110,7 +111,6 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
             console.log('Broker reported error: ' + frame.headers['message']);
             console.log('Additional details: ' + frame.body);
         };
-        this.scans = new Set();
         client.activate();
         this.handleClickOpen = this.handleClickOpen.bind(this);
         this.handleClose = this.handleClose.bind(this);
@@ -177,7 +177,11 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
     }
 
     handleSartScan() {
-        Array.from(this.importEvents.values()).forEach((v: ImportEvent) => { this.wfEventsServices.startScan(v); });
+        Array.from(this.importEvents.values()).forEach((v: ImportEvent) => {
+            if (this.props.thunkActionForImportEvent != null) {
+                this.props.thunkActionForImportEvent(loadRealTimeImages(true, v));
+            }
+        });
 
     }
 
@@ -200,9 +204,9 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
         return (
             <div>
                 <Badge color="primary" style={{ display: 'table-cell', margin: '5px', padding: '5px' }} >
-                <Button onClick={this.handleClickOpen}>
-                    <CloudUploadIcon />
-                </Button>
+                    <Button onClick={this.handleClickOpen}>
+                        <CloudUploadIcon />
+                    </Button>
                 </Badge>
                 <Dialog
                     open={open}
@@ -297,4 +301,27 @@ export default class ComponentStatus extends React.Component<ComponentStatusProp
             </div>)
     }
 }
+
+const mapStateToProps = (state: ClientApplicationState): ComponentStatusProps => {
+
+    console.log(' In Component status map state to props')
+    if (state.reducerImagesList.realTimeSelected.isLoading) {
+        return {
+        };
+    }
+
+    return {
+    };
+};
+
+const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
+    return {
+        thunkActionForImportEvent: (x: ApplicationEvent) => {
+            const r = dispatchLoadRealtimeImages(x);
+            return dispatch(r);
+        }
+    }
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(ComponentStatus);
 

@@ -14,6 +14,8 @@ import MomentTimezone from 'moment-timezone';
 import RatingsServiceImpl, { RatingsService } from "../services/RatingsServices";
 import KeywordsServiceImpl, { KeywordsService } from "../services/KeywordsServices";
 import PersonsServiceImpl, { PersonsService } from "../services/PersonsServices";
+import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
+import { ImportEvent } from "../model/WfEvents";
 
 
 
@@ -22,6 +24,7 @@ const ratingsService: RatingsService = new RatingsServiceImpl();
 const exifImagesService: ExifImagesService = new ExifImagesServiceImpl();
 const keywordService: KeywordsService = new KeywordsServiceImpl();
 const personService: PersonsService = new PersonsServiceImpl();
+const wfEventsServices: WfEventsServices = new WfEventsServicesImpl();
 
 export type ThunkResult<R> = ThunkAction<R, ApplicationState, undefined, ApplicationEvent>;
 export type ApplicationThunkDispatch = ThunkDispatch<ApplicationState, undefined, ApplicationEvent>;
@@ -40,7 +43,18 @@ export const AddPersonEvent = '23'
 export const DeletePersonEvent = '24'
 export const LoadAllPersonsEvent = '25'
 export const AllPersonsAreLoadedEvent = '26'
+export const DisplayRealTimeImagesEvent = '27'
 
+
+
+export interface DisplayRealTimeImagesEvent {
+    payloadType: typeof DisplayRealTimeImagesEvent,
+    type: Actions,
+    payload: {
+        importEvent: ImportEvent,
+        isLoading: boolean
+    }
+}
 export interface UnknownSelectedEvent {
     payloadType: typeof UnknownSelectedEventValue,
     type: Actions,
@@ -299,13 +313,25 @@ export type ApplicationEvent =
     DeleteKeywordEvent |
     DownloadSelectedImageEvent |
     AddPersonEvent |
-    DeletePersonEvent;
+    DeletePersonEvent |
+    DisplayRealTimeImagesEvent;
 
 const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     type: Actions.UNDEFINED,
     payloadType: UnknownSelectedEventValue,
     payload: {}
 };
+
+export const loadRealTimeImages = (loadingState: boolean, importEvent: ImportEvent): ApplicationEvent => {
+    return {
+        payloadType: DisplayRealTimeImagesEvent,
+        type: Actions.IMAGES_LOADING,
+        payload: {
+            isLoading: loadingState,
+            importEvent: importEvent
+        }
+    }
+}
 
 export const loadImagesInterval = (min: number, max: number, intervallType: string, titleOfImagesList: string): ApplicationEvent => {
     return {
@@ -597,6 +623,16 @@ export const downloadSelectedImage = (img: ImageDto): ApplicationEvent => {
     }
 };
 
+
+
+export function dispatchLoadRealtimeImages(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == DisplayRealTimeImagesEvent) {
+            return wfEventsServices.startScan(x.payload.importEvent).then((e) => dispatch(x))
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
 
 
 export function dispatchLoadRatings(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {

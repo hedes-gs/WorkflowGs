@@ -31,6 +31,7 @@ import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.builder.KeysBuilder.HbaseImageThumbnailKeyBuilder;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventRecorded;
+import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
 @Component
@@ -118,6 +119,8 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
                 .withParentDataId(x.getDataId())
                 .withDataId(hbdHashCode)
                 .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_RECORDED_IN_HBASE)
+                .withImageCreationDate(x.getCreationDate())
+                .withRecordedEventType(RecordedEventType.THUMB)
                 .build());
     }
 

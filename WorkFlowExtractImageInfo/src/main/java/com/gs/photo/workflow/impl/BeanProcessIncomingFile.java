@@ -49,7 +49,6 @@ import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.FieldType;
 import com.workflow.model.builder.KeysBuilder;
 import com.workflow.model.events.WfEvent;
-import com.workflow.model.events.WfEventCopy;
 import com.workflow.model.events.WfEventFinal;
 import com.workflow.model.events.WfEventInitial;
 import com.workflow.model.events.WfEventStep;
@@ -591,8 +590,25 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     }
 
     private void createInitEvent(String parentDataId, List<GenericKafkaManagedObject<? extends WfEvent>> list) {
+        int nbOfElements = list.size();
         if (list.size() > 0) {
             GenericKafkaManagedObject<?> elem = list.get(0);
+            list.add(
+                0,
+                KafkaManagedWfEvent.builder()
+                    .withKafkaOffset(elem.getKafkaOffset())
+                    .withImageKey(elem.getImageKey())
+                    .withPartition(elem.getPartition())
+                    .withValue(
+                        WfEventFinal.builder()
+                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
+                            .withNbOFExpectedEvents(nbOfElements + 2 + 1)
+                            .withParentDataId(parentDataId)
+                            .withDataId(elem.getImageKey())
+                            .withImgId(elem.getImageKey())
+                            .build())
+                    .withTopic(this.topicEvent)
+                    .build());
             list.add(
                 0,
                 KafkaManagedWfEvent.builder()
@@ -603,35 +619,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                         WfEventInitial.builder()
                             .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
                             .withParentDataId(parentDataId)
+                            .withNbOfInitialEvents(nbOfElements + 1)
                             .withDataId(elem.getImageKey())
-                            .withImgId(elem.getImageKey())
-                            .build())
-                    .withTopic(this.topicEvent)
-                    .build());
-            list.add(
-                KafkaManagedWfEvent.builder()
-                    .withKafkaOffset(elem.getKafkaOffset())
-                    .withImageKey(elem.getImageKey())
-                    .withPartition(elem.getPartition())
-                    .withValue(
-                        WfEventFinal.builder()
-                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
-                            .withParentDataId(parentDataId)
-                            .withDataId(elem.getImageKey())
-                            .withImgId(elem.getImageKey())
-                            .build())
-                    .withTopic(this.topicEvent)
-                    .build());
-            list.add(
-                KafkaManagedWfEvent.builder()
-                    .withKafkaOffset(elem.getKafkaOffset())
-                    .withImageKey(elem.getImageKey())
-                    .withPartition(elem.getPartition())
-                    .withValue(
-                        WfEventCopy.builder()
-                            .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
-                            .withParentDataId(parentDataId)
-                            .withDataId(elem.getImageKey() + "-copy")
                             .withImgId(elem.getImageKey())
                             .build())
                     .withTopic(this.topicEvent)

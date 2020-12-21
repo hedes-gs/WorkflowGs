@@ -39,6 +39,7 @@ import com.gs.photo.workflow.IServicesFile;
 import com.gs.photo.workflow.TimeMeasurement;
 import com.gs.photo.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.workflow.internal.KafkaManagedObject;
+import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 
 @Component
@@ -62,6 +63,9 @@ public class BeanCopyFile implements ICopyFile {
     @Value("${topic.topicLocalFileCopy}")
     protected String                          topicLocalFileCopy;
 
+    @Value("${topic.topicEvent}")
+    protected String                          topicEvent;
+
     protected Path                            repositoryPath;
 
     @Autowired
@@ -69,8 +73,8 @@ public class BeanCopyFile implements ICopyFile {
     protected Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue;
 
     @Autowired
-    @Qualifier("producerForTopicWithFileToProcessValue")
-    protected Producer<String, FileToProcess> producerForTopicWithFileToProcessValue;
+    @Qualifier("producerForTopicWithFileToProcessOrEventValue")
+    protected Producer<String, Object>        producerForTopicWithFileToProcessOrEventValue;
 
     @Autowired
     protected IServicesFile                   beanServicesFile;
@@ -104,7 +108,7 @@ public class BeanCopyFile implements ICopyFile {
             this.topicDupDilteredFile,
             this.topicLocalFileCopy);
         this.consumerForTopicWithFileToProcessValue.subscribe(Collections.singleton(this.topicDupDilteredFile));
-        this.producerForTopicWithFileToProcessValue.initTransactions();
+        this.producerForTopicWithFileToProcessOrEventValue.initTransactions();
         while (true) {
             try (
                 TimeMeasurement timeMeasurement = TimeMeasurement.of(
@@ -120,14 +124,15 @@ public class BeanCopyFile implements ICopyFile {
                     timeMeasurement);
                 Map<TopicPartition, OffsetAndMetadata> offsets = filesToCopyStream.map((r) -> this.copyToLocal(r))
                     .map((r) -> this.sendToNext(r))
+                    .map((r) -> this.sendEvent(r))
                     .collect(
                         () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
                         (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
                         (r, t) -> this.merge(r, t));
                 BeanCopyFile.LOGGER.info("Offset to commit {} ", offsets.toString());
-                BeanCopyFile.this.producerForTopicWithFileToProcessValue
+                BeanCopyFile.this.producerForTopicWithFileToProcessOrEventValue
                     .sendOffsetsToTransaction(offsets, BeanCopyFile.this.groupId);
-                BeanCopyFile.this.producerForTopicWithFileToProcessValue.commitTransaction();
+                BeanCopyFile.this.producerForTopicWithFileToProcessOrEventValue.commitTransaction();
             } catch (Throwable e) {
                 BeanCopyFile.LOGGER.error("Unexpected error {}, closing ", ExceptionUtils.getStackTrace(e));
                 break;
@@ -153,15 +158,52 @@ public class BeanCopyFile implements ICopyFile {
     }
 
     private void startTransactionForRecords(int i) {
-        BeanCopyFile.this.producerForTopicWithFileToProcessValue.beginTransaction();
+        BeanCopyFile.this.producerForTopicWithFileToProcessOrEventValue.beginTransaction();
         BeanCopyFile.LOGGER.info("Start processing {} file records ", i);
     }
 
-    private KafkaManagedFileToProcess sendToNext(KafkaManagedFileToProcess f) {
-        f.getOrigin()
+    private KafkaManagedFileToProcess sendEvent(KafkaManagedFileToProcess f) {
+        f.getValue()
             .ifPresentOrElse((origin) -> {
-                Future<RecordMetadata> result = this.producerForTopicWithFileToProcessValue
-                    .send(new ProducerRecord<String, FileToProcess>(this.topicLocalFileCopy, f.getHashKey(), origin));
+                Future<RecordMetadata> result = this.producerForTopicWithFileToProcessOrEventValue.send(
+                    new ProducerRecord<String, Object>(this.topicEvent,
+                        f.getHashKey(),
+                        WfEvents.builder()
+                            .withDataId(f.getImageKey())
+                            .withProducer("LOCAL_COPY")
+                            .withEvents(Collections.singleton(f.createWfEvent()))
+                            .build()));
+                RecordMetadata data;
+                try {
+                    data = result.get();
+                    BeanCopyFile.LOGGER.info(
+                        "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
+                        origin.getDataId(),
+                        f,
+                        data.partition(),
+                        data.offset(),
+                        data.topic(),
+                        data.timestamp());
+                } catch (
+                    InterruptedException |
+                    ExecutionException e) {
+                    BeanCopyFile.LOGGER.error(" Interrupted... stopping process", e);
+                    throw new RuntimeException(e);
+                }
+            },
+                () -> BeanCopyFile.LOGGER.error(
+                    " Unable to process offset {} of partition {} of topic {} ",
+                    f.getKafkaOffset(),
+                    f.getPartition(),
+                    this.topicDupDilteredFile));
+        return f;
+    }
+
+    private KafkaManagedFileToProcess sendToNext(KafkaManagedFileToProcess f) {
+        f.getValue()
+            .ifPresentOrElse((origin) -> {
+                Future<RecordMetadata> result = this.producerForTopicWithFileToProcessOrEventValue
+                    .send(new ProducerRecord<String, Object>(this.topicLocalFileCopy, f.getHashKey(), origin));
                 RecordMetadata data;
                 try {
                     data = result.get();
@@ -225,11 +267,12 @@ public class BeanCopyFile implements ICopyFile {
                     .toString());
             return KafkaManagedFileToProcess.builder()
                 .withHashKey(rec.key())
-                .withOrigin(
+                .withValue(
                     Optional.of(
                         FileToProcess.builder()
                             .withCompressedFile(origin.isCompressedFile())
                             .withImportEvent(origin.getImportEvent())
+                            .withImageId(origin.getImageId())
                             .withDataId(origin.getDataId())
                             .withHost(this.hostname)
                             .withRootForNfs(this.repository)
@@ -254,6 +297,7 @@ public class BeanCopyFile implements ICopyFile {
             .withHashKey(rec.key())
             .withKafkaOffset(rec.offset())
             .withPartition(rec.partition())
+            .withValue(Optional.of(rec.value()))
             .build();
     }
 

@@ -4,12 +4,20 @@ import javax.annotation.Generated;
 
 public class WfEventRecorded extends WfEvent {
 
+    protected long imageCreationDate;
+
+    public static enum RecordedEventType {
+        THUMB, EXIF, ARCHIVE
+    }
+
     public WfEventRecorded() {}
 
     /**
      *
      */
     private static final long serialVersionUID = 1L;
+
+    private RecordedEventType recordedEventType;
 
     @Generated("SparkTools")
     private WfEventRecorded(Builder builder) {
@@ -18,11 +26,17 @@ public class WfEventRecorded extends WfEvent {
         this.imgId = builder.imgId;
         this.parentDataId = builder.parentDataId;
         this.step = builder.step;
+        this.imageCreationDate = builder.imageCreationDate;
+        this.recordedEventType = builder.recordedEventType;
     }
+
+    public RecordedEventType getRecordedEventType() { return this.recordedEventType; }
+
+    public long getImageCreationDate() { return this.imageCreationDate; }
 
     /**
      * Creates builder to build {@link WfEventRecorded}.
-     *
+     * 
      * @return created builder
      */
     @Generated("SparkTools")
@@ -33,17 +47,19 @@ public class WfEventRecorded extends WfEvent {
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private long        dataCreationDate;
-        private String      dataId;
-        private String      imgId;
-        private String      parentDataId;
-        private WfEventStep step;
+        private long              dataCreationDate;
+        private String            dataId;
+        private String            imgId;
+        private String            parentDataId;
+        private WfEventStep       step;
+        private long              imageCreationDate;
+        private RecordedEventType recordedEventType;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -55,7 +71,7 @@ public class WfEventRecorded extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -67,7 +83,7 @@ public class WfEventRecorded extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         *
+         * 
          * @param imgId
          *            field to set
          * @return builder
@@ -79,7 +95,7 @@ public class WfEventRecorded extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         *
+         * 
          * @param parentDataId
          *            field to set
          * @return builder
@@ -91,7 +107,7 @@ public class WfEventRecorded extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         *
+         * 
          * @param step
          *            field to set
          * @return builder
@@ -102,8 +118,32 @@ public class WfEventRecorded extends WfEvent {
         }
 
         /**
+         * Builder method for imageCreationDate parameter.
+         * 
+         * @param imageCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withImageCreationDate(long imageCreationDate) {
+            this.imageCreationDate = imageCreationDate;
+            return this;
+        }
+
+        /**
+         * Builder method for recordedEventType parameter.
+         * 
+         * @param recordedEventType
+         *            field to set
+         * @return builder
+         */
+        public Builder withRecordedEventType(RecordedEventType recordedEventType) {
+            this.recordedEventType = recordedEventType;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public WfEventRecorded build() { return new WfEventRecorded(this); }

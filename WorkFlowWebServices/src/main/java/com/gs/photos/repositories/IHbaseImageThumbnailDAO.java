@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 
 import com.gs.photo.workflow.dao.IImageThumbnailDAO;
+import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.dtos.ImageDto;
 
 public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
@@ -49,5 +50,7 @@ public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
     List<ImageDto> findLastImagesByKeyword(int pageSize, int pageNumber, String keyword);
 
     List<ImageDto> findLastImagesByPerson(int pageSize, int pageNumber, String person);
+
+    ImageDto toImageDTO(HbaseImageThumbnail e);
 
 }

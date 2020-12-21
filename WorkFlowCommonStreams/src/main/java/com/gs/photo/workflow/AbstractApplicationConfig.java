@@ -26,6 +26,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.gs.photo.workflow.exif.ExifServiceImpl;
 import com.gs.photo.workflow.exif.IExifService;
 import com.gs.photos.serializers.ExchangedDataSerializer;
+import com.gs.photos.serializers.MultipleSerializers;
 import com.gs.photos.serializers.WfEventsSerializer;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.events.WfEvents;
@@ -74,6 +75,10 @@ public abstract class AbstractApplicationConfig {
     public final static String              HBASE_DATA_SERIALIZER                        = com.gs.photos.serializers.HbaseDataSerializer.class
         .getName();
     public final static String              CACHE_NAME                                   = "start-raw-files";
+
+    public static final String              KAFKA_MULTIPLE_SERIALIZER                    = MultipleSerializers.class
+        .getName();
+
     @Value("${application.id}")
     protected String                        applicationId;
 

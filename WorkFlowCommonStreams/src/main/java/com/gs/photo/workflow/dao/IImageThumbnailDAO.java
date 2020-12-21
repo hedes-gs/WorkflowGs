@@ -35,4 +35,5 @@ public interface IImageThumbnailDAO extends IGenericDAO<HbaseImageThumbnail> {
     final byte[] FAMILY_KEYWORDS_BYTES               = "keywords".getBytes();
     final byte[] FAMILY_PERSONS_BYTES                = "persons".getBytes();
 
+    public HbaseImageThumbnail get(HbaseImageThumbnail hbaseData) throws IOException;
 }

@@ -1,0 +1,38 @@
+###########################################################################################################################
+# DO Community Playbooks
+# Playbook: Installing Docker and Creating Containers on Ubuntu 18.04
+# Based on: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04
+# Guide: https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-18-04
+###########################################################################################################################
+
+---
+- hosts: all
+  become: true
+  vars:
+    ansible_become_pass: granada01
+    storm_version: 2.0.0
+    user_to_create: storm
+    storm_install_folder: /home/storm
+ 
+  tasks:
+    - name: stop ignite 
+      shell: "systemctl stop apache-ignite@cluster-server.xml"
+    - name: Install aptitude using apt
+      shell: "apt install dirmngr --no-install-recommends"
+      ignore_errors: yes
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/db/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/diagnostic/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/marshaller/
+        state: absent
+    - name: clean
+      file:
+        path: /var/lib/apache-ignite/binary_meta/
+        state: absent

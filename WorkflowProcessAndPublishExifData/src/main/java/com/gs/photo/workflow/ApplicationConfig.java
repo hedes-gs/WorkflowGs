@@ -47,6 +47,7 @@ import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseExifDataOfImages;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.builder.KeysBuilder;
 import com.workflow.model.builder.KeysBuilder.HbaseExifDataKeyBuilder;
 import com.workflow.model.builder.KeysBuilder.HbaseExifDataOfImagesKeyBuilder;
 import com.workflow.model.events.WfEvent;
@@ -388,17 +389,6 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         }
     }
 
-    private String buildKeyForHbaseExifData(HbaseData v) {
-        if (v instanceof HbaseExifDataOfImages) {
-            HbaseExifDataOfImages hbedoi = (HbaseExifDataOfImages) v;
-            return hbedoi.getImageId();
-        } else if (v instanceof HbaseExifData) {
-            HbaseExifData hbed = (HbaseExifData) v;
-            return hbed.getImageId();
-        }
-        throw new IllegalArgumentException("Unexpected class " + v);
-    }
-
     private HbaseExifData updateHbaseExifData(
         HbaseExifData v_HbaseExifData,
         HbaseImageThumbnail v_HbaseImageThumbnail
@@ -422,13 +412,17 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     protected HbaseExifData buildHbaseExifData(ExchangedTiffData v_hbaseImageThumbnail) {
         HbaseExifData.Builder builder = HbaseExifData.builder();
         builder.withExifValueAsByte(v_hbaseImageThumbnail.getDataAsByte())
-            .withDataId(v_hbaseImageThumbnail.getKey())
             .withExifValueAsInt(v_hbaseImageThumbnail.getDataAsInt())
             .withExifValueAsShort(v_hbaseImageThumbnail.getDataAsShort())
             .withImageId(v_hbaseImageThumbnail.getImageId())
             .withExifTag(v_hbaseImageThumbnail.getTag())
             .withExifPath(v_hbaseImageThumbnail.getPath());
-        return builder.build();
+        HbaseExifData hbd = builder.build();
+
+        String hbdHashCode = HbaseExifDataKeyBuilder.build(hbd);
+        hbd.setDataId(hbdHashCode);
+
+        return hbd;
     }
 
     private KStream<String, HbaseImageThumbnail> buildKStreamToGetOnlyVersion2HbaseImageThumbNail(
@@ -477,8 +471,11 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             retValue = Optional.of(this.buildEvent(hbedoi.getImageId(), hbedoi.getDataId(), hbedoiHashCode));
         } else if (v instanceof HbaseExifData) {
             HbaseExifData hbd = (HbaseExifData) v;
-            String hbdHashCode = HbaseExifDataKeyBuilder.build(hbd);
-            retValue = Optional.of(this.buildEvent(hbd.getImageId(), hbd.getDataId(), hbdHashCode));
+            retValue = Optional.of(
+                this.buildEvent(
+                    hbd.getImageId(),
+                    KeysBuilder.buildKeyForExifData(hbd.getImageId(), hbd.getExifTag(), hbd.getExifPath()),
+                    hbd.getDataId()));
         }
         return retValue;
     }

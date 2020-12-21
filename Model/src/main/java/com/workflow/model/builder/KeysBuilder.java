@@ -6,15 +6,21 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseExifDataOfImages;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.files.FileToProcess;
 import com.workflow.model.storm.FinalImage;
 
 public class KeysBuilder {
+    protected static Logger                              LOGGER                                = LoggerFactory
+        .getLogger(KeysBuilder.class);
 
     private static final HbaseExifDataKeyBuilder         HBASE_EXIF_DATA_KEY_BUILDER           = new HbaseExifDataKeyBuilder();
     private static final HbaseExifDataOfImagesKeyBuilder HBASE_EXIF_DATA_OF_IMAGES_KEY_BUILDER = new HbaseExifDataOfImagesKeyBuilder();
@@ -309,6 +315,10 @@ public class KeysBuilder {
         public static String build(HbaseExifData hbeodi) {
             HashFunction hf = Hashing.murmur3_128();
             String hbedoiHashCode = hf.newHasher()
+                .putString(
+                    hbeodi.getClass()
+                        .getName(),
+                    Charset.forName("UTf-8"))
                 .putString(hbeodi.getImageId(), Charset.forName("UTf-8"))
                 .putLong(hbeodi.getExifTag())
                 .putObject(hbeodi.getExifPath(), (path, sink) -> {
@@ -344,6 +354,22 @@ public class KeysBuilder {
                 .putBytes(hbeodi.getCompressedImage())
                 .hash()
                 .toString();
+            return hbedoiHashCode;
+        }
+    }
+
+    public static class TopicCopyKeyBuilder {
+        public static String build(FileToProcess value) {
+            HashFunction hf = Hashing.goodFastHash(256);
+            String hbedoiHashCode = hf.newHasher()
+                .putString(value.getImageId(), Charset.forName("UTf-8"))
+                .putString("-LOCAL-COPY", Charset.forName("UTf-8"))
+                .hash()
+                .toString();
+
+            KeysBuilder.LOGGER
+                .info("TopicCopyKeyBuilder for FileToProcess : hbedoiHashCode =  {} - source is {} ", value);
+
             return hbedoiHashCode;
         }
     }

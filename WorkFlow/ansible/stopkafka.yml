@@ -1,0 +1,194 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: INSTALL  Kafka "{{ kafka_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: stop kafka service
+      shell: systemctl stop kafka.service 
+#    - name: stop zookeeper service
+#      shell: systemctl stop zookeeper 
+#      loop: "{{ lookup('dict', zookeeper_ids) }}"
+#      when:  inventory_hostname == item.value.key
+    - name: Create kafka {{ kafka_install_folder }}
+      file:
+        path: "{{ kafka_install_folder }}"
+        state: directory
+        owner: "{{user_to_create}}"
+    - name: Create kafka {{ kafka_install_folder }}
+      file:
+        path: "{{ kafka_install_folder }}"
+        state: directory
+        owner: "{{user_to_create}}"
+    - name: Create folder var/lib/kafka
+      file:
+        path: /var/lib/kafka
+        state: directory
+        owner: "{{ user_to_create }}"
+#    - name: Clean artifact path
+#      file:
+#        state: absent
+#        path: "/var/lib/kafka/data"
+#      ignore_errors: yes
+    - name: Create folder var/lib/kafka
+      file:
+        path: /var/lib/kafka/data
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Create folder  {{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}
+      file:
+        path: "{{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Download Kafka {{ kafka_version }}
+      get_url: url=http://www-eu.apache.org/dist/kafka/{{ kafka_version }}/kafka_2.12-{{ kafka_version }}.tgz  dest={{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}.tgz  mode=0644 force=no
+      ignore_errors: yes
+    - name: Unpack the tar
+      shell: tar -xzvf {{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }}.tgz --directory {{ kafka_install_folder }}
+    - name: remove symlink /usr/local/kafka to this version
+      shell: rm -f {{ kafka_install_folder }}/latest
+    - name: Symlink /usr/local/kafka to this version
+      shell: ln -s {{ kafka_install_folder }}/kafka_2.12-{{ kafka_version }} {{ kafka_install_folder }}/latest
+    - name: Create folder  {{ kafka_install_folder }}/latest/logs
+      file:
+        path: "{{ kafka_install_folder }}/latest/logs"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Create folder  {{ kafka_install_folder }}/latest/monitor
+      file:
+        path: "{{ kafka_install_folder }}/latest/monitor"
+        state: directory
+        owner: "{{ user_to_create }}"
+    - name: Purge logs
+      shell: "rm -f {{ kafka_install_folder }}/latest/logs/*"
+    - name: build config file from template
+      vars:
+          broker_id: "{{ borker_ids[inventory_hostname].value }}"
+          broker_host: "{{ ids[inventory_hostname].value }}"
+          broker_host_external_id: "{{ broker_host_external_ids[inventory_hostname].value }}"
+      template:
+        src: ./tools/kafka/server.properties
+        dest: "{{ kafka_install_folder }}/latest/config/server.properties"
+        owner: "{{ user_to_create }}"
+        mode: 0666
+    - name: build kafka.service from template
+      template:
+        src: ./tools/kafka/kafka.service
+        dest: /etc/systemd/system/kafka.service
+        owner: root
+        mode: 0666
+    - name: build kafka.conf from template
+      template:
+        src: ./tools/kafka/kafka.conf
+        dest: /etc/rsyslog.d/kafka.conf
+        owner: root
+        mode: 0666
+    - name: build kafka.keytab from template
+      vars:
+        Broker_host: "{{ ids[inventory_hostname].value }}"
+      copy:
+        src: ./tools/kafka/kafka_all.keytab
+        dest: "{{ kafka_install_folder }}/latest/config/kafka.keytab"
+        owner: kafka
+        mode: 0600
+    - name: deploy prometheus jars.
+      copy:
+        src: ./tools/kafka/config_prometheus.yml
+        dest: "{{ kafka_install_folder }}/latest/monitor/config_prometheus.yml"
+        owner: kafka
+        mode: 0666
+    - name: deploy prometheus jars.
+      copy:
+        src: ./tools/kafka/jmx_prometheus_javaagent-0.12.0.jar
+        dest: "{{ kafka_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
+        owner: kafka
+        mode: 0666        
+    - name: build client_jaas.conf from template
+      vars:
+        broker_host: "{{ ids[inventory_hostname].value }}"
+      template:
+        src: ./tools/kafka/client_jaas.conf
+        dest: "{{ kafka_install_folder }}/latest/config/client_jaas.conf"
+        owner: root
+        mode: 0666
+    - name: build run.sh from template
+      copy:
+        src: ./tools/kafka/run.sh
+        dest: "{{ kafka_install_folder }}/latest/bin/run.sh"
+        owner: root
+        mode: 0755
+    - name: reload daemon
+      shell: systemctl  daemon-reload    
+#    - name: restart zookeeper
+#      shell: systemctl restart zookeeper
+#      loop: "{{ lookup('dict', zookeeper_ids) }}"
+#      when:  inventory_hostname == item.value.key
+    - name: restart syslog
+      shell: systemctl restart rsyslog
+    - name: restart kafka service
+      shell: systemctl restart kafka.service 
+    - name: enable kafka.service
+      shell: systemctl enable kafka.service
+    - name: Delete topics
+      shell: /home/user/tools/kerberos/delete-topics.sh
+      become_user: user
+      when:  inventory_hostname == "192.168.1.200"
+    - name: Create topics
+      shell: /home/user/tools/kerberos/create-topics.sh
+      become_user: user
+      when:  inventory_hostname == "192.168.1.200"
+  vars:
+    ansible_become_pass: granada01
+    kafka_version: 2.3.0
+    user_to_create: kafka
+    kafka_install_folder: /opt/kafka
+    PWD: "{{ lookup('env', 'PWD') }}"
+    zookeeper_ids:
+      item_1:
+        key: "192.168.1.200"
+        value: 1
+      item_2:
+        key: "192.168.1.201"
+        value: 2
+      item_3:
+        key: "192.168.1.202"
+        value: 3
+    ids:
+      192.168.1.200:
+        value: ipc0
+      192.168.1.201:
+        value: ipc1
+      192.168.1.202:
+        value: ipc2
+      192.168.1.203:
+        value: ipc3
+      192.168.1.205:
+        value: ipc5
+      192.168.1.206:
+        value: ipc6
+    borker_ids:
+      192.168.1.200:
+        value: 1
+      192.168.1.201:
+        value: 2
+      192.168.1.202:
+        value: 3
+      192.168.1.203:
+        value: 4
+      192.168.1.205:
+        value: 5
+      192.168.1.206:
+        value: 6
+    broker_host_external_ids:
+      192.168.1.200:
+        value: "192.168.1.200"
+      192.168.1.201:
+        value: "192.168.1.201"
+      192.168.1.202:
+        value: "192.168.1.202"
+      192.168.1.203:
+        value: "192.168.1.203"
+      192.168.1.205:
+        value: "192.168.1.205"
+      192.168.1.206:
+        value: "192.168.1.206"

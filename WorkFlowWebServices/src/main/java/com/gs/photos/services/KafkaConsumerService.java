@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.events.ComponentEvent;
+import com.workflow.model.files.FileToProcess;
 
 @Service
 public class KafkaConsumerService {
@@ -23,10 +24,19 @@ public class KafkaConsumerService {
 
     }
 
-    @KafkaListener(topics = "${topic.topicComponentStatus}")
+    @KafkaListener(topics = "${topic.topicComponentStatus}", containerFactory = "KafkaListenerContainerFactory")
     public void consume(@Payload(required = false) ComponentEvent message) {
         if (message != null) {
             this.template.convertAndSend("/topic/componentStatus", message);
+        } else {
+            KafkaConsumerService.LOGGER.warn("Kafka : Receive message null !");
+        }
+    }
+
+    @KafkaListener(topics = "${topic.topicFullyProcessedImage}", containerFactory = "kafkaListenerContainerFactoryForFileToProcess")
+    public void consumeFullyImageProcessed(@Payload(required = false) FileToProcess message) {
+        if (message != null) {
+            this.template.convertAndSend("/topic/importFile", message);
         } else {
             KafkaConsumerService.LOGGER.warn("Kafka : Receive message null !");
         }

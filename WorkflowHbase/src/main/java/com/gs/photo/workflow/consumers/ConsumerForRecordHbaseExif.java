@@ -28,6 +28,7 @@ import com.workflow.model.HbaseExifDataOfImages;
 import com.workflow.model.builder.KeysBuilder.HbaseExifDataKeyBuilder;
 import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventRecorded;
+import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
 @Component
@@ -124,6 +125,7 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
             .withParentDataId(parentDataId)
             .withImgId(imageKey)
             .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_RECORDED_IN_HBASE)
+            .withRecordedEventType(RecordedEventType.EXIF)
             .build();
     }
 

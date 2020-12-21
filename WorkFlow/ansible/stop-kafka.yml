@@ -1,0 +1,63 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: INSTALL  Kafka "{{ kafka_version }}"
+    - user: name="{{ user_to_create }}" group=nogroup
+    - name: stop kafka service
+      shell: systemctl stop kafka.service 
+  vars:
+    ansible_become_pass: granada01
+    kafka_version: 2.3.0
+    user_to_create: kafka
+    kafka_install_folder: /opt/kafka
+    PWD: "{{ lookup('env', 'PWD') }}"
+    zookeeper_ids:
+      item_1:
+        key: "192.168.1.200"
+        value: 1
+      item_2:
+        key: "192.168.1.201"
+        value: 2
+      item_3:
+        key: "192.168.1.202"
+        value: 3
+    ids:
+      192.168.1.200:
+        value: ipc0
+      192.168.1.201:
+        value: ipc1
+      192.168.1.202:
+        value: ipc2
+      192.168.1.203:
+        value: ipc3
+      192.168.1.205:
+        value: ipc5
+      192.168.1.206:
+        value: ipc6
+    borker_ids:
+      192.168.1.200:
+        value: 1
+      192.168.1.201:
+        value: 2
+      192.168.1.202:
+        value: 3
+      192.168.1.203:
+        value: 4
+      192.168.1.205:
+        value: 5
+      192.168.1.206:
+        value: 6
+    broker_host_external_ids:
+      192.168.1.200:
+        value: "192.168.1.200"
+      192.168.1.201:
+        value: "192.168.1.201"
+      192.168.1.202:
+        value: "192.168.1.202"
+      192.168.1.203:
+        value: "192.168.1.203"
+      192.168.1.205:
+        value: "192.168.1.205"
+      192.168.1.206:
+        value: "192.168.1.206"

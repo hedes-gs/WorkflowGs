@@ -38,7 +38,8 @@ public class WfEvent extends HbaseData implements Serializable, Comparable<WfEve
         if (!super.equals(obj)) { return false; }
         if (this.getClass() != obj.getClass()) { return false; }
         WfEvent other = (WfEvent) obj;
-        return Objects.equals(this.imgId, other.imgId) && Objects.equals(this.parentDataId, other.parentDataId);
+        return Objects.equals(this.imgId, other.imgId) && Objects.equals(this.parentDataId, other.parentDataId)
+            && Objects.equals(this.dataId, other.dataId);
     }
 
     @Override
@@ -46,14 +47,18 @@ public class WfEvent extends HbaseData implements Serializable, Comparable<WfEve
         StringBuilder builder = new StringBuilder();
         builder.append(
             this.getClass()
-                .getSimpleName())
-            .append(" [imgId=")
-            .append(this.imgId)
-            .append(", [dataId=")
-            .append(this.dataId)
-            .append(", parentDataId=")
-            .append(this.parentDataId)
-            .append("]");
+                .getSimpleName());
+        builder.append(" -> [imgId=");
+        builder.append(this.imgId);
+        builder.append(", parentDataId=");
+        builder.append(this.parentDataId);
+        builder.append(", step=");
+        builder.append(this.step);
+        builder.append(", dataCreationDate=");
+        builder.append(this.dataCreationDate);
+        builder.append(", dataId=");
+        builder.append(this.dataId);
+        builder.append("]");
         return builder.toString();
     }
 

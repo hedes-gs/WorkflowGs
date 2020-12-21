@@ -4,9 +4,13 @@ import javax.annotation.Generated;
 
 public class WfEventFinal extends WfEvent {
 
+    protected int nbOFExpectedEvents;
+
     public WfEventFinal() {
 
     }
+
+    public int getNbOFExpectedEvents() { return this.nbOFExpectedEvents; }
 
     /**
      *
@@ -20,6 +24,7 @@ public class WfEventFinal extends WfEvent {
         this.imgId = builder.imgId;
         this.parentDataId = builder.parentDataId;
         this.step = builder.step;
+        this.nbOFExpectedEvents = builder.nbOFExpectedEvents;
     }
 
     /**
@@ -40,6 +45,7 @@ public class WfEventFinal extends WfEvent {
         private String      imgId;
         private String      parentDataId;
         private WfEventStep step;
+        private int         nbOFExpectedEvents;
 
         private Builder() {}
 
@@ -100,6 +106,18 @@ public class WfEventFinal extends WfEvent {
          */
         public Builder withStep(WfEventStep step) {
             this.step = step;
+            return this;
+        }
+
+        /**
+         * Builder method for nbOFExpectedEvents parameter.
+         *
+         * @param nbOFExpectedEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbOFExpectedEvents(int nbOFExpectedEvents) {
+            this.nbOFExpectedEvents = nbOFExpectedEvents;
             return this;
         }
 

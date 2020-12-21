@@ -13,6 +13,8 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.state.WindowStore;
@@ -20,8 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photos.serializers.FileToProcessSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.events.WfEvents;
+import com.workflow.model.files.FileToProcess;
 
 @Configuration
 public class ApplicationConfig extends AbstractApplicationConfig {
@@ -86,6 +90,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @Bean
     public Topology kafkaStreamsTopology(
         @Value("${topic.topicEvent}") String topicEvent,
+        @Value("${topic.topicDupFilteredFile}") String topicDupFilteredFile,
         @Value("${topic.finalTopic}") String finalTopic,
         @Value("${monitor.store.retentionPeriodInMs}") int retentionPeriodInMs,
         @Value("${monitor.store.windowSizeInMs}") int windowSizeInMs
@@ -102,23 +107,20 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             new WfEventsSerDe());
         builder.addStateStore(storebuilder);
 
-        KStream<String, WfEvents> pathOfImageKStream = this.buildKTableToStoreCreatedImages(builder, topicEvent);
-
+        KStream<String, WfEvents> pathOfImageKStream = builder
+            .stream(topicEvent, Consumed.with(Serdes.String(), new WfEventsSerDe()));
+        KTable<String, FileToProcess> tableOfFileToProcess = builder
+            .table(topicDupFilteredFile, Consumed.with(Serdes.String(), new FileToProcessSerDe()));
         pathOfImageKStream
             .transform(
                 () -> CacheMapCollector.of(ApplicationConfig.STORE_FOR_COLLECTION_OF_TIFFDATA),
                 ApplicationConfig.STORE_FOR_COLLECTION_OF_TIFFDATA)
-            .peek((k, v) -> AbstractApplicationConfig.LOGGER.info("[MONITOR][{}]Final publish", k));
-        pathOfImageKStream.to(finalTopic);
+            .peek((k, v) -> AbstractApplicationConfig.LOGGER.info("[MONITOR][{}]Final publish", k))
+            .toTable()
+            .join(tableOfFileToProcess, (v1, v2) -> v2)
+            .toStream()
+            .to(finalTopic, Produced.with(Serdes.String(), new FileToProcessSerDe()));
         return builder.build();
-    }
-
-    protected KStream<String, WfEvents> buildKTableToStoreCreatedImages(
-        StreamsBuilder builder,
-        String topicDupFilteredFile
-    ) {
-        return builder.stream(topicDupFilteredFile, Consumed.with(Serdes.String(), new WfEventsSerDe()))
-            .peek((k, v) -> AbstractApplicationConfig.LOGGER.info("[MONITOR][{}]Receive event {} ", k, v));
     }
 
 }

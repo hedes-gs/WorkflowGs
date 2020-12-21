@@ -5,12 +5,93 @@ import java.util.StringJoiner;
 
 import javax.annotation.Generated;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.workflow.model.builder.KeysBuilder.TopicCopyKeyBuilder;
+import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventCopy;
+import com.workflow.model.events.WfEventRecorded;
+import com.workflow.model.events.WfEventRecorded.RecordedEventType;
+import com.workflow.model.events.WfEventStep;
 import com.workflow.model.files.FileToProcess;
 
-public class KafkaManagedFileToProcess extends KafkaManagedObject {
-    protected byte[]                  rawFile;
-    protected String                  hashKey;
-    protected Optional<FileToProcess> origin;
+public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<Optional<FileToProcess>> {
+
+    protected static Logger LOGGER = LoggerFactory.getLogger(KafkaManagedFileToProcess.class);
+    protected byte[]        rawFile;
+    protected String        hashKey;
+
+    @Override
+    public WfEvent createWfEvent() {
+
+        String hbedoiHashCode = TopicCopyKeyBuilder.build(
+            this.getValue()
+                .get());
+        KafkaManagedFileToProcess.LOGGER.info(
+            "Create event for KafkaManagedFileToProcess : hbedoiHashCode =  {} - source is {} ",
+            hbedoiHashCode,
+            this.getValue()
+                .get());
+        return this.buildEvent(
+            this.getValue()
+                .get()
+                .getImageId(),
+            this.getValue()
+                .get()
+                .getImageId(),
+            hbedoiHashCode,
+            WfEventStep.WF_STEP_CREATED_FROM_STEP_LOCAL_COPY,
+            WfEventCopy.class);
+    }
+
+    public WfEvent createWfEvent(String parentDataId, WfEventStep step) {
+        String hbedoiHashCode = TopicCopyKeyBuilder.build(
+            this.getValue()
+                .get());
+        KafkaManagedFileToProcess.LOGGER.info(
+            "Create event for KafkaManagedFileToProcess : hbedoiHashCode =  {} - source is {} ",
+            hbedoiHashCode,
+            this.getValue()
+                .get());
+        return this.buildEvent(
+            this.getValue()
+                .get()
+                .getImageId(),
+            parentDataId,
+            hbedoiHashCode,
+            step,
+            WfEventRecorded.class);
+    }
+
+    private WfEvent buildEvent(
+        String imageKey,
+        String parentDataId,
+        String dataId,
+        WfEventStep step,
+        Class<? extends WfEvent> cl
+    ) {
+        if (cl.isAssignableFrom(WfEventCopy.class)) {
+            return this.buildCopyEvent(imageKey, parentDataId, dataId, step);
+        } else {
+            return WfEventRecorded.builder()
+                .withImgId(imageKey)
+                .withParentDataId(parentDataId)
+                .withDataId(dataId)
+                .withStep(step)
+                .withRecordedEventType(RecordedEventType.ARCHIVE)
+                .build();
+        }
+    }
+
+    protected WfEvent buildCopyEvent(String imageKey, String parentDataId, String dataId, WfEventStep step) {
+        return WfEventCopy.builder()
+            .withImgId(imageKey)
+            .withParentDataId(parentDataId)
+            .withDataId(dataId)
+            .withStep(step)
+            .build();
+    }
 
     @Generated("SparkTools")
     private KafkaManagedFileToProcess(Builder builder) {
@@ -18,21 +99,20 @@ public class KafkaManagedFileToProcess extends KafkaManagedObject {
         this.kafkaOffset = builder.kafkaOffset;
         this.rawFile = builder.rawFile;
         this.hashKey = builder.hashKey;
-        this.origin = builder.origin;
+        this.value = builder.value;
     }
 
     public byte[] getRawFile() { return this.rawFile; }
-
-    public Optional<FileToProcess> getOrigin() { return this.origin; }
 
     public String getHashKey() { return this.hashKey; }
 
     public static String toString(KafkaManagedFileToProcess r) {
         StringJoiner strJoiner = new StringJoiner("-");
-        r.origin.ifPresent(
-            (o) -> strJoiner.add(o.getHost())
-                .add(o.getPath())
-                .add(o.getName()));
+        r.getValue()
+            .ifPresent(
+                (o) -> strJoiner.add(o.getHost())
+                    .add(o.getPath())
+                    .add(o.getName()));
         return strJoiner.toString();
     }
 
@@ -55,7 +135,7 @@ public class KafkaManagedFileToProcess extends KafkaManagedObject {
         private long                    kafkaOffset;
         private byte[]                  rawFile;
         private String                  hashKey;
-        private Optional<FileToProcess> origin = Optional.empty();
+        private Optional<FileToProcess> value = Optional.empty();
 
         private Builder() {}
 
@@ -114,8 +194,8 @@ public class KafkaManagedFileToProcess extends KafkaManagedObject {
          *            field to set
          * @return builder
          */
-        public Builder withOrigin(Optional<FileToProcess> origin) {
-            this.origin = origin;
+        public Builder withValue(Optional<FileToProcess> origin) {
+            this.value = origin;
             return this;
         }
 

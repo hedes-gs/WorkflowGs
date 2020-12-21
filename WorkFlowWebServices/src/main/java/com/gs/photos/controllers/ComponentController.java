@@ -29,10 +29,11 @@ public class ComponentController {
     protected String                           topicImportEvent;
 
     @PostMapping(path = "/import/start")
-    public void startImport(@RequestBody ImportEvent importEvent) throws IOException {
+    public boolean startImport(@RequestBody ImportEvent importEvent) throws IOException {
         ComponentController.LOGGER.info("Request to start import with {}", importEvent);
         importEvent.setForTest(true);
-        importEvent.setNbMaxOfImages(10);
+        importEvent.setNbMaxOfImages(500);
         this.kafkaTemplate.send(this.topicImportEvent, importEvent);
+        return true;
     }
 }

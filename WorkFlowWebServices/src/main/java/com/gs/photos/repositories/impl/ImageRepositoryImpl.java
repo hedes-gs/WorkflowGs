@@ -5,10 +5,17 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
@@ -16,11 +23,23 @@ import com.gs.photos.controllers.GsPageImpl;
 import com.gs.photos.repositories.IHbaseImageThumbnailDAO;
 import com.gs.photos.repositories.IImageRepository;
 import com.gs.photos.services.IHFileServices;
+import com.gs.photos.web.assembler.ImageAssembler;
+import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.MinMaxDatesDto;
+import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventRecorded;
+import com.workflow.model.events.WfEventRecorded.RecordedEventType;
+import com.workflow.model.events.WfEventStep;
+import com.workflow.model.events.WfEvents;
 
 @Repository
 public class ImageRepositoryImpl implements IImageRepository {
+
+    private static Logger               LOGGER = LoggerFactory.getLogger(ImageRepositoryImpl.class);
+
+    @Autowired
+    protected ImageAssembler            imageAssembler;
 
     @Autowired
     protected IHbaseImageThumbnailDAO   hbaseImageThumbnailDAO;
@@ -36,6 +55,9 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Autowired
     protected IHFileServices            ihFileServices;
+
+    @Autowired
+    protected SimpMessagingTemplate     template;
 
     @Override
     public long countAll() throws IOException {
@@ -348,6 +370,55 @@ public class ImageRepositoryImpl implements IImageRepository {
         this.ihFileServices.delete(imageToDelete);
         this.hbaseImageThumbnailDAO.delete(creationDate, id, version);
 
+    }
+
+    int nbOfMessages = 0;
+
+    @KafkaListener(topics = "${topic.topicEvent}", containerFactory = "kafkaListenerContainerFactoryForEvent")
+    public void consumeFullyImageProcessed(@Payload(required = false) WfEvents message) {
+        if (message != null) {
+            message.getEvents()
+                .stream()
+                .filter(
+                    (e) -> e.getStep()
+                        .equals(WfEventStep.WF_STEP_CREATED_FROM_STEP_RECORDED_IN_HBASE)
+                        && (e instanceof WfEventRecorded)
+                        && (((WfEventRecorded) e).getRecordedEventType() == RecordedEventType.THUMB))
+                .map((e) -> this.findImageByEvent(e))
+                .filter((e) -> e != null)
+                .map((e) -> this.hbaseImageThumbnailDAO.toImageDTO(e))
+                .peek((e) -> ImageRepositoryImpl.LOGGER.info("[THUMBNAIL_DAO]Found image {}", e))
+                .map((e) -> this.extracted(e))
+                .forEach((e) -> this.template.convertAndSend("/topic/realtimeImportImages", e));
+            if (this.nbOfMessages++ > 25) {
+                try {
+                    ImageRepositoryImpl.LOGGER.info("Waiting 5 seconds");
+                    TimeUnit.MILLISECONDS.sleep(5000);
+                    this.nbOfMessages = 0;
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
+                }
+            }
+
+        } else {
+            ImageRepositoryImpl.LOGGER.warn("Kafka : Receive message null !");
+        }
+    }
+
+    protected EntityModel<ImageDto> extracted(ImageDto e) { return this.imageAssembler.toModel(e); }
+
+    private HbaseImageThumbnail findImageByEvent(WfEvent e) {
+        WfEventRecorded event = (WfEventRecorded) e;
+        HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
+        HbaseImageThumbnail hbaseData = builder.withCreationDate(event.getImageCreationDate())
+            .withImageId(e.getImgId())
+            .build();
+        try {
+            return this.hbaseImageThumbnailDAO.get(hbaseData);
+        } catch (IOException e1) {
+            ImageRepositoryImpl.LOGGER.warn("Unexpected error", e1);
+            throw new RuntimeException(e1);
+        }
     }
 
 }

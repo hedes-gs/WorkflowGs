@@ -130,6 +130,7 @@ public class BeanScan implements IScan {
     protected int                              heartBeatTime;
 
     protected Set<File>                        filesProcessed;
+    protected Set<File>                        filesProcessedOfSession;
 
     @Autowired
     protected Producer<String, ComponentEvent> producerForComponentEvent;
@@ -161,6 +162,7 @@ public class BeanScan implements IScan {
             this.beanTaskExecutor.execute(() -> this.scan());
         }
         this.filesProcessed = ConcurrentHashMap.newKeySet();
+        this.filesProcessedOfSession = ConcurrentHashMap.newKeySet();
         this.beanTaskExecutor.execute(() -> this.waitForImportEvent());
     }
 
@@ -192,7 +194,7 @@ public class BeanScan implements IScan {
                     importEvent.getNbMaxOfImages());
                 final String folder = rootFolderForNfs;
                 final String usedHostname = hostname;
-                int nbOfImages = 0;
+                this.filesProcessedOfSession.clear();
                 if (!nfsIsUsed) {
 
                     try (
@@ -248,7 +250,7 @@ public class BeanScan implements IScan {
         this.lock.readLock()
             .lock();
         try {
-            return !importEvent.isForTest() || (this.filesProcessed.size() <= importEvent.getNbMaxOfImages());
+            return !importEvent.isForTest() || (this.filesProcessedOfSession.size() < importEvent.getNbMaxOfImages());
         } finally {
             this.lock.readLock()
                 .unlock();
@@ -321,6 +323,7 @@ public class BeanScan implements IScan {
             .lock();
         try {
             this.filesProcessed.add(f);
+            this.filesProcessedOfSession.add(f);
         } finally {
             this.lock.writeLock()
                 .unlock();

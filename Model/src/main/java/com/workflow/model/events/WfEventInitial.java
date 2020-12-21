@@ -4,12 +4,12 @@ import javax.annotation.Generated;
 
 public class WfEventInitial extends WfEvent {
 
+    protected int             nbOfInitialEvents;
+
     /**
      *
      */
     private static final long serialVersionUID = 1L;
-
-    public WfEventInitial() {}
 
     @Generated("SparkTools")
     private WfEventInitial(Builder builder) {
@@ -18,11 +18,18 @@ public class WfEventInitial extends WfEvent {
         this.imgId = builder.imgId;
         this.parentDataId = builder.parentDataId;
         this.step = builder.step;
+        this.nbOfInitialEvents = builder.nbOfInitialEvents;
     }
+
+    public WfEventInitial() {}
+
+    public int getNbOfInitialEvents() { return this.nbOfInitialEvents; }
+
+    public void setNbOfInitialEvents(int nbOfInitialEvents) { this.nbOfInitialEvents = nbOfInitialEvents; }
 
     /**
      * Creates builder to build {@link WfEventInitial}.
-     *
+     * 
      * @return created builder
      */
     @Generated("SparkTools")
@@ -38,12 +45,13 @@ public class WfEventInitial extends WfEvent {
         private String      imgId;
         private String      parentDataId;
         private WfEventStep step;
+        private int         nbOfInitialEvents;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -55,7 +63,7 @@ public class WfEventInitial extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -67,7 +75,7 @@ public class WfEventInitial extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         *
+         * 
          * @param imgId
          *            field to set
          * @return builder
@@ -79,7 +87,7 @@ public class WfEventInitial extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         *
+         * 
          * @param parentDataId
          *            field to set
          * @return builder
@@ -91,7 +99,7 @@ public class WfEventInitial extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         *
+         * 
          * @param step
          *            field to set
          * @return builder
@@ -102,8 +110,20 @@ public class WfEventInitial extends WfEvent {
         }
 
         /**
+         * Builder method for nbOfInitialEvents parameter.
+         * 
+         * @param nbOfInitialEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbOfInitialEvents(int nbOfInitialEvents) {
+            this.nbOfInitialEvents = nbOfInitialEvents;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public WfEventInitial build() { return new WfEventInitial(this); }

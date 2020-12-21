@@ -113,7 +113,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
 
     private final static int compareForSorting(HbaseImageThumbnail o1, HbaseImageThumbnail o2) {
         return Comparator.comparing(HbaseImageThumbnail::getCreationDate)
-            .thenComparing(HbaseImageThumbnail::getImageId)
+            .thenComparing(HbaseImageThumbnail::getImageName)
             .compare(o1, o2);
     }
 
@@ -245,7 +245,8 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
                 .getFamilyMap(AbstractDAO.TABLE_PAGE_LIST_COLUMN_FAMILY)
                 .keySet());
 
-            long firstIndex = ((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE);
+            long firstIndex = Math
+                .min(getsList.size() - 1, ((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE));
             long lastIndex = Math.min(
                 getsList.size() - 1,
                 (((currentPageNumber * pageSize) % IImageThumbnailDAO.PAGE_SIZE) + pageSize) - 1);
@@ -322,7 +323,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
             .build();
 
         List<HbaseImageThumbnail> listOfNext = this.getNextThumbNailsOf(hbaseData);
-        listOfNext.sort((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o2, o1));
+        listOfNext.sort((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o1, o2));
         HbaseImageThumbnailDAO.LOGGER
             .info("getNextImageById of [{},{},{}] : {} ", creationDate, id, version, listOfNext);
         return listOfNext.stream()
@@ -339,7 +340,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
             .withImageId(id)
             .build();
         List<HbaseImageThumbnail> listOfPrevious = this.getPreviousThumbNailsOf(hbaseData);
-        listOfPrevious.sort((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o1, o2));
+        listOfPrevious.sort((o1, o2) -> HbaseImageThumbnailDAO.compareForSorting(o2, o1));
         HbaseImageThumbnailDAO.LOGGER
             .info("getPreviousImageById of [{},{},{}] : {} ", creationDate, id, version, listOfPrevious);
         return listOfPrevious.stream()
@@ -600,7 +601,8 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
         }
     }
 
-    private ImageDto toImageDTO(HbaseImageThumbnail instance) {
+    @Override
+    public ImageDto toImageDTO(HbaseImageThumbnail instance) {
         ImageDto.Builder builderImageDto = ImageDto.builder();
         ImageKeyDto.Builder builderImageKeyDto = ImageKeyDto.builder();
         builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
@@ -952,7 +954,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
                 this.getHbaseDataInformation()
                     .getTable())) {
 
-            for (int k = 0; k < 70; k++) {
+            for (int k = 0; k < 5; k++) {
                 final int page = k;
                 recursiveTasks.add(() -> this.loadPages(table, page, 100));
             }

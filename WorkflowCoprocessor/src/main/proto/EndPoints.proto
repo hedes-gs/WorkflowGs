@@ -1,0 +1,19 @@
+option java_package = "com.gs.workflow.coprocessor";
+option java_outer_classname = "LockTableHelper";
+option java_generic_services = true;
+option java_generate_equals_and_hash = true;
+option optimize_for = SPEED;
+message LockRequest {
+    required string family = 1;
+    required string column = 2;
+    required int64	value  = 3;
+}
+
+message LockResponse {
+  required int64 sum = 1 [default = 0];
+}
+
+service _LockService {
+  rpc lock(LockRequest) returns (LockResponse);
+  rpc releaseLock(LockRequest) returns (LockResponse);
+}

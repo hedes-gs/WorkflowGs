@@ -1,4 +1,4 @@
-import { PayloadLoadedImagesEvent, ApplicationEvent, DownloadSelectedImageEvent, LoadImagesOfMetadataEvent, LoadAllPersonsEvent } from './Actions'
+import { PayloadLoadedImagesEvent, ApplicationEvent, DownloadSelectedImageEvent, LoadImagesOfMetadataEvent, LoadAllPersonsEvent, DisplayRealTimeImagesEvent } from './Actions'
 import ApplicationSate from './State'
 
 import Actions from "./ActionsType";
@@ -35,6 +35,9 @@ const initialState: ApplicationSate = {
     displayPersons: {
         state: '',
         persons: []
+    },
+    realTimeSelected: {
+        isLoading: false
     }
 };
 
@@ -151,6 +154,23 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                 },
             );
             return returnedTarget;
+        }
+        case DisplayRealTimeImagesEvent: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: false,
+                        image: null
+                    },
+                    realTimeSelected: {
+                        isLoading: true
+                    }
+                },
+            );
+            return returnedTarget;
+
         }
         case LoadImagesOfMetadataEvent: {
             const returnedTarget = Object.assign(

@@ -40,6 +40,9 @@ export interface ApplicationState {
         isLoading: boolean,
         image?: ImageDto | null
     }
+    realTimeSelected: {
+        isLoading: boolean,
+    }
 };
 
 export interface ClientApplicationState {

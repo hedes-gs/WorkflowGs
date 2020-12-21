@@ -130,7 +130,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
     private void loggerStart(int nbOfRecords) { this.LOGGER.info("Starting to process {} records", nbOfRecords); }
 
     private KafkaManagedFileToProcess sendToNext(KafkaManagedFileToProcess fileToProcess) {
-        fileToProcess.getOrigin()
+        fileToProcess.getValue()
             .ifPresentOrElse((o) -> {
                 o.setImageId(fileToProcess.getHashKey());
                 this.producerForTopicWithFileToProcessValue.send(
@@ -167,7 +167,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
             return KafkaManagedFileToProcess.builder()
                 .withHashKey(key)
                 .withRawFile(rawFile)
-                .withOrigin(Optional.of(f.value()))
+                .withValue(Optional.of(f.value()))
                 .withKafkaOffset(f.offset())
                 .withPartition(f.partition())
                 .build();

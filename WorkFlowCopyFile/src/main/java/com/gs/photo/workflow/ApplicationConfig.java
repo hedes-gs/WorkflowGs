@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 
 import com.gs.photos.serializers.FileToProcessDeserializer;
-import com.gs.photos.serializers.FileToProcessSerializer;
 import com.workflow.model.files.FileToProcess;
 
 @Configuration
@@ -27,7 +26,6 @@ import com.workflow.model.files.FileToProcess;
 public class ApplicationConfig extends AbstractApplicationConfig {
 
     private static final String KAFAK_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
-    private static final String KAFKA_FILE_TO_PROCESS_SERIALIZER   = FileToProcessSerializer.class.getName();
 
     @Bean(name = "consumerForTopicWithFileToProcessValue")
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
@@ -57,7 +55,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
     @Bean
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    public Producer<String, FileToProcess> producerForTopicWithFileToProcessValue(
+    public Producer<String, Object> producerForTopicWithFileToProcessOrEventValue(
         @Value("${transaction.id}") String transactionId,
         @Value("${transaction.timeout}") String transactionTimeout,
         @Value("${bootstrap.servers}") String bootstrapServers
@@ -73,7 +71,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Properties settings = new Properties();
         settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
-        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ApplicationConfig.KAFKA_FILE_TO_PROCESS_SERIALIZER);
+        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_MULTIPLE_SERIALIZER);
         settings.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionId + "-" + hostname);
         settings.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
         settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
@@ -83,7 +81,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
         AbstractApplicationConfig.LOGGER.info("creating producer string string with config {} ", settings.toString());
-        Producer<String, FileToProcess> producer = new KafkaProducer<>(settings);
+        Producer<String, Object> producer = new KafkaProducer<>(settings);
         return producer;
     }
 
