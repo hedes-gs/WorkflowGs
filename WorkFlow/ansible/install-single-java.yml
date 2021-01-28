@@ -1,0 +1,17 @@
+- name: "Print msg "
+  debug:
+    msg: "Installing {{ item.key }} - {{ item.value.split('/')[-1] }}"
+- name: "Download JAVA"
+  get_url:
+    url: "{{ item.value }}"
+    owner: "root"
+    dest: /usr/lib/jvm/
+    mode: 0644
+    force: no
+  ignore_errors: yes
+- name: Unpack the tar
+  unarchive:
+    owner: "root"
+    src: "/usr/lib/jvm/{{ item.value.split('/')[-1] }}"
+    dest: /usr/lib/jvm/
+    remote_src: true

@@ -208,7 +208,7 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
             this.props.deleteElement != null) {
             this.props.thunkActionForDeleteElement(
                 this.props.deleteElement(this.props.image, chip),
-                selectedImageIsLoading(this.props.image._links.self.href, this.props.image._links._exif.href));
+                selectedImageIsLoading(this.props.image));
         }
 
     };

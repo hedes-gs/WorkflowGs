@@ -3,7 +3,6 @@ package com.workflow.model.dtos;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
@@ -13,7 +12,6 @@ public class MinMaxDatesDto implements Serializable {
     protected OffsetDateTime  minDate;
     protected OffsetDateTime  maxDate;
 
-    @Generated("SparkTools")
     private MinMaxDatesDto(Builder builder) {
         this.minDate = builder.minDate;
         this.maxDate = builder.maxDate;
@@ -36,13 +34,11 @@ public class MinMaxDatesDto implements Serializable {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link MinMaxDatesDto}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private OffsetDateTime minDate;
         private OffsetDateTime maxDate;

@@ -46,10 +46,12 @@
 		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Root level="info">
-			<AppenderRef ref="Console" />
-			<AppenderRef ref="RollingFile" />
-			<AppenderRef ref="RollingFileJson" />
+		<Root level="debug">
+			<AppenderRef ref="RollingFile" level="info" />
+			<AppenderRef ref="RollingFileJson" level="warn" />
 		</Root>
+		<Logger name="com.gs" level="info">
+			<AppenderRef ref="RollingFileJson" />
+		</Logger>
 	</Loggers>
 </Configuration>

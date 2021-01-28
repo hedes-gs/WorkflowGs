@@ -3,8 +3,6 @@ package com.workflow.model.files;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 import com.workflow.model.HbaseData;
@@ -25,7 +23,6 @@ public class FileToProcess extends HbaseData implements Serializable {
     private long              importDate;
     private ImportEvent       importEvent;
 
-    @Generated("SparkTools")
     private FileToProcess(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -120,16 +117,14 @@ public class FileToProcess extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link FileToProcess}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link FileToProcess}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long          dataCreationDate;
         private String        dataId;
@@ -147,7 +142,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -159,7 +154,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -171,7 +166,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for parent parameter.
-         *
+         * 
          * @param parent
          *            field to set
          * @return builder
@@ -183,7 +178,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for name parameter.
-         *
+         * 
          * @param name
          *            field to set
          * @return builder
@@ -195,7 +190,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for rootForNfs parameter.
-         *
+         * 
          * @param rootForNfs
          *            field to set
          * @return builder
@@ -207,7 +202,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for path parameter.
-         *
+         * 
          * @param path
          *            field to set
          * @return builder
@@ -219,7 +214,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for host parameter.
-         *
+         * 
          * @param host
          *            field to set
          * @return builder
@@ -231,7 +226,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -243,7 +238,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for compressedFile parameter.
-         *
+         * 
          * @param compressedFile
          *            field to set
          * @return builder
@@ -255,7 +250,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for importDate parameter.
-         *
+         * 
          * @param importDate
          *            field to set
          * @return builder
@@ -267,7 +262,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method for importEvent parameter.
-         *
+         * 
          * @param importEvent
          *            field to set
          * @return builder
@@ -279,7 +274,7 @@ public class FileToProcess extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public FileToProcess build() { return new FileToProcess(this); }

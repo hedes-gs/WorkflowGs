@@ -2,8 +2,6 @@ package com.workflow.model;
 
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 @HbaseTableName(value = "persons")
 public class HbasePersons extends HbaseData {
 
@@ -18,11 +16,11 @@ public class HbasePersons extends HbaseData {
     @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
     protected long            nbOfElements;
 
-    @Generated("SparkTools")
     private HbasePersons(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
         this.person = builder.person;
+        this.nbOfElements = builder.nbOfElements;
     }
 
     public HbasePersons() { super(); }
@@ -63,26 +61,25 @@ public class HbasePersons extends HbaseData {
 
     /**
      * Creates builder to build {@link HbasePersons}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbasePersons}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
         private String person;
+        private long   nbOfElements;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -94,7 +91,7 @@ public class HbasePersons extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -106,7 +103,7 @@ public class HbasePersons extends HbaseData {
 
         /**
          * Builder method for person parameter.
-         *
+         * 
          * @param person
          *            field to set
          * @return builder
@@ -117,8 +114,20 @@ public class HbasePersons extends HbaseData {
         }
 
         /**
+         * Builder method for nbOfElements parameter.
+         * 
+         * @param nbOfElements
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbOfElements(long nbOfElements) {
+            this.nbOfElements = nbOfElements;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbasePersons build() { return new HbasePersons(this); }

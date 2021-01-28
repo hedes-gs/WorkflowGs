@@ -46,7 +46,7 @@ class RatingsList extends React.Component<RatingsProp, RatingsStat> {
         super(props);
         this.state = { updateByWebsocket: false };
         const client = new Client({
-            brokerURL: "ws://192.168.1.128:8080/app/websocket",
+            brokerURL: "ws://localhost/app/websocket",
             connectHeaders: {
             },
             debug: function (str: string) {
@@ -65,7 +65,7 @@ class RatingsList extends React.Component<RatingsProp, RatingsStat> {
             console.log('Broker reported error: ' + frame.headers['message']);
             console.log('Additional details: ' + frame.body);
         };
-        client.activate();
+        //         client.activate();
 
     }
 

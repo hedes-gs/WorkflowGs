@@ -132,11 +132,11 @@
     - name: Delete topics
       shell: /home/user/tools/kerberos/delete-topics.sh
       become_user: user
-      when:  inventory_hostname == "192.168.1.200"
+      when:  inventory_hostname == "ipc0"
     - name: Create topics
       shell: /home/user/tools/kerberos/create-topics.sh
       become_user: user
-      when:  inventory_hostname == "192.168.1.200"
+      when:  inventory_hostname == "ipc0"
   vars:
     ansible_become_pass: granada01
     kafka_version: 2.6.0
@@ -145,50 +145,58 @@
     PWD: "{{ lookup('env', 'PWD') }}"
     zookeeper_ids:
       item_1:
-        key: "192.168.1.200"
+        key: "ipc0"
         value: 1
       item_2:
-        key: "192.168.1.201"
+        key: "ipc1"
         value: 2
       item_3:
-        key: "192.168.1.202"
+        key: "ipc2"
         value: 3
     ids:
-      192.168.1.200:
+      ipc0:
         value: ipc0
-      192.168.1.201:
+      ipc1:
         value: ipc1
-      192.168.1.202:
+      ipc2:
         value: ipc2
-      192.168.1.203:
+      ipc3:
         value: ipc3
-      192.168.1.205:
+      ipc5:
         value: ipc5
-      192.168.1.206:
+      ipc6:
         value: ipc6
     borker_ids:
-      192.168.1.200:
+      ipc0:
         value: 1
-      192.168.1.201:
+      ipc1:
         value: 2
-      192.168.1.202:
+      ipc2:
         value: 3
-      192.168.1.203:
+      ipc3:
         value: 4
-      192.168.1.205:
+      ipc5:
         value: 5
-      192.168.1.206:
+      ipc6:
         value: 6
+      ipc7:
+        value: 7
+      ipc8:
+        value: 8
+      ipc9:
+        value: 9
+      192.168.1.210:
+        value: 10
     broker_host_external_ids:
-      192.168.1.200:
-        value: "192.168.1.200"
-      192.168.1.201:
-        value: "192.168.1.201"
-      192.168.1.202:
-        value: "192.168.1.202"
-      192.168.1.203:
-        value: "192.168.1.203"
-      192.168.1.205:
-        value: "192.168.1.205"
-      192.168.1.206:
-        value: "192.168.1.206"
+      ipc0:
+        value: "ipc0"
+      ipc1:
+        value: "ipc1"
+      ipc2:
+        value: "ipc2"
+      ipc3:
+        value: "ipc3"
+      ipc5:
+        value: "ipc5"
+      ipc6:
+        value: "ipc6"

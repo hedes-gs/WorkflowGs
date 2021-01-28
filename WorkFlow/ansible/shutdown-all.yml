@@ -1,0 +1,9 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: Shutdown
+    - name: Shutdown
+      shell: shutdown -P now
+  vars:
+    ansible_become_pass: granada01

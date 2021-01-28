@@ -2,7 +2,6 @@ package com.workflow.model.dtos;
 
 import java.time.OffsetDateTime;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
@@ -19,7 +18,6 @@ public class ImageVersionDto {
     protected int            orientation;
     protected byte[]         jpegContent;
 
-    @Generated("SparkTools")
     private ImageVersionDto(Builder builder) {
         this.imageId = builder.imageId;
         this.imageName = builder.imageName;
@@ -33,6 +31,8 @@ public class ImageVersionDto {
         this.orientation = builder.orientation;
         this.jpegContent = builder.jpegContent;
     }
+
+    public ImageVersionDto() {}
 
     public int getOrientation() { return this.orientation; }
 
@@ -59,13 +59,11 @@ public class ImageVersionDto {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ImageVersionDto}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private String         imageId;
         private String         imageName;

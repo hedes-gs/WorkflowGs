@@ -14,12 +14,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.gs.photo.workflow.IBeanTaskExecutor;
+import com.gs.photo.common.workflow.IBeanTaskExecutor;
+import com.gs.photo.common.workflow.TimeMeasurement.Step;
+import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
+import com.gs.photo.common.workflow.internal.KafkaManagedWfEvents;
 import com.gs.photo.workflow.IMonitor;
-import com.gs.photo.workflow.TimeMeasurement.Step;
 import com.gs.photo.workflow.daos.impl.CacheNodeDAOV2;
-import com.gs.photo.workflow.internal.GenericKafkaManagedObject;
-import com.gs.photo.workflow.internal.KafkaManagedWfEvents;
 import com.workflow.model.events.WfEvents;
 
 public class BeanMonitor implements IMonitor {

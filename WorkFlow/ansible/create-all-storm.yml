@@ -1,0 +1,39 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: "create storm"
+      include_tasks: create-storm.yml
+  vars:
+    ansible_become_pass: granada01
+    storm_version: 2.2.0
+    user_to_create: storm
+    storm_install_folder: /home/storm
+    PWD: "{{ lookup('env', 'PWD') }}"
+    storm_hosts:
+      ipc0:
+        value: "ipc0"
+      ipc1:
+        value: "ipc1"
+      ipc2:
+        value: "ipc2"
+      ipc3:
+        value: "ipc3"
+      ipc5:
+        value: "ipc5"
+      ipc6:
+        value: "ipc6"
+      ipc6:
+        value: "ipc6"
+      ipc7:
+        value: "ipc7"
+      ipc8:
+        value: "ipc8"
+      ipc9:
+        value: "ipc9"
+      ipc10:
+        value: "ipc10"
+      ipc11:
+        value: "ipc11"
+      ipc12:
+        value: "ipc12"
+    storm_host: "{{ storm_hosts[inventory_hostname].value }}"

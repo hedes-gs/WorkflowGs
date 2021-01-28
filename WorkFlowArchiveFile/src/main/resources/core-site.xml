@@ -30,6 +30,8 @@
 		<value>true</value>
 	</property>
 	
+	
+	
 
 	<property>
 		<name>ipc.client.bind.wildcard.addr</name>
@@ -101,6 +103,12 @@
 		<name>dfs.data.transfer.protection</name>
 		<value>authentication</value>
 	</property>
+	<property>
+		<name>dfs.client.slow.io.warning.threshold.ms</name>
+		<value>120000</value>
+	</property>
+	
+	
 	<!-- End of Datanode info -->
 
 

@@ -1,6 +1,5 @@
 package com.workflow.model.dtos;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
@@ -13,7 +12,6 @@ public class ExifDTO {
     protected short[]     path;
     protected String      displayableValue;
 
-    @Generated("SparkTools")
     private ExifDTO(Builder builder) {
         this.imageOwner = builder.imageOwner;
         this.displayableName = builder.displayableName;
@@ -57,16 +55,14 @@ public class ExifDTO {
 
     /**
      * Creates builder to build {@link ExifDTO}.
-     * 
+     *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ExifDTO}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private ImageKeyDto imageOwner;
         private String      displayableName;
@@ -79,7 +75,7 @@ public class ExifDTO {
 
         /**
          * Builder method for imageOwner parameter.
-         * 
+         *
          * @param imageOwner
          *            field to set
          * @return builder
@@ -91,7 +87,7 @@ public class ExifDTO {
 
         /**
          * Builder method for displayableName parameter.
-         * 
+         *
          * @param displayableName
          *            field to set
          * @return builder
@@ -103,7 +99,7 @@ public class ExifDTO {
 
         /**
          * Builder method for description parameter.
-         * 
+         *
          * @param description
          *            field to set
          * @return builder
@@ -115,7 +111,7 @@ public class ExifDTO {
 
         /**
          * Builder method for tagValue parameter.
-         * 
+         *
          * @param tagValue
          *            field to set
          * @return builder
@@ -127,7 +123,7 @@ public class ExifDTO {
 
         /**
          * Builder method for path parameter.
-         * 
+         *
          * @param path
          *            field to set
          * @return builder
@@ -139,7 +135,7 @@ public class ExifDTO {
 
         /**
          * Builder method for displayableValue parameter.
-         * 
+         *
          * @param displayableValue
          *            field to set
          * @return builder
@@ -151,7 +147,7 @@ public class ExifDTO {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public ExifDTO build() { return new ExifDTO(this); }

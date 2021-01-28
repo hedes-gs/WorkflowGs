@@ -11,8 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 @HbaseTableName(value = "image_thumbnail", page_table = true)
@@ -37,9 +35,11 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
     private static final long                      serialVersionUID               = 1L;
 
     // Row key
-    @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
+    @Column(hbaseName = "region_salt", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+    protected short                                regionSalt;
+    @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
     protected long                                 creationDate;
-    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
     protected String                               imageId;
 
     // Data
@@ -110,10 +110,10 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
     @Column(hbaseName = "ratings", toByte = ToByteLong.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_RATINGS, rowKeyNumber = 122)
     protected HashSet<Long>                        ratings;
 
-    @Generated("SparkTools")
     private HbaseImageThumbnail(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
+        this.regionSalt = builder.regionSalt;
         this.creationDate = builder.creationDate;
         this.imageId = builder.imageId;
         this.imageName = builder.imageName;
@@ -141,6 +141,10 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
         this.persons = builder.persons;
         this.ratings = builder.ratings;
     }
+
+    public short getRegionSalt() { return this.regionSalt; }
+
+    public void setRegionSalt(short regionSalt) { this.regionSalt = regionSalt; }
 
     public HashSet<String> getPersons() { return this.persons; }
 
@@ -293,6 +297,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
             this.path,
             this.persons,
             this.ratings,
+            this.regionSalt,
             this.thumbName,
             this.thumbnail,
             this.width);
@@ -315,9 +320,10 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
             && Arrays.equals(this.lens, other.lens) && (this.orientation == other.orientation)
             && (this.originalHeight == other.originalHeight) && (this.originalWidth == other.originalWidth)
             && Objects.equals(this.path, other.path) && Objects.equals(this.persons, other.persons)
-            && Objects.equals(this.ratings, other.ratings) && Arrays.equals(this.shiftExpo, other.shiftExpo)
-            && Arrays.equals(this.speed, other.speed) && Objects.equals(this.thumbName, other.thumbName)
-            && this.compareMap(other.thumbnail) && (this.width == other.width);
+            && Objects.equals(this.ratings, other.ratings) && (this.regionSalt == other.regionSalt)
+            && Arrays.equals(this.shiftExpo, other.shiftExpo) && Arrays.equals(this.speed, other.speed)
+            && Objects.equals(this.thumbName, other.thumbName) && Objects.equals(this.thumbnail, other.thumbnail)
+            && (this.width == other.width);
     }
 
     protected boolean compareMap(Map<Integer, SizeAndJpegContent> m) {
@@ -421,19 +427,18 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
     /**
      * Creates builder to build {@link HbaseImageThumbnail}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageThumbnail}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long                                 dataCreationDate;
         private String                               dataId;
+        private short                                regionSalt;
         private long                                 creationDate;
         private String                               imageId;
         private String                               imageName;
@@ -465,7 +470,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -477,7 +482,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -488,8 +493,20 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
         }
 
         /**
+         * Builder method for regionSalt parameter.
+         * 
+         * @param regionSalt
+         *            field to set
+         * @return builder
+         */
+        public Builder withRegionSalt(short regionSalt) {
+            this.regionSalt = regionSalt;
+            return this;
+        }
+
+        /**
          * Builder method for creationDate parameter.
-         *
+         * 
          * @param creationDate
          *            field to set
          * @return builder
@@ -501,7 +518,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -513,7 +530,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for imageName parameter.
-         *
+         * 
          * @param imageName
          *            field to set
          * @return builder
@@ -525,7 +542,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for thumbName parameter.
-         *
+         * 
          * @param thumbName
          *            field to set
          * @return builder
@@ -537,7 +554,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for path parameter.
-         *
+         * 
          * @param path
          *            field to set
          * @return builder
@@ -549,7 +566,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for width parameter.
-         *
+         * 
          * @param width
          *            field to set
          * @return builder
@@ -561,7 +578,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for height parameter.
-         *
+         * 
          * @param height
          *            field to set
          * @return builder
@@ -573,7 +590,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for originalWidth parameter.
-         *
+         * 
          * @param originalWidth
          *            field to set
          * @return builder
@@ -585,7 +602,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for originalHeight parameter.
-         *
+         * 
          * @param originalHeight
          *            field to set
          * @return builder
@@ -597,7 +614,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for importDate parameter.
-         *
+         * 
          * @param importDate
          *            field to set
          * @return builder
@@ -609,7 +626,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for orientation parameter.
-         *
+         * 
          * @param orientation
          *            field to set
          * @return builder
@@ -621,7 +638,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for thumbnail parameter.
-         *
+         * 
          * @param thumbnail
          *            field to set
          * @return builder
@@ -633,7 +650,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for lens parameter.
-         *
+         * 
          * @param lens
          *            field to set
          * @return builder
@@ -645,7 +662,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for focalLens parameter.
-         *
+         * 
          * @param focalLens
          *            field to set
          * @return builder
@@ -657,7 +674,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for speed parameter.
-         *
+         * 
          * @param speed
          *            field to set
          * @return builder
@@ -669,7 +686,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for aperture parameter.
-         *
+         * 
          * @param aperture
          *            field to set
          * @return builder
@@ -681,7 +698,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for isoSpeed parameter.
-         *
+         * 
          * @param isoSpeed
          *            field to set
          * @return builder
@@ -693,7 +710,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for camera parameter.
-         *
+         * 
          * @param camera
          *            field to set
          * @return builder
@@ -705,7 +722,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for shiftExpo parameter.
-         *
+         * 
          * @param shiftExpo
          *            field to set
          * @return builder
@@ -717,7 +734,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for copyright parameter.
-         *
+         * 
          * @param copyright
          *            field to set
          * @return builder
@@ -729,7 +746,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for artist parameter.
-         *
+         * 
          * @param artist
          *            field to set
          * @return builder
@@ -741,7 +758,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for importName parameter.
-         *
+         * 
          * @param importName
          *            field to set
          * @return builder
@@ -753,7 +770,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for albums parameter.
-         *
+         * 
          * @param albums
          *            field to set
          * @return builder
@@ -765,7 +782,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for keyWords parameter.
-         *
+         * 
          * @param keyWords
          *            field to set
          * @return builder
@@ -777,7 +794,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for persons parameter.
-         *
+         * 
          * @param persons
          *            field to set
          * @return builder
@@ -789,7 +806,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method for ratings parameter.
-         *
+         * 
          * @param ratings
          *            field to set
          * @return builder
@@ -801,7 +818,7 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImageThumbnail build() { return new HbaseImageThumbnail(this); }

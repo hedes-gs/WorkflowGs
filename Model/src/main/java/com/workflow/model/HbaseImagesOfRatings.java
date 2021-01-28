@@ -6,8 +6,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 @HbaseTableName(value = "images_ratings", page_table = true)
 public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
     private static final long serialVersionUID = 1L;
@@ -15,7 +13,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
     @Column(hbaseName = "rating_value", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_RATINGS)
     protected long            ratingValue;
 
-    @Generated("SparkTools")
     private HbaseImagesOfRatings(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -155,7 +152,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     public long getRatingValue() { return this.ratingValue; }
@@ -165,7 +161,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
     /**
      * Builder to build {@link HbaseImagesOfRatings}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long            dataCreationDate;
         private String          dataId;

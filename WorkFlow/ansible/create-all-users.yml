@@ -1,0 +1,21 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: "create applications user "
+      include_tasks: create-single-user.yml
+      loop: "{{ users }}"
+  vars:
+    ansible_become_pass: granada01
+    users:
+      - wf_hbase
+      - wf_archive
+      - wf_copy_files
+      - wf_cmp_hashkey
+      - wf_dupcheck
+      - wf_ext_img_infos
+      - wf_proc_and_publish_exif_data
+      - wf_proc_and_publish_photo
+      - wf_scan
+      - wf_monitor
+      - wf_nfs
+      - wf_storm

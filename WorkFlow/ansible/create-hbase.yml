@@ -1,0 +1,157 @@
+- user: name="{{ user_to_create }}" group=nogroup shell=/bin/bash
+- name: deploy bash_profile
+  template:
+    src: ./tools/hbase/bash_profile
+    dest: "~hbase/.bash_profile"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy run.sh
+  template:
+    src: ./tools/hbase/run.sh
+    dest: "~hbase/run.sh"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0755
+- name: Download hbase {{ hbase_version }}
+  get_url: 
+    url: http://www-eu.apache.org/dist/hbase/{{ hbase_version }}/hbase-{{ hbase_version }}-bin.tar.gz
+    owner: "{{ user_to_create }}"
+    dest: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
+    mode: 0644
+    force: no
+  ignore_errors: yes
+- name: Unpack the tar
+  unarchive:
+    src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
+    dest: "{{ hbase_install_folder }}"
+    remote_src: true
+- name: remove symlink to this version
+  file:
+    path: "{{ hbase_install_folder }}/latest"
+    state: absent
+- name: Symlink {{ hbase_install_folder }}/latest to this version
+  file:
+    path: "{{ hbase_install_folder }}"
+    src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}"
+    dest: "{{ hbase_install_folder }}/latest"
+    owner: "{{ user_to_create }}"
+    state: link
+    force: yes
+- name: chown
+  shell: " chown -R {{ user_to_create }}:nogroup {{ hbase_install_folder }}/hbase-{{ hbase_version }}"
+- name: Create folder {{ hbase_install_folder }}/latest/logs
+  file:
+    path: "{{ hbase_install_folder }}/latest/logs"
+    state: directory
+    mode: 0700
+    owner: "{{ user_to_create }}"
+    group: nogroup
+- name: Create folder {{ hbase_install_folder }}/latest/pids
+  file:
+    path: "{{ hbase_install_folder }}/latest/pids"
+    state: directory
+    mode: 0700
+    owner: "{{ user_to_create }}"
+    group: nogroup
+- name: rm all logs
+  shell:  "rm -f {{ hbase_install_folder }}/latest/logs/*"
+- name: Create folders .~hbase/.ssh
+  file:
+    path: ~hbase/.ssh
+    state: directory
+    mode: 0700
+    owner: "{{ user_to_create }}"
+    group: nogroup
+- name: deploy keys and files
+  template:
+    src: ./tools/hbase/authorized_keys
+    dest: "~hbase/.ssh/authorized_keys"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy ./tools/hbase/hbase-site.xml
+  template:
+    src: ./tools/hbase/hbase-site.xml
+    dest: "~hbase/latest/conf"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600  
+- name: deploy ./tools/hbase/hbase-env.sh
+  template:
+    src: ./tools/hbase/hbase-env.sh
+    dest: "~hbase/latest/conf"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy ./tools/hbase/regionservers on master
+  template:
+    src: ./tools/hbase/regionservers
+    dest: "~hbase/latest/conf"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy keys and files
+  template:
+    src: ./tools/hbase/bashrc
+    dest: "~hbase/.bashrc"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy keys and files
+  template:
+    src: ./tools/hbase/client_jaas.conf
+    dest: "~hbase/latest/conf"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy keys and files
+  copy:
+    src: ./tools/hbase/keytabs/hbase_all.keytab
+    dest: "~hbase/latest/conf/"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600 
+- name: deploy hadoop config file core-site
+  template:
+    src: ./tools/hadoop/core-site.xml
+    dest: "~hbase/latest/conf/"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: deploy hadoop config file hdfs-site
+  template:
+    src: ./tools/hadoop/hdfs-site.xml
+    dest: "~hbase/latest/conf/"
+    owner: "{{ user_to_create }}"
+    group: nogroup
+    mode: 0600
+- name: Create folder  {{ hbase_install_folder }}/latest/monitor
+  file:
+    path: "{{ hbase_install_folder }}/latest/monitor"
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: deploy prometheus config_prometheus.yml
+  copy:
+    src: ./tools/hbase/config_prometheus.yml
+    dest: "{{ hbase_install_folder }}/latest/monitor/config_prometheus.yml"
+    owner: "{{ user_to_create }}"
+    mode: 0666
+- name: deploy prometheus jars.
+  copy:
+    src: ./tools/kafka/jmx_prometheus_javaagent-0.12.0.jar
+    dest: "{{ hbase_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
+    owner: "{{ user_to_create }}"
+    mode: 0666        
+- name: deploy coprocesseur jars.
+  copy:
+    src: ./tools/hbase/coprocessor.jar
+    dest: "{{ hbase_install_folder }}/latest/lib/coprocessor.jar"
+    owner: "{{ user_to_create }}"
+    mode: 0666        
+- name: deploy hbase filters
+  copy:
+    src: ./tools/hbase/hbase-filters.jar
+    dest: "{{ hbase_install_folder }}/latest/lib/hbase-filters.jar"
+    owner: hbase
+    mode: 0666

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 public class CoprocessorForHbaseExifData implements RegionCoprocessor, RegionObserver {
     protected RegionCoprocessorEnvironment env;
 
+    protected static final int             FIXED_WIDTH_SALT_TAG   = 2;
     protected static final int             FIXED_WIDTH_IMAGE_ID   = 64;
     protected static final int             FIXED_WIDTH_EXIF_TAG   = 2;
     protected static final int             FIXED_WIDTH_EXIF_VALUE = 128;
@@ -90,30 +91,40 @@ public class CoprocessorForHbaseExifData implements RegionCoprocessor, RegionObs
         }
     }
 
-    private boolean shouldFamilyInsourceBeRecordedInMetadata(byte[] key) { // TODO Auto-generated method stub
+    private boolean shouldFamilyInsourceBeRecordedInMetadata(byte[] key) {
         return !Objects.deepEquals(key, this.FAMILY_TO_EXCLUDE);
     }
 
     private byte[] buildTableMetaDataRowKey(byte[] row) {
 
         byte[] retValue = new byte[row.length];
+        // Copy salt to HbaseExifDataOfImages
+        System.arraycopy(row, 0, retValue, 0, CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG);
+
+        // Copy imageId to HbaseExifDataOfImages
         System.arraycopy(
             row,
-            CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_PATH,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG
+                + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_PATH,
             retValue,
-            0,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG,
             CoprocessorForHbaseExifData.FIXED_WIDTH_IMAGE_ID);
+
+        // Copy exif tag to HbaseExifDataOfImages
         System.arraycopy(
             row,
-            0,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG,
             retValue,
-            CoprocessorForHbaseExifData.FIXED_WIDTH_IMAGE_ID,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_IMAGE_ID + CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG,
             CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG);
+
+        // Copy exif path tag to HbaseExifDataOfImages
         System.arraycopy(
             row,
-            CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG,
             retValue,
-            CoprocessorForHbaseExifData.FIXED_WIDTH_IMAGE_ID + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG,
+            CoprocessorForHbaseExifData.FIXED_WIDTH_IMAGE_ID + CoprocessorForHbaseExifData.FIXED_WIDTH_SALT_TAG
+                + CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_TAG,
             CoprocessorForHbaseExifData.FIXED_WIDTH_EXIF_PATH);
 
         return retValue;

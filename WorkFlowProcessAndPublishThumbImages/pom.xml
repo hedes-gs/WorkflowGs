@@ -16,11 +16,41 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-integration</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.gs.photos</groupId>
+			<artifactId>WorkFlowCommonStreams</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-endpoint</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>HbaseFilters</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>hbaseClientShaded</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-spring</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
@@ -43,12 +73,6 @@
 
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -80,6 +104,10 @@
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-common</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -89,29 +117,6 @@
 				<exclusion>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.gs.photos</groupId>
-			<artifactId>WorkFlowCommonStreams</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.gs.photos</groupId>
-			<artifactId>HbaseFilters</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>

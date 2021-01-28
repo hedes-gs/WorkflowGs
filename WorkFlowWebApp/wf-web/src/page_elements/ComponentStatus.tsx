@@ -74,9 +74,11 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
     private keywords: string;
     private album: string;
     private importEvents: Map<String, ImportEvent>;
+    private socket: WebSocket;
 
     constructor(props: ComponentStatusProps) {
         super(props);
+        // const handler = this.handler.bind(this)
         var SortedMap = require("collections/sorted-map");
         this.state = {
             message: new SortedMap(),
@@ -86,12 +88,20 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
         this.album = '';
         this.keywords = '';
         this.importEvents = new Map();
+        this.socket = new WebSocket("ws://192.168.1.128/ws/componentStatus");
+        const handlerSocketEvent = this.handlerSocketEvent.bind(this);
+        this.socket.onmessage = (event => {
+            handlerSocketEvent(event);
+        });
+        this.socket.onopen = (event => console.log('... event ' + event))
+
+
         const client = new Client({
-            brokerURL: "ws://192.168.1.128:8080/app/websocket",
+            brokerURL: "ws://192.168.1.128/ws/messages",
             connectHeaders: {
             },
             debug: function (str: string) {
-                // console.log(str);
+                console.log(str);
             },
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
@@ -100,7 +110,7 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
         const handler = this.handler.bind(this);
         client.onConnect = function (frame) {
             console.log('Stomp is connected');
-            var subscription = client.subscribe("/topic/componentStatus", handler);
+            var subscription = client.subscribe('', handler);
         };
 
         client.onStompError = function (frame) {
@@ -111,7 +121,7 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
             console.log('Broker reported error: ' + frame.headers['message']);
             console.log('Additional details: ' + frame.body);
         };
-        client.activate();
+        // client.activate();
         this.handleClickOpen = this.handleClickOpen.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleAddScanToStart = this.handleAddScanToStart.bind(this);
@@ -124,6 +134,20 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
     handler(msg: IMessage) {
         const message = this.state.message;
         const componentEvent = toComponentEvent(JSON.parse(msg.body));
+        if (componentEvent.componentName != null) {
+            message.set(componentEvent.componentName, componentEvent);
+            this.setState(
+                {
+                    message: message,
+                    dialogIsOpened: this.state.dialogIsOpened
+                }
+            )
+        }
+    };
+
+    handlerSocketEvent(msg: MessageEvent) {
+        const message = this.state.message;
+        const componentEvent = toComponentEvent(JSON.parse(msg.data));
         if (componentEvent.componentName != null) {
             message.set(componentEvent.componentName, componentEvent);
             this.setState(

@@ -37,26 +37,21 @@
 	</Appenders>
 	<Loggers>
 		<Root level="warn" >
-			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 			<AppenderRef ref="RollingFileJson" />
 		</Root>
 		<logger name="com.gsphotos" additivity="false" level="debug" >
-			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 			<AppenderRef ref="RollingFileJson" />
 		</logger>
 		<logger name="org.apache.storm" additivity="false" level="info" >
-			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 			<AppenderRef ref="RollingFileJson" />
 		</logger>
 		<logger name="org.apache.storm.kafka.spout" additivity="false" level="debug" >
-			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 		</logger>
 		<logger name="org.apache.kafka" additivity="false" level="info" >
-			<AppenderRef ref="Console" />
 			<AppenderRef ref="RollingFile" />
 			<AppenderRef ref="RollingFileJson" />
 		</logger>

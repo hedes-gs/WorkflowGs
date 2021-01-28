@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 import com.workflow.model.HbaseData;
@@ -23,7 +21,6 @@ public class ImportEvent extends HbaseData implements Serializable {
     private boolean           forTest;
     private int               nbMaxOfImages;
 
-    @Generated("SparkTools")
     private ImportEvent(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -117,13 +114,11 @@ public class ImportEvent extends HbaseData implements Serializable {
      * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ImportEvent}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long         dataCreationDate;
         private String       dataId;

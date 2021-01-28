@@ -1,0 +1,26 @@
+- name: "Print msg "
+  debug:
+    msg: "Create user  {{item}}"
+- user: name="{{ item }}" group="nogroup" shell="/bin/bash"
+- name: Placing key
+  authorized_key: user="{{item}}" key="{{ lookup('file', 'authorized_keys') }}"
+- name: Create folder config
+  file:
+    path: /home/{{ item }}/config
+    state: directory
+    owner: "{{item}}"
+- name: Create folder lib
+  file:
+    path: /home/{{ item }}/lib
+    state: directory
+    owner: "{{ item }}"
+- name: Create folder bin
+  file:
+    path: /home/{{ item }}/bin
+    state: directory
+    owner: "{{item}}"
+- name: Create folder logs
+  file:
+    path: /home/{{ item }}/logs
+    state: directory
+    owner: "{{ item }}"

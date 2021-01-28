@@ -19,12 +19,15 @@ import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.oncrpc4j.rpc.OncRpcProgram;
 import org.dcache.oncrpc4j.rpc.OncRpcSvc;
 import org.dcache.oncrpc4j.rpc.OncRpcSvcBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SimpleNfsServer implements Closeable {
     private final OncRpcSvc nfsSvc;
     private final Path      root;
     private final int       port;
     private final String    name;
+    protected static Logger LOGGER = LoggerFactory.getLogger(SimpleNfsServer.class);
 
     public SimpleNfsServer(Path root) { this(2049,
         root,
@@ -37,6 +40,7 @@ public class SimpleNfsServer implements Closeable {
         ExportFile exportFile,
         String name
     ) {
+        SimpleNfsServer.LOGGER.info(" Starting app...");
         try {
             if (exportFile == null) {
                 exportFile = new ExportFile(new InputStreamReader(SimpleNfsServer.class.getClassLoader()

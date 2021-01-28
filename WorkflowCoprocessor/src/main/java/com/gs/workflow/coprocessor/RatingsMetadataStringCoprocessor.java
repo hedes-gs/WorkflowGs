@@ -53,7 +53,9 @@ public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoproc
     }
 
     @Override
-    protected long extractDateOfRowKeyToIndex(byte[] rowKey) { return Bytes.toLong(rowKey); }
+    protected long extractDateOfRowKeyToIndex(byte[] rowKey) {
+        return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
+    }
 
     @Override
     protected Long extractMetadataValue(byte[] rowKey) { return Bytes.toLong(rowKey, 0); }

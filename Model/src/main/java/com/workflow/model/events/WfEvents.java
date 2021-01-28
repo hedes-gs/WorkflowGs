@@ -7,8 +7,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-import javax.annotation.Nullable;
+import org.apache.avro.reflect.Nullable;
 
 import com.nurkiewicz.typeof.TypeOf;
 import com.workflow.model.HbaseData;
@@ -25,6 +24,15 @@ public class WfEvents extends HbaseData implements Serializable {
     protected Collection<WfEventProduced> producedEvents   = new ArrayList<>();
     protected Collection<WfEventFinal>    finalEvents      = new ArrayList<>();
     protected Collection<WfEventRecorded> recordedEvents   = new ArrayList<>();
+
+    public String getProducer() { return this.producer; }
+
+    private WfEvents(Builder builder) {
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
+        this.producer = builder.producer;
+        this.addEvents(builder.events);
+    }
 
     @Override
     public String toString() {
@@ -62,14 +70,6 @@ public class WfEvents extends HbaseData implements Serializable {
 
     public WfEvents() { super(null,
         0); }
-
-    @Generated("SparkTools")
-    private WfEvents(Builder builder) {
-        super(builder.dataId,
-            builder.dataCreationDate);
-        this.producer = builder.producer;
-        builder.events.forEach((c) -> this.dispatch(c));
-    }
 
     private void dispatch(WfEvent c) {
         TypeOf.whenTypeOf(c)
@@ -137,32 +137,23 @@ public class WfEvents extends HbaseData implements Serializable {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEvents}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
-        private String              dataId;
-        private long                dataCreationDate;
-        private String              producer;
-        private Collection<WfEvent> events = Collections.emptyList();
+        private long                        dataCreationDate;
+        private String                      dataId;
+        private String                      producer;
+        private Collection<WfEventInitial>  initialEvents  = Collections.emptyList();
+        private Collection<WfEventCopy>     copyEvents     = Collections.emptyList();
+        private Collection<WfEventProduced> producedEvents = Collections.emptyList();
+        private Collection<WfEventFinal>    finalEvents    = Collections.emptyList();
+        private Collection<WfEventRecorded> recordedEvents = Collections.emptyList();
+        private Collection<WfEvent>         events         = Collections.emptyList();
 
         private Builder() {}
-
-        /**
-         * Builder method for dataId parameter.
-         *
-         * @param dataId
-         *            field to set
-         * @return builder
-         */
-        public Builder withDataId(String dataId) {
-            this.dataId = dataId;
-            return this;
-        }
 
         /**
          * Builder method for dataCreationDate parameter.
@@ -173,6 +164,18 @@ public class WfEvents extends HbaseData implements Serializable {
          */
         public Builder withDataCreationDate(long dataCreationDate) {
             this.dataCreationDate = dataCreationDate;
+            return this;
+        }
+
+        /**
+         * Builder method for dataId parameter.
+         *
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
             return this;
         }
 
@@ -189,12 +192,65 @@ public class WfEvents extends HbaseData implements Serializable {
         }
 
         /**
-         * Builder method for events parameter.
+         * Builder method for initialEvents parameter.
          *
-         * @param events
+         * @param initialEvents
          *            field to set
          * @return builder
          */
+        public Builder withInitialEvents(Collection<WfEventInitial> initialEvents) {
+            this.initialEvents = initialEvents;
+            return this;
+        }
+
+        /**
+         * Builder method for copyEvents parameter.
+         *
+         * @param copyEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withCopyEvents(Collection<WfEventCopy> copyEvents) {
+            this.copyEvents = copyEvents;
+            return this;
+        }
+
+        /**
+         * Builder method for producedEvents parameter.
+         *
+         * @param producedEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withProducedEvents(Collection<WfEventProduced> producedEvents) {
+            this.producedEvents = producedEvents;
+            return this;
+        }
+
+        /**
+         * Builder method for finalEvents parameter.
+         *
+         * @param finalEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withFinalEvents(Collection<WfEventFinal> finalEvents) {
+            this.finalEvents = finalEvents;
+            return this;
+        }
+
+        /**
+         * Builder method for recordedEvents parameter.
+         *
+         * @param recordedEvents
+         *            field to set
+         * @return builder
+         */
+        public Builder withRecordedEvents(Collection<WfEventRecorded> recordedEvents) {
+            this.recordedEvents = recordedEvents;
+            return this;
+        }
+
         public Builder withEvents(Collection<WfEvent> events) {
             this.events = events;
             return this;

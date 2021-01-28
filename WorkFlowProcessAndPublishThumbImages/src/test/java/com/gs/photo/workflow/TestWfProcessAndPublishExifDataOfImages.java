@@ -35,8 +35,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.ImmutableSet;
-import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO;
-import com.gs.photo.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
+import com.gs.photo.workflow.pubthumbimages.ApplicationConfig;
+import com.gs.photo.workflow.pubthumbimages.hbase.dao.AbstractHbaseStatsDAO;
+import com.gs.photo.workflow.pubthumbimages.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.serializers.ExchangedDataSerializer;
 import com.gs.photos.serializers.FileToProcessSerializer;
 import com.gs.photos.serializers.FinalImageSerializer;

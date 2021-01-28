@@ -1,4 +1,4 @@
-- hosts: 192.168.1.206
+- hosts: ipc6
   become: true
   tasks:
     - debug:
@@ -19,6 +19,8 @@
         - ipc3
         - ipc5
         - ipc6     
+        - ipc7
+        - ipc8     
     - name: ADd princip
       shell: kadmin.local -q 'addprinc  -pw storm storm/{{ item }}@GS.COM' 
       loop:
@@ -28,6 +30,8 @@
         - ipc3
         - ipc5
         - ipc6     
+        - ipc7
+        - ipc8     
 
     - name: add princip storm
       shell: kadmin.local -q 'addprinc  -pw storm storm@GS.COM' 
@@ -55,6 +59,8 @@
         - ipc3
         - ipc5
         - ipc6
+        - ipc7
+        - ipc8     
     - name: get keytab storm@GS.COM
       fetch:
         src: /home/user/keytabs/storm_all.keytab

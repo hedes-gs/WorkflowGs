@@ -1,7 +1,5 @@
 package com.workflow.model;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 @HbaseTableName(value = "album")
@@ -22,7 +20,6 @@ public class HbaseAlbum extends HbaseData {
     @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
     protected long            nbOfElements;
 
-    @Generated("SparkTools")
     private HbaseAlbum(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -53,16 +50,14 @@ public class HbaseAlbum extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseAlbum}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseAlbum}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
@@ -74,7 +69,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -86,7 +81,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -98,7 +93,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method for albumName parameter.
-         *
+         * 
          * @param albumName
          *            field to set
          * @return builder
@@ -110,7 +105,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method for description parameter.
-         *
+         * 
          * @param description
          *            field to set
          * @return builder
@@ -122,7 +117,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method for nbOfElements parameter.
-         *
+         * 
          * @param nbOfElements
          *            field to set
          * @return builder
@@ -134,7 +129,7 @@ public class HbaseAlbum extends HbaseData {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseAlbum build() { return new HbaseAlbum(this); }

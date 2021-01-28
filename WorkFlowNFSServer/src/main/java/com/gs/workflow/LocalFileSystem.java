@@ -66,7 +66,7 @@ import com.google.common.primitives.Longs;
  */
 public class LocalFileSystem implements VirtualFileSystem {
 
-    private static final Logger                  LOG            = LoggerFactory.getLogger(LocalFileSystem.class);
+    protected static Logger                      LOGGER         = LoggerFactory.getLogger(LocalFileSystem.class);
 
     private final Path                           _root;
     private final NonBlockingHashMapLong<Path>   inodeToPath    = new NonBlockingHashMapLong<>();
@@ -90,27 +90,43 @@ public class LocalFileSystem implements VirtualFileSystem {
 
     private Path resolveInode(long inodeNumber) throws NoEntException {
         Path path = this.inodeToPath.get(inodeNumber);
-        if (path == null) { throw new NoEntException("inode #" + inodeNumber); }
+        if (path == null) {
+            LocalFileSystem.LOGGER.error("ERROR : Unable to find {} in inodePath {}", inodeNumber, this.inodeToPath);
+            throw new NoEntException("inode #" + inodeNumber);
+        }
         return path;
     }
 
     private long resolvePath(Path path) throws NoEntException {
-        Long inodeNumber = this.pathToInode.get(path);
-        if (inodeNumber == null) {
-            if (Files.isRegularFile(path)) {
-                synchronized (this) {
-                    inodeNumber = this.pathToInode.get(path);
-                    if (inodeNumber == null) {
-                        inodeNumber = this.fileId.getAndIncrement();
-                        LocalFileSystem.this.map(inodeNumber, path);
-                    }
-                }
-            } else {
-                throw new NoEntException("path " + path);
-            }
+        try {
+            LocalFileSystem.LOGGER.info("Resolve path {} : {}", path, path.toRealPath());
+            path = path.toRealPath();
+            Long inodeNumber = this.pathToInode.get(path);
+            if (inodeNumber == null) {
+                if (Files.isRegularFile(path)) {
+                    synchronized (this) {
+                        inodeNumber = this.pathToInode.get(path);
+                        if (inodeNumber == null) {
+                            inodeNumber = this.fileId.getAndIncrement();
+                            LocalFileSystem.LOGGER
+                                .info("resolvePath new inodeNymber is {} - path is {} ", inodeNumber, path);
 
+                            LocalFileSystem.this.map(inodeNumber, path);
+                        }
+                    }
+                } else {
+                    LocalFileSystem.LOGGER
+                        .error("ERROR : path {} is not a regular file - pathToInode  {}", path, this.pathToInode);
+                    throw new NoEntException("path " + path);
+                }
+
+            }
+            return inodeNumber;
+        } catch (IOException e) {
+            LocalFileSystem.LOGGER
+                .error("ERROR : path {} is not a regular file - pathToInode {} ", path, this.pathToInode);
+            throw new NoEntException("path " + path, e);
         }
-        return inodeNumber;
     }
 
     private void map(long inodeNumber, Path path) {
@@ -123,7 +139,7 @@ public class LocalFileSystem implements VirtualFileSystem {
             }
             throw new IllegalStateException("path " + path + " / " + inodeNumber);
         }
-        LocalFileSystem.LOG.info(" Map {} with {} ", path, inodeNumber);
+        LocalFileSystem.LOGGER.info(" Map {} with {} ", path, inodeNumber);
 
     }
 
@@ -143,6 +159,7 @@ public class LocalFileSystem implements VirtualFileSystem {
         Path root,
         Iterable<FsExport> exportIterable
     ) throws IOException {
+        SimpleNfsServer.LOGGER.info(" Create LocalFileSystem ...");
         this._root = root;
         Collection<Path> subDir = new HashSet<>();
         assert (Files.exists(this._root));
@@ -155,7 +172,7 @@ public class LocalFileSystem implements VirtualFileSystem {
             }
             subDir.add(exportRootPath);
         }
-        LocalFileSystem.LOG.info(" subDir  are {}", subDir);
+        LocalFileSystem.LOGGER.info(" subDir  are {}", subDir);
         // map existing structure (if any)
         this.map(this.fileId.getAndIncrement(), this._root); // so root is always inode #1
         subDir.forEach((f) -> buildInodes(f));
@@ -197,6 +214,8 @@ public class LocalFileSystem implements VirtualFileSystem {
 
     @Override
     public Inode create(Inode parent, Type type, String path, Subject subject, int mode) throws IOException {
+        LocalFileSystem.LOGGER.info("create inode");
+
         long parentInodeNumber = this.getInodeNumber(parent);
         Path parentPath = this.resolveInode(parentInodeNumber);
         Path newPath = parentPath.resolve(path);
@@ -226,6 +245,8 @@ public class LocalFileSystem implements VirtualFileSystem {
 
     @Override
     public Inode lookup(Inode parent, String path) throws IOException {
+        LocalFileSystem.LOGGER.info("lookup parent is {} - path is {} ", parent, path);
+
         // TODO - several issues
         // 2. we might accidentally allow composite paths here ("/dome/dir/down")
         // 3. we dont actually check that the parent exists
@@ -331,25 +352,25 @@ public class LocalFileSystem implements VirtualFileSystem {
             try {
                 Files.setAttribute(target, "unix:uid", uid, NOFOLLOW_LINKS);
             } catch (IOException e) {
-                LocalFileSystem.LOG.warn("Unable to chown file {}: {}", target, e.getMessage());
+                LocalFileSystem.LOGGER.warn("Unable to chown file {}: {}", target, e.getMessage());
             }
         } else {
-            LocalFileSystem.LOG.warn("File created without uid: {}", target);
+            LocalFileSystem.LOGGER.warn("File created without uid: {}", target);
         }
         if (gid != -1) {
             try {
                 Files.setAttribute(target, "unix:gid", gid, NOFOLLOW_LINKS);
             } catch (IOException e) {
-                LocalFileSystem.LOG.warn("Unable to chown file {}: {}", target, e.getMessage());
+                LocalFileSystem.LOGGER.warn("Unable to chown file {}: {}", target, e.getMessage());
             }
         } else {
-            LocalFileSystem.LOG.warn("File created without gid: {}", target);
+            LocalFileSystem.LOGGER.warn("File created without gid: {}", target);
         }
 
         try {
             Files.setAttribute(target, "unix:mode", mode, NOFOLLOW_LINKS);
         } catch (IOException e) {
-            LocalFileSystem.LOG.warn("Unable to set mode of file {}: {}", target, e.getMessage());
+            LocalFileSystem.LOGGER.warn("Unable to set mode of file {}: {}", target, e.getMessage());
         }
     }
 
@@ -519,9 +540,12 @@ public class LocalFileSystem implements VirtualFileSystem {
 
     @Override
     public Stat getattr(Inode inode) throws IOException {
+        LocalFileSystem.LOGGER.info("Get attributes {} ", inode);
         long inodeNumber = this.getInodeNumber(inode);
         Path path = this.resolveInode(inodeNumber);
+        LocalFileSystem.LOGGER.info("Get path of {} : {} ", inode, path);
         return this.statPath(path, inodeNumber);
+
     }
 
     @Override

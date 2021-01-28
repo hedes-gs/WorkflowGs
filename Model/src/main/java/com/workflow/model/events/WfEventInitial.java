@@ -1,7 +1,5 @@
 package com.workflow.model.events;
 
-import javax.annotation.Generated;
-
 public class WfEventInitial extends WfEvent {
 
     protected int             nbOfInitialEvents;
@@ -11,7 +9,6 @@ public class WfEventInitial extends WfEvent {
      */
     private static final long serialVersionUID = 1L;
 
-    @Generated("SparkTools")
     private WfEventInitial(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -32,13 +29,11 @@ public class WfEventInitial extends WfEvent {
      * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEventInitial}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long        dataCreationDate;
         private String      dataId;

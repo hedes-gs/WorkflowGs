@@ -106,15 +106,27 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
 
 
     private nbOfColumnsInFullSize: number;
+    private socket: WebSocket;
 
     constructor(props: RealtimeImportImagesProps) {
         super(props);
+
         var SortedMap = require("collections/sorted-map");
         this.state = {
             imgs: new Array(0)
         };
+        const handler = this.handler.bind(this);
+        const handlerSocketEvent = this.handlerSocketEvent.bind(this);
+
+        this.socket = new WebSocket("ws://192.168.1.128/ws/fullyImagesProcessed");
+        this.socket.onmessage = (event => {
+            handlerSocketEvent(event);
+        });
+        this.socket.onopen = (event => console.log('... event ' + event))
+
+
         const client = new Client({
-            brokerURL: "ws://192.168.1.128:8080/app/websocket",
+            brokerURL: "ws://192.168.1.128/app/websocket",
             connectHeaders: {
             },
             debug: function (str: string) {
@@ -124,7 +136,7 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000
         });
-        const handler = this.handler.bind(this);
+
         client.onConnect = function (frame) {
             console.log('Stomp is connected in realtime...');
             var subscription = client.subscribe("/topic/realtimeImportImages", handler);
@@ -138,7 +150,7 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
             console.log('Broker reported error: ' + frame.headers['message']);
             console.log('Additional details: ' + frame.body);
         };
-        client.activate();
+        // client.activate();
         this.nbOfColumnsInFullSize = 5;
     }
     handleClickInfo(img: ImageDto) {
@@ -162,6 +174,20 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
     handler(msg: IMessage) {
         const imgs = this.state.imgs;
         const receivedImage = toSingleImageDto(JSON.parse(msg.body));
+        if (imgs.length > 25) {
+            imgs.shift()
+        }
+        imgs.push(receivedImage);
+        this.setState(
+            {
+                imgs: imgs,
+            }
+        )
+    };
+
+    handlerSocketEvent(msg: MessageEvent) {
+        const imgs = this.state.imgs;
+        const receivedImage = toSingleImageDto(JSON.parse(msg.data));
         if (imgs.length > 25) {
             imgs.shift()
         }

@@ -25,7 +25,6 @@ storm.local.dir: "/home/storm/local"
 storm.log.dir: "/home/storm/latest/logs"
 storm.log4j2.conf.dir: "log4j2"
 
-nimbus.host: ipc0
 nimbus.seeds: ["ipc0", "ipc1"]
 
 nimbus.thrift.port: 49627
@@ -51,9 +50,9 @@ worker.heartbeat.frequency.secs: 5
 supervisor.thrift.threads: 4
 
 java.security.auth.login.config: "/home/storm/latest/conf/client_jaas.conf"
-nimbus.childopts: "-Xmx512m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf  -Dsun.security.krb5.debug=true"
-ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf -Dsun.security.krb5.debug=true"
-supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf -Dsun.security.krb5.debug=true"
+nimbus.childopts: "-Xmx512m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf"
+ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf"
+supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf "
 storm.zookeeper.superACL: "sasl:storm"
 
 worker.heap.memory.mb: 768

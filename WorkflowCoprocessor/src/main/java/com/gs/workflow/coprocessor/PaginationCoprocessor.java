@@ -3,6 +3,7 @@ package com.gs.workflow.coprocessor;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -78,6 +79,9 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
         .getBytes(Charset.forName("UTF-8"));
     protected static final byte[] TRUE_VALUE                          = new byte[] { 1 };
     protected static final byte[] TABLE_SOURCE_THUMBNAIL              = "thb".getBytes(Charset.forName("UTF-8"));
+    public static final int       FIXED_WIDTH_IMAGE_ID                = 64;
+    public static final int       FIXED_WIDTH_REGION_SALT             = 2;
+    public static final int       FIXED_WIDTH_CREATION_DATE           = 8;
 
     protected Connection hbaseConnection() throws IOException {
         return ConnectionFactory.createConnection(HBaseConfiguration.create());
@@ -111,7 +115,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
 
     protected void incrementDateInterval(String namespace, byte[] imageRow) throws IOException {
         BufferedMutator bufferedMutator = this.getBufferedMutator(namespace);
-        long date = Bytes.toLong(imageRow);
+        long date = this.getDateOfRowOfTableSource(imageRow);
         List<Mutation> mutationsList = this.splitCreationDateToYearMonthDayAndHour(date)
             .stream()
             .flatMap((d) -> {
@@ -137,18 +141,23 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
         return keys.values();
     }
 
-    protected long createSecundaryIndex(Region region, String namespace, byte[] row) {
+    protected long createSecundaryIndexInPagedTable(Region region, String namespace, byte[] row) {
         try (
             Table tablePage = this.hbaseConnection
                 .getTable(TableName.valueOf(namespace + ':' + PaginationCoprocessor.TABLE_PAGE))) {
-            long date = this.getDateOfRow(row);
-
+            long date = this.getDateOfRowOfTableSource(row);
             long pageNumber = this.findPage(tablePage, date);
-            Put put = new Put(PaginationCoprocessor.convert(pageNumber));
-            put.addColumn(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY, row, new byte[] { 1 });
-            tablePage.put(put);
+            PaginationCoprocessor.LOGGER
+                .info("[PAGINATION] createSecundaryIndexInPagedTable page is {}, date is {} ", pageNumber, date);
+            this.recordOfRowOfSourceInPageTable(tablePage, row, pageNumber);
+            PaginationCoprocessor.LOGGER
+                .info("[PAGINATION] end of createSecundaryIndex page is {}, date is {} ", pageNumber, date);
             return pageNumber;
         } catch (IOException e) {
+            PaginationCoprocessor.LOGGER.error(
+                "[PAGINATION]Unable to create secundary index for row {}, exception is {} ",
+                this.toHexString(row),
+                ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         }
     }
@@ -160,12 +169,18 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
 
             RowLock rowLock = null;
             try {
+                PaginationCoprocessor.LOGGER.info(
+                    "[PAGINATION]Trying to get lock for {}:{}",
+                    PaginationCoprocessor.TABLE_PAGE,
+                    this.toHexString(currentPageRow));
                 rowLock = region != null ? region.getRowLock(currentPageRow, false) : null;
-
+                PaginationCoprocessor.LOGGER.info(
+                    "[PAGINATION]Got lock for {}:{}",
+                    PaginationCoprocessor.TABLE_PAGE,
+                    this.toHexString(currentPageRow));
                 Get get = new Get(currentPageRow).addFamily(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY)
                     .addFamily(PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY)
                     .addFamily(PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_FAMILY);
-
                 Result result = region.get(get);
                 final NavigableMap<byte[], byte[]> familyMap = result
                     .getFamilyMap(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY);
@@ -176,38 +191,33 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
                             PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS)));
                 if (familyMap.size() == 0) {
                     PaginationCoprocessor.LOGGER.warn(
-                        "updateTablePage, for row {} no elements in list family  ",
+                        "[PAGINATION]updateTablePage, for row {} no elements in list family  ",
                         this.toHexString(currentPageRow));
                 }
                 byte[] firstRow = familyMap.firstKey();
                 byte[] lastRow = familyMap.lastKey();
-                long min = Bytes.toLong(firstRow);
-                long max = Bytes.toLong(lastRow);
+                long min = this.getDateOfRowInsertedOfTablePage(firstRow);
+                long max = this.getDateOfRowInsertedOfTablePage(lastRow);
                 PaginationCoprocessor.LOGGER.info(
-                    " Min {} and max {} found in current page : {} - nb Of elements in page {}, recorded size {}",
+                    "[PAGINATION]Min {} and max {} found in current page : {} - nb Of elements in page {}, recorded size {}",
                     min,
                     max,
                     Bytes.toLong(currentPageRow),
                     familyMap.size(),
                     recordedSize);
-
-                if (PaginationCoprocessor.LOGGER.isDebugEnabled()) {
-                    PaginationCoprocessor.LOGGER.debug(
-                        "updateTablePage, check current page row {} - {} - nb of elements : {}  ",
-                        this.toHexString(currentPageRow),
-                        Bytes.toLong(currentPageRow),
-                        familyMap.size());
-                }
+                long expextedPageNumberToReinsert = Bytes.toLong(currentPageRow) + 1;
+                List<Put> putListOf = new ArrayList<>();
                 while (familyMap.size() > PaginationCoprocessor.PAGE_SIZE) {
                     lastRow = familyMap.lastKey();
                     PaginationCoprocessor.LOGGER.info(
-                        "Page is full, currentPageRow is {},  found last row {} - {}",
+                        "[PAGINATION]Page is full, currentPageRow is {},  found last row {} - {}",
                         this.toHexString(currentPageRow),
-                        Bytes.toLong(lastRow),
+                        this.getDateOfRowInsertedOfTablePage(lastRow),
                         this.toHexString(lastRow));
                     Delete del = new Delete(currentPageRow)
                         .addColumn(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY, lastRow);
                     familyMap.remove(lastRow);
+                    max = this.getDateOfRowInsertedOfTablePage(familyMap.lastKey());
                     Put put1 = new Put(currentPageRow)
                         .addColumn(
                             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
@@ -224,34 +234,48 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
                     region.delete(del);
                     region.put(put1);
                     PaginationCoprocessor.LOGGER.info(
-                        "Region table has been updated, now reinsert found last row {} - {}",
-                        Bytes.toLong(lastRow),
+                        "[PAGINATION]Region table has been updated, now reinsert in page {}, found last row {} - {}",
+                        expextedPageNumberToReinsert,
+                        this.getDateOfRowInsertedOfTablePage(lastRow),
                         this.toHexString(lastRow));
-                    Long pageNumberToReinsert = this.findPage(tablePage, Bytes.toLong(lastRow));
-                    if (pageNumberToReinsert == Bytes.toLong(currentPageRow)) {
-                        PaginationCoprocessor.LOGGER.error(
-                            "Page number is the current page row, where reinsert should be done {} - {}, ignoring",
-                            this.toHexString(lastRow),
-                            pageNumberToReinsert);
 
-                    } else {
-                        PaginationCoprocessor.LOGGER.info(
-                            "Page number where reinsert should be done {} - {}",
-                            this.toHexString(lastRow),
-                            pageNumberToReinsert);
-                        this.recordInPageTable(tablePage, lastRow, pageNumberToReinsert);
-                    }
-                    max = Bytes.toLong(familyMap.lastKey());
-
+                    Long pageNumberToReinsert = expextedPageNumberToReinsert; // this.findPage(tablePage,
+                                                                              // this.getDateOfRowInsertedOfTablePage(lastRow));
+                    /*
+                     * if (pageNumberToReinsert <= Bytes.toLong(currentPageRow)) {
+                     * PaginationCoprocessor.LOGGER.error(
+                     * "[PAGINATION]Page number is the current page row, where reinsert should be done, expected page is {} , found page is {}, row is  {}, ignoring"
+                     * , expextedPageNumberToReinsert, pageNumberToReinsert,
+                     * this.toHexString(lastRow)); } else if (pageNumberToReinsert >=
+                     * expextedPageNumberToReinsert) { if (pageNumberToReinsert >
+                     * expextedPageNumberToReinsert) { PaginationCoprocessor.LOGGER.warn(
+                     * "[PAGINATION]Expected page where reinsert should be done is {} - found page is {}"
+                     * , expextedPageNumberToReinsert, pageNumberToReinsert);
+                     *
+                     * } this.recordOfPreviouslyInsertedRowInPageTable(tablePage, lastRow,
+                     * pageNumberToReinsert); }
+                     */
+                    putListOf.add(this.buildPutToRecordInNextPage(tablePage, lastRow, pageNumberToReinsert));
+                    max = this.getDateOfRowInsertedOfTablePage(familyMap.lastKey());
                 }
+
+                this.updateMinAndMaxInPageTable(currentPageRow, max, min, familyMap.size(), region);
                 if (rowLock != null) {
+                    PaginationCoprocessor.LOGGER.info(
+                        "[PAGINATION]Releasing  lock for {}:{}",
+                        PaginationCoprocessor.TABLE_PAGE,
+                        this.toHexString(currentPageRow));
                     rowLock.release();
                     rowLock = null;
                 }
-                this.updateMinAndMaxInPageTable(currentPageRow, max, min, familyMap.size(), region);
-
+                // -> We break the transaction here :(
+                tablePage.put(putListOf);
             } finally {
                 if (rowLock != null) {
+                    PaginationCoprocessor.LOGGER.info(
+                        "[PAGINATION]Releasing lock for {}:{}",
+                        PaginationCoprocessor.TABLE_PAGE,
+                        this.toHexString(currentPageRow));
                     rowLock.release();
                 }
             }
@@ -261,14 +285,31 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             PaginationCoprocessor.LOGGER.error("Unexpected error {}", ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         }
-
     }
 
-    private void recordInPageTable(Table tablePage, byte[] row, Long pageNumber) throws IOException {
+    private void recordOfRowOfSourceInPageTable(Table tablePage, byte[] row, Long pageNumber) throws IOException {
+        PaginationCoprocessor.LOGGER
+            .info("[PAGINATION]Start of initial record in page table {} in page {}", this.toHexString(row), pageNumber);
+        Put put = new Put(PaginationCoprocessor.convert(pageNumber));
+        long date = this.getDateOfRowOfTableSource(row);
+        byte[] newRowOfPageTable = new byte[row.length + 8];
+        System.arraycopy(row, 0, newRowOfPageTable, 8, row.length);
+        final byte[] converedDate = PaginationCoprocessor.convert(date);
+        System.arraycopy(converedDate, 0, newRowOfPageTable, 0, converedDate.length);
+        put.addColumn(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY, newRowOfPageTable, new byte[] { 1 });
+        tablePage.put(put);
+        PaginationCoprocessor.LOGGER
+            .info("[PAGINATION]End of recordInPageTable {} in page {}", this.toHexString(row), pageNumber);
+    }
+
+    private Put buildPutToRecordInNextPage(Table tablePage, byte[] row, Long pageNumber) throws IOException {
+        PaginationCoprocessor.LOGGER
+            .info("[PAGINATION]Start of update of page {} -  Row is {}", pageNumber, this.toHexString(row));
         Put put = new Put(PaginationCoprocessor.convert(pageNumber));
         put.addColumn(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY, row, new byte[] { 1 });
-        tablePage.put(put);
-        PaginationCoprocessor.LOGGER.info("End of recordInPageTable {} in page {}", this.toHexString(row), pageNumber);
+        PaginationCoprocessor.LOGGER
+            .info("[PAGINATION]End of update of page {} -  Row is {}", pageNumber, this.toHexString(row));
+        return put;
     }
 
     protected void updateMinAndMaxInPageTable(byte[] row, long currentMax, long currentMin, long size, Region region)
@@ -277,7 +318,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_FAMILY,
             PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS,
             PaginationCoprocessor.convert(size));
-        region.checkAndRowMutate(
+        boolean done = region.checkAndRowMutate(
             row,
             PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_FAMILY,
             PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS,
@@ -289,7 +330,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER,
             PaginationCoprocessor.convert(currentMax));
-        region.checkAndRowMutate(
+        done = done && region.checkAndRowMutate(
             row,
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER,
@@ -302,7 +343,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER,
             PaginationCoprocessor.convert(currentMin));
 
-        region.checkAndRowMutate(
+        done = done && region.checkAndRowMutate(
             row,
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
             PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER,
@@ -310,11 +351,12 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             new LongComparator(currentMin),
             RowMutations.of(Arrays.asList(put1)));
         PaginationCoprocessor.LOGGER.info(
-            "End of updateMinAndMaxInPageTable current min is {} current max is {}, find size is {}, row is {}",
+            "[PAGINATION]End of updateMinAndMaxInPageTable current min is {} current max is {}, find size is {}, row is {} - updated is {}",
             currentMin,
             currentMax,
             size,
-            this.toHexString(row));
+            this.toHexString(row),
+            done);
 
     }
 
@@ -332,17 +374,6 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             strBuilder.append(Integer.toHexString((b & 0x000000ff)));
         }
         return strBuilder.toString();
-    }
-
-    protected byte[] getLastRow(Table table, long pageNumber) throws IOException {
-        Get get = new Get(PaginationCoprocessor.convert(pageNumber));
-        get.addFamily(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY);
-        Result res = table.get(get);
-        NavigableMap<byte[], byte[]> elements = res.getFamilyMap(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY);
-        if (elements != null) { return elements.lastEntry()
-            .getKey(); }
-
-        return null;
     }
 
     protected long findPage(Table table, long date) {
@@ -389,25 +420,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             if (res != null) {
                 pageNumber = Bytes.toLong(res.getRow());
                 pageIsFound = true;
-                PaginationCoprocessor.LOGGER.info("found page {}, for date {}", pageNumber, date);
-            } else {
-                try {
-                    Get get = new Get(PaginationCoprocessor.convert(0L));
-                    Result res1 = table.get(get);
-                    byte[] minValue = res1.getValue(
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER);
-                    byte[] maxValue = res1.getValue(
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER);
-                    PaginationCoprocessor.LOGGER.warn(
-                        "Min/Max Values of page 0 is {},{}, Nothnig found for date {}, should create a new one",
-                        Bytes.toLong(minValue),
-                        Bytes.toLong(maxValue),
-                        date);
-                } catch (Exception e) {
-                    PaginationCoprocessor.LOGGER.warn("Error ", e);
-                }
+                PaginationCoprocessor.LOGGER.info("[PAGINATION]found page {}, for date {}", pageNumber, date);
             }
         } catch (
             IllegalArgumentException |
@@ -416,7 +429,7 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
         }
 
         if (!pageIsFound) {
-            PaginationCoprocessor.LOGGER.info("Nothnig found for date {}, creating another page", date);
+            PaginationCoprocessor.LOGGER.info("[PAGINATION]Nothnig found for date {}, creating another page", date);
             scan = new Scan().setLimit(1)
                 .setReversed(true);
             try (
@@ -424,24 +437,24 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
                 Result res = rs.next();
                 if (res != null) {
                     pageNumber = Bytes.toLong(res.getRow()) + 1;
+                    Put put = new Put(PaginationCoprocessor.convert(pageNumber))
+                        .addColumn(
+                            PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_FAMILY,
+                            PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS,
+                            PaginationCoprocessor.convert(0l))
+                        .addColumn(
+                            PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
+                            PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER,
+                            PaginationCoprocessor.convert(0L))
+                        .addColumn(
+                            PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
+                            PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER,
+                            PaginationCoprocessor.convert(Long.MAX_VALUE));
+                    table.put(put);
+                    PaginationCoprocessor.LOGGER.info("Creating page {} pageNumber for date {}", pageNumber, date);
                 } else {
-                    pageNumber = 0;
+                    throw new RuntimeException("Scan returned nothnig... Stopping !!!");
                 }
-                Put put = new Put(PaginationCoprocessor.convert(pageNumber))
-                    .addColumn(
-                        PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_FAMILY,
-                        PaginationCoprocessor.TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS,
-                        PaginationCoprocessor.convert(0l))
-                    .addColumn(
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER,
-                        PaginationCoprocessor.convert(0L))
-                    .addColumn(
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_FAMILY,
-                        PaginationCoprocessor.TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER,
-                        PaginationCoprocessor.convert(Long.MAX_VALUE));
-                table.put(put);
-                PaginationCoprocessor.LOGGER.info("Creating page {} pageNumber for date {}", pageNumber, date);
             } catch (IOException e) {
                 PaginationCoprocessor.LOGGER.error("Unexpected error {}", ExceptionUtils.getStackTrace(e));
                 throw new RuntimeException(e);
@@ -451,7 +464,11 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
         return pageNumber;
     }
 
-    private long getDateOfRow(byte[] row) { return Bytes.toLong(row, 0, 8); }
+    private long getDateOfRowOfTableSource(byte[] row) {
+        return Bytes.toLong(row, PaginationCoprocessor.FIXED_WIDTH_REGION_SALT, 8);
+    }
+
+    private long getDateOfRowInsertedOfTablePage(byte[] row) { return Bytes.toLong(row, 0, 8); }
 
     private static byte[] convert(Long p) {
         byte[] retValue = new byte[8];
@@ -471,7 +488,6 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
 
     @Override
     public Result preAppend(ObserverContext<RegionCoprocessorEnvironment> c, Append append) throws IOException {
-        PaginationCoprocessor.LOGGER.info("[PAGINATION]Pre append detected");
         this.processPreMutation(c, append);
         return null;
     }
@@ -494,8 +510,12 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
                             "[PAGINATION]Creating secundary index for table {} - namespace is {} - row is {} ",
                             table2,
                             table2.getNamespaceAsString(),
-                            new String(put.getRow(), 8, 64, Charset.forName("UTF-8")));
-                        this.createSecundaryIndex(
+                            new String(put.getRow(),
+                                PaginationCoprocessor.FIXED_WIDTH_CREATION_DATE
+                                    + PaginationCoprocessor.FIXED_WIDTH_REGION_SALT,
+                                64,
+                                Charset.forName("UTF-8")));
+                        this.createSecundaryIndexInPagedTable(
                             observerContext.getEnvironment()
                                 .getRegion(),
                             table2.getNamespaceAsString(),
@@ -522,7 +542,6 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
     @Override
     public Result postAppend(ObserverContext<RegionCoprocessorEnvironment> c, Append append, Result result)
         throws IOException {
-        PaginationCoprocessor.LOGGER.info("[PAGINATION]Post append detected");
         this.processPostMutation(c, append);
         return null;
     }
@@ -537,8 +556,11 @@ public class PaginationCoprocessor implements RegionCoprocessor, RegionObserver 
             List<Cell> cells = put.getFamilyCellMap()
                 .get(PaginationCoprocessor.TABLE_PAGE_LIST_COLUMN_FAMILY);
             if (cells != null) {
-                PaginationCoprocessor.LOGGER
-                    .info("PostPut, cells are {}, {}, row is {} ", table, cells, this.toHexString(put.getRow()));
+                PaginationCoprocessor.LOGGER.info(
+                    "[PAGINATION]PostPut, cells are {}, {}, row is {} ",
+                    table,
+                    cells,
+                    this.toHexString(put.getRow()));
 
                 this.updateTablePage(
                     observerContext.getEnvironment()

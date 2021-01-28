@@ -21,9 +21,15 @@
 		<maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
 		<maven-shade-plugin.version>2.4.2</maven-shade-plugin.version>
 		<os-maven-plugin.version>1.4.1.Final</os-maven-plugin.version>
-		<protobuf.version>2.5.0</protobuf.version>
 
 	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.hbase</groupId>
+			<artifactId>hbase-client</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
 	<build>
 		<extensions>
 			<!-- provides os.detected.classifier (i.e. linux-x86_64, osx-x86_64) property -->
@@ -119,7 +125,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				
 				<configuration combine.self="override">
 					<verbose>true</verbose>
 					<fork>true</fork>
@@ -136,7 +141,7 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<configuration>
 					<finalName>hbase-filters</finalName>
-        			<outputDirectory>../WorkFlow/ansible/tools/hbase</outputDirectory>
+					<outputDirectory>../WorkFlow/ansible/tools/hbase</outputDirectory>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -196,15 +201,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	<dependencies>
-		<dependency>
-			<groupId>org.apache.hbase</groupId>
-			<artifactId>hbase-client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.google.protobuf</groupId>
-			<artifactId>protobuf-java</artifactId>
-			<version>${protobuf.version}</version>
-		</dependency>
-	</dependencies>
 </project>

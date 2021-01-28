@@ -9,7 +9,8 @@ import {
     reducerImageIsSelectedToBeDisplayed,
     reducerDisplayKeywords,
     reducerDisplayPersons,
-    reducerMetadata
+    reducerMetadata,
+    reducerImagesAreStreamed
 } from "./LoadImagesProcess";
 
 export default combineReducers({
@@ -21,5 +22,6 @@ export default combineReducers({
     reducerImageIsSelectedToBeDisplayed,
     reducerDisplayKeywords,
     reducerDisplayPersons,
-    reducerMetadata
+    reducerMetadata,
+    reducerImagesAreStreamed
 });

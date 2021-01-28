@@ -1,7 +1,5 @@
 package com.workflow.model.events;
 
-import javax.annotation.Generated;
-
 public class WfEventRecorded extends WfEvent {
 
     protected long imageCreationDate;
@@ -19,7 +17,6 @@ public class WfEventRecorded extends WfEvent {
 
     private RecordedEventType recordedEventType;
 
-    @Generated("SparkTools")
     private WfEventRecorded(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -39,13 +36,11 @@ public class WfEventRecorded extends WfEvent {
      * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEventRecorded}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long              dataCreationDate;
         private String            dataId;

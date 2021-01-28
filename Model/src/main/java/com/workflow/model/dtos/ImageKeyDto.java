@@ -2,26 +2,26 @@ package com.workflow.model.dtos;
 
 import java.time.OffsetDateTime;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
 public class ImageKeyDto {
+    protected short          salt;
     protected OffsetDateTime creationDate;
     protected int            version;
     protected String         imageId;
+
+    private ImageKeyDto(Builder builder) {
+        this.salt = builder.salt;
+        this.creationDate = builder.creationDate;
+        this.version = builder.version;
+        this.imageId = builder.imageId;
+    }
 
     public ImageKeyDto(String content) {
         // creationDate,2020-05-18T15:38:31.395Z,version,0,imageId,string
         String[] split = content.split(",");
         // this.creationDate = OffsetDateTime
-    }
-
-    @Generated("SparkTools")
-    private ImageKeyDto(Builder builder) {
-        this.creationDate = builder.creationDate;
-        this.version = builder.version;
-        this.imageId = builder.imageId;
     }
 
     public int getVersion() { return this.version; }
@@ -37,6 +37,10 @@ public class ImageKeyDto {
     public ImageKeyDto() {}
 
     public OffsetDateTime getCreationDate() { return this.creationDate; }
+
+    public short getSalt() { return this.salt; }
+
+    public void setSalt(short salt) { this.salt = salt; }
 
     @Override
     public int hashCode() {
@@ -69,19 +73,30 @@ public class ImageKeyDto {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ImageKeyDto}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
+        private short          salt;
         private OffsetDateTime creationDate;
         private int            version;
         private String         imageId;
 
         private Builder() {}
+
+        /**
+         * Builder method for salt parameter.
+         *
+         * @param salt
+         *            field to set
+         * @return builder
+         */
+        public Builder withSalt(short salt) {
+            this.salt = salt;
+            return this;
+        }
 
         /**
          * Builder method for creationDate parameter.

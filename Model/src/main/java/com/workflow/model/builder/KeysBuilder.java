@@ -367,9 +367,6 @@ public class KeysBuilder {
                 .hash()
                 .toString();
 
-            KeysBuilder.LOGGER
-                .info("TopicCopyKeyBuilder for FileToProcess : hbedoiHashCode =  {} - source is {} ", value);
-
             return hbedoiHashCode;
         }
     }

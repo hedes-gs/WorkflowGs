@@ -3,8 +3,6 @@ package com.workflow.model.events;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 import com.workflow.model.HbaseData;
 
 public class WfEventStep extends HbaseData implements Serializable {
@@ -58,31 +56,67 @@ public class WfEventStep extends HbaseData implements Serializable {
 
     protected String step;
 
+    private WfEventStep(Builder builder) {
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
+        this.step = builder.step;
+    }
+
     public String getStep() { return this.step; }
 
-    @Generated("SparkTools")
-    private WfEventStep(Builder builder) { this.step = builder.step; }
+    @Override
+    public String toString() {
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("WfEventStep [step=");
+        builder2.append(this.step);
+        builder2.append("]");
+        return builder2.toString();
+    }
 
     /**
      * Creates builder to build {@link WfEventStep}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEventStep}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
+        private long   dataCreationDate;
+        private String dataId;
         private String step;
 
         private Builder() {}
 
         /**
+         * Builder method for dataCreationDate parameter.
+         * 
+         * @param dataCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataCreationDate(long dataCreationDate) {
+            this.dataCreationDate = dataCreationDate;
+            return this;
+        }
+
+        /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
          * Builder method for step parameter.
-         *
+         * 
          * @param step
          *            field to set
          * @return builder
@@ -94,19 +128,10 @@ public class WfEventStep extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public WfEventStep build() { return new WfEventStep(this); }
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder2 = new StringBuilder();
-        builder2.append("WfEventStep [step=");
-        builder2.append(this.step);
-        builder2.append("]");
-        return builder2.toString();
     }
 
 }

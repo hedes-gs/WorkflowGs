@@ -12,7 +12,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-integration</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -23,11 +23,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -63,8 +58,8 @@
 			<artifactId>WorkFlowCommonStreams</artifactId>
 			<exclusions>
 				<exclusion>
-					<groupId>org.apache.hbase</groupId>
-					<artifactId>hbase-client</artifactId>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>hbaseClientShaded</artifactId>
 				</exclusion>
 				<exclusion>
 					<groupId>org.apache.hbase</groupId>
@@ -74,8 +69,13 @@
 					<groupId>org.apache.hbase</groupId>
 					<artifactId>hbase-endpoint</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>HbaseFilters</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
+		
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
@@ -84,16 +84,19 @@
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-hdfs-client</artifactId>
-			<version>3.1.0</version>
+			<version>3.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
-			<version>3.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.emc.ecs</groupId>
+			<artifactId>nfs-client</artifactId>
 		</dependency>
 	</dependencies>
 	<build>

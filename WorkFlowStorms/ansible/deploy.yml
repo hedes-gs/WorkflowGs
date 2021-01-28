@@ -56,21 +56,25 @@
       copy:
         src: "{{ PWD }}/target/{{ jar_name }}"
         dest: ~{{ user_to_create }}/lib
-      when:  inventory_hostname == "192.168.1.200"
+      when:  inventory_hostname == "ipc0"
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"
     ids:
-      192.168.1.200:
+      ipc0:
         value: 1
-      192.168.1.201:
+      ipc1:
         value: 2
-      192.168.1.202:
+      ipc2:
         value: 3
-      192.168.1.203:
+      ipc3:
         value: 4
-      192.168.1.205:
+      ipc5:
         value: 5
-      192.168.1.206:
+      ipc6:
         value: 6
+      ipc7:
+        value: 7
+      ipc8:
+        value: 8
   

@@ -1,0 +1,30 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: api route
+        uri: http://127.0.0.1:8181
+        predicates:
+        - Path=/api/**
+      - id: websocket 
+        uri: ws://127.0.0.1:8181
+        predicates:
+        - Path=/app/**
+      - id: websocket_1
+        uri: ws://127.0.0.1:8181
+        predicates:
+        - Path=/ws/**
+      - id: ui
+        uri: http://127.0.0.1:3000
+        predicates:
+        - Path=/**
+logging:
+  level:
+    ROOT: DEBUG
+server:
+  port : 80    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

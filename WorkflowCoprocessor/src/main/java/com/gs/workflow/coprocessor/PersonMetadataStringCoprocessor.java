@@ -56,7 +56,9 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
     }
 
     @Override
-    protected long extractDateOfRowKeyToIndex(byte[] rowKey) { return Bytes.toLong(rowKey); }
+    protected long extractDateOfRowKeyToIndex(byte[] rowKey) {
+        return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
+    }
 
     @Override
     protected String extractMetadataValue(byte[] rowKey) {

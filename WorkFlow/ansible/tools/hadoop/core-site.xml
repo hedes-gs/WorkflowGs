@@ -25,8 +25,8 @@
 		<value>hadoop</value>
 	</property>
 
-		<property>
-			<name>ipc.client.bind.wildcard.addr</name>
+	<property>
+		<name>ipc.client.bind.wildcard.addr</name>
 		<value>true</value>
 	</property>
 	<!-- Common figuration -->
@@ -43,6 +43,11 @@
 		<name>hadoop.rpc.protection</name>
 		<value>authentication</value>
 	</property>
+	<property>
+		<name>hadoop.rpc.authentication</name>
+		<value>kerberos</value>
+	</property>
+
 	<property>
 		<name>hadoop.security.auth_to_local</name>
 		<value>
@@ -96,7 +101,8 @@
 	</property>
 	<property>
 		<name>dfs.namenode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nn.keytab</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nn.keytab
+		</value>
 	</property>
 	<property>
 		<name>dfs.namenode.kerberos.internal.spnego.principal</name>
@@ -106,10 +112,11 @@
 		<name>dfs.web.authentication.kerberos.principal</name>
 		<value>HTTP/_HOST@GS.COM</value>
 	</property>
-	
+
 	<property>
 		<name>dfs.web.authentication.kerberos.keytab</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/spnego.service.keytab</value>
+		<value>{{ hadoop_install_folder
+			}}/latest/keytabs/spnego.service.keytab</value>
 	</property>
 	<property>
 		<name>dfs.http.policy</name>
@@ -128,7 +135,8 @@
 	</property>
 	<property>
 		<name>dfs.secondary.namenode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_sn.keytab</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_sn.keytab
+		</value>
 	</property>
 	<property>
 		<name>dfs.secondary.namenode.kerberos.principal</name>
@@ -163,12 +171,18 @@
 	</property>
 	<property>
 		<name>dfs.datanode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_dn.keytab</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_dn.keytab
+		</value>
 	</property>
 	<property>
 		<name>dfs.data.transfer.protection</name>
 		<value>authentication</value>
 	</property>
+	<property>
+		<name>dfs.client.slow.io.warning.threshold.ms</name>
+		<value>120000</value>
+	</property>
+
 	<!-- End of Datanode info -->
 
 	<!-- Journal node info -->
@@ -178,7 +192,8 @@
 	</property>
 	<property>
 		<name>dfs.journalnode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_jn.keytab</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_jn.keytab
+		</value>
 	</property>
 	<property>
 		<name>dfs.journalnode.kerberos.internal.spnego.principal</name>
@@ -186,7 +201,8 @@
 	</property>
 	<property>
 		<name>dfs.web.authentication.kerberos.keytab</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/spnego.service.keytab</value>
+		<value>{{ hadoop_install_folder
+			}}/latest/keytabs/spnego.service.keytab</value>
 	</property>
 	<property>
 		<name>dfs.journalnode.https-address</name>
@@ -205,11 +221,13 @@
 	</property>
 	<property>
 		<name>yarn.nodemanager.keytab</name>
-		<value>/{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nm.keytab</value>
+		<value>/{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nm.keytab
+		</value>
 	</property>
 	<property>
 		<name>yarn.nodemanager.container-executor.class</name>
-		<value>org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor	</value>
+		<value>org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor
+		</value>
 	</property>
 	<property>
 		<name>yarn.nodemanager.linux-container-executor.group</name>
@@ -219,46 +237,46 @@
 		<name>yarn.nodemanager.webapp.https.address</name>
 		<value>0.0.0.0:8044</value>
 	</property>
-	
 
-   <!-- SSL for jetty : should be in server-ssl.xml in 3.2.0-->
-  <property>
-    <name>ssl.server.keystore.type</name>
-    <value>jks</value>
-  </property>
-  <property>
-    <name>ssl.server.keystore.location</name>
-    <value>/home/hadoop/latest/etc/hadoop/keystore.jks</value>
-  </property>
-  <property>
-    <name>ssl.server.keystore.password</name>
-    <value>password</value>
-  </property>
 
-  <!-- Server Trust Store -->
-  <property>
-    <name>ssl.server.truststore.type</name>
-    <value>jks</value>
-  </property>
-  <property>
-    <name>ssl.server.truststore.location</name>
-    <value>/home/hadoop/latest/etc/hadoop/truststore.jks</value>
-  </property>
-  <property>
-    <name>ssl.server.truststore.password</name>
-    <value>changeit</value>
-  </property>
-  <property>
-    <name>ssl.server.truststore.reload.interval</name>
-    <value>10000</value>
-  </property>
-  
-  <property>
-	<name>hadoop.http.authentication.simple.anonymous.allowed</name>
-	<value>true</value>
-  </property>
-  <property>
-	<name>hadoop.http.authentication.type</name>
-	<value>simple</value>
-  </property>
+	<!-- SSL for jetty : should be in server-ssl.xml in 3.2.0 -->
+	<property>
+		<name>ssl.server.keystore.type</name>
+		<value>jks</value>
+	</property>
+	<property>
+		<name>ssl.server.keystore.location</name>
+		<value>/home/hadoop/latest/etc/hadoop/keystore.jks</value>
+	</property>
+	<property>
+		<name>ssl.server.keystore.password</name>
+		<value>password</value>
+	</property>
+
+	<!-- Server Trust Store -->
+	<property>
+		<name>ssl.server.truststore.type</name>
+		<value>jks</value>
+	</property>
+	<property>
+		<name>ssl.server.truststore.location</name>
+		<value>/home/hadoop/latest/etc/hadoop/truststore.jks</value>
+	</property>
+	<property>
+		<name>ssl.server.truststore.password</name>
+		<value>changeit</value>
+	</property>
+	<property>
+		<name>ssl.server.truststore.reload.interval</name>
+		<value>10000</value>
+	</property>
+
+	<property>
+		<name>hadoop.http.authentication.simple.anonymous.allowed</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>hadoop.http.authentication.type</name>
+		<value>simple</value>
+	</property>
 </configuration>

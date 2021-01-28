@@ -1,0 +1,91 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: "create hadoop"
+      include_tasks: create-hadoop.yml
+  vars:
+    ansible_become_pass: granada01
+    hadoop_version: 3.2.1
+    user_to_create: hadoop
+    hadoop_install_folder: /home/hadoop
+    PWD: "{{ lookup('env', 'PWD') }}"
+    list_of_yarn_hostnames:
+      ipc5:
+        value: 0.0.0.0
+      ipc1:
+        value: ipc5
+      ipc2:
+        value: ipc5
+      ipc3:
+        value: ipc5
+      ipc0:
+        value: ipc5
+      ipc6:
+        value: ipc5
+      ipc7:
+        value: ipc5
+      ipc8:
+        value: ipc5
+      ipc9:
+        value: ipc5
+      ipc10:
+        value: ipc5
+      ipc11:
+        value: ipc5
+      ipc12:
+        value: ipc5
+    list_of_hadoop_hosts:
+      ipc5:
+        value: hadoop-master
+      ipc1:
+        value: ipc1
+      ipc2:
+        value: ipc2
+      ipc3:
+        value: ipc3
+      ipc0:
+        value: ipc0
+      ipc6:
+        value: ipc6
+      ipc7:
+        value: ipc7
+      ipc8:
+        value: ipc8
+      ipc9:
+        value: ipc9
+      ipc10:
+        value: ipc10
+      ipc11:
+        value: ipc11
+      ipc12:
+        value: ipc12
+    list_of_hadoop_master_nodes:
+      ipc5:
+        value: 0.0.0.0
+      ipc1:
+        value: hadoop-master
+      ipc2:
+        value: hadoop-master
+      ipc3:
+        value: hadoop-master
+      ipc0:
+        value: hadoop-master
+      ipc6:
+        value: hadoop-master
+      ipc7:
+        value: hadoop-master
+      ipc8:
+        value: hadoop-master
+      ipc9:
+        value: hadoop-master
+      ipc10:
+        value: hadoop-master
+      ipc11:
+        value: hadoop-master
+      ipc12:
+        value: hadoop-master
+    hadoop_hosts: "{{ list_of_hadoop_hosts[inventory_hostname].value }}"
+    hadoop_master_nodes: "{{ list_of_hadoop_master_nodes[inventory_hostname].value }}"
+    hadoop_master_name: "{{ list_of_hadoop_master_nodes[inventory_hostname].value }}"
+    yarn_hostnames: "{{ list_of_yarn_hostnames[inventory_hostname].value }}"
+    yarn_hostname: "{{ list_of_yarn_hostnames[inventory_hostname].value }}"

@@ -5,23 +5,24 @@ import { ServiceConfig } from './api.config'
 import { Moment } from 'moment-timezone';
 import { ApplicationEvent } from '../redux/Actions';
 import { ImageKeyDto, ImageDto, toJsonImageDto } from '../model/ImageDto';
+import { Console } from 'console';
 
 
 export interface ImagesService {
 
-    getNextImage(url: string): Promise<string>;
-    getPrevImage(url: string): Promise<string>;
-    getImage(url: string): Promise<string>;
+    getNextImage(url: string | undefined): Promise<string>;
+    getPrevImage(url: string | undefined): Promise<string>;
+    getImage(url: string | undefined): Promise<string>;
     saveImage(url: string, img: ImageDto): Promise<string>;
+    checkout(img: ImageDto): Promise<string>;
+    getLastImages(pageNumber: number): Promise<ReadableStream>;
 
-    getLastImages(pageNumber: number): Promise<string>;
-
-    getPageOfImages(url: string): Promise<string>;
+    getPageOfImages(url: string): Promise<ReadableStream>;
 
     getImagesByDate(
         min: Moment,
         max: Moment,
-        intervalType: string): Promise<string>;
+        intervalType: string): Promise<ReadableStream>;
 }
 
 export default class ImagesServiceImpl implements ImagesService {
@@ -60,7 +61,7 @@ export default class ImagesServiceImpl implements ImagesService {
             firstRow: this.buildRow('firstRow', MomentTimezone(0), 0, ' '),
             lastRow: this.buildRow('lastRow', MomentTimezone(0), 0, ' '),
             pageNumber: this.buildParam('pageNumber', '0'),
-            pageSize: this.buildParam('pageSize', '100'),
+            size: this.buildParam('size', '100'),
             sort: this.buildSort('true', 'true', 'true'),
             offset: this.buildParam('offset', '100'),
             paged: this.buildParam('paged', 'true'),
@@ -85,7 +86,7 @@ export default class ImagesServiceImpl implements ImagesService {
             lastRow: this.buildRow('lastRow', MomentTimezone(0), 0, ' '),
             pageNumber: this.buildParam('pageNumber', pageNumber.toString()),
             page: this.buildParam('page', pageNumber.toString()),
-            pageSize: this.buildParam('pageSize', '100'),
+            size: this.buildParam('size', '100'),
             sort: this.buildSort('true', 'true', 'true'),
             offset: this.buildParam('offset', '100'),
             paged: this.buildParam('paged', 'true'),
@@ -104,13 +105,40 @@ export default class ImagesServiceImpl implements ImagesService {
         this.urlToGetLastImages = '/api/gs/images';
     }
 
+    async checkout(img: ImageDto): Promise<string> {
+        const url = img._links?._checkout?.href;
+        if (url != null) {
+            return this.axiosInstance.post(url, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(resp => resp.data);
+        }
+        return '';
+    }
+
     async getImagesByDate(
         min: Moment,
         max: Moment,
-        intervalType: string): Promise<string> {
+        intervalType: string): Promise<ReadableStream> {
         const urlToGetDates = this.buildURLToGetDates(min, max, intervalType);
-        return this.axiosInstance.get(urlToGetDates)
-            .then(resp => resp.data);
+
+        const reponse = await fetch(urlToGetDates, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/stream+json',
+                'Accept': 'application/stream+json'
+            }
+        });
+        if (reponse.body != null) {
+            return reponse.body.pipeThrough(new TextDecoderStream());
+        }
+        return Promise.resolve(new ReadableStream());
+    }
+
+    getString(r: any): string {
+        console.log('.... getString ' + r)
+        return r != null ? r : ''
     }
 
     async saveImage(url: string, img: ImageDto): Promise<string> {
@@ -123,17 +151,36 @@ export default class ImagesServiceImpl implements ImagesService {
     }
 
 
-    async getLastImages(pageNumber: number) {
+    async getLastImages(pageNumber: number): Promise<ReadableStream> {
         const url = this.buildURLToGetLastImages(pageNumber);
         console.log("Calling url to get last images : " + url);
-        return this.axiosInstance.get(url)
-            .then(resp => resp.data);
+        const reponse = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/stream+json',
+                'Accept': 'application/stream+json'
+            }
+        });
+        if (reponse.body != null) {
+            return reponse.body.pipeThrough(new TextDecoderStream());
+        }
+        return Promise.resolve(new ReadableStream());
 
     }
 
-    async getPageOfImages(url: string): Promise<string> {
-        return this.axiosInstance.get(url)
-            .then(resp => resp.data);
+    async getPageOfImages(url: string): Promise<ReadableStream> {
+
+        const reponse = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/stream+json',
+                'Accept': 'application/stream+json'
+            }
+        });
+        if (reponse.body != null) {
+            return reponse.body.pipeThrough(new TextDecoderStream());
+        }
+        return Promise.resolve(new ReadableStream());
     }
 
     async getNextImage(url: string): Promise<string> {
@@ -146,17 +193,11 @@ export default class ImagesServiceImpl implements ImagesService {
     }
 
     async getImage(url: string): Promise<string> {
+
+
         return this.axiosInstance.get(url)
             .then(resp => resp.data);
     }
 
 
 }
-
-
-
-
-
-
-
-

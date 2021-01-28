@@ -1,7 +1,5 @@
 package com.workflow.model.events;
 
-import javax.annotation.Generated;
-
 public class WfEventCopy extends WfEvent {
 
     public WfEventCopy() {}
@@ -11,7 +9,6 @@ public class WfEventCopy extends WfEvent {
      */
     private static final long serialVersionUID = 1L;
 
-    @Generated("SparkTools")
     private WfEventCopy(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -22,16 +19,14 @@ public class WfEventCopy extends WfEvent {
 
     /**
      * Creates builder to build {@link WfEventCopy}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEventCopy}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long        dataCreationDate;
         private String      dataId;
@@ -43,7 +38,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -55,7 +50,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -67,7 +62,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         *
+         * 
          * @param imgId
          *            field to set
          * @return builder
@@ -79,7 +74,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         *
+         * 
          * @param parentDataId
          *            field to set
          * @return builder
@@ -91,7 +86,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         *
+         * 
          * @param step
          *            field to set
          * @return builder
@@ -103,7 +98,7 @@ public class WfEventCopy extends WfEvent {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public WfEventCopy build() { return new WfEventCopy(this); }

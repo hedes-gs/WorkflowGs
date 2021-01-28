@@ -14,12 +14,12 @@
       service:
         name: nimbus
         state: stopped
-      when: inventory_hostname == "192.168.1.200" or inventory_hostname == "192.168.1.201"
+      when: inventory_hostname == "ipc0" or inventory_hostname == "ipc1"
     - name : stop service nimbusui
       service:
         name: nimbusui
         state: stopped
-      when: inventory_hostname == "192.168.1.200"
+      when: inventory_hostname == "ipc0"
     - name : stop service supervisor
       service:
         name: supervisor 
@@ -27,7 +27,7 @@
       ignore_errors: yes
     - name: stop-hdfs
       shell:  "/home/hadoop/latest/sbin/stop-dfs.sh"
-      when: inventory_hostname == "192.168.1.200"
+      when: inventory_hostname == "ipc0"
     - name: stop-hbase.sh
       shell:  "/home/hbase/latest/bin/stop-hbase.sh"
   vars:
@@ -35,11 +35,11 @@
     PWD: "{{ lookup('env', 'PWD') }}"
     zookeeper_ids:
       item_1:
-        key: "192.168.1.200"
+        key: "ipc0"
         value: 1
       item_2:
-        key: "192.168.1.201"
+        key: "ipc1"
         value: 2
       item_3:
-        key: "192.168.1.202"
+        key: "ipc2"
         value: 3

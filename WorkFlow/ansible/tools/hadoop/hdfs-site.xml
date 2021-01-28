@@ -80,8 +80,10 @@
 		<name>dfs.web.authentication.simple.anonymous.allowed</name>
 		<value>true</value>
 	</property>
-	
-	
+	<property>
+		<name>dfs.client.socket-timeout</name>
+		<value>360000</value>
+	</property>
 	
 	
 </configuration>

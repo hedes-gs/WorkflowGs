@@ -2,8 +2,8 @@ name: "workflow-topology"
 
 config:
   topology.debug: false
-  topology.workers: 6
-  topology.tasks: 6
+  topology.workers: 8
+  topology.tasks: 8
   topology.max.spout.pending: 1000
   topology.message.timeout.secs: 500
 

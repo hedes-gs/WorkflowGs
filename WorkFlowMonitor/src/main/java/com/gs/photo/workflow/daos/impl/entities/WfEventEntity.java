@@ -1,11 +1,11 @@
 package com.gs.photo.workflow.daos.impl.entities;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+// import javax.persistence.Entity;
+//import javax.persistence.Id;
 
-@Entity
+//@Entity
 public class WfEventEntity {
-    @Id
+    // @Id
     protected String id;
 
     protected String data;

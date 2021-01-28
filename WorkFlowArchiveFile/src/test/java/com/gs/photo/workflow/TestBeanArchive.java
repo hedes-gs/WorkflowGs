@@ -30,8 +30,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.impl.BeanArchive;
-import com.gs.photo.workflow.impl.FileUtils;
+import com.gs.photo.workflow.archive.ApplicationConfig;
+import com.gs.photo.workflow.archive.IBeanArchive;
+import com.gs.photo.workflow.archive.IUserGroupInformationAction;
+import com.gs.photo.workflow.archive.impl.BeanArchive;
+import com.gs.photo.workflow.archive.impl.FileUtils;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
@@ -198,7 +201,7 @@ public class TestBeanArchive {
             .copyRemoteToLocal(
                 (FileToProcess) ArgumentMatchers.any(),
                 (OutputStream) ArgumentMatchers.any(),
-                (Integer) ArgumentMatchers.any());
+                (Integer) ArgumentMatchers.any(), "/localcache");
     }
 
 }

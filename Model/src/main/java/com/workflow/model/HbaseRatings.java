@@ -2,8 +2,6 @@ package com.workflow.model;
 
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 @HbaseTableName(value = "ratings")
 public class HbaseRatings extends HbaseData {
     private static final long serialVersionUID = 1L;
@@ -14,11 +12,11 @@ public class HbaseRatings extends HbaseData {
     @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
     protected long            nbOfElements;
 
-    @Generated("SparkTools")
     private HbaseRatings(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
         this.ratings = builder.ratings;
+        this.nbOfElements = builder.nbOfElements;
     }
 
     public HbaseRatings() { super(); }
@@ -59,26 +57,25 @@ public class HbaseRatings extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseRatings}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseRatings}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
         private long   ratings;
+        private long   nbOfElements;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -90,7 +87,7 @@ public class HbaseRatings extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -102,7 +99,7 @@ public class HbaseRatings extends HbaseData {
 
         /**
          * Builder method for ratings parameter.
-         *
+         * 
          * @param ratings
          *            field to set
          * @return builder
@@ -113,8 +110,20 @@ public class HbaseRatings extends HbaseData {
         }
 
         /**
+         * Builder method for nbOfElements parameter.
+         * 
+         * @param nbOfElements
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbOfElements(long nbOfElements) {
+            this.nbOfElements = nbOfElements;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseRatings build() { return new HbaseRatings(this); }

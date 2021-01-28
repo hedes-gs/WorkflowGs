@@ -17,12 +17,6 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-			<version>1.16.22</version>
-		</dependency>
-		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>Model</artifactId>
 			<exclusions>
@@ -52,7 +46,6 @@
 		<dependency>
 			<groupId>org.apache.avro</groupId>
 			<artifactId>avro</artifactId>
-			<version>1.9.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.storm</groupId>
@@ -94,7 +87,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>1.5</version>
 				<configuration>
 					<createDependencyReducedPom>true</createDependencyReducedPom>
 				</configuration>

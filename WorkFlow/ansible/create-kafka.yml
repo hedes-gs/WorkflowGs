@@ -1,0 +1,114 @@
+- debug:
+    msg: INSTALL  Kafka "{{ kafka_version }}"
+- user: name="{{ user_to_create }}" group=nogroup shell="/bin/bash"
+- name: Create kafka {{ kafka_install_folder }}
+  file:
+    path: "{{ kafka_install_folder }}"
+    state: directory
+    owner: "{{user_to_create}}"
+- name: Create kafka {{ kafka_install_folder }}
+  file:
+    path: "{{ kafka_install_folder }}"
+    state: directory
+    owner: "{{user_to_create}}"
+- name: Create folder var/lib/kafka
+  file:
+    path: /var/lib/kafka
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folder var/lib/kafka
+  file:
+    path: /var/lib/kafka/data
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folder  {{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}
+  file:
+    path: "{{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}"
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Download Kafka {{ kafka_version }}
+  get_url: url=http://www-eu.apache.org/dist/kafka/{{ kafka_version }}/kafka_2.13-{{ kafka_version }}.tgz  dest={{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}.tgz  mode=0644 force=no
+- name: Unpack the tar
+  shell: tar -xzvf {{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}.tgz --directory {{ kafka_install_folder }}
+- name: remove symlink /usr/local/kafka to this version
+  shell: rm -f {{ kafka_install_folder }}/latest
+- name: Symlink /usr/local/kafka to this version
+  shell: ln -s {{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }} {{ kafka_install_folder }}/latest
+- name: Create folder  {{ kafka_install_folder }}/latest/logs
+  file:
+    path: "{{ kafka_install_folder }}/latest/logs"
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folder  {{ kafka_install_folder }}/latest/monitor
+  file:
+    path: "{{ kafka_install_folder }}/latest/monitor"
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Purge logs
+  shell: "rm -f {{ kafka_install_folder }}/latest/logs/*"
+- name: build config file from template
+  vars:
+      broker_id: "{{ item.broker_id }}"
+      broker_host: "{{ item.broker_host }}"
+      broker_host_external_id: "{{ item.broker_host_external_ids}}"
+  template:
+    src: ./tools/kafka/server.properties
+    dest: "{{ kafka_install_folder }}/latest/config/server.properties"
+    owner: "{{ user_to_create }}"
+    mode: 0666
+- name: build kafka.service from template
+  template:
+    src: ./tools/kafka/kafka.service
+    dest: /etc/systemd/system/kafka.service
+    owner: root
+    mode: 0666
+- name: build kafka.conf from template
+  template:
+    src: ./tools/kafka/kafka.conf
+    dest: /etc/rsyslog.d/kafka.conf
+    owner: root
+    mode: 0666
+- name: build kafka.keytab from template
+  vars:
+    Broker_host: "{{ item.broker_host }}"
+  copy:
+    src: ./tools/kafka/kafka_all.keytab
+    dest: "{{ kafka_install_folder }}/latest/config/kafka.keytab"
+    owner: kafka
+    mode: 0600
+- name: deploy prometheus jars.
+  copy:
+    src: ./tools/kafka/config_prometheus.yml
+    dest: "{{ kafka_install_folder }}/latest/monitor/config_prometheus.yml"
+    owner: kafka
+    mode: 0666
+- name: deploy log4j properties.
+  copy:
+    src: ./tools/kafka/log4j.properties
+    dest: "{{ kafka_install_folder }}/latest/config/log4j.properties"
+    owner: kafka
+    mode: 0666
+- name: deploy prometheus agent jars.
+  copy:
+    src: ./tools/kafka/jmx_prometheus_javaagent-0.12.0.jar
+    dest: "{{ kafka_install_folder }}/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar"
+    owner: kafka
+    mode: 0666        
+- name: build client_jaas.conf from template
+  vars:
+    broker_host: "{{ item.broker_host }}"
+  template:
+    src: ./tools/kafka/client_jaas.conf
+    dest: "{{ kafka_install_folder }}/latest/config/client_jaas.conf"
+    owner: root
+    mode: 0666
+- name: build run.sh from template
+  copy:
+    src: ./tools/kafka/run.sh
+    dest: "{{ kafka_install_folder }}/latest/bin/run.sh"
+    owner: root
+    mode: 0755
+- name: reload daemon
+  shell: systemctl  daemon-reload    
+- name: enable kafka.service
+  shell: systemctl enable kafka.service

@@ -1,84 +1,108 @@
 all:
   hosts:
-    192.168.1.200:
-    192.168.1.201:
-    192.168.1.202:
-    192.168.1.203:
-    192.168.1.205:
-    192.168.1.206:
+    ipc0:
+    ipc1:
+    ipc2:
+    ipc3:
+    ipc5:
+    ipc6:
+    ipc7:
+    ipc8:
   children:
     ignite:
       hosts:
-        192.168.1.205:
-        192.168.1.206:
-        192.168.1.200:
-        192.168.1.202:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_hbase:
       hosts:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.206:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_archive:
       hosts:
-        192.168.1.200:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.205:
-        192.168.1.206:
+        ipc0:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_copy_files:
       hosts:
-        192.168.1.200:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.205:
-        192.168.1.206:
+        ipc0:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_cmp_hashkey:
       hosts:
-        192.168.1.200:
-        192.168.1.202:
-        192.168.1.205:
+        ipc0:
+        ipc2:
+        ipc5:
+        ipc7:
+        ipc8:
     wf_dupcheck:
       hosts:
-        192.168.1.201:
-        192.168.1.203:
+        ipc1:
+        ipc3:
     wf_ext_img_infos:
       hosts:
-        192.168.1.200:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.205:
-        192.168.1.206:
+        ipc0:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_proc_and_publish_photo:
       hosts:
-        192.168.1.201:
-        192.168.1.203:
-        192.168.1.206:
+        ipc1:
+        ipc3:
+        ipc6:
+        ipc8:
     wf_proc_and_publish_exif_data:
       hosts:
-        192.168.1.200:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.205:
-        192.168.1.206:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_scan:
       hosts:
-        192.168.1.200:
-        192.168.1.201:
-        192.168.1.202:
-        192.168.1.203:
-        192.168.1.205:
-        192.168.1.206:
+        ipc0:
+        ipc1:
+        ipc2:
+        ipc3:
+        ipc5:
+        ipc6:
+        ipc7:
+        ipc8:
     wf_storm:
       hosts:
-        192.168.1.200:
+        ipc0:
+#        ipc1:
+#        ipc2:
+#        ipc3:
+#        ipc5:
+#        ipc6:
+#        ipc7:
+#        ipc8:
     wf_monitor:
       hosts:
-        192.168.1.200:
+        ipc7:
+        ipc8:
   vars:
     ansible_user: user
     ansible_ssh_private_key_file: /etc/gitlab/ssh-keys/private-key-1

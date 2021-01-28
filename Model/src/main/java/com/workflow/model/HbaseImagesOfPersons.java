@@ -2,11 +2,8 @@ package com.workflow.model;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 @HbaseTableName(value = "images_persons", page_table = true)
 public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
@@ -15,7 +12,6 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
     @Column(hbaseName = "person", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_PERSON_NAME)
     protected String          person;
 
-    @Generated("SparkTools")
     private HbaseImagesOfPersons(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -156,85 +152,45 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
     /**
      * Creates builder to build {@link HbaseImagesOfPersons}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImagesOfPersons}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
-        private long               dataCreationDate;
-        private String             dataId;
-        private long               creationDate;
-        private String             imageId;
-        private String             imageName;
-        private String             thumbName;
-        private SizeAndJpegContent thumbnail;
-        private String             path;
-        private long               width;
-        private long               height;
-        private long               originalWidth;
-        private long               originalHeight;
-        private long               importDate;
-        private long               orientation;
-        private byte[]             lens;
-        private int[]              focalLens;
-        private int[]              speed;
-        private int[]              aperture;
-        private short              isoSpeed;
-        private String             camera;
-        private int[]              shiftExpo;
-        private String             copyright;
-        private String             artist;
-        private String             importName;
-        private HashSet<String>    albums;
-        private HashSet<String>    keyWords;
-        private HashSet<String>    persons;
-        private HashSet<Long>      ratingsOfImage;
-        private String             person;
-
-        public Builder withThumbNailImage(HbaseImageThumbnail hbi) {
-            return this.withAlbums(hbi.getAlbums())
-                .withAperture(hbi.getAperture())
-                .withArtist(hbi.getArtist())
-                .withCamera(hbi.getCamera())
-                .withCopyright(hbi.getCopyright())
-                .withCreationDate(hbi.getCreationDate())
-                // .withDataCreationDate(hbi.getDataCreationDate())
-                .withDataId(hbi.getDataId())
-                .withFocalLens(hbi.getFocalLens())
-                .withHeight(hbi.getHeight())
-                .withImageId(hbi.getImageId())
-                .withImageName(hbi.getImageName())
-                .withImportDate(hbi.getImportDate())
-                .withImportName(hbi.getImportName())
-                .withIsoSpeed(hbi.getIsoSpeed())
-                .withKeyWords(hbi.getKeyWords())
-                .withLens(hbi.getLens())
-                .withOrientation(hbi.getOrientation())
-                .withOriginalHeight(hbi.getOriginalHeight())
-                .withOriginalWidth(hbi.getOriginalWidth())
-                .withPath(hbi.getPath())
-                .withPersons(hbi.getPersons())
-                .withRatingsOfImage(hbi.getRatings())
-                .withShiftExpo(hbi.getShiftExpo())
-                .withSpeed(hbi.getSpeed())
-                .withThumbnail(
-                    hbi.getThumbnail()
-                        .get(1))
-                .withThumbName(hbi.getThumbName())
-                .withWidth(hbi.getWidth());
-        }
+        private long   dataCreationDate;
+        private String dataId;
+        private long   creationDate;
+        private String imageId;
+        private String imageName;
+        private String thumbName;
+        private String path;
+        private long   width;
+        private long   height;
+        private long   originalWidth;
+        private long   originalHeight;
+        private long   importDate;
+        private long   orientation;
+        private byte[] lens;
+        private int[]  focalLens;
+        private int[]  speed;
+        private int[]  aperture;
+        private short  isoSpeed;
+        private String camera;
+        private int[]  shiftExpo;
+        private String copyright;
+        private String artist;
+        private String importName;
+        private String person;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -246,7 +202,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -258,7 +214,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for creationDate parameter.
-         *
+         * 
          * @param creationDate
          *            field to set
          * @return builder
@@ -270,7 +226,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -282,7 +238,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for imageName parameter.
-         *
+         * 
          * @param imageName
          *            field to set
          * @return builder
@@ -294,7 +250,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for thumbName parameter.
-         *
+         * 
          * @param thumbName
          *            field to set
          * @return builder
@@ -305,20 +261,8 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
         }
 
         /**
-         * Builder method for thumbnail parameter.
-         *
-         * @param thumbnail
-         *            field to set
-         * @return builder
-         */
-        public Builder withThumbnail(SizeAndJpegContent thumbnail) {
-            this.thumbnail = thumbnail;
-            return this;
-        }
-
-        /**
          * Builder method for path parameter.
-         *
+         * 
          * @param path
          *            field to set
          * @return builder
@@ -330,7 +274,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for width parameter.
-         *
+         * 
          * @param width
          *            field to set
          * @return builder
@@ -342,7 +286,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for height parameter.
-         *
+         * 
          * @param height
          *            field to set
          * @return builder
@@ -354,7 +298,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for originalWidth parameter.
-         *
+         * 
          * @param originalWidth
          *            field to set
          * @return builder
@@ -366,7 +310,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for originalHeight parameter.
-         *
+         * 
          * @param originalHeight
          *            field to set
          * @return builder
@@ -378,7 +322,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for importDate parameter.
-         *
+         * 
          * @param importDate
          *            field to set
          * @return builder
@@ -390,7 +334,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for orientation parameter.
-         *
+         * 
          * @param orientation
          *            field to set
          * @return builder
@@ -402,7 +346,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for lens parameter.
-         *
+         * 
          * @param lens
          *            field to set
          * @return builder
@@ -414,7 +358,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for focalLens parameter.
-         *
+         * 
          * @param focalLens
          *            field to set
          * @return builder
@@ -426,7 +370,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for speed parameter.
-         *
+         * 
          * @param speed
          *            field to set
          * @return builder
@@ -438,7 +382,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for aperture parameter.
-         *
+         * 
          * @param aperture
          *            field to set
          * @return builder
@@ -450,7 +394,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for isoSpeed parameter.
-         *
+         * 
          * @param isoSpeed
          *            field to set
          * @return builder
@@ -462,7 +406,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for camera parameter.
-         *
+         * 
          * @param camera
          *            field to set
          * @return builder
@@ -474,7 +418,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for shiftExpo parameter.
-         *
+         * 
          * @param shiftExpo
          *            field to set
          * @return builder
@@ -486,7 +430,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for copyright parameter.
-         *
+         * 
          * @param copyright
          *            field to set
          * @return builder
@@ -498,7 +442,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for artist parameter.
-         *
+         * 
          * @param artist
          *            field to set
          * @return builder
@@ -510,7 +454,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method for importName parameter.
-         *
+         * 
          * @param importName
          *            field to set
          * @return builder
@@ -521,56 +465,8 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
         }
 
         /**
-         * Builder method for albums parameter.
-         *
-         * @param albums
-         *            field to set
-         * @return builder
-         */
-        public Builder withAlbums(HashSet<String> albums) {
-            this.albums = albums;
-            return this;
-        }
-
-        /**
-         * Builder method for keyWords parameter.
-         *
-         * @param keyWords
-         *            field to set
-         * @return builder
-         */
-        public Builder withKeyWords(HashSet<String> keyWords) {
-            this.keyWords = keyWords;
-            return this;
-        }
-
-        /**
-         * Builder method for persons parameter.
-         *
-         * @param persons
-         *            field to set
-         * @return builder
-         */
-        public Builder withPersons(HashSet<String> persons) {
-            this.persons = persons;
-            return this;
-        }
-
-        /**
-         * Builder method for ratingsOfImage parameter.
-         *
-         * @param ratingsOfImage
-         *            field to set
-         * @return builder
-         */
-        public Builder withRatingsOfImage(HashSet<Long> ratingsOfImage) {
-            this.ratingsOfImage = ratingsOfImage;
-            return this;
-        }
-
-        /**
          * Builder method for person parameter.
-         *
+         * 
          * @param person
          *            field to set
          * @return builder
@@ -582,7 +478,7 @@ public class HbaseImagesOfPersons extends HbaseImagesOfMetadata {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImagesOfPersons build() { return new HbaseImagesOfPersons(this); }

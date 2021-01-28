@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import { ServiceConfig } from './api.config'
 
 export interface ExifImagesService {
-    getExifDataOfImage(exifUrl: string): Promise<string>;
+    getExifDataOfImage(exifUrl: string | undefined): Promise<string>;
 
 }
 

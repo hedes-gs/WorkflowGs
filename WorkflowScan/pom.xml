@@ -12,7 +12,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-integration</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -21,23 +21,54 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>com.gs.photos</groupId>
+			<artifactId>WorkFlowCommonStreams</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-endpoint</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>HbaseFilters</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>hbaseClientShaded</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.kafka</groupId>
+					<artifactId>kafka-streams</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-spring</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-common</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka-streams</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-api</artifactId>
-				</exclusion>
-
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -70,6 +101,14 @@
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-common</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.github.jai-imageio</groupId>
+					<artifactId>jai-imageio-core</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -77,18 +116,13 @@
 			<artifactId>serializers</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.gs.photos</groupId>
-			<artifactId>WorkFlowCommonStreams</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.kafka</groupId>
-					<artifactId>spring-kafka</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>org.slf4j</groupId>
-					<artifactId>slf4j-log4j12</artifactId>
-				</exclusion>
-			</exclusions>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.emc.ecs</groupId>
+			<artifactId>nfs-client</artifactId>
 		</dependency>
 	</dependencies>
 	<build>

@@ -34,7 +34,7 @@ copy.group.id=copy-group-transactional
 zookeeper.hosts={{zookeeper_hosts | default('IPC0,IPC1,IPC2') }}
 hbase.master={{hbase_master | default('IPC0') }}
 zookeeper.port={{zookeeper_port | default('2181')}}
-bootstrap.servers={{ kafka_bootstrap_servers | default('IPC0IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092') }}
+bootstrap.servers={{ kafka_bootstrap_servers | default('IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092,IPC7:9092,IPC8:9092') }}
 kafkaStreamDir.dir={{ kafka_stream_dir | default('unset')}}
 application.id={{ application_id | default('unset') }}_{{ host_id | default('unset') }}
 group.id=group-for-{{ application_id | default('unset')}}
@@ -45,7 +45,7 @@ logging.config=config/log4j.xml
 copy.maxNumberOfFilesInAFolder={{ max_number_of_files_in_a_folder | default('unset') }}
 
 transaction.id={{ transaction_id | default('unset') }}_{{ host_id | default('unset')}}
-transaction.timeout=180000
+transaction.timeout={{ transaction_timeout | default('180000') }}
 
 application.gs.principal={{ application_gs_principal }}
 application.gs.keytab={{ application_gs_keytab }}

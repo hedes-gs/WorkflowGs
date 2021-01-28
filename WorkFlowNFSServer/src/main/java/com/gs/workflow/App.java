@@ -11,25 +11,30 @@ import org.dcache.oncrpc4j.portmap.OncRpcEmbeddedPortmap;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class App {
 
+    protected static Logger LOGGER  = LoggerFactory.getLogger(App.class);
+
     @Option(name = "-root", usage = "root of the file system to export", metaVar = "<path>")
-    private Path    root;
+    private Path            root;
     @Option(name = "-exports", usage = "path to file with export tables", metaVar = "<file>")
-    private Path    exportsFile;
+    private Path            exportsFile;
     @Option(name = "-port", usage = "TCP port to use", metaVar = "<port>")
-    private int     rpcPort = 2049;
+    private int             rpcPort = 2049;
     @Option(name = "-with-portmap", usage = "start embedded portmap")
-    private boolean withPortmap;
+    private boolean         withPortmap;
 
     public static void main(String[] args) throws Exception { new App().run(args); }
 
     public void run(String[] args) throws CmdLineException, IOException {
 
+        App.LOGGER.info(" Starting app...");
         CmdLineParser parser = new CmdLineParser(this);
 
         try {

@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
@@ -31,7 +30,6 @@ public class ImageDto implements Serializable {
     protected String          lens;
     protected long            ratings;
 
-    @Generated("SparkTools")
     private ImageDto(Builder builder) {
         this.data = builder.data;
         this.imageName = builder.imageName;
@@ -142,18 +140,29 @@ public class ImageDto implements Serializable {
 
     public void setOrientation(int orientation) { this.orientation = orientation; }
 
+    @Override
+    public String toString() {
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("ImageDto [imageName=");
+        builder2.append(this.imageName);
+        builder2.append(", creationDateAsString=");
+        builder2.append(this.creationDateAsString);
+        builder2.append(", salt=");
+        builder2.append(this.data.getSalt());
+        builder2.append("]");
+        return builder2.toString();
+    }
+
     /**
      * Creates builder to build {@link ImageDto}.
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ImageDto}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private ImageKeyDto   data;
         private String        imageName;

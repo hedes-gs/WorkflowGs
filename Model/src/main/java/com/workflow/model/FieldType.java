@@ -35,6 +35,8 @@ public enum FieldType {
     // field
     WINDOWSXP(
         "WindowsXP", (short) 0x000e
+    ), SUBDIRECTORY(
+        "SubDirectory", (short) 0x000f
     ),
 
     UNKNOWN(

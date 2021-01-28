@@ -17,8 +17,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.DateTimeHelper;
-import com.gs.photo.workflow.HbaseApplicationConfig;
+import com.gs.photo.workflow.recinhbase.DateTimeHelper;
+import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
+import com.gs.photo.workflow.recinhbase.dao.HbaseStatsDAO;
+import com.gs.photo.workflow.recinhbase.dao.IHbaseStatsDAO;
 import com.workflow.model.HbaseImageThumbnailKey;
 
 @RunWith(SpringRunner.class)

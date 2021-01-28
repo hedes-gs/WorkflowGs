@@ -1,70 +1,53 @@
-###########################################################################################################################
-# DO Community Playbooks
-# Playbook: Installing Docker and Creating Containers on Ubuntu 18.04
-# Based on: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04
-# Guide: https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-18-04
-###########################################################################################################################
-
----
-- hosts: ignite
-  become: true
-  vars:
-    ansible_become_pass: granada01
-    storm_version: 2.0.0
-    user_to_create: storm
-    storm_install_folder: /home/storm
- 
-  tasks:
-    - name: stop ignite 
-      shell: "systemctl stop apache-ignite@cluster-server.xml"
-    - name: Install aptitude using apt
-      shell: "apt install dirmngr --no-install-recommends"
-      ignore_errors: yes
-    - name: clean
-      file:
-        path: /var/lib/apache-ignite/db/
-        state: absent
-    - name: clean
-      file:
-        path: /var/lib/apache-ignite/diagnostic/
-        state: absent
-    - name: clean
-      file:
-        path: /var/lib/apache-ignite/marshaller/
-        state: absent
-    - name: clean
-      file:
-        path: /var/lib/apache-ignite/binary_meta/
-        state: absent
-    - name: copy ignite.repo 
-      copy:
-        src: ./tools/ignite/ignite.list
-        dest: "/etc/apt/sources.list.d/ignite.list"
-#    - name: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61
-#      shell: "apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61"
-#      ignore_errors: yes
-#    - name: apt update
-#      shell: "apt update"
-#      ignore_errors: yes
-#    - name: apt install apache-ignite --no-install-recommends
-#      apt:
-#        name: apache-ignite
-#        state: present
-#        install_recommends: no
-#      ignore_errors: yes
-    - name: copy server.xml
-      vars:
-        localAddress: "{{inventory_hostname }}"
-      template:
-        src: ./tools/ignite/cluster-server.xml
-        dest: "/etc/apache-ignite/cluster-server.xml"
-    - name: copy ignite.sh 
-      copy:
-        src: ./tools/ignite/ignite.sh
-        dest: "/usr/share/apache-ignite/bin/ignite.sh"
-    - name: copy optional lib
-      shell: "cp /usr/share/apache-ignite/libs/optional/ignite-rest-http/*.jar /usr/share/apache-ignite/libs"
-    - name: start ignite 
-      shell: "systemctl start apache-ignite@cluster-server.xml"
-    - name: activate ignite 
-      shell: "/usr/share/apache-ignite/bin/control.sh --activate"
+- name: stop ignite 
+  shell: "systemctl stop apache-ignite@cluster-server.xml"
+  ignore_errors: yes
+- name: Install aptitude using apt
+  shell: "apt install dirmngr --no-install-recommends"
+  ignore_errors: yes
+- name: clean
+  file:
+    path: /var/lib/apache-ignite/db/
+    state: absent
+- name: clean
+  file:
+    path: /var/lib/apache-ignite/diagnostic/
+    state: absent
+- name: clean
+  file:
+    path: /var/lib/apache-ignite/marshaller/
+    state: absent
+- name: clean
+  file:
+    path: /var/lib/apache-ignite/binary_meta/
+    state: absent
+- name: copy ignite.repo 
+  copy:
+    src: ./tools/ignite/ignite.list
+    dest: "/etc/apt/sources.list.d/ignite.list"
+- name: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61
+  shell: "apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 379CE192D401AB61"
+  ignore_errors: yes
+- name: apt update
+  shell: "apt update"
+  ignore_errors: yes
+- name: apt install apache-ignite --no-install-recommends
+  apt:
+    name: apache-ignite
+    state: present
+    install_recommends: no
+  ignore_errors: yes
+- name: copy server.xml
+  template:
+    src: ./tools/ignite/cluster-server.xml
+    dest: "/etc/apache-ignite/cluster-server.xml"
+- name: copy ignite.sh 
+  copy:
+    src: ./tools/ignite/ignite.sh
+    dest: "/usr/share/apache-ignite/bin/ignite.sh"
+- name: copy optional lib
+  shell: "cp /usr/share/apache-ignite/libs/optional/ignite-rest-http/*.jar /usr/share/apache-ignite/libs"
+- name: start ignite 
+  shell: "systemctl start apache-ignite@cluster-server.xml"
+- name: activate ignite 
+  shell: "/usr/share/apache-ignite/bin/control.sh --activate"
+  ignore_errors: yes

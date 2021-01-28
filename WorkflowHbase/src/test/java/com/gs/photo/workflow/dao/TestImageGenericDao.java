@@ -44,8 +44,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.WorkflowHbaseApplication;
-import com.gs.photo.workflow.hbase.dao.AbstractDAO;
+import com.gs.photo.workflow.recinhbase.WorkflowHbaseApplication;
+import com.gs.photo.workflow.recinhbase.dao.HbaseImageThumbnailDAO;
+import com.gs.photo.workflow.recinhbase.dao.HbaseImagesOfAlbumDAO;
+import com.gs.photo.workflow.recinhbase.dao.HbaseImagesOfKeywordsDAO;
+import com.gs.photo.workflow.recinhbase.dao.HbaseStatsDAO;
+import com.gs.photo.workflow.recinhbase.hbase.dao.AbstractDAO;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.events.WfEvents;

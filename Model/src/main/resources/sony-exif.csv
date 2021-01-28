@@ -1,4 +1,5 @@
 tag-hex,tag-dec,ifd,key,type,tag-description
+0x0020,32,Sony1,Exif.Sony1.FocusInfo,SubDirectory,Sony focus info
 0x0102,258,Sony1,Exif.Sony1.Quality,Long,Image quality
 0x0104,260,Sony1,Exif.Sony1.FlashExposureComp,SRational,Flash exposure compensation in EV
 0x0105,261,Sony1,Exif.Sony1.Teleconverter,Long,Teleconverter Model
@@ -51,3 +52,4 @@ tag-hex,tag-dec,ifd,key,type,tag-description
 0xb04f,45135,Sony1,Exif.Sony1.DynamicRangeOptimizer,Short,Dynamic Range Optimizer
 0xb052,45138,Sony1,Exif.Sony1.IntelligentAuto,Short,Intelligent Auto
 0xb054,45140,Sony1,Exif.Sony1.WhiteBalance2,Short,White balance 2
+0xb02a,45098,Sony1,Exif.Sony1.LensSpec,Unknown, Lens spec

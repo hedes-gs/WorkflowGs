@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photos.serializers.FileToProcessSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.events.WfEvents;

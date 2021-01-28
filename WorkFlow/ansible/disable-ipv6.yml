@@ -1,0 +1,11 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: sysctl -w net.ipv6.conf.all.disable_ipv6=1
+      shell: "sysctl -w net.ipv6.conf.all.disable_ipv6=1"
+    - name: sysctl -w net.ipv6.conf.default.disable_ipv6=1
+      shell: "sysctl -w net.ipv6.conf.default.disable_ipv6=1"
+    - name: sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+      shell: "sysctl -w net.ipv6.conf.lo.disable_ipv6=1"
+  vars:
+    ansible_become_pass: granada01

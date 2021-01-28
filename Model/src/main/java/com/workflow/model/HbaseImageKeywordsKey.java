@@ -1,7 +1,5 @@
 package com.workflow.model;
 
-import javax.annotation.Generated;
-
 @HbaseTableName("image_keyword_key")
 public class HbaseImageKeywordsKey extends HbaseData {
 
@@ -11,7 +9,6 @@ public class HbaseImageKeywordsKey extends HbaseData {
     @Column(hbaseName = "keyWord", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_KEYWORD)
     protected String          keyWord;
 
-    @Generated("SparkTools")
     private HbaseImageKeywordsKey(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -59,16 +56,14 @@ public class HbaseImageKeywordsKey extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseImageKeywordsKey}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageKeywordsKey}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
@@ -78,7 +73,7 @@ public class HbaseImageKeywordsKey extends HbaseData {
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -90,7 +85,7 @@ public class HbaseImageKeywordsKey extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -102,7 +97,7 @@ public class HbaseImageKeywordsKey extends HbaseData {
 
         /**
          * Builder method for keyWord parameter.
-         *
+         * 
          * @param keyWord
          *            field to set
          * @return builder
@@ -114,7 +109,7 @@ public class HbaseImageKeywordsKey extends HbaseData {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImageKeywordsKey build() { return new HbaseImageKeywordsKey(this); }

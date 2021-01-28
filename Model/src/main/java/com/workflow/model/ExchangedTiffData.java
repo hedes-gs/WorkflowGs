@@ -3,8 +3,6 @@ package com.workflow.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 public class ExchangedTiffData extends HbaseData implements Serializable {
@@ -25,10 +23,9 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
     private int               intId;
     private int               total;
 
-    @Generated("SparkTools")
     private ExchangedTiffData(Builder builder) {
-        super(builder.dataId,
-            builder.dataCreationDate);
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
         this.key = builder.key;
         this.imageId = builder.imageId;
         this.tag = builder.tag;
@@ -128,19 +125,17 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link ExchangedTiffData}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ExchangedTiffData}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
-        private String    dataId;
         private long      dataCreationDate;
+        private String    dataId;
         private String    key;
         private String    imageId;
         private short     tag;
@@ -156,20 +151,8 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
         private Builder() {}
 
         /**
-         * Builder method for dataId parameter.
-         *
-         * @param dataId
-         *            field to set
-         * @return builder
-         */
-        public Builder withDataId(String dataId) {
-            this.dataId = dataId;
-            return this;
-        }
-
-        /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -180,8 +163,20 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
         }
 
         /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
          * Builder method for key parameter.
-         *
+         * 
          * @param key
          *            field to set
          * @return builder
@@ -193,7 +188,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -205,7 +200,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for tag parameter.
-         *
+         * 
          * @param tag
          *            field to set
          * @return builder
@@ -217,7 +212,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for fieldType parameter.
-         *
+         * 
          * @param fieldType
          *            field to set
          * @return builder
@@ -229,7 +224,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for length parameter.
-         *
+         * 
          * @param length
          *            field to set
          * @return builder
@@ -241,7 +236,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for path parameter.
-         *
+         * 
          * @param path
          *            field to set
          * @return builder
@@ -253,7 +248,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataAsInt parameter.
-         *
+         * 
          * @param dataAsInt
          *            field to set
          * @return builder
@@ -265,7 +260,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataAsShort parameter.
-         *
+         * 
          * @param dataAsShort
          *            field to set
          * @return builder
@@ -277,7 +272,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataAsByte parameter.
-         *
+         * 
          * @param dataAsByte
          *            field to set
          * @return builder
@@ -289,7 +284,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for intId parameter.
-         *
+         * 
          * @param intId
          *            field to set
          * @return builder
@@ -301,7 +296,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method for total parameter.
-         *
+         * 
          * @param total
          *            field to set
          * @return builder
@@ -313,7 +308,7 @@ public class ExchangedTiffData extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public ExchangedTiffData build() { return new ExchangedTiffData(this); }

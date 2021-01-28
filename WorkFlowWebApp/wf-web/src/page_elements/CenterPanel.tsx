@@ -31,8 +31,8 @@ export interface CenterPanelProps {
     thunkActionForDeleteImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForSelectImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForDownloadImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
-    deleteImage?(img: ImageKeyDto): ApplicationEvent;
-    selectImage?(url: string, exifUrl: string): ApplicationEvent;
+    deleteImage?(img: ImageDto): ApplicationEvent;
+    selectImage?(img: ImageDto | undefined): ApplicationEvent;
     downloadImage?(img: ImageDto): ApplicationEvent;
     titleOfImagesList?: string;
     imgs?: PageOfImageDto | null
@@ -101,13 +101,13 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
     }
 
     handleClickInfo(img: ImageDto) {
-        if (img.data != null && img._links != null && img._links.self != null && img._links._exif != null && img.data != null && this.props.thunkActionForSelectImage != null && this.props.selectImage != null) {
-            this.props.thunkActionForSelectImage(this.props.selectImage(img._links.self.href, img._links._exif.href));
+        if (this.props.thunkActionForSelectImage != null && this.props.selectImage != null) {
+            this.props.thunkActionForSelectImage(this.props.selectImage(img));
         }
     }
     handleClickDelete(img: ImageDto) {
-        if (img.data != null && this.props.thunkActionForDeleteImage != null && this.props.deleteImage != null) {
-            this.props.thunkActionForDeleteImage(this.props.deleteImage(img.data));
+        if (this.props.thunkActionForDeleteImage != null && this.props.deleteImage != null) {
+            this.props.thunkActionForDeleteImage(this.props.deleteImage(img));
         }
     }
 
@@ -156,6 +156,7 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
         return imgLinks != null ? (imgLinks._img != null ? imgLinks._img.href : '') : '';
     }
 
+
     render() {
         if (this.props.displayImportImages) {
             return (<RealtimeImportImages />)
@@ -182,7 +183,7 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
                                             <Grid container spacing={0} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
                                                 <Grid item style={{ width: '100%' }} >
                                                     <GridList component="div" cellHeight={200} style={{ width: '100%', backgroundColor: 'rgb(66, 66, 66)', display: 'block', height: '90vh' }} cols={2}>
-                                                        {imageDtoes.imageDtoes.filter(img => img.data != null && img.data.version == 1).map((img) => (
+                                                        {imageDtoes.imageDtoList.filter(img => img.data != null && img.data.version == 1).map((img) => (
                                                             <GridListTile style={{ float: 'left', width: '50%' }} component="div">
                                                                 <img src={this.getImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
                                                                 <GridListTileBar
@@ -228,7 +229,7 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
                 } else {
                     return (
                         <GridList cellHeight={200} cols={this.nbOfColumnsInFullSize} style={{ backgroundColor: '#000000' }}>
-                            {imageDtoes.imageDtoes.filter(img => img.data != null && img.data.version == 1).map((img) => (
+                            {imageDtoes.imageDtoList.filter(img => img.data != null && img.data.version == 1).map((img) => (
                                 <GridListTile cols={1} >
                                     <img src={this.getImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
                                     <GridListTileBar
@@ -275,60 +276,50 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
 }
 
 const mapStateToProps = (state: ClientApplicationState): CenterPanelProps => {
-    if (state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading || state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+    if (state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+        var currentPage: PageOfImageDto | null = null;
+
+        if (state.reducerImagesList.imagesLoaded.images != null) {
+            currentPage = state.reducerImagesList.imagesLoaded.images;
+        } else if (state.reducerImagesAreStreamed.imagesAreStreamed.images != null) {
+            currentPage = state.reducerImagesAreStreamed.imagesAreStreamed.images;
+        }
+
         return {
             id: idGlobal,
             displaySelectedImage: true,
-            imgs: state.reducerImagesList.imagesLoaded.images,
+            imgs: currentPage,
             selectedImageIsPresent: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null,
             titleOfImagesList: state.reducerImagesList.imagesLoaded.titleOfImagesList,
         };
     }
 
-    if (state.reducerImagesList.realTimeSelected.isLoading) {
-        return {
-            id: idGlobal,
-            displaySelectedImage: false,
-            imgs: null,
-            displayImportImages: true
-        };
-    }
-
-    switch (state.reducerImagesList.lastIntervallRequested.state) {
-        case 'LOADING': {
+    switch (state.reducerImagesAreStreamed.imagesAreStreamed.state) {
+        case 'START_STREAMING': {
             return {
                 id: idGlobal++,
-                status: state.reducerImagesList.imagesLoaded.state,
-                min: state.reducerImagesList.lastIntervallRequested.min,
-                max: state.reducerImagesList.lastIntervallRequested.min,
+                status: state.reducerImagesAreStreamed.imagesAreStreamed.state,
+                min: state.reducerImagesAreStreamed.lastIntervallRequested.min,
+                max: state.reducerImagesAreStreamed.lastIntervallRequested.min,
                 imgs: null,
+                titleOfImagesList: state.reducerImagesAreStreamed.imagesAreStreamed.titleOfImagesList,
+                displaySelectedImage: false
+            };
+        }
+        case 'STREAMING': {
+            return {
+                id: idGlobal++,
+                status: state.reducerImagesAreStreamed.imagesAreStreamed.state,
+                min: state.reducerImagesAreStreamed.lastIntervallRequested.min,
+                max: state.reducerImagesAreStreamed.lastIntervallRequested.min,
+                imgs: state.reducerImagesAreStreamed.imagesAreStreamed.images,
+                titleOfImagesList: state.reducerImagesAreStreamed.imagesAreStreamed.titleOfImagesList,
                 displaySelectedImage: false
             };
         }
     }
 
-    switch (state.reducerImagesList.imagesLoaded.state) {
-        case 'LOADING': {
-            return {
-                id: idGlobal++,
-                status: state.reducerImagesList.imagesLoaded.state,
-                min: 0,
-                max: 0,
-                displaySelectedImage: false
-            };
-        }
-        case 'LOADED': {
-            return {
-                id: idGlobal++,
-                status: state.reducerImagesList.imagesLoaded.state,
-                min: state.reducerImagesList.lastIntervallRequested.min,
-                max: state.reducerImagesList.lastIntervallRequested.min,
-                imgs: state.reducerImagesList.imagesLoaded.images,
-                titleOfImagesList: state.reducerImagesList.imagesLoaded.titleOfImagesList,
-                displaySelectedImage: false
-            };
-        }
-    }
+
 
 
     return {

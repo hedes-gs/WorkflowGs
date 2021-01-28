@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 import com.workflow.model.HbaseData;
 
 public class FinalImage extends HbaseData implements Serializable {
@@ -16,18 +14,17 @@ public class FinalImage extends HbaseData implements Serializable {
     protected int             height;
     protected byte[]          compressedData;
 
-    public FinalImage() { super(null,
-        0); }
-
-    @Generated("SparkTools")
     private FinalImage(Builder builder) {
-        super(builder.dataId,
-            System.currentTimeMillis());
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
         this.version = builder.version;
         this.width = builder.width;
         this.height = builder.height;
         this.compressedData = builder.compressedData;
     }
+
+    public FinalImage() { super(null,
+        0); }
 
     public short getVersion() { return this.version; }
 
@@ -72,17 +69,16 @@ public class FinalImage extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link FinalImage}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link FinalImage}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
+        private long   dataCreationDate;
         private String dataId;
         private short  version;
         private int    width;
@@ -92,8 +88,20 @@ public class FinalImage extends HbaseData implements Serializable {
         private Builder() {}
 
         /**
+         * Builder method for dataCreationDate parameter.
+         * 
+         * @param dataCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataCreationDate(long dataCreationDate) {
+            this.dataCreationDate = dataCreationDate;
+            return this;
+        }
+
+        /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -105,7 +113,7 @@ public class FinalImage extends HbaseData implements Serializable {
 
         /**
          * Builder method for version parameter.
-         *
+         * 
          * @param version
          *            field to set
          * @return builder
@@ -117,7 +125,7 @@ public class FinalImage extends HbaseData implements Serializable {
 
         /**
          * Builder method for width parameter.
-         *
+         * 
          * @param width
          *            field to set
          * @return builder
@@ -129,7 +137,7 @@ public class FinalImage extends HbaseData implements Serializable {
 
         /**
          * Builder method for height parameter.
-         *
+         * 
          * @param height
          *            field to set
          * @return builder
@@ -141,7 +149,7 @@ public class FinalImage extends HbaseData implements Serializable {
 
         /**
          * Builder method for compressedData parameter.
-         *
+         * 
          * @param compressedData
          *            field to set
          * @return builder
@@ -153,7 +161,7 @@ public class FinalImage extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public FinalImage build() { return new FinalImage(this); }

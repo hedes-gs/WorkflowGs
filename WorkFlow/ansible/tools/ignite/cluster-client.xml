@@ -13,7 +13,6 @@
 		class="org.apache.ignite.configuration.IgniteConfiguration">
 		<property name="clientMode" value="true" />
 		<property name="igniteInstanceName" value="Cluster" />
-
 		<property name="discoverySpi">
 			<bean
 				class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -22,10 +21,10 @@
 						class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
 						<property name="addresses">
 							<list>
-								<value>192.168.1.205:47500..47510</value>
-								<value>192.168.1.206:47500..47510</value>
-								<value>192.168.1.200:47500..47510</value>
-								<value>192.168.1.202:47500..47510</value>
+								<value>ipc5:47500..47510</value>
+								<value>ipc6:47500..47510</value>
+								<value>ipc7:47500..47510</value>
+								<value>ipc8:47500..47510</value>
 							</list>
 						</property>
 					</bean>

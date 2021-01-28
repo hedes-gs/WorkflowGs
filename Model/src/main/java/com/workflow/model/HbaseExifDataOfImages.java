@@ -3,8 +3,6 @@ package com.workflow.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 @HbaseTableName("image_exif_data_of_image")
@@ -13,11 +11,13 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     private static final long serialVersionUID = 1L;
 
     // Row key
-    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+    @Column(hbaseName = "region_salt", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+    protected short           regionSalt;
+    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
     protected String          imageId;
-    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
+    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
     protected short           exifTag;
-    @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
+    @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 3, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
     protected short[]         exifPath;
     // Data
     @Nullable
@@ -39,10 +39,10 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
     protected long            height;
 
-    @Generated("SparkTools")
     private HbaseExifDataOfImages(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
+        this.regionSalt = builder.regionSalt;
         this.imageId = builder.imageId;
         this.exifTag = builder.exifTag;
         this.exifPath = builder.exifPath;
@@ -98,6 +98,10 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
     public void setCreationDate(String creationDate) { this.creationDate = creationDate; }
 
+    public short getRegionSalt() { return this.regionSalt; }
+
+    public void setRegionSalt(short regionSalt) { this.regionSalt = regionSalt; }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -142,19 +146,18 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
     /**
      * Creates builder to build {@link HbaseExifDataOfImages}.
-     * 
+     *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseExifDataOfImages}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long    dataCreationDate;
         private String  dataId;
+        private short   regionSalt;
         private String  imageId;
         private short   exifTag;
         private short[] exifPath;
@@ -170,7 +173,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -182,7 +185,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -193,8 +196,20 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
         }
 
         /**
+         * Builder method for regionSalt parameter.
+         *
+         * @param regionSalt
+         *            field to set
+         * @return builder
+         */
+        public Builder withRegionSalt(short regionSalt) {
+            this.regionSalt = regionSalt;
+            return this;
+        }
+
+        /**
          * Builder method for imageId parameter.
-         * 
+         *
          * @param imageId
          *            field to set
          * @return builder
@@ -206,7 +221,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for exifTag parameter.
-         * 
+         *
          * @param exifTag
          *            field to set
          * @return builder
@@ -218,7 +233,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for exifPath parameter.
-         * 
+         *
          * @param exifPath
          *            field to set
          * @return builder
@@ -230,7 +245,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for exifValueAsByte parameter.
-         * 
+         *
          * @param exifValueAsByte
          *            field to set
          * @return builder
@@ -242,7 +257,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for exifValueAsInt parameter.
-         * 
+         *
          * @param exifValueAsInt
          *            field to set
          * @return builder
@@ -254,7 +269,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for exifValueAsShort parameter.
-         * 
+         *
          * @param exifValueAsShort
          *            field to set
          * @return builder
@@ -266,7 +281,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for thumbName parameter.
-         * 
+         *
          * @param thumbName
          *            field to set
          * @return builder
@@ -278,7 +293,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for creationDate parameter.
-         * 
+         *
          * @param creationDate
          *            field to set
          * @return builder
@@ -290,7 +305,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for width parameter.
-         * 
+         *
          * @param width
          *            field to set
          * @return builder
@@ -302,7 +317,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method for height parameter.
-         * 
+         *
          * @param height
          *            field to set
          * @return builder
@@ -314,7 +329,7 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public HbaseExifDataOfImages build() { return new HbaseExifDataOfImages(this); }

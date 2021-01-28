@@ -1,7 +1,5 @@
 package com.workflow.model;
 
-import javax.annotation.Generated;
-
 @HbaseTableName("image_thumbnail_key")
 public class HbaseImageThumbnailKey extends HbaseData {
 
@@ -15,10 +13,9 @@ public class HbaseImageThumbnailKey extends HbaseData {
     @Column(hbaseName = "version", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
     protected short           version;
 
-    @Generated("SparkTools")
     private HbaseImageThumbnailKey(Builder builder) {
-        super(builder.dataId,
-            builder.dataCreationDate);
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
         this.creationDate = builder.creationDate;
         this.imageId = builder.imageId;
         this.version = builder.version;
@@ -81,19 +78,17 @@ public class HbaseImageThumbnailKey extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseImageThumbnailKey}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageThumbnailKey}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
-        private String dataId;
         private long   dataCreationDate;
+        private String dataId;
         private long   creationDate;
         private String imageId;
         private short  version;
@@ -101,20 +96,8 @@ public class HbaseImageThumbnailKey extends HbaseData {
         private Builder() {}
 
         /**
-         * Builder method for dataId parameter.
-         *
-         * @param dataId
-         *            field to set
-         * @return builder
-         */
-        public Builder withDataId(String dataId) {
-            this.dataId = dataId;
-            return this;
-        }
-
-        /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -125,8 +108,20 @@ public class HbaseImageThumbnailKey extends HbaseData {
         }
 
         /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
          * Builder method for creationDate parameter.
-         *
+         * 
          * @param creationDate
          *            field to set
          * @return builder
@@ -138,7 +133,7 @@ public class HbaseImageThumbnailKey extends HbaseData {
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -150,7 +145,7 @@ public class HbaseImageThumbnailKey extends HbaseData {
 
         /**
          * Builder method for version parameter.
-         *
+         * 
          * @param version
          *            field to set
          * @return builder
@@ -162,7 +157,7 @@ public class HbaseImageThumbnailKey extends HbaseData {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImageThumbnailKey build() { return new HbaseImageThumbnailKey(this); }

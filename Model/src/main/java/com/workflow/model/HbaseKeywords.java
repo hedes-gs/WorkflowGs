@@ -2,8 +2,6 @@ package com.workflow.model;
 
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 @HbaseTableName(value = "keywords")
 public class HbaseKeywords extends HbaseData {
 
@@ -18,11 +16,11 @@ public class HbaseKeywords extends HbaseData {
     @Column(hbaseName = "nbOfElements", rowKeyNumber = 101, toByte = ToByteLong.class, columnFamily = "infos")
     protected long            nbOfElements;
 
-    @Generated("SparkTools")
     private HbaseKeywords(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
         this.keyword = builder.keyword;
+        this.nbOfElements = builder.nbOfElements;
     }
 
     public HbaseKeywords() { super(); }
@@ -63,26 +61,25 @@ public class HbaseKeywords extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseKeywords}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseKeywords}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
         private String keyword;
+        private long   nbOfElements;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -94,7 +91,7 @@ public class HbaseKeywords extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -106,7 +103,7 @@ public class HbaseKeywords extends HbaseData {
 
         /**
          * Builder method for keyword parameter.
-         *
+         * 
          * @param keyword
          *            field to set
          * @return builder
@@ -117,8 +114,20 @@ public class HbaseKeywords extends HbaseData {
         }
 
         /**
+         * Builder method for nbOfElements parameter.
+         * 
+         * @param nbOfElements
+         *            field to set
+         * @return builder
+         */
+        public Builder withNbOfElements(long nbOfElements) {
+            this.nbOfElements = nbOfElements;
+            return this;
+        }
+
+        /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseKeywords build() { return new HbaseKeywords(this); }

@@ -1,7 +1,7 @@
 
 	package hbase.pb;
 	
-	option java_package = "org.apache.hadoop.hbase.protobuf.generated";
+	option java_package = "org.apache.hadoop.hbase.gs.workflow.protobuf.generated";
 	option java_outer_classname = "GsFilterProtos";
 	option java_generic_services = true;
 	option java_generate_equals_and_hash = true;

@@ -1,0 +1,234 @@
+- debug:
+    msg: Download hadoop "{{ hadoop_version }}"
+- name: Ensure group "hadoop" exists
+  group:
+    name: hadoop
+    state: present
+- user: name="{{ user_to_create }}" group=hadoop
+- name: Download hadoop {{ hadoop_version }}
+  get_url: 
+    url: http://apache.mirrors.tds.net/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz
+    owner: "{{ user_to_create }}"
+    dest: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
+    mode: 0644
+    force: no
+  ignore_errors: yes
+- name: Unpack the tar
+  unarchive:
+    src: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
+    dest: "{{ hadoop_install_folder }}"
+    remote_src: true
+- name: remove symlink /usr/local/kafka to this version
+  file:
+    path: "{{ hadoop_install_folder }}/latest"
+    state: absent
+- name: Symlink {{ hadoop_install_folder }}/latest to this version
+  file:
+    path: "{{ hadoop_install_folder }}"
+    src: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}"
+    dest: "{{ hadoop_install_folder }}/latest"
+    state: link
+    force: yes
+- name: Create folders .~hadoop/.ssh
+  file:
+    path: ~hadoop/.ssh
+    state: directory
+    mode: 0700
+    owner: "{{ user_to_create }}"
+    group: hadoop
+- name: Create folders /data/hadoop
+  file:
+    path: /data/hadoop
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folders /data/hadoop/hadoop_tmp/hdfs
+  file:
+    path: /data/hadoop/hadoop_tmp/hdfs
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folders /data/hadoop/hadoop_tmp/hdfs/namenode
+  file:
+    path: /data/hadoop/hadoop_tmp/hdfs/namenode
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: Create folders {{ hadoop_install_folder }}/tmp
+  file:
+    path: "{{ hadoop_install_folder }}/tmp"
+    state: directory
+    owner: "{{ user_to_create }}"
+- name: deploy keys and files
+  template:
+    src: ./tools/hadoop/authorized_keys
+    dest: "~hadoop/.ssh/authorized_keys"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy keys and files
+  template:
+    src: ./tools/hadoop/bashrc.txt
+    dest: "~hadoop/.bashrc"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy keys and files
+  template:
+    src: ./tools/hadoop/profile
+    dest: "~hadoop/.profile"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy keytabs 
+  copy:
+    src: ./tools/hadoop/keytabs/
+    dest: "~hadoop/latest/keytabs"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy keystore 
+  copy:
+    src: ./tools/hadoop/keystore.jks
+    dest: "~hadoop/latest/etc/hadoop/"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy trustore 
+  copy:
+    src: ./tools/hadoop/truststore.jks
+    dest: "~hadoop/latest/etc/hadoop/"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy ./tools/hadoop/core-site.xml
+  template:
+    src: ./tools/hadoop/core-site.xml
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy ./tools/hadoop/yarn-env.sh
+  template:
+    src: ./tools/hadoop/yarn-env.sh
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy ./tools/hadoop/ssl-server.xml
+  template:
+    src: ./tools/hadoop/ssl-server.xml
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600  
+- name: deploy ./tools/hadoop/ssl-client.xml
+  template:
+    src: ./tools/hadoop/ssl-client.xml
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600  
+- name: deploy ./tools/hadoop/yarn-site.xml
+  template:
+    src: ./tools/hadoop/yarn-site.xml
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600  
+- name: deploy ./tools/hadoop/hdfs-site.xml
+  template:
+    src: ./tools/hadoop/hdfs-site.xml
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy ./tools/hadoop/hadoop-env.sh
+  template:
+    src: ./tools/hadoop/hadoop-env.sh
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+- name: deploy ./tools/hadoop/slaves on master
+  template:
+    src: ./tools/hadoop/hadoop-env.sh
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+  when: inventory_hostname == "ipc5"
+- name: deploy ./tools/hadoop/workers on master
+  template:
+    src: ./tools/hadoop/workers
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+  when: inventory_hostname == "ipc5"
+- name: deploy ./tools/hadoop/slaves on master
+  template:
+    src: ./tools/hadoop/slaves
+    dest: "~hadoop/latest/etc/hadoop"
+    owner: "{{ user_to_create }}"
+    group: hadoop
+    mode: 0600
+  when: inventory_hostname == "ipc5"
+
+- name: Recursively change ownership of the /home/hadoop/latest directory
+  file:
+    path: /home/hadoop/latest
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: root
+- name: Recursively change ownership of the /home/hadoop/latest directory
+  file:
+    path: /home/hadoop/
+    state: directory
+    recurse: yes
+    mode: 0755
+    owner: root
+- name: deploy ./tools/hadoop/profile
+  template:
+    src: ./tools/hadoop/profile
+    dest: "{{ hadoop_install_folder }}/.profile"
+    owner: "{{ user_to_create }}"
+    mode: 0755
+- name: deploy ./tools/hadoop/bashrc.txt
+  template:
+    src: ./tools/hadoop/bashrc.txt
+    dest: "{{ hadoop_install_folder }}/.bashrc"
+    owner: "{{ user_to_create }}"
+    mode: 0755
+- name: Recursively change ownership of the /home/hadoop/latest/etc directory
+  file:
+    path: /home/hadoop/etc
+    state: directory
+    recurse: yes
+    mode: 0666
+    owner: root
+- name: deploy ./tools/hadoop/container-executor.cfg
+  template:
+    src: ./tools/hadoop/container-executor.cfg
+    dest: "/home/hadoop/latest/etc/hadoop"
+    owner: "root"
+    mode: 0600
+- name: Recursively change to 6050 the right of /home/hadoop/latest/bin/container-executor
+  file:
+    path: /home/hadoop/latest/bin/container-executor
+    mode: 06050
+    owner: root
+- name: Create folder {{ hadoop_install_folder }}/latest/logs
+  file:
+    path: "{{ hadoop_install_folder }}/latest/logs"
+    state: directory
+    mode: 0777
+    owner: "root"
+- name: Create folder {{ hadoop_install_folder }}/latest/yarn
+  file:
+    path: "{{ hadoop_install_folder }}/latest/yarn"
+    state: directory
+    mode: 0777
+    owner: "root"
+- name: remove logs
+  shell:  "rm -rf {{ hadoop_install_folder }}/latest/yarn/*"
+- name: remove logs
+  shell:  "rm -rf {{ hadoop_install_folder }}/latest/logs/*"

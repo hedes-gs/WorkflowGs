@@ -1,13 +1,6 @@
 package com.workflow.model;
 
-import javax.annotation.Generated;
-
-import lombok.Getter;
-import lombok.Setter;
-
 @HbaseTableName("image_project")
-@Setter
-@Getter
 public class HbaseImageImportProject extends HbaseData {
 
     private static final long serialVersionUID = 1L;
@@ -31,13 +24,9 @@ public class HbaseImageImportProject extends HbaseData {
     @Column(hbaseName = "height", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
     protected long            height;
 
-    public HbaseImageImportProject() { super(null,
-        System.currentTimeMillis()); }
-
-    @Generated("SparkTools")
     private HbaseImageImportProject(Builder builder) {
-        super(builder.dataId,
-            System.currentTimeMillis());
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
         this.importDate = builder.importDate;
         this.importId = builder.importId;
         this.imageName = builder.imageName;
@@ -47,19 +36,21 @@ public class HbaseImageImportProject extends HbaseData {
         this.height = builder.height;
     }
 
+    public HbaseImageImportProject() { super(null,
+        System.currentTimeMillis()); }
+
     /**
      * Creates builder to build {@link HbaseImageImportProject}.
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageImportProject}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
+        private long   dataCreationDate;
         private String dataId;
         private long   importDate;
         private String importId;
@@ -70,6 +61,18 @@ public class HbaseImageImportProject extends HbaseData {
         private long   height;
 
         private Builder() {}
+
+        /**
+         * Builder method for dataCreationDate parameter.
+         *
+         * @param dataCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataCreationDate(long dataCreationDate) {
+            this.dataCreationDate = dataCreationDate;
+            return this;
+        }
 
         /**
          * Builder method for dataId parameter.

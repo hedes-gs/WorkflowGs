@@ -14,9 +14,17 @@ export interface ApplicationState {
         pageNumber: number,
         titleOfImagesList: string,
         images: PageOfImageDto | null
-    }
+    },
+    imagesAreStreamed: {
+        state: string,
+        urlNext: string,
+        urlPrev: string,
+        pageNumber: number,
+        titleOfImagesList: string,
+        images: PageOfImageDto | null
+    },
     imagesToDelete: {
-        images?: Set<ImageKeyDto> | null;
+        images?: Set<ImageDto> | null;
     }
     imagesToDownload: {
         images?: Set<ImageDto> | null;
@@ -55,6 +63,7 @@ export interface ClientApplicationState {
     reducerDisplayKeywords: ApplicationState,
     reducerDisplayPersons: ApplicationState,
     reducerImageIsSelectedToBeDisplayed: ApplicationState,
+    reducerImagesAreStreamed: ApplicationState,
 }
 
 export default ApplicationState;

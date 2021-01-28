@@ -57,8 +57,8 @@ export interface RightPanelProps {
     thunkActionForDeselectImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     deselectImage?(): ApplicationEvent,
     deleteImage?(img: ImageKeyDto): ApplicationEvent,
-    nextImageToLoad?(url: String): ApplicationEvent,
-    prevImageToLoad?(url: String): ApplicationEvent,
+    nextImageToLoad?(img: ImageDto): ApplicationEvent,
+    prevImageToLoad?(img: ImageDto): ApplicationEvent,
     updateImage?(url: String, img: ImageDto): ApplicationEvent,
     downloadImage?(img: ImageDto): ApplicationEvent,
     thunkActionForNextImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
@@ -162,36 +162,34 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
 
 
 
-    handleClickPrevious(exifs?: ExifsLink | null) {
-        if (exifs != null) {
-            if (exifs._prev != null && this.props.thunkActionForNextImage != null && this.props.nextImageToLoad != null) {
-                this.props.thunkActionForNextImage(this.props.nextImageToLoad(exifs._prev.href));
-                this.setState({
-                    isLoading: true,
-                    image: this.state.image,
-                    exifOfImages: this.state.exifOfImages,
-                    isOpenedStateId: this.state.isOpenedStateId,
-                    width: this.state.width,
-                    height: this.state.height
-                });
-            }
+    handleClickPrevious(img?: ImageDto | null) {
+        if (this.props.prevImageToLoad != null && this.props.thunkActionForPreviousImage != null && img != null) {
+            this.props.thunkActionForPreviousImage(this.props.prevImageToLoad(img));
+            this.setState({
+                isLoading: true,
+                image: this.state.image,
+                exifOfImages: this.state.exifOfImages,
+                isOpenedStateId: this.state.isOpenedStateId,
+                width: this.state.width,
+                height: this.state.height
+            });
         }
     }
 
-    handleClickNext(exifs?: ExifsLink | null) {
-        if (exifs != null) {
-            if (exifs._next != null && this.props.thunkActionForNextImage != null && this.props.nextImageToLoad != null) {
-                this.props.thunkActionForNextImage(this.props.nextImageToLoad(exifs._next.href));
-                this.setState({
-                    isLoading: true,
-                    image: this.state.image,
-                    exifOfImages: this.state.exifOfImages,
-                    isOpenedStateId: this.state.isOpenedStateId,
-                    width: this.state.width,
-                    height: this.state.height
-                });
-            }
+
+    handleClickNext(img?: ImageDto | null) {
+        if (this.props.thunkActionForNextImage != null && this.props.nextImageToLoad != null && img != null) {
+            this.props.thunkActionForNextImage(this.props.nextImageToLoad(img));
+            this.setState({
+                isLoading: true,
+                image: this.state.image,
+                exifOfImages: this.state.exifOfImages,
+                isOpenedStateId: this.state.isOpenedStateId,
+                width: this.state.width,
+                height: this.state.height
+            });
         }
+
     }
 
     handleClickDelete(img?: ImageDto | null) {
@@ -229,15 +227,14 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
     }
 
     upHandler(key: KeyboardEvent) {
-        const exifsLink = this.state.exifOfImages != null ? this.state.exifOfImages._links : null;
         const img = this.state.image;
         switch (key.keyCode) {
             case 39: {
-                this.handleClickNext(exifsLink);
+                this.handleClickNext(img);
                 break;
             }
             case 37: {
-                this.handleClickPrevious(exifsLink);
+                this.handleClickPrevious(img);
                 break;
             }
             case 32: {
@@ -452,12 +449,12 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                     </IconButton>
                                 </Grid>
                                 <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickPrevious(exifsLink)} >
+                                    <IconButton onClick={(e) => this.handleClickPrevious(this.state.image)} >
                                         <SkipPreviousIcon />
                                     </IconButton>
                                 </Grid>
                                 <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickDelete(img)}>
+                                    <IconButton onClick={(e) => this.handleClickDelete(this.state.image)}>
                                         <TrashIcon />
                                     </IconButton>
                                 </Grid>
@@ -467,7 +464,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                     </IconButton>
                                 </Grid>
                                 <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickNext(exifsLink)}>
+                                    <IconButton onClick={(e) => this.handleClickNext(this.state.image)}>
                                         <SkipNextIcon />
                                     </IconButton>
                                 </Grid>
@@ -527,7 +524,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {exifDToesToDisplay.exifDToes.map((row: ExifDTO) => (
+                                        {exifDToesToDisplay.exifDTOList.map((row: ExifDTO) => (
                                             <StyledTableRow key={row.tagValue}>
                                                 <TableCell component="th" scope="row">
                                                     {'0x' + this.decimalToHexString(row.tagValue)}

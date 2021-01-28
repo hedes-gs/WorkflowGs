@@ -1,4 +1,4 @@
-- hosts: 192.168.1.206
+- hosts: ipc6
   become: true
   tasks:
     - debug:
@@ -12,9 +12,35 @@
         - ipc3
         - ipc5
         - ipc6
+        - ipc7
+        - ipc8
+        - ipc9
+        - ipc10
+        - ipc11
+        - ipc12
+        - ipc13
+        - ipc14
+        - ipc15
+        - ipc16
     - name: rm keytab
       shell: rm -f /home/user/keytabs/kafka_{{ item }}.keytab
-
+      loop:
+        - ipc0
+        - ipc1
+        - ipc2
+        - ipc3
+        - ipc5
+        - ipc6
+        - ipc7
+        - ipc8
+        - ipc9
+        - ipc10
+        - ipc11
+        - ipc12
+        - ipc13
+        - ipc14
+        - ipc15
+        - ipc16
     - name: ADd princip
       shell: kadmin.local -q 'addprinc  -pw kafka kafka/{{ item }}@GS.COM' 
       loop:
@@ -24,6 +50,16 @@
         - ipc3
         - ipc5
         - ipc6
+        - ipc7
+        - ipc8
+        - ipc9
+        - ipc10
+        - ipc11
+        - ipc12
+        - ipc13
+        - ipc14
+        - ipc15
+        - ipc16
     - name: create keytab
       shell: kadmin.local -q 'ktadd -k /home/user/keytabs/kafka_all.keytab  kafka/{{ item }}@GS.COM'
       loop:
@@ -33,21 +69,21 @@
         - ipc3
         - ipc5
         - ipc6
+        - ipc7
+        - ipc8
+        - ipc9
+        - ipc10
+        - ipc11
+        - ipc12
+        - ipc13
+        - ipc14
+        - ipc15
+        - ipc16
     - name: get keytab
       fetch:
         src: /home/user/keytabs/kafka_all.keytab
         dest: ./tools/kafka/
         flat: yes
-
- 
   vars:
     ansible_become_pass: granada01
-    user_to_create: kafka
     PWD: "{{ lookup('env', 'PWD') }}"
-    ids:
-      192.168.1.200:
-        value: IPC0
-      192.168.1.201:
-        value: IPC1
-      192.168.1.202:
-        value: IPC2

@@ -1,25 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-<!--
-/**
- *
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
--->
+<!-- /** * * Licensed to the Apache Software Foundation (ASF) under one * 
+	or more contributor license agreements. See the NOTICE file * distributed 
+	with this work for additional information * regarding copyright ownership. 
+	The ASF licenses this file * to you under the Apache License, Version 2.0 
+	(the * "License"); you may not use this file except in compliance * with 
+	the License. You may obtain a copy of the License at * * http://www.apache.org/licenses/LICENSE-2.0 
+	* * Unless required by applicable law or agreed to in writing, software * 
+	distributed under the License is distributed on an "AS IS" BASIS, * WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. * See the 
+	License for the specific language governing permissions and * limitations 
+	under the License. */ -->
 <configuration>
 	<property>
 		<name>hbase.rootdir</name>
@@ -28,6 +19,10 @@
 	<property>
 		<name>hbase.cluster.distributed</name>
 		<value>true</value>
+	</property>
+	<property>
+		<name>hbase.rowlock.wait.duration</name>
+		<value>360000</value>
 	</property>
 	<property>
 		<name>hbase.zookeeper.quorum</name>
@@ -41,7 +36,8 @@
 	<property>
 		<name>hbase.master</name>
 		<value>ipc0:16000</value>
-		<description>The host and port that the HBase master runs at.</description>
+		<description>The host and port that the HBase master runs at.
+		</description>
 	</property>
 	<property>
 		<name>hbase.master.port</name>
@@ -69,8 +65,8 @@
 		<name>hbase.master.ipc.address</name>
 		<value>0.0.0.0</value>
 	</property>
-	<property> 
-		<name>hbase.regionserver.hostname</name> 
+	<property>
+		<name>hbase.regionserver.hostname</name>
 		<value>{{ hbase_slave_host }}</value>
 	</property>
 	<property>
@@ -131,7 +127,7 @@
 		<name>hbase.regionserver.compaction.enabled</name>
 		<value>false</value>
 	</property>
-	
+
 
 	<property>
 		<name>hbase.security.authentication</name>
@@ -142,7 +138,7 @@
 		<value>true</value>
 	</property>
 	<property>
-	
+
 		<name>hbase.coprocessor.region.classes</name>
 		<value>
 			org.apache.hadoop.hbase.security.token.TokenProvider,
@@ -170,23 +166,23 @@
 
 
 	<property>
-		<name>hbase.regionserver.kerberos.principal</name> 
-		<value>hbase/_HOST@GS.COM</value> 
-	</property> 
-
-	<property> 
-		<name>hbase.regionserver.keytab.file</name> 
-		<value>/home/hbase/latest/conf/hbase_all.keytab</value> 
+		<name>hbase.regionserver.kerberos.principal</name>
+		<value>hbase/_HOST@GS.COM</value>
 	</property>
 
-	<property> 
-		<name>hbase.master.kerberos.principal</name> 
-		<value>hbase/_HOST@GS.COM</value> 
-	</property> 
+	<property>
+		<name>hbase.regionserver.keytab.file</name>
+		<value>/home/hbase/latest/conf/hbase_all.keytab</value>
+	</property>
 
-	<property> 
-		<name>hbase.master.keytab.file</name> 
-		<value>/home/hbase/latest/conf/hbase_all.keytab</value> 
+	<property>
+		<name>hbase.master.kerberos.principal</name>
+		<value>hbase/_HOST@GS.COM</value>
+	</property>
+
+	<property>
+		<name>hbase.master.keytab.file</name>
+		<value>/home/hbase/latest/conf/hbase_all.keytab</value>
 	</property>
 
 

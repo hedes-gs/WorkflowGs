@@ -204,7 +204,7 @@ tag-hex,tag-dec,ifd,key,type,tag-description
 0x9215,37397,Image,Exif.Image.ExposureIndex,Rational,Encodes the camera exposure index setting when image was captured.
 0x9216,37398,Image,Exif.Image.TIFFEPStandardID,Byte,"Contains four ASCII characters representing the TIFF/EP standard version of a TIFF/EP file, eg '1', '0', '0', '0'"
 0x9217,37399,Image,Exif.Image.SensingMethod,Short,Type of image sensor.
-0x927c,37500,Photo,Exif.Photo.MakerNote,Undefined,A tag for manufacturers of Exif writers to record any desired information. The contents are up to the manufacturer.
+0x927c,37500,Photo,Exif.Photo.MakerNote,Long,A tag for manufacturers of Exif writers to record any desired information. The contents are up to the manufacturer.
 0x9286,37510,Photo,Exif.Photo.UserComment,Undefined,"A tag for Exif users to write keywords or comments on the image besides those in <ImageDescription>, and without the character code limitations of the <ImageDescription> tag."
 0x9290,37520,Photo,Exif.Photo.SubSecTime,Ascii,A tag used to record fractions of seconds for the <DateTime> tag.
 0x9291,37521,Photo,Exif.Photo.SubSecTimeOriginal,Ascii,A tag used to record fractions of seconds for the <DateTimeOriginal> tag.

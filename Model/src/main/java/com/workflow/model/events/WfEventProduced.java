@@ -1,7 +1,5 @@
 package com.workflow.model.events;
 
-import javax.annotation.Generated;
-
 public class WfEventProduced extends WfEvent {
 
     public WfEventProduced() {
@@ -13,7 +11,6 @@ public class WfEventProduced extends WfEvent {
      */
     private static final long serialVersionUID = 1L;
 
-    @Generated("SparkTools")
     private WfEventProduced(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -24,16 +21,14 @@ public class WfEventProduced extends WfEvent {
 
     /**
      * Creates builder to build {@link WfEventProduced}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link WfEventProduced}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long        dataCreationDate;
         private String      dataId;
@@ -45,7 +40,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -57,7 +52,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -69,7 +64,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for imgId parameter.
-         *
+         * 
          * @param imgId
          *            field to set
          * @return builder
@@ -81,7 +76,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for parentDataId parameter.
-         *
+         * 
          * @param parentDataId
          *            field to set
          * @return builder
@@ -93,7 +88,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method for step parameter.
-         *
+         * 
          * @param step
          *            field to set
          * @return builder
@@ -105,7 +100,7 @@ public class WfEventProduced extends WfEvent {
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public WfEventProduced build() { return new WfEventProduced(this); }

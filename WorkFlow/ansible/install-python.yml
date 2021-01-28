@@ -1,0 +1,9 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Install default JRE
+      apt:
+        name:
+          -  python-is-python3
+  vars:
+    ansible_become_pass: granada01

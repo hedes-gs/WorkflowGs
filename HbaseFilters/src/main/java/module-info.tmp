@@ -1,0 +1,5 @@
+module hbaseFilters {
+    exports com.gsphotos.worflow.hbasefilters;
+    requires hbaseClientShaded;
+
+}

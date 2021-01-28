@@ -1,0 +1,69 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Install default JRE
+      apt:
+        name:
+          -  nfs-common
+    - name: "create data dir"
+      file:
+        path: /data
+        state: directory
+        owner: root
+        mode: 0777
+    - name: "create /localcache"
+      file:
+        path: /localcache
+        state: directory
+        owner: root
+        mode: 0777
+    - name: "create /nas"
+      file:
+        path: /nas
+        state: directory
+        owner: root
+        mode: 0777
+    - name: "create usb-input-sdcard dir"
+      file:
+        path: /usb-input-sdcard
+        state: directory
+        owner: root
+        mode: 0777
+    - name: Create a ext4 filesystem on /dev/sda
+      filesystem:
+        fstype: ext4
+        dev: /dev/sda
+      when: inventory_hostname == "ipc7" or inventory_hostname == "ipc8"
+    - name: Mount disk /data 
+      mount:
+        path: /data
+        src: /dev/sda
+        state: mounted
+        fstype: ext4
+        opts: _netdev 
+      when: inventory_hostname == "ipc7" or inventory_hostname == "ipc8"
+    - name: Mount disk /data 
+      mount:
+        path: /data
+        src: /dev/sdb1
+        state: mounted
+        fstype: ext4
+        opts: _netdev 
+      when: inventory_hostname == "ipc5"
+    - name: Mount disk /data 
+      mount:
+        path: /data
+        src: /dev/sdb
+        state: mounted
+        fstype: ext4
+        opts: _netdev 
+      when: inventory_hostname == "ipc0" or inventory_hostname == "ipc1"  or inventory_hostname == "ipc2" or inventory_hostname == "ipc3" or inventory_hostname == "ipc5"
+    - name: Mount NAS
+      mount:
+        path: /nas
+        src: 192.168.1.101:/nfs/Public 
+        state: mounted
+        fstype: nfs
+        opts: _netdev 
+  vars:
+    ansible_become_pass: granada01

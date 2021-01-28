@@ -33,6 +33,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.ImmutableSet;
+import com.gs.photo.workflow.pubexifdata.ApplicationConfig;
 import com.gs.photos.serializers.HbaseDataSerDe;
 import com.gs.photos.serializers.HbaseDataSerializer;
 import com.gs.photos.serializers.HbaseExifDataDeserializer;

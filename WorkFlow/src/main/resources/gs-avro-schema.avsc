@@ -26,7 +26,7 @@
           "type" : {
             "type" : "enum",
             "name" : "FieldType",
-            "symbols" : [ "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL", "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE", "IFD", "WINDOWSXP", "UNKNOWN" ]
+            "symbols" : [ "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL", "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE", "IFD", "WINDOWSXP", "SUBDIRECTORY", "UNKNOWN" ]
           }
         }, {
           "name" : "length",
@@ -378,7 +378,8 @@
   "namespace" : "com.workflow.model.events",
   "fields" : [ {
     "name" : "producer",
-    "type" : "string"
+    "type" : [ "null", "string" ],
+    "default" : null
   }, {
     "name" : "initialEvents",
     "type" : {
@@ -522,6 +523,12 @@
   "name" : "HbaseExifData",
   "namespace" : "com.workflow.model",
   "fields" : [ {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "exifTag",
     "type" : {
       "type" : "int",
@@ -612,6 +619,12 @@
   "name" : "HbaseExifDataOfImages",
   "namespace" : "com.workflow.model",
   "fields" : [ {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "imageId",
     "type" : "string"
   }, {
@@ -1401,6 +1414,12 @@
   "name" : "HbaseImageThumbnail",
   "namespace" : "com.workflow.model",
   "fields" : [ {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
   }, {

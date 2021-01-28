@@ -1,0 +1,10 @@
+- hosts: ignite
+  become: true
+  tasks:
+    - name: "create ignite"
+      include_tasks: install-ignite.yml
+  vars:
+    ansible_become_pass: granada01
+    localAddress: "{{inventory_hostname }}"
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

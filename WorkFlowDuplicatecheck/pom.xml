@@ -11,10 +11,9 @@
 		<relativePath>../WorkFlow/pom.xml</relativePath>
 	</parent>
 	<dependencies>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-integration</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -22,6 +21,37 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>com.gs.photos</groupId>
+			<artifactId>WorkFlowCommonStreams</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-endpoint</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>HbaseFilters</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>hbaseClientShaded</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-spring</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
@@ -31,9 +61,8 @@
 			<artifactId>kafka-clients</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-streams</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -53,25 +82,43 @@
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>Model</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-common</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>serializers</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.gs.photos</groupId>
-			<artifactId>WorkFlowCommonStreams</artifactId>
-		</dependency>
+
 	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<release>13</release>
+				</configuration>
+				<executions>
+					<execution>
+						<id>default-compile</id>
+						<configuration>
+							<release>13</release>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId> <!-- maven plugin for java 9 computer ! -->
+				<artifactId>maven-jar-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

@@ -17,7 +17,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-integration</artifactId>
+			<artifactId>spring-boot-starter</artifactId>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -26,17 +26,46 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>com.gs.photos</groupId>
+			<artifactId>WorkFlowCommonStreams</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase-endpoint</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>HbaseFilters</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.gs.photos</groupId>
+					<artifactId>hbaseClientShaded</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.ignite</groupId>
+					<artifactId>ignite-spring</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-streams</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -52,18 +81,6 @@
 					<artifactId>spring-boot-starter-logging</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>
@@ -92,19 +109,6 @@
 					<artifactId>slf4j-api</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.gs.photos</groupId>
-			<artifactId>WorkFlowCommonStreams</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-core</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.jgrapht</groupId>

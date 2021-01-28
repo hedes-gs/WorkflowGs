@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.FilterBase;
 import org.apache.hadoop.hbase.filter.ParseFilter;
 import org.apache.hadoop.hbase.filter.RowFilter;
-import org.apache.hadoop.hbase.protobuf.generated.GsFilterProtos;
+import org.apache.hadoop.hbase.gs.workflow.protobuf.generated.GsFilterProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -148,9 +148,7 @@ public class FilterRowByLongAtAGivenOffset extends FilterBase {
         builder.setFirstLong(this.firstLong);
         builder.setLastLong(this.lastLong);
         builder.setLongOffset(this.longOffset);
-        builder.setTypeValue(
-            org.apache.hadoop.hbase.protobuf.generated.GsFilterProtos.FilterRowByLongAtAGivenOffset.TypeValue
-                .valueOf(this.typeValue.getValue()));
+        builder.setTypeValue(GsFilterProtos.FilterRowByLongAtAGivenOffset.TypeValue.valueOf(this.typeValue.getValue()));
         return builder.build()
             .toByteArray();
     }

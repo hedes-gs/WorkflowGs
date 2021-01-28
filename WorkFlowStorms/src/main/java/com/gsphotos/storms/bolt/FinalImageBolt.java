@@ -156,22 +156,11 @@ public class FinalImageBolt extends BaseRichBolt {
     public void execute(Tuple inputWindow) {
         long time = System.currentTimeMillis();
         List<Tuple> tuples = Arrays.asList(inputWindow);
-        FinalImageBolt.LOGGER.info(
-            "FinalImageBolt : Processing window tuple from source-streamId = {} , source-component = {}, anchor = {}",
-            inputWindow.getSourceStreamId(),
-            inputWindow.getSourceComponent(),
-            inputWindow.getMessageId()
-                .getAnchorsToIds());
         try {
             this.doExecute(tuples);
             this.collector.ack(inputWindow);
         } catch (Exception e) {
-            FinalImageBolt.LOGGER.error("Unexpected error", e);
-        } finally {
-            FinalImageBolt.LOGGER.info(
-                "FinalImageBolt : End of processing window tuple with size {},  duration : {}",
-                tuples.size(),
-                ((float) (System.currentTimeMillis() - time)) / 1000);
+            FinalImageBolt.LOGGER.error("Unexpected error", ExceptionUtils.getStackTrace(e));
         }
     }
 

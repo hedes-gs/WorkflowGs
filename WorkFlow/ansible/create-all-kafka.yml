@@ -1,0 +1,62 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: "create kafka"
+      include_tasks: create-kafka.yml
+  vars:
+    kafka_version: 2.6.0
+    user_to_create: kafka
+    kafka_install_folder: /opt/kafka
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ansible_become_pass: granada01
+    values:
+      ipc0:
+        broker_id: 1
+        broker_host: ipc0
+        broker_host_external_ids: "192.168.1.200"
+      ipc1:
+        broker_id: 2
+        broker_host: ipc1
+        broker_host_external_ids: "192.168.1.201"
+      ipc2:
+        broker_id: 3
+        broker_host: ipc2
+        broker_host_external_ids: "192.168.1.202"
+      ipc3:
+        broker_id: 4
+        broker_host: ipc3
+        broker_host_external_ids: "192.168.1.203"
+      ipc5:
+        broker_id: 5
+        broker_host: ipc5
+        broker_host_external_ids: "192.168.1.205"
+      ipc6:
+        broker_id: 6
+        broker_host: ipc6
+        broker_host_external_ids: "192.168.1.206"
+      ipc7:
+        broker_id: 7
+        broker_host: ipc7
+        broker_host_external_ids: "192.168.1.207"
+      ipc8:
+        broker_id: 8
+        broker_host: ipc8
+        broker_host_external_ids: "192.168.1.208"
+      ipc9:
+        broker_id: 9
+        broker_host: ipc9
+        broker_host_external_ids: "192.168.1.209"
+      ipc10:
+        broker_id: 10
+        broker_host: ipc10
+        broker_host_external_ids: "192.168.1.210"
+      ipc11:
+        broker_id: 11
+        broker_host: ipc11
+        broker_host_external_ids: "192.168.1.211"
+      ipc12:
+        broker_id: 12
+        broker_host: ipc12
+        broker_host_external_ids: "192.168.1.212"
+    item: "{{ values[inventory_hostname] }}"
+      

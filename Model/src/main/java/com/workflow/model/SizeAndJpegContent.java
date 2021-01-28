@@ -4,8 +4,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-import javax.annotation.Generated;
-
 public class SizeAndJpegContent implements Serializable {
 
     public SizeAndJpegContent() {}
@@ -19,7 +17,6 @@ public class SizeAndJpegContent implements Serializable {
     protected int             width;
     protected byte[]          jpegContent;
 
-    @Generated("SparkTools")
     private SizeAndJpegContent(Builder builder) {
         this.height = builder.height;
         this.width = builder.width;
@@ -37,69 +34,6 @@ public class SizeAndJpegContent implements Serializable {
     public byte[] getJpegContent() { return this.jpegContent; }
 
     public void setJpegContent(byte[] jpegContent) { this.jpegContent = jpegContent; }
-
-    /**
-     * Creates builder to build {@link SizeAndJpegContent}.
-     *
-     * @return created builder
-     */
-    @Generated("SparkTools")
-    public static Builder builder() { return new Builder(); }
-
-    /**
-     * Builder to build {@link SizeAndJpegContent}.
-     */
-    @Generated("SparkTools")
-    public static final class Builder {
-        private int    height;
-        private int    width;
-        private byte[] jpegContent;
-
-        private Builder() {}
-
-        /**
-         * Builder method for height parameter.
-         *
-         * @param height
-         *            field to set
-         * @return builder
-         */
-        public Builder withHeight(int height) {
-            this.height = height;
-            return this;
-        }
-
-        /**
-         * Builder method for width parameter.
-         *
-         * @param width
-         *            field to set
-         * @return builder
-         */
-        public Builder withWidth(int width) {
-            this.width = width;
-            return this;
-        }
-
-        /**
-         * Builder method for jpegContent parameter.
-         *
-         * @param jpegContent
-         *            field to set
-         * @return builder
-         */
-        public Builder withJpegContent(byte[] jpegContent) {
-            this.jpegContent = jpegContent;
-            return this;
-        }
-
-        /**
-         * Builder method of the builder.
-         *
-         * @return built class
-         */
-        public SizeAndJpegContent build() { return new SizeAndJpegContent(this); }
-    }
 
     @Override
     public int hashCode() {
@@ -135,6 +69,67 @@ public class SizeAndJpegContent implements Serializable {
                 : null);
         builder2.append("]");
         return builder2.toString();
+    }
+
+    /**
+     * Creates builder to build {@link SizeAndJpegContent}.
+     * 
+     * @return created builder
+     */
+    public static Builder builder() { return new Builder(); }
+
+    /**
+     * Builder to build {@link SizeAndJpegContent}.
+     */
+    public static final class Builder {
+        private int    height;
+        private int    width;
+        private byte[] jpegContent;
+
+        private Builder() {}
+
+        /**
+         * Builder method for height parameter.
+         * 
+         * @param height
+         *            field to set
+         * @return builder
+         */
+        public Builder withHeight(int height) {
+            this.height = height;
+            return this;
+        }
+
+        /**
+         * Builder method for width parameter.
+         * 
+         * @param width
+         *            field to set
+         * @return builder
+         */
+        public Builder withWidth(int width) {
+            this.width = width;
+            return this;
+        }
+
+        /**
+         * Builder method for jpegContent parameter.
+         * 
+         * @param jpegContent
+         *            field to set
+         * @return builder
+         */
+        public Builder withJpegContent(byte[] jpegContent) {
+            this.jpegContent = jpegContent;
+            return this;
+        }
+
+        /**
+         * Builder method of the builder.
+         * 
+         * @return built class
+         */
+        public SizeAndJpegContent build() { return new SizeAndJpegContent(this); }
     }
 
 }

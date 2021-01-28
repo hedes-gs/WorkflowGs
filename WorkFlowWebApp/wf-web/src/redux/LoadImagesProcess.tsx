@@ -1,4 +1,16 @@
-import { PayloadLoadedImagesEvent, ApplicationEvent, DownloadSelectedImageEvent, LoadImagesOfMetadataEvent, LoadAllPersonsEvent, DisplayRealTimeImagesEvent } from './Actions'
+import {
+    PayloadIntervalDatesSelectedEvent,
+    PayloadLoadedImagesEvent,
+    ApplicationEvent,
+    DownloadSelectedImageEvent,
+    LoadImagesOfMetadataEvent,
+    LoadAllPersonsEvent,
+    DisplayRealTimeImagesEvent,
+    LastImagesAreLoadedEvent,
+    LoadPagesOfImagesEvent,
+    SelectedImageEvent,
+    AddImageToDeleteEvent
+} from './Actions'
 import ApplicationSate from './State'
 
 import Actions from "./ActionsType";
@@ -38,20 +50,28 @@ const initialState: ApplicationSate = {
     },
     realTimeSelected: {
         isLoading: false
+    },
+    imagesAreStreamed: {
+        state: 'unset',
+        images: null,
+        urlNext: '',
+        urlPrev: '',
+        pageNumber: 1,
+        titleOfImagesList: ''
     }
 };
 
 export function reducerDisplayedExif(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
     switch (action.type) {
         case Actions.SELECTED_IMAGE_TO_DISPLAY_IS_LOADED: {
-            const imageDto = action.payloadType == '16' ? action.payload.image : null;
+            const imageDto = action.payloadType == SelectedImageEvent ? action.payload.img : null;
             const currentExifs = state.displayedExif.exifs;
             const exifs = currentExifs != null &&
                 imageDto != null &&
                 currentExifs._embedded != null &&
-                currentExifs._embedded.exifDToes[0].imageOwner != null &&
+                currentExifs._embedded.exifDTOList[0].imageOwner != null &&
                 imageDto.data != null &&
-                currentExifs._embedded.exifDToes[0].imageOwner.imageId == imageDto.data.imageId ? currentExifs : null;
+                currentExifs._embedded.exifDTOList[0].imageOwner.imageId == imageDto.data.imageId ? currentExifs : null;
             const returnedTarget = Object.assign(
                 {},
                 state,
@@ -214,8 +234,44 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
             );
             return returnedTarget;
         }
+        case PayloadIntervalDatesSelectedEvent: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imagesLoaded: {
+                        state: 'LOADED',
+                        images: null,
+                        pageNumber: 1,
+                        urlNext: null,
+                        urlPrev: null,
+                        titleOfImagesList: null
+                    },
+                },
+            );
+            return returnedTarget;
+        }
         case PayloadLoadedImagesEvent: {
             switch (action.type) {
+                case Actions.IMAGES_ARE_STREAMED:
+                case Actions.START_STREAMING: {
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+                            imagesLoaded: {
+                                state: 'LOADED',
+                                images: null,
+                                pageNumber: 1,
+                                urlNext: null,
+                                urlPrev: null,
+                                titleOfImagesList: null
+                            },
+                        },
+                    );
+                    return returnedTarget;
+
+                }
                 case Actions.IMAGES_ARE_LOADED: {
                     const returnedTarget = Object.assign(
                         {},
@@ -254,6 +310,18 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
 export function reducerInformImagesAreLoaded(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
 
     switch (action.type) {
+        case Actions.START_STREAMING: {
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imagesLoaded: {
+                        state: null,
+                        images: null
+                    }
+                });
+            return returnedTarget;
+        }
         case Actions.IMAGES_ARE_LOADED: {
             switch (action.payloadType) {
                 case PayloadLoadedImagesEvent: {
@@ -279,13 +347,76 @@ export function reducerInformImagesAreLoaded(state: ApplicationSate, action: App
     return initialState;
 }
 
+export function reducerImagesAreStreamed(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
+
+    switch (action.type) {
+        case Actions.START_STREAMING: {
+            switch (action.payloadType) {
+                case LastImagesAreLoadedEvent:
+                case LoadPagesOfImagesEvent:
+                case PayloadIntervalDatesSelectedEvent: {
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+
+                            imagesAreStreamed: {
+                                state: 'START_STREAMING',
+                                images: null,
+                                titleOfImagesList: action.payload.titleOfImagesList
+                            }
+                        });
+                    return returnedTarget;
+                }
+            }
+        }
+        case Actions.IMAGES_ARE_STREAMED: {
+            switch (action.payloadType) {
+                case PayloadLoadedImagesEvent: {
+                    var currentImages: ImageDto[] | undefined = state.imagesAreStreamed.images?._embedded?.imageDtoList;
+
+                    if (action.payload.images._embedded != null) {
+                        currentImages = currentImages != null ? currentImages?.concat(action.payload.images._embedded.imageDtoList) :
+                            action.payload.images._embedded.imageDtoList;
+                    }
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+                            imagesAreStreamed: {
+                                state: 'STREAMING',
+                                images: {
+                                    page: state.imagesAreStreamed.images?.page,
+                                    _embedded: {
+                                        imageDtoList: currentImages
+                                    },
+                                    _links: state.imagesAreStreamed.images?._links
+                                },
+                                titleOfImagesList: action.payload.titleOfImagesList
+                            }
+                        });
+                    return returnedTarget;
+                }
+            }
+        }
+    }
+    if (state != null) {
+        return state;
+    }
+
+    return initialState;
+}
+
+
+
+
 export function reducerImagesToDelete(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
 
     switch (action.type) {
         case Actions.DELETE_IMAGE: {
             switch (action.payloadType) {
-                case '3': {
-                    var imageToDelete: Set<ImageKeyDto> = state.imagesToDelete.images != null ? state.imagesToDelete.images : new Set();
+                case AddImageToDeleteEvent: {
+                    var imageToDelete: Set<ImageDto> = state.imagesToDelete.images != null ? state.imagesToDelete.images : new Set();
                     imageToDelete.add(action.payload.image);
                     const returnedTarget = Object.assign(
                         {},
@@ -352,7 +483,7 @@ export function reducerImageIsSelectedToBeDisplayed(state: ApplicationSate, acti
                     });
                 return returnedTarget;
             }
-        case '16': {
+        case SelectedImageEvent: {
             switch (action.type) {
                 case Actions.DESELECT_IMAGE_TO_DISPLAY: {
                     const returnedTarget = Object.assign(
@@ -373,7 +504,7 @@ export function reducerImageIsSelectedToBeDisplayed(state: ApplicationSate, acti
                         {
                             imageIsSelectedToBeDisplayed: {
                                 isLoading: false,
-                                image: action.payload.image
+                                image: action.payload.img
                             }
                         });
                     return returnedTarget;

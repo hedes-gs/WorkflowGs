@@ -85,6 +85,8 @@ public abstract class AbstractPageProcessor<T> extends LockTableHelper._LockServ
     private final AtomicLong      writerSequenceNumber                = new AtomicLong(
         AbstractPageProcessor.INVALID_SEQ);
     protected static final byte[] TABLE_SOURCE_THUMBNAIL              = "thb".getBytes(Charset.forName("UTF-8"));
+    public static final int       FIXED_WIDTH_IMAGE_ID                = 64;
+    public static final int       FIXED_WIDTH_REGION_SALT             = 2;
 
     protected Long getLock(Table metaDataPageTable) throws ServiceException, Throwable {
         Long lockNumber = new Random().nextLong();

@@ -2,8 +2,6 @@ package com.workflow.model.events;
 
 import java.io.Serializable;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 import com.workflow.model.HbaseData;
@@ -28,7 +26,6 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
     protected String          componentName;
 
-    @Generated("SparkTools")
     private ComponentEvent(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
@@ -72,13 +69,11 @@ public class ComponentEvent extends HbaseData implements Serializable {
      * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ComponentEvent}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long            dataCreationDate;
         private String          dataId;

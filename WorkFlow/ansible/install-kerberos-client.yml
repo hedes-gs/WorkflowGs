@@ -1,0 +1,21 @@
+- hosts: all
+  become: true
+  tasks:
+    - name: Install krb5-user
+      apt:
+        name:
+          -  krb5-user
+    - name: Install libpam-krb5
+      apt:
+        name:
+          -  libpam-krb5
+    - name: Install libpam-ccreds
+      apt:
+        name:
+          -  libpam-ccreds
+    - name: Install libpam-ccreds
+      apt:
+        name:
+          -  auth-client-config
+  vars:
+    ansible_become_pass: granada01

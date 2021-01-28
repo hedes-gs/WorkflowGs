@@ -3,8 +3,6 @@ package com.workflow.model;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import javax.annotation.Generated;
-
 import org.apache.avro.reflect.Nullable;
 
 @HbaseTableName("image_exif")
@@ -13,11 +11,13 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     private static final long    serialVersionUID = 1L;
 
     // Row key
-    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
+    @Column(hbaseName = "region_salt", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+    protected short              regionSalt;
+    @Column(hbaseName = "exif_tag", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_TAG)
     protected short              exifTag;
-    @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
+    @Column(hbaseName = "exif_path", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteShortArray.class, fixedWidth = ModelConstants.FIXED_WIDTH_EXIF_PATH)
     protected short[]            exifPath;
-    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 3, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
     protected String             imageId;
 
     // Data
@@ -44,19 +44,10 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     @Column(hbaseName = "thumbnail", toByte = ToByteObject.class, columnFamily = "thb", rowKeyNumber = 107)
     protected SizeAndJpegContent thumbnail;
 
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw e;
-        }
-    }
-
-    @Generated("SparkTools")
     private HbaseExifData(Builder builder) {
-        super(builder.dataId,
-            builder.dataCreationDate);
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
+        this.regionSalt = builder.regionSalt;
         this.exifTag = builder.exifTag;
         this.exifPath = builder.exifPath;
         this.imageId = builder.imageId;
@@ -68,6 +59,15 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         this.width = builder.width;
         this.height = builder.height;
         this.thumbnail = builder.thumbnail;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        try {
+            return super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw e;
+        }
     }
 
     public short[] getExifPath() { return this.exifPath; }
@@ -109,6 +109,18 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
     public void setThumbnail(SizeAndJpegContent thumbnail) { this.thumbnail = thumbnail; }
 
+    public short getRegionSalt() { return this.regionSalt; }
+
+    public void setRegionSalt(short regionSalt) { this.regionSalt = regionSalt; }
+
+    public void setExifPath(short[] exifPath) { this.exifPath = exifPath; }
+
+    public void setExifValueAsByte(byte[] exifValueAsByte) { this.exifValueAsByte = exifValueAsByte; }
+
+    public void setExifValueAsInt(int[] exifValueAsInt) { this.exifValueAsInt = exifValueAsInt; }
+
+    public void setExifValueAsShort(short[] exifValueAsShort) { this.exifValueAsShort = exifValueAsShort; }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -143,19 +155,18 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
     /**
      * Creates builder to build {@link HbaseExifData}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseExifData}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
-        private String             dataId;
         private long               dataCreationDate;
+        private String             dataId;
+        private short              regionSalt;
         private short              exifTag;
         private short[]            exifPath;
         private String             imageId;
@@ -171,20 +182,8 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         private Builder() {}
 
         /**
-         * Builder method for dataId parameter.
-         *
-         * @param dataId
-         *            field to set
-         * @return builder
-         */
-        public Builder withDataId(String dataId) {
-            this.dataId = dataId;
-            return this;
-        }
-
-        /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -195,8 +194,32 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
         }
 
         /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
+         * Builder method for regionSalt parameter.
+         * 
+         * @param regionSalt
+         *            field to set
+         * @return builder
+         */
+        public Builder withRegionSalt(short regionSalt) {
+            this.regionSalt = regionSalt;
+            return this;
+        }
+
+        /**
          * Builder method for exifTag parameter.
-         *
+         * 
          * @param exifTag
          *            field to set
          * @return builder
@@ -208,7 +231,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifPath parameter.
-         *
+         * 
          * @param exifPath
          *            field to set
          * @return builder
@@ -220,7 +243,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -232,7 +255,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsByte parameter.
-         *
+         * 
          * @param exifValueAsByte
          *            field to set
          * @return builder
@@ -244,7 +267,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsInt parameter.
-         *
+         * 
          * @param exifValueAsInt
          *            field to set
          * @return builder
@@ -256,7 +279,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsShort parameter.
-         *
+         * 
          * @param exifValueAsShort
          *            field to set
          * @return builder
@@ -268,7 +291,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for thumbName parameter.
-         *
+         * 
          * @param thumbName
          *            field to set
          * @return builder
@@ -280,7 +303,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for creationDate parameter.
-         *
+         * 
          * @param creationDate
          *            field to set
          * @return builder
@@ -292,7 +315,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for width parameter.
-         *
+         * 
          * @param width
          *            field to set
          * @return builder
@@ -304,7 +327,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for height parameter.
-         *
+         * 
          * @param height
          *            field to set
          * @return builder
@@ -316,7 +339,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for thumbnail parameter.
-         *
+         * 
          * @param thumbnail
          *            field to set
          * @return builder
@@ -328,7 +351,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseExifData build() { return new HbaseExifData(this); }

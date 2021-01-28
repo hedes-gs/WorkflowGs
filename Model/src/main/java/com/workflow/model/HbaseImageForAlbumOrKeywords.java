@@ -2,8 +2,6 @@ package com.workflow.model;
 
 import java.io.Serializable;
 
-import javax.annotation.Generated;
-
 public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -11,6 +9,15 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
     protected String          imageId;
     protected short           version;
     protected byte[]          tumbnail;
+
+    private HbaseImageForAlbumOrKeywords(Builder builder) {
+        this.dataCreationDate = builder.dataCreationDate;
+        this.dataId = builder.dataId;
+        this.creationDate = builder.creationDate;
+        this.imageId = builder.imageId;
+        this.version = builder.version;
+        this.tumbnail = builder.tumbnail;
+    }
 
     public long getCreationDate() { return this.creationDate; }
 
@@ -52,14 +59,6 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
         return true;
     }
 
-    @Generated("SparkTools")
-    private HbaseImageForAlbumOrKeywords(Builder builder) {
-        this.creationDate = builder.creationDate;
-        this.imageId = builder.imageId;
-        this.version = builder.version;
-        this.tumbnail = builder.tumbnail;
-    }
-
     public HbaseImageForAlbumOrKeywords() { super(); }
 
     public HbaseImageForAlbumOrKeywords(
@@ -70,17 +69,17 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
 
     /**
      * Creates builder to build {@link HbaseImageForAlbumOrKeywords}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageForAlbumOrKeywords}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
+        private long   dataCreationDate;
+        private String dataId;
         private long   creationDate;
         private String imageId;
         private short  version;
@@ -89,8 +88,32 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
         private Builder() {}
 
         /**
+         * Builder method for dataCreationDate parameter.
+         * 
+         * @param dataCreationDate
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataCreationDate(long dataCreationDate) {
+            this.dataCreationDate = dataCreationDate;
+            return this;
+        }
+
+        /**
+         * Builder method for dataId parameter.
+         * 
+         * @param dataId
+         *            field to set
+         * @return builder
+         */
+        public Builder withDataId(String dataId) {
+            this.dataId = dataId;
+            return this;
+        }
+
+        /**
          * Builder method for creationDate parameter.
-         *
+         * 
          * @param creationDate
          *            field to set
          * @return builder
@@ -102,7 +125,7 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
 
         /**
          * Builder method for imageId parameter.
-         *
+         * 
          * @param imageId
          *            field to set
          * @return builder
@@ -114,7 +137,7 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
 
         /**
          * Builder method for version parameter.
-         *
+         * 
          * @param version
          *            field to set
          * @return builder
@@ -126,7 +149,7 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
 
         /**
          * Builder method for tumbnail parameter.
-         *
+         * 
          * @param tumbnail
          *            field to set
          * @return builder
@@ -138,7 +161,7 @@ public class HbaseImageForAlbumOrKeywords extends HbaseData implements Serializa
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImageForAlbumOrKeywords build() { return new HbaseImageForAlbumOrKeywords(this); }

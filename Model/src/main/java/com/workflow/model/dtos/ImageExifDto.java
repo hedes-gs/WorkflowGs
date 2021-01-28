@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
-import javax.annotation.Generated;
 import javax.xml.bind.annotation.XmlType;
 
 @XmlType
@@ -15,7 +14,6 @@ public class ImageExifDto implements Serializable {
     private ImageKeyDto       imageOwner;
     private List<ExifDTO>     exifs;
 
-    @Generated("SparkTools")
     private ImageExifDto(Builder builder) {
         this.imageOwner = builder.imageOwner;
         this.exifs = builder.exifs;
@@ -32,13 +30,11 @@ public class ImageExifDto implements Serializable {
      *
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link ImageExifDto}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private ImageKeyDto   imageOwner;
         private List<ExifDTO> exifs = Collections.emptyList();

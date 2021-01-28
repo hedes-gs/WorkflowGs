@@ -111,6 +111,14 @@ export class ImageLinks extends DefaultLink {
     _exif?: PageLink | null = null;
     _img?: PageLink | null = null;
     _upd?: PageLink | null = null;
+    _prev?: PageLink | null = null;
+    _next?: PageLink | null = null;
+    next?: PageLink | null = null;
+    prev?: PageLink | null = null;
+    first?: PageLink | null = null;
+    last?: PageLink | null = null;
+    self?: PageLink | null = null;
+    _checkout?: PageLink | null = null;
 }
 
 export class MetadataLinks {
@@ -178,7 +186,7 @@ export class ExifDTO {
 
 export class ExifDToes {
     @JsonProperty({ type: ExifDTO, deserializer: ArrayExifDTOSerializerDeserializer, serializer: ArrayExifDTOSerializerDeserializer })
-    exifDToes: ExifDTO[] = [];
+    exifDTOList: ExifDTO[] = [];
 }
 
 export class ExifOfImages {
@@ -219,7 +227,7 @@ export class ComponentEvent {
 
 export class PageContent {
     @JsonProperty({ type: ImageDto, deserializer: ArrayImageDtoLinksSerializerDeserializer, serializer: ArrayImageDtoLinksSerializerDeserializer })
-    imageDtoes: ImageDto[] = [];
+    imageDtoList: ImageDto[] = [];
 }
 
 

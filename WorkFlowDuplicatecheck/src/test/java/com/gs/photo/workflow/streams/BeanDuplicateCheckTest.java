@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.IDuplicateCheck;
+import com.gs.photo.workflow.dupcheck.IDuplicateCheck;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest

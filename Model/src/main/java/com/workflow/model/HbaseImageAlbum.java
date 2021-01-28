@@ -1,7 +1,5 @@
 package com.workflow.model;
 
-import javax.annotation.Generated;
-
 @HbaseTableName("image_album")
 public class HbaseImageAlbum extends HbaseData {
 
@@ -14,10 +12,11 @@ public class HbaseImageAlbum extends HbaseData {
     @Column(hbaseName = "description", isPartOfRowkey = false, rowKeyNumber = 100, toByte = ToByteString.class)
     protected String          description;
 
-    @Generated("SparkTools")
     private HbaseImageAlbum(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
+        this.album = builder.album;
+        this.description = builder.description;
     }
 
     public String getAlbum() { return this.album; }
@@ -71,26 +70,25 @@ public class HbaseImageAlbum extends HbaseData {
 
     /**
      * Creates builder to build {@link HbaseImageAlbum}.
-     *
+     * 
      * @return created builder
      */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
     /**
      * Builder to build {@link HbaseImageAlbum}.
      */
-    @Generated("SparkTools")
     public static final class Builder {
         private long   dataCreationDate;
         private String dataId;
-        private String keyWord;
+        private String album;
+        private String description;
 
         private Builder() {}
 
         /**
          * Builder method for dataCreationDate parameter.
-         *
+         * 
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -102,7 +100,7 @@ public class HbaseImageAlbum extends HbaseData {
 
         /**
          * Builder method for dataId parameter.
-         *
+         * 
          * @param dataId
          *            field to set
          * @return builder
@@ -113,20 +111,32 @@ public class HbaseImageAlbum extends HbaseData {
         }
 
         /**
-         * Builder method for keyWord parameter.
-         *
-         * @param keyWord
+         * Builder method for album parameter.
+         * 
+         * @param album
          *            field to set
          * @return builder
          */
-        public Builder withKeyWord(String keyWord) {
-            this.keyWord = keyWord;
+        public Builder withAlbum(String album) {
+            this.album = album;
+            return this;
+        }
+
+        /**
+         * Builder method for description parameter.
+         * 
+         * @param description
+         *            field to set
+         * @return builder
+         */
+        public Builder withDescription(String description) {
+            this.description = description;
             return this;
         }
 
         /**
          * Builder method of the builder.
-         *
+         * 
          * @return built class
          */
         public HbaseImageAlbum build() { return new HbaseImageAlbum(this); }
