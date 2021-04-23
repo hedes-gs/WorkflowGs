@@ -8,6 +8,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
@@ -127,7 +129,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${cache.exif.name}") String cacheExifName,
         @Value("${cache.exif.expireinseconds}") int cacheExifExpire
     ) {
-        return new SpringCache2kCacheManager().defaultSetup(b -> b.entryCapacity(2000))
+        return new SpringCache2kCacheManager().defaultSetup(b -> b.entryCapacity(500))
             .addCaches(
                 b -> b.name(cacheImagesName)
                     .expireAfterWrite(cacheImagesExpire, TimeUnit.SECONDS)
@@ -176,6 +178,47 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             builder.deserializers(new OffsetDateTimeDeserializer());
 
         };
+    }
+
+    @Bean(name = "hdfsFileSystem")
+    public FileSystem hdfsFileSystem(
+        @Value("${application.gs.principal}") String principal,
+        @Value("${application.gs.keytab}") String keyTab
+    ) {
+        org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
+        UserGroupInformation.setConfiguration(configuration);
+        try {
+            ApplicationConfig.LOGGER.info("Kerberos Login from login {} and keytab {}", principal, keyTab);
+
+            UserGroupInformation.loginUserFromKeytab(principal, keyTab);
+            ApplicationConfig.LOGGER.info("Kerberos Login from login {} and keytab {}", principal, keyTab);
+        } catch (IOException e1) {
+            ApplicationConfig.LOGGER
+                .warn("Error when login {},{} : {}", principal, keyTab, ExceptionUtils.getStackTrace(e1));
+            throw new RuntimeException(e1);
+        }
+        PrivilegedAction<FileSystem> action = () -> {
+            FileSystem retValue = null;
+            try {
+                retValue = FileSystem.get(configuration);
+            } catch (IOException e) {
+                ApplicationConfig.LOGGER.warn(
+                    "Error when Getting FileSystem {},{} : {}",
+                    principal,
+                    keyTab,
+                    ExceptionUtils.getStackTrace(e));
+                throw new RuntimeException(e);
+            }
+            return retValue;
+        };
+        try {
+            return UserGroupInformation.getLoginUser()
+                .doAs(action);
+        } catch (IOException e) {
+            ApplicationConfig.LOGGER
+                .warn("Error when login {},{} : {}", principal, keyTab, ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
     }
 
     public static class OffsetDateTimeDeserializer extends JSR310DateTimeDeserializerBase<OffsetDateTime> {

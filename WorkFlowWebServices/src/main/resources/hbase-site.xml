@@ -150,8 +150,15 @@
 		<value>wf_hbase@GS.COM</value>
 	</property>
 
-
-
+	<property>
+		<name>hbase.hconnection.threads.max</name>
+		<value>32</value>
+	</property>
+	
+	<property>
+		<name>hbase.hconnection.threads.core</name>
+		<value>16</value>
+	</property>
 
 
 	<property>

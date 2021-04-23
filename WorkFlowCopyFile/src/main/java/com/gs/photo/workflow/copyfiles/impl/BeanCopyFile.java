@@ -38,6 +38,7 @@ import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
+import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.copyfiles.ICopyFile;
@@ -265,6 +266,8 @@ public class BeanCopyFile implements ICopyFile {
                 ;
                 destFile.setWritable(true, false);
                 destFile.setReadable(true, false);
+            } catch (MissingFileException e) {
+                throw new RuntimeException(e);
             }
             BeanCopyFile.LOGGER.info(
                 "[EVENT][{}] File {} has been copied in local at place {} ",

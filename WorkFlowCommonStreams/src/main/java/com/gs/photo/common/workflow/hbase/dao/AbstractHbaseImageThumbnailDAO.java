@@ -12,9 +12,15 @@ import java.util.List;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.FirstKeyOnlyFilter;
+import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
@@ -22,6 +28,8 @@ import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
 import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.ModelConstants;
+
+import reactor.core.publisher.Flux;
 
 public abstract class AbstractHbaseImageThumbnailDAO extends GenericDAO<HbaseImageThumbnail>
     implements IImageThumbnailDAO {
@@ -35,6 +43,10 @@ public abstract class AbstractHbaseImageThumbnailDAO extends GenericDAO<HbaseIma
     public void delete(HbaseImageThumbnail[] hbaseData) throws IOException {
         super.delete(hbaseData, this.getHbaseDataInformation());
     }
+
+    @Override
+    public TableName getTableName() { return this.getHbaseDataInformation()
+        .getTable(); }
 
     public void delete(HbaseImageThumbnail hbaseData) throws IOException {
         super.delete(hbaseData, this.getHbaseDataInformation());
@@ -197,7 +209,7 @@ public abstract class AbstractHbaseImageThumbnailDAO extends GenericDAO<HbaseIma
             scan.addColumn(IImageThumbnailDAO.FAMILY_SZ_BYTES, IImageThumbnailDAO.HEIGHT_BYTES);
             scan.addColumn(IImageThumbnailDAO.FAMILY_THB_BYTES, IImageThumbnailDAO.TUMBNAIL_BYTES);
 
-            scan.setFilter(new FilterRowByLongAtAGivenOffset(0, firstDateEpochMillis, mastDateEpochMilli));
+            scan.setFilter(new FilterRowByLongAtAGivenOffset(2, firstDateEpochMillis, mastDateEpochMilli));
             ResultScanner rs = table.getScanner(scan);
             rs.forEach((t) -> {
 
@@ -244,35 +256,51 @@ public abstract class AbstractHbaseImageThumbnailDAO extends GenericDAO<HbaseIma
 
     }
 
-    public List<HbaseImageThumbnail> getPreviousThumbNailOf(HbaseImageThumbnail initialKey) {
-        List<HbaseImageThumbnail> retValue = new ArrayList<>();
+    public Flux<HbaseImageThumbnail> getPreviousThumbNailsOf(HbaseImageThumbnail initialKey, boolean incluseRow) {
+        byte[] saltAsByte = new byte[2];
+        Bytes.putShort(saltAsByte, 0, initialKey.getRegionSalt());
         try (
             Table table = this.connection.getTable(
                 this.getHbaseDataInformation()
                     .getTable())) {
-
             byte[] key = GenericDAO.getKey(initialKey, this.getHbaseDataInformation());
-            Bytes.putLong(key, 0, initialKey.getCreationDate());
-            Scan scan = new Scan().addColumn(IImageThumbnailDAO.FAMILY_IMG_BYTES, IImageThumbnailDAO.IMAGE_NAME_BYTES)
-                .addColumn(IImageThumbnailDAO.FAMILY_IMG_BYTES, IImageThumbnailDAO.TUMB_NAME_BYTES)
-                .addColumn(IImageThumbnailDAO.FAMILY_IMG_BYTES, IImageThumbnailDAO.PATH_BYTES)
-                .addColumn(IImageThumbnailDAO.FAMILY_SZ_BYTES, IImageThumbnailDAO.WIDTH_BYTES)
-                .addColumn(IImageThumbnailDAO.FAMILY_SZ_BYTES, IImageThumbnailDAO.HEIGHT_BYTES)
-                .addColumn(IImageThumbnailDAO.FAMILY_THB_BYTES, IImageThumbnailDAO.TUMBNAIL_BYTES)
-                .withStartRow(key, false)
+            Scan scan = this.createScanToGetOnlyRowKey(new PrefixFilter(saltAsByte));
+            scan.withStartRow(key, incluseRow)
                 .setLimit(1)
                 .setReversed(true);
             ResultScanner rs = table.getScanner(scan);
-            rs.forEach((t) -> {
-                HbaseImageThumbnail instance = new HbaseImageThumbnail();
-                retValue.add(instance);
-                this.getHbaseDataInformation()
-                    .build(instance, t);
-            });
+            return Flux.fromIterable(rs)
+                .map((t) -> {
+                    HbaseImageThumbnail instance = new HbaseImageThumbnail();
+                    this.getHbaseDataInformation()
+                        .buildKeyFromRowKey(instance, t.getRow());
+                    return instance;
+                });
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return retValue;
+    }
+
+    protected Scan createScanToGetOnlyRowKey(Filter prefixFilter) {
+        Scan scan = new Scan();
+        scan.setFilter(new FilterList(prefixFilter, new FirstKeyOnlyFilter(), new KeyOnlyFilter()));
+        return scan;
+    }
+
+    @Override
+    public void delete(HbaseImageThumbnail hbaseData, String family, String column) {
+        try (
+            Table table = this.connection.getTable(
+                this.getHbaseDataInformation()
+                    .getTable())) {
+            byte[] key = GenericDAO.getKey(hbaseData, this.getHbaseDataInformation());
+            Delete del = new Delete(key);
+            del.addColumn(family.getBytes("UTF-8"), column.getBytes("UTF-8"));
+            table.delete(del);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 }

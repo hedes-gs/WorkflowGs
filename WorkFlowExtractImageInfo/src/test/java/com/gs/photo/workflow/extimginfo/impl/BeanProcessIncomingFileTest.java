@@ -27,7 +27,6 @@ import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
@@ -40,7 +39,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.IIgniteDAO;
@@ -54,7 +52,6 @@ import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.files.FileToProcess;
 
 @ActiveProfiles("test")
-@RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
         ExifServiceImpl.class, NameServiceTestConfiguration.class, BeanFileMetadataExtractor.class,
         BeanProcessIncomingFile.class, ApplicationConfig.class })
@@ -121,9 +118,9 @@ class BeanProcessIncomingFileTest {
     }
 
     @BeforeEach
-    void setUp() throws Exception {
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        Path filePath = new File("src/test/resources/_DSC0851.ARW").toPath();
+        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
         FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
         ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
         fc.read(bb);
@@ -134,7 +131,7 @@ class BeanProcessIncomingFileTest {
     }
 
     @Test
-    void test001_shouldRetrieveNoCopyrightAndArtist() throws IOException {
+    public void test001_shouldRetrieveNoCopyrightAndArtist() throws IOException {
         final Collection<IFD> IFDs = this.beanFileMetadataExtractor.readIFDs("1")
             .get();
 
@@ -145,7 +142,7 @@ class BeanProcessIncomingFileTest {
     }
 
     @Test
-    void test001_shouldRetrieveDefaultCopyrightAndArtist() throws IOException {
+    public void test001_shouldRetrieveDefaultCopyrightAndArtist() throws IOException {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic",
@@ -180,7 +177,7 @@ class BeanProcessIncomingFileTest {
         }
         Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(1))
             .send(this.valueCaptor.capture());
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(119))
+        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221))
             .send(this.valueCaptor.capture(), ArgumentMatchers.any());
         List<String> foundValue = this.valueCaptor.getAllValues()
             .stream()
@@ -209,7 +206,7 @@ class BeanProcessIncomingFileTest {
     }
 
     @Test
-    void test002_shouldSend120MsgsWhenParsingARAWFile() throws IOException {
+    public void test002_shouldSend120MsgsWhenParsingARAWFile() throws IOException {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic",
@@ -244,7 +241,7 @@ class BeanProcessIncomingFileTest {
         }
         Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(1))
             .send(ArgumentMatchers.any());
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(119))
+        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221))
             .send(ArgumentMatchers.any(), ArgumentMatchers.any());
 
     }

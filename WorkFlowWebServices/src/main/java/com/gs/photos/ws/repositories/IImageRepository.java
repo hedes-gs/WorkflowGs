@@ -2,7 +2,6 @@ package com.gs.photos.ws.repositories;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
@@ -16,7 +15,7 @@ public interface IImageRepository {
 
     Optional<ImageDto> findById(short salt, OffsetDateTime creationDate, String id, int version);
 
-    void delete(short salt, OffsetDateTime creationDate, String id, int version);
+    void delete(short salt, OffsetDateTime creationDate, String id) throws IOException;
 
     Optional<ImageDto> getNextImageById(short salt, OffsetDateTime creationDate, String id, int version);
 
@@ -27,6 +26,8 @@ public interface IImageRepository {
     Flux<ImageDto> findImagesByKeyword(Pageable page, String keyword) throws IOException;
 
     Flux<ImageDto> findImagesByPerson(Pageable page, String person) throws IOException;
+
+    Flux<ImageDto> findImagesByAlbum(Pageable page, String album) throws IOException;
 
     public byte[] getJpegImage(short salt, OffsetDateTime creationDate, String id, int version);
 
@@ -101,22 +102,22 @@ public interface IImageRepository {
         short... versions
     ) throws IOException;
 
-    public List<MinMaxDatesDto> getListOfYearsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfYearsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
-    public List<MinMaxDatesDto> getListOfMonthsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfMonthsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
-    public List<MinMaxDatesDto> getListOfDaysBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfDaysBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
-    public List<MinMaxDatesDto> getListOfHoursBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfHoursBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
-    public List<MinMaxDatesDto> getListOfMinutesBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfMinutesBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
-    public List<MinMaxDatesDto> getListOfSecondsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfSecondsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException;
 
     long countAllOf(String intervalType) throws IOException;
@@ -125,7 +126,9 @@ public interface IImageRepository {
 
     Optional<ImageDto> addKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
 
-    void addAlbum(String id, OffsetDateTime creationDate, int version, String album);
+    Optional<ImageDto> addAlbum(String id, OffsetDateTime creationDate, int version, String album);
+
+    Optional<ImageDto> deleteAlbum(String id, OffsetDateTime creationDate, int version, String album);
 
     Optional<ImageDto> deleteKeyword(String imageId, OffsetDateTime creationDate, int version, String keyword);
 

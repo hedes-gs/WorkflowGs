@@ -2,7 +2,6 @@ package com.gs.photos.ws.repositories.impl;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -216,42 +215,62 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
+    public Flux<ImageDto> findImagesByAlbum(Pageable page, String album) throws IOException {
+        Flux<ImageDto> retValue = this.hbaseImageThumbnailDAO
+            .findImagesByAlbum(page.getPageSize(), page.getPageNumber(), album);
+        return retValue;
+
+    }
+
+    @Override
     public MinMaxDatesDto getDatesLimit() { return this.ihbaseStatsDAO.getMinMaxDates(); }
 
     @Override
-    public List<MinMaxDatesDto> getListOfYearsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfYearsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.YEAR);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.YEAR)
+                .stream());
     }
 
     @Override
-    public List<MinMaxDatesDto> getListOfMonthsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfMonthsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.MONTH);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.MONTH)
+                .stream());
     }
 
     @Override
-    public List<MinMaxDatesDto> getListOfDaysBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfDaysBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.DAY);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.DAY)
+                .stream());
     }
 
     @Override
-    public List<MinMaxDatesDto> getListOfHoursBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfHoursBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.HOUR);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.HOUR)
+                .stream());
     }
 
     @Override
-    public List<MinMaxDatesDto> getListOfMinutesBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfMinutesBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.MINUTE);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.MINUTE)
+                .stream());
     }
 
     @Override
-    public List<MinMaxDatesDto> getListOfSecondsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
+    public Flux<MinMaxDatesDto> getListOfSecondsBetween(OffsetDateTime startTime, OffsetDateTime stopDate)
         throws IOException {
-        return this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.SECOND);
+        return Flux.fromStream(
+            this.ihbaseStatsDAO.getDatesBetween(startTime, stopDate, KeyEnumType.SECOND)
+                .stream());
     }
 
     @Override
@@ -280,8 +299,13 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
-    public void addAlbum(String id, OffsetDateTime creationDate, int version, String album) {
-        this.hbaseImageThumbnailDAO.addAlbum(id, creationDate, version, album);
+    public Optional<ImageDto> addAlbum(String id, OffsetDateTime creationDate, int version, String album) {
+        return this.hbaseImageThumbnailDAO.addAlbum(id, creationDate, version, album);
+    }
+
+    @Override
+    public Optional<ImageDto> deleteAlbum(String id, OffsetDateTime creationDate, int version, String album) {
+        return this.hbaseImageThumbnailDAO.deleteAlbum(id, creationDate, version, album);
     }
 
     @Override
@@ -325,11 +349,10 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
-    public void delete(short salt, OffsetDateTime creationDate, String id, int version) {
-        final ImageDto imageToDelete = this.hbaseImageThumbnailDAO.findById(salt, creationDate, id, version);
+    public void delete(short salt, OffsetDateTime creationDate, String id) throws IOException {
+        final ImageDto imageToDelete = this.hbaseImageThumbnailDAO.findById(salt, creationDate, id, 1);
         this.ihFileServices.delete(imageToDelete);
-        this.hbaseImageThumbnailDAO.delete(creationDate, id, version);
-
+        this.hbaseImageThumbnailDAO.delete(creationDate, id);
     }
 
     int nbOfMessages = 0;

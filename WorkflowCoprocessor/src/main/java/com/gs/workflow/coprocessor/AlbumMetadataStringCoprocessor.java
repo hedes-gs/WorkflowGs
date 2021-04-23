@@ -43,39 +43,39 @@ public class AlbumMetadataStringCoprocessor extends AbstractMetadataStringCoproc
     }
 
     @Override
-    protected byte[] toRowKey(String t, long pageNumber) {
-        try {
-            byte[] retValue = Arrays.copyOf(
-                t.getBytes(Charset.forName("UTF-8")),
-                AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD
-                    + AlbumMetadataStringCoprocessor.FIXED_WIDTH_CREATION_DATE);
-            Arrays.fill(retValue, t.getBytes().length, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD, (byte) 0x20);
-            Bytes.putLong(retValue, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD, pageNumber);
-            return retValue;
-        } catch (IllegalArgumentException e) {
-            AbstractPageProcessor.LOGGER.error(
-                "[COPROC][{}] error in toRowKey, metadata is '{}', pageNumber is {}",
-                this.getCoprocName(),
-                t,
-                pageNumber);
-            throw new RuntimeException(e);
-        }
+    protected byte[] toTablePageRowKey(String t, long pageNumber) {
+
+        byte[] retValue = Arrays.copyOf(
+            t.getBytes(Charset.forName("UTF-8")),
+            KeyWordMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD
+                + KeyWordMetadataStringCoprocessor.FIXED_WIDTH_CREATION_DATE);
+        Bytes.putLong(retValue, KeyWordMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD, pageNumber);
+        return retValue;
     }
 
     @Override
     protected long extractPageNumber(byte[] rowKey) {
-
         return Bytes.toLong(rowKey, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD);
     }
 
     @Override
-    protected long extractDateOfRowKeyToIndex(byte[] rowKey) {
+    protected long extractPageNumber(byte[] rowKey, int offset, int length) {
+        return Bytes.toLong(rowKey, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + offset);
+    }
+
+    @Override
+    protected long extractDateOfRowKeyOfTabkeSourceToIndex(byte[] rowKey) {
         return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
     }
 
     @Override
     protected String extractMetadataValue(byte[] rowKey) {
         return new String(rowKey, 0, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD);
+    }
+
+    @Override
+    protected String extractMetadataValue(byte[] rowKey, int pos, int length) {
+        return new String(rowKey, 0, AlbumMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + pos);
     }
 
     @Override

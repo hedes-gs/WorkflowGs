@@ -1,5 +1,6 @@
 package com.gs.photos.ws.web.assembler;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -41,8 +42,7 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
 
     @Override
     public Mono<EntityModel<ImageDto>> toModel(ImageDto entity, ServerWebExchange exchange) {
-        EntityModel<ImageDto> resource = EntityModel.of(entity);
-        return Mono.just(this.addLinks(resource, exchange));
+        return this.toReactiveEntityModel(entity);
     }
 
     public ImageAssembler() {
@@ -77,6 +77,10 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
                     .add(t))
             .zipWhen((t) -> this.getLinkForImg(t))
             .map((t) -> this.update(t))
+            .zipWhen((t) -> this.getLinkForDelete(t))
+            .map((t) -> this.update(t))
+            .zipWhen((t) -> this.getLinkForLowResImg(t))
+            .map((t) -> this.update(t))
             .zipWhen((t) -> this.getLinkForSelfRel(t))
             .map((t) -> this.update(t))
             .zipWhen((t) -> this.getLinkForUpd(t))
@@ -108,6 +112,8 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
                     .add(t))
             .zipWhen((t) -> this.getLinkForImg(t))
             .map((t) -> this.update(t))
+            .zipWhen((t) -> this.getLinkForLowResImg(t))
+            .map((t) -> this.update(t))
             .zipWhen((t) -> this.getLinkForSelfRel(t))
             .map((t) -> this.update(t))
             .zipWhen((t) -> this.getLinkForUpd(t))
@@ -117,6 +123,8 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
             .zipWhen((t) -> this.getLinkForNext(t))
             .map((t) -> this.update(t))
             .zipWhen((t) -> this.getLinkForPrev(t))
+            .map((t) -> this.update(t))
+            .zipWhen((t) -> this.getLinkForDelete(t))
             .map((t) -> this.update(t))
             .zipWhen((t) -> baseLink)
             .map((t) -> this.updatePaginationLinks(t, page));
@@ -155,10 +163,26 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
                     entity.getContent()
                         .getData()
                         .getCreationDate(),
+                    1))
+            .withRel(LinkRelation.of("_img"))
+            .toMono();
+    }
+
+    private Mono<Link> getLinkForLowResImg(EntityModel<ImageDto> entity) {
+        return WebFluxLinkBuilder.linkTo(
+            WebFluxLinkBuilder.methodOn(ImageController.class)
+                .getImageWithMediaType(
                     entity.getContent()
                         .getData()
-                        .getVersion()))
-            .withRel(LinkRelation.of("_img"))
+                        .getSalt(),
+                    entity.getContent()
+                        .getData()
+                        .getImageId(),
+                    entity.getContent()
+                        .getData()
+                        .getCreationDate(),
+                    2))
+            .withRel(LinkRelation.of("_lowRes"))
             .toMono();
     }
 
@@ -188,6 +212,27 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
                 .updateRating(entity.getContent()))
             .withRel(LinkRelation.of("_upd"))
             .toMono();
+    }
+
+    private Mono<Link> getLinkForDelete(EntityModel<ImageDto> entity) {
+        try {
+            return WebFluxLinkBuilder.linkTo(
+                WebFluxLinkBuilder.methodOn(ImageController.class)
+                    .delete(
+                        entity.getContent()
+                            .getData()
+                            .getSalt(),
+                        entity.getContent()
+                            .getData()
+                            .getImageId(),
+                        entity.getContent()
+                            .getData()
+                            .getCreationDate()))
+                .withRel(LinkRelation.of("_del"))
+                .toMono();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Mono<Link> getLinkForExif(EntityModel<ImageDto> entity) {

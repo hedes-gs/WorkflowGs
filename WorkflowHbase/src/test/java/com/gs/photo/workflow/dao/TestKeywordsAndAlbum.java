@@ -1,24 +1,23 @@
 package com.gs.photo.workflow.dao;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.hadoop.hbase.client.Connection;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
 import com.gs.photo.workflow.recinhbase.dao.HbaseAlbumDAO;
@@ -36,19 +35,14 @@ import com.gs.photo.workflow.recinhbase.dao.IHbaseImagesOfKeyWordsDAO;
 import com.gs.photo.workflow.recinhbase.dao.IHbaseImagesOfPersonsDAO;
 import com.gs.photo.workflow.recinhbase.dao.IHbaseImagesOfRatingsDAO;
 import com.workflow.model.HbaseImageThumbnail;
-import com.workflow.model.HbaseImagesOfAlbum;
-import com.workflow.model.HbaseImagesOfKeywords;
 import com.workflow.model.HbaseImagesOfRatings;
 import com.workflow.model.HbaseKeywords;
 import com.workflow.model.SizeAndJpegContent;
 
-@RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
         HbaseAlbumDAO.class, HbaseKeywordsDAO.class, HbaseImagesOfAlbumDAO.class, HbaseImagesOfKeywordsDAO.class,
         HbaseApplicationConfig.class, HbaseImagesOfRatingsDAO.class, HbaseRatingsDAO.class,
         HbaseImagesOfPersonsDAO.class, HbasePersonsDAO.class, HbaseImageThumbnailDAO.class, HbaseStatsDAO.class })
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-
 public class TestKeywordsAndAlbum {
     protected static Logger             LOGGER = LoggerFactory.getLogger(TestKeywordsAndAlbum.class);
 
@@ -79,15 +73,13 @@ public class TestKeywordsAndAlbum {
     @Autowired
     protected Connection                connection;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpBeforeClass() throws Exception {}
 
     private static boolean init = true;
 
-    @Before
-    public void setUp() throws Exception {
-
-    }
+    @BeforeEach
+    public void setUp() throws Exception { this.hbaseImageThumbnailDAO.truncate(); }
 
     @Test
     public void test001_countAllShouldReturn2WhenOneHbaseImageThumbnailIsRecordedWith2albums() throws Throwable {
@@ -96,7 +88,10 @@ public class TestKeywordsAndAlbum {
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album2");
-        Assert.assertEquals(2, this.hbaseAlbumDAO.countAll());
+        Assertions.assertEquals(2, this.hbaseAlbumDAO.countAll());
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfAlbumDAO.countAll("album2"));
+
     }
 
     @Test
@@ -106,7 +101,9 @@ public class TestKeywordsAndAlbum {
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album2");
-        Assert.assertEquals(1, this.hbaseAlbumDAO.countAll("album1"));
+        Assertions.assertEquals(1, (int) this.hbaseAlbumDAO.countAll("album1"));
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
+
     }
 
     @Test
@@ -117,7 +114,7 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 1);
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
-        Assert.assertEquals(2, this.hbaseAlbumDAO.countAll("album1"));
+        Assertions.assertEquals(2, (int) this.hbaseAlbumDAO.countAll("album1"));
     }
 
     @Test
@@ -128,7 +125,10 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfKeyWordsDAO.truncate();
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword1");
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword2");
-        Assert.assertEquals(2, this.hbaseKeywordsDAO.countAll());
+        Assertions.assertEquals(2, this.hbaseKeywordsDAO.countAll());
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword2"));
+
         this.hbaseImagesOfKeyWordsDAO.truncate();
     }
 
@@ -140,7 +140,7 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfKeyWordsDAO.truncate();
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword1");
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword2");
-        Assert.assertEquals(1, this.hbaseKeywordsDAO.countAll("keyword2"));
+        Assertions.assertEquals(1, (int) this.hbaseKeywordsDAO.countAll("keyword2"));
         this.hbaseImagesOfKeyWordsDAO.truncate();
     }
 
@@ -152,7 +152,9 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword2");
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 1);
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword2");
-        Assert.assertEquals(2, this.hbaseKeywordsDAO.countAll("keyword2"));
+        Assertions.assertEquals(2, (int) this.hbaseKeywordsDAO.countAll("keyword2"));
+        Assertions.assertEquals(2, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword2"));
+
         this.hbaseImagesOfKeyWordsDAO.truncate();
     }
 
@@ -161,18 +163,21 @@ public class TestKeywordsAndAlbum {
         throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test007");
         this.hbaseImagesOfAlbumDAO.truncate();
+
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("123456", 120L, (short) 1);
-        this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
-        this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album2");
+        this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1_1");
+        this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album2_1");
         HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 1);
-        this.hbaseImagesOfAlbumDAO.addMetaData(hbi2, "album1");
-        this.hbaseImagesOfAlbumDAO.addMetaData(hbi2, "album2");
-        List<HbaseImagesOfAlbum> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(2, images.size());
-        Assert.assertThat(
+        this.hbaseImagesOfAlbumDAO.addMetaData(hbi2, "album1_1");
+        this.hbaseImagesOfAlbumDAO.addMetaData(hbi2, "album2_1");
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1_1");
+        TestKeywordsAndAlbum.LOGGER.info("Found images {}", images);
+        Assertions.assertEquals(2, images.size());
+        MatcherAssert.assertThat(
             images,
-            Matchers
-                .containsInAnyOrder(this.toHbaseImageOfalbum(hbi2, "album1"), this.toHbaseImageOfalbum(hbi, "album1")));
+            Matchers.containsInAnyOrder(
+                this.toHbaseImageOfalbum(hbi2, "album1_1", "album2_1"),
+                this.toHbaseImageOfalbum(hbi, "album1_1", "album2_1")));
     }
 
     @Test
@@ -186,13 +191,13 @@ public class TestKeywordsAndAlbum {
         HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 1);
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi2, "keyword1");
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi2, "keyword2");
-        List<HbaseImagesOfKeywords> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(2, images.size());
-        Assert.assertThat(
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
+        Assertions.assertEquals(2, images.size());
+        MatcherAssert.assertThat(
             images,
             Matchers.containsInAnyOrder(
-                this.toHbaseImageOfKeyword(hbi2, "keyword1"),
-                this.toHbaseImageOfKeyword(hbi, "keyword1")));
+                this.toHbaseImageOfKeyword(hbi2, "keyword1", "keyword2"),
+                this.toHbaseImageOfKeyword(hbi, "keyword1", "keyword2")));
     }
 
     @Test
@@ -205,11 +210,10 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfRatingsDAO.addMetaData(hbi, 5L);
         HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 1);
         this.hbaseImagesOfRatingsDAO.addMetaData(hbi2, 5L);
-        List<HbaseImagesOfRatings> images = this.hbaseImagesOfRatingsDAO.getAllImagesOfMetadata(5L);
-        Assert.assertEquals(2, images.size());
-        Assert.assertThat(
-            images,
-            Matchers.containsInAnyOrder(this.toHbaseImageOfRatings(hbi2), this.toHbaseImageOfRatings(hbi)));
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfRatingsDAO.getAllImagesOfMetadata(5L);
+        Assertions.assertEquals(2, images.size());
+        MatcherAssert.assertThat(images, Matchers.containsInAnyOrder(hbi2, hbi));
+        Assertions.assertEquals(2, this.hbaseImagesOfRatingsDAO.countAll(5l));
     }
 
     @Test
@@ -222,25 +226,28 @@ public class TestKeywordsAndAlbum {
         hbi = this.buildVersionHbaseImageThumbnail("1235", 120L, (short) 1);
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword2");
         final List<HbaseKeywords> all = this.hbaseKeywordsDAO.getAll();
-        Assert.assertEquals(2, all.size());
-        Assert.assertThat(
+        Assertions.assertEquals(2, all.size());
+        MatcherAssert.assertThat(
             all.stream()
                 .map((t) -> t.getKeyword())
                 .collect(Collectors.toList()),
             Matchers.containsInAnyOrder("keyword1", "keyword2"));
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword2"));
+
     }
 
     @Test
     public void test011_getNoKeywordWhenAddingThenDeletingKeyWord() throws Throwable {
         TestKeywordsAndAlbum.LOGGER.info("... test011");
         this.hbaseImagesOfKeyWordsDAO.truncate();
-        HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
+        HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234" + "", 120L, (short) 1);
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword1");
-        List<HbaseImagesOfKeywords> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(1, images.size());
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
+        Assertions.assertEquals(1, images.size());
         this.hbaseImagesOfKeyWordsDAO.deleteMetaData(hbi, "keyword1");
         images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
     }
 
     @Test
@@ -249,18 +256,23 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfKeyWordsDAO.truncate();
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword1");
-        List<HbaseImagesOfKeywords> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(1, images.size());
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
+        Assertions.assertEquals(1, images.size());
+        Assertions.assertEquals(1, this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
         this.hbaseImagesOfKeyWordsDAO.deleteMetaData(hbi, "keyword1");
         images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
+        Assertions.assertEquals(0, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
 
         this.hbaseImagesOfKeyWordsDAO.addMetaData(hbi, "keyword1");
         images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(1, images.size());
+        Assertions.assertEquals(1, images.size());
+        Assertions.assertEquals(1, this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
         this.hbaseImagesOfKeyWordsDAO.deleteMetaData(hbi, "keyword1");
         images = this.hbaseImagesOfKeyWordsDAO.getAllImagesOfMetadata("keyword1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
+        Assertions.assertEquals(0, (int) this.hbaseImagesOfKeyWordsDAO.countAll("keyword1"));
+
     }
 
     @Test
@@ -269,11 +281,14 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfAlbumDAO.truncate();
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
-        List<HbaseImagesOfAlbum> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(1, images.size());
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
+        Assertions.assertEquals(1, images.size());
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
         this.hbaseImagesOfAlbumDAO.deleteMetaData(hbi, "album1");
         images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
+        Assertions.assertEquals(0, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
+
     }
 
     @Test
@@ -282,32 +297,60 @@ public class TestKeywordsAndAlbum {
         this.hbaseImagesOfAlbumDAO.truncate();
         HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234", 120L, (short) 1);
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
-        List<HbaseImagesOfAlbum> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(1, images.size());
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
+        Assertions.assertEquals(1, images.size());
         this.hbaseImagesOfAlbumDAO.deleteMetaData(hbi, "album1");
         images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
 
         this.hbaseImagesOfAlbumDAO.addMetaData(hbi, "album1");
         images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(1, images.size());
+        Assertions.assertEquals(1, images.size());
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
         this.hbaseImagesOfAlbumDAO.deleteMetaData(hbi, "album1");
         images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("album1");
-        Assert.assertEquals(0, images.size());
+        Assertions.assertEquals(0, images.size());
+        Assertions.assertEquals(0, (int) this.hbaseImagesOfAlbumDAO.countAll("album1"));
+
     }
 
-    private HbaseImagesOfKeywords toHbaseImageOfKeyword(HbaseImageThumbnail hbi, String kw) {
-        return HbaseImagesOfKeywords.builder()
-            .withThumbNailImage(hbi)
-            .withKeyword(kw)
-            .build();
+    @Test
+    public void test015_getAllOfRatings5ShouldReturn0ElementsWhen2HbaseImageThumbnailIsRecordedWith2RatingsOfFiveThenDeleted()
+        throws Throwable {
+        TestKeywordsAndAlbum.LOGGER.info("... test015");
+
+        HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("123456", 120L, (short) 1);
+        this.hbaseImagesOfRatingsDAO.truncate();
+        this.hbaseImagesOfRatingsDAO.addMetaData(hbi, 5L);
+        HbaseImageThumbnail hbi2 = this.buildVersionHbaseImageThumbnail("123567", 120L, (short) 1);
+        this.hbaseImagesOfRatingsDAO.addMetaData(hbi2, 5L);
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfRatingsDAO.getAllImagesOfMetadata(5L);
+        Assertions.assertEquals(2, images.size());
+        Assertions.assertEquals(2, this.hbaseImagesOfRatingsDAO.countAll(5l));
+
+        this.hbaseImagesOfRatingsDAO.deleteMetaData(hbi, 5L);
+        List<HbaseImageThumbnail> imagesAfterDelete = this.hbaseImagesOfRatingsDAO.getAllImagesOfMetadata(5L);
+        Assertions.assertEquals(1, imagesAfterDelete.size());
+        Assertions.assertEquals(1, (int) this.hbaseImagesOfRatingsDAO.countAll(5l));
+        MatcherAssert.assertThat(imagesAfterDelete, Matchers.containsInAnyOrder(hbi2));
+
+        this.hbaseImagesOfRatingsDAO.deleteMetaData(hbi2, 5L);
+        imagesAfterDelete = this.hbaseImagesOfRatingsDAO.getAllImagesOfMetadata(5L);
+        Assertions.assertEquals(0, imagesAfterDelete.size());
+        Assertions.assertEquals(0, (int) this.hbaseImagesOfRatingsDAO.countAll(5l));
+
     }
 
-    private HbaseImagesOfAlbum toHbaseImageOfalbum(HbaseImageThumbnail hbi, String album) {
-        return HbaseImagesOfAlbum.builder()
-            .withThumbNailImage(hbi)
-            .withAlbumName(album)
-            .build();
+    private HbaseImageThumbnail toHbaseImageOfKeyword(HbaseImageThumbnail hbi, String... kw) {
+        hbi.getKeyWords()
+            .addAll(Arrays.asList(kw));
+        return hbi;
+    }
+
+    private HbaseImageThumbnail toHbaseImageOfalbum(HbaseImageThumbnail hbi, String... album) {
+        hbi.getAlbums()
+            .addAll(Arrays.asList(album));
+        return hbi;
     }
 
     private HbaseImagesOfRatings toHbaseImageOfRatings(HbaseImageThumbnail hbi) {
@@ -331,6 +374,8 @@ public class TestKeywordsAndAlbum {
                 .build());
 
         HbaseImageThumbnail hbaseData = HbaseImageThumbnail.builder()
+            .withPersons(new HashSet<>())
+            .withRegionSalt((short) 0x10)
             .withCreationDate(creationDate)
             .withImageId(id)
             .withImageName("Mon Image")
@@ -345,7 +390,7 @@ public class TestKeywordsAndAlbum {
             .withCamera("Alpha9")
             .withCopyright("gs")
             .withFocalLens(new int[] { 2, 3 })
-            .withImportName("Mon import")
+            .withImportName(new HashSet<>(Collections.singleton("Mon import")))
             .withIsoSpeed((short) 2)
             .withKeyWords(keywords)
             .withLens(new byte[] { 3, 4 })

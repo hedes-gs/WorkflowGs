@@ -84,6 +84,4 @@
 		<name>dfs.client.socket-timeout</name>
 		<value>360000</value>
 	</property>
-	
-	
 </configuration>

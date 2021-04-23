@@ -5,28 +5,16 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.workflow.recinhbase.DateTimeHelper;
-import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
-import com.gs.photo.workflow.recinhbase.dao.HbaseStatsDAO;
+import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.workflow.recinhbase.dao.IHbaseStatsDAO;
 import com.workflow.model.HbaseImageThumbnailKey;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = { HbaseStatsDAO.class, HbaseApplicationConfig.class })
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-
+// @SpringBootTest(classes = { HbaseStatsDAO.class, HbaseApplicationConfig.class })
 public class TestHbaseStatsDAO {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(TestHbaseStatsDAO.class);
@@ -34,8 +22,7 @@ public class TestHbaseStatsDAO {
     @Autowired
     protected IHbaseStatsDAO      hbaseStatsDAO;
 
-    @Test
-    @Ignore
+    // @Test
     public void test001() throws IOException {
 
         this.hbaseStatsDAO.truncate();
@@ -70,7 +57,7 @@ public class TestHbaseStatsDAO {
         this.hbaseStatsDAO.flush();
         retValue.forEach((k) -> {
             try {
-                Assert.assertEquals(3, this.hbaseStatsDAO.countImages(k));
+                Assertions.assertEquals(3, this.hbaseStatsDAO.countImages(k));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -78,8 +65,6 @@ public class TestHbaseStatsDAO {
 
     }
 
-    @Test
-    @Ignore
     public void test002() throws IOException {
 
         this.hbaseStatsDAO.truncate();
@@ -116,7 +101,7 @@ public class TestHbaseStatsDAO {
         retValue.forEach((k) -> {
             try {
                 TestHbaseStatsDAO.LOGGER.info("For key {} found {}", k, this.hbaseStatsDAO.getImages(k, 5));
-                Assert.assertEquals(imgs, this.hbaseStatsDAO.getImages(k, 5));
+                Assertions.assertEquals(imgs, this.hbaseStatsDAO.getImages(k, 5));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

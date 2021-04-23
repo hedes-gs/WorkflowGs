@@ -1,22 +1,19 @@
 package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.hadoop.hbase.CompareOperator;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.RetriesExhaustedWithDetailsException;
-import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.RegexStringComparator;
-import org.apache.hadoop.hbase.filter.RowFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,15 +23,19 @@ import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfKeywords;
 import com.workflow.model.ModelConstants;
 
-public abstract class AbstractHbaseImagesOfKeywordsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfKeywords, String>
-    implements IImagesOfKeyWordsDAO {
+import reactor.core.publisher.Flux;
 
-    private static Logger        LOGGER = LoggerFactory.getLogger(AbstractHbaseImagesOfKeywordsDAO.class);
+public abstract class AbstractHbaseImagesOfKeywordsDAO
+    extends AbstractHbaseImagesOfMetadataDAO<HbaseImagesOfKeywords, String> implements IImagesOfKeyWordsDAO {
+
+    private static Logger         LOGGER               = LoggerFactory
+        .getLogger(AbstractHbaseImagesOfKeywordsDAO.class);
+    protected static final String METADATA_FAMILY_NAME = "keywords";
 
     @Autowired
-    protected IImageThumbnailDAO hbaseImageThumbnailDAO;
+    protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
     @Autowired
-    protected IKeywordsDAO       hbaseKeywordsDAO;
+    protected IKeywordsDAO        hbaseKeywordsDAO;
 
     @Override
     protected void initializePageTable(Table table) throws IOException {}
@@ -57,7 +58,7 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO extends HbaseImagesOfMeta
     public void deleteMetaData(HbaseImageThumbnail hbi, String metaData) {
         try {
             byte[] keyValue = this.hbaseImageThumbnailDAO.createKey(hbi);
-            Delete del = new Delete(keyValue).addColumn(
+            Delete del = new Delete(keyValue).addColumns(
                 HbaseImageThumbnail.TABLE_FAMILY_KEYWORDS_AS_BYTES,
                 metaData.getBytes(Charset.forName("UTF-8")));
             this.hbaseImageThumbnailDAO.delete(del);
@@ -65,40 +66,6 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO extends HbaseImagesOfMeta
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public List<HbaseImagesOfKeywords> getAllImagesOfMetadata(String keyword) {
-        List<HbaseImagesOfKeywords> retValue = new ArrayList<>();
-        try (
-            Table table = this.connection.getTable(
-                this.getHbaseDataInformation()
-                    .getTable())) {
-            Filter f = new RowFilter(CompareOperator.EQUAL, new RegexStringComparator(keyword + ".*"));
-            byte[] startKey = null;
-
-            Scan scan = new Scan().withStartRow(startKey);
-            scan.setFilter(f);
-            HbaseImagesOfKeywords hbt = HbaseImagesOfKeywords.builder()
-                .withKeyword(keyword)
-                .withCreationDate(0)
-                .withImageId("")
-                .build();
-            byte[] keyStartValue = new byte[this.hbaseDataInformation.getKeyLength()];
-
-            this.hbaseDataInformation.buildKey(hbt, keyStartValue);
-            scan.withStartRow(keyStartValue);
-
-            ResultScanner rs = table.getScanner(scan);
-            rs.forEach((t) -> this.buildImagesOfKeyword(retValue, t));
-        } catch (IOException e) {
-            AbstractHbaseImagesOfKeywordsDAO.LOGGER.warn("Error ", e);
-            throw new RuntimeException(e);
-        }
-        AbstractHbaseImagesOfKeywordsDAO.LOGGER.info("-> end of getAllImagesOfMetadata for {} ", keyword);
-
-        return retValue;
-
     }
 
     protected void buildImagesOfKeyword(List<HbaseImagesOfKeywords> retValue, Result t) {
@@ -122,54 +89,111 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO extends HbaseImagesOfMeta
     }
 
     @Override
-    protected int getOffsetOfImageId() {
-        return ModelConstants.FIXED_WIDTH_KEYWORD + ModelConstants.FIXED_WIDTH_CREATION_DATE;
-    }
-
-    @Override
-    protected int getLengthOfMetaDataKey() { return ModelConstants.FIXED_WIDTH_KEYWORD; }
-
-    @Override
-    protected int compare(HbaseImagesOfKeywords t1, HbaseImagesOfKeywords t2) {
-
-        final long cmpOfCreationDate = t1.getCreationDate() - t2.getCreationDate();
-        if (cmpOfCreationDate == 0) { return t1.getImageId()
-            .compareTo(t2.getImageId()); }
-        return (int) cmpOfCreationDate;
-    }
-
-    @Override
-    protected byte[] getMinRowProvider() {
-        return this.getKey(
-            HbaseImagesOfKeywords.builder()
-                .withKeyword("")
-                .withCreationDate(0)
-                .withImageId(" ")
-                .build());
-    }
-
-    @Override
-    protected byte[] getMaxRowProvider() {
-        return this.getKey(
-            HbaseImagesOfKeywords.builder()
-                .withKeyword("")
-                .withCreationDate(Long.MAX_VALUE)
-                .withImageId(" ")
-                .build());
-    }
-
-    @Override
-    protected long getNbOfElements(String key) {
+    public Flux<HbaseImageThumbnail> getAllImagesOfMetadata(String keyword, int pageNumber, int pageSize) {
         try {
-            return this.hbaseKeywordsDAO.countAll(key);
-        } catch (Throwable e) {
+            Table pageTable = this.connection.getTable(
+                this.getHbaseDataInformation()
+                    .getPageTable());
+            Table thumbTable = this.connection.getTable(this.hbaseImageThumbnailDAO.getTableName());
+            return super.buildPageAsflux(
+                AbstractHbaseImagesOfKeywordsDAO.METADATA_FAMILY_NAME,
+                keyword,
+                pageSize,
+                pageNumber,
+                pageTable,
+                thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
+                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    protected void closeTables(Table pageTable, Table thumbTable) {
+        try {
+            pageTable.close();
+            thumbTable.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Flux<HbaseImageThumbnail> getPrevious(String meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getPrevious(meta, hbi);
+    }
+
+    @Override
+    public Flux<HbaseImageThumbnail> getNext(String meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getNext(meta, hbi);
+    }
+
+    @Override
+    public void delete(HbaseImagesOfKeywords hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                        // stub
+    }
+
+    @Override
+    protected byte[] getRowKey(String t, HbaseImageThumbnail hbi) {
+        try {
+            byte[] rowKey = this.hbaseImageThumbnailDAO.getKey(hbi);
+            byte[] retValue = new byte[rowKey.length + ModelConstants.FIXED_WIDTH_KEYWORD];
+            final byte[] bytes = t.getBytes("UTF-8");
+            System.arraycopy(rowKey, 0, retValue, ModelConstants.FIXED_WIDTH_KEYWORD, rowKey.length);
+            System.arraycopy(bytes, 0, retValue, 0, bytes.length);
+            return retValue;
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected Filter getFilterFor(String key) {
-        return new RowFilter(CompareOperator.EQUAL, new RegexStringComparator(key, Pattern.CASE_INSENSITIVE));
+    protected int getIndexOfImageRowKeyInTablePage() { return 0; }
+
+    @Override
+    protected TableName getMetaDataTable() { return this.hbaseKeywordsDAO.getTableName(); }
+
+    @Override
+    protected byte[] getRowKeyForMetaDataTable(String metadata) {
+        return Arrays.copyOf(metadata.getBytes(Charset.forName("UTF-8")), ModelConstants.FIXED_WIDTH_KEYWORD);
+    }
+
+    @Override
+    protected HbaseImageThumbnail toHbaseImageThumbnail(byte[] rowKey) {
+        return this.hbaseImageThumbnailDAO.get(rowKey);
+    }
+
+    @Override
+    protected HbaseImagesOfKeywords build(Integer salt, String meta, HbaseImageThumbnail t) {
+        return HbaseImagesOfKeywords.builder()
+            .withThumbNailImage(t)
+            .withKeyword(meta)
+            .build();
+
+    }
+
+    @Override
+    protected byte[] toHbaseKey(HbaseImagesOfKeywords him) { return this.getHbaseDataInformation()
+        .buildKey(him); }
+
+    @Override
+    protected Get createGetQueryForTablePage(String metaData, Integer x) {
+        try {
+            byte[] rowKey = new byte[8 + ModelConstants.FIXED_WIDTH_KEYWORD];
+            byte[] metaDataAsbytes = metaData.getBytes("UTF-8");
+            byte[] xAsbyte = new byte[8];
+            Bytes.putLong(xAsbyte, 0, x);
+
+            // Arrays.fill(rowKey, (byte) 0x20);
+            System.arraycopy(metaDataAsbytes, 0, rowKey, 0, metaDataAsbytes.length);
+            System.arraycopy(xAsbyte, 0, rowKey, ModelConstants.FIXED_WIDTH_KEYWORD, xAsbyte.length);
+            Get get = new Get(rowKey);
+            return get;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

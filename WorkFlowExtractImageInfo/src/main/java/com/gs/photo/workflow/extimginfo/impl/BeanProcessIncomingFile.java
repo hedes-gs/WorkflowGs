@@ -136,7 +136,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             try {
                 this.doProcessFile();
             } catch (Throwable e) {
-                BeanProcessIncomingFile.LOGGER.error("An error is raised {}", ExceptionUtils.getStackTrace(e)));
+                BeanProcessIncomingFile.LOGGER.error("An error is raised {}", ExceptionUtils.getStackTrace(e));
                 ready = !((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException));
             } finally {
                 try {

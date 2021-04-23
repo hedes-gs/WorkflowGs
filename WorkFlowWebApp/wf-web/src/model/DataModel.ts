@@ -5,7 +5,12 @@ import { ObjectMapper, JsonProperty, CacheKey, Deserializer, Serializer } from '
 import 'reflect-metadata';
 import { array } from 'prop-types';
 import MomentTimezone from 'moment-timezone';
-import { Moment } from 'moment'
+
+
+import { Moment } from 'moment-timezone';
+
+
+
 
 class MapDeserializer implements Deserializer {
     deserialize = (value: any): any => {
@@ -97,6 +102,9 @@ export class ImageKeyDto {
     imageId: string = '';
 }
 
+
+
+
 export class DefaultLink {
     self?: PageLink | null = null;
 }
@@ -107,9 +115,15 @@ export class ExifsLink extends DefaultLink {
     _next?: PageLink | null = null;
 }
 
+export class MinMaxDatesLinks {
+    _subinterval?: PageLink | null = null;
+    _imgs?: PageLink | null = null;
+}
+
 export class ImageLinks extends DefaultLink {
     _exif?: PageLink | null = null;
     _img?: PageLink | null = null;
+    _lowRes?: PageLink | null = null;
     _upd?: PageLink | null = null;
     _prev?: PageLink | null = null;
     _next?: PageLink | null = null;
@@ -143,7 +157,25 @@ export class MetadataWrapper {
     _embedded: StringsOfMetadata | null = null;
 }
 
+export class MinMaxDatesDto {
+    @JsonProperty({
+        type: MomentType,
+        deserializer: MomentSerializerDeserializer,
+        serializer: MomentSerializerDeserializer
+    })
+    minDate?: Moment | null = null;
+    @JsonProperty({
+        type: MomentType,
+        deserializer: MomentSerializerDeserializer,
+        serializer: MomentSerializerDeserializer
+    })
+    maxDate?: Moment | null = null;
+    countNumber: number = 0;
+    intervallType: string = '';
+    @JsonProperty({ type: MinMaxDatesLinks })
+    _links?: MinMaxDatesLinks | null = null;
 
+}
 export class ImageDto {
 
     @JsonProperty({ type: ImageKeyDto })
@@ -260,6 +292,12 @@ export function toSingleImageDto(json: string): ImageDto {
     let imgDto: ImageDto = ObjectMapper.deserialize(ImageDto, json);
     return imgDto;
 }
+
+export function toSingleMinMaxDto(json: string): MinMaxDatesDto {
+    let minMaxDatesDto: MinMaxDatesDto = ObjectMapper.deserialize(MinMaxDatesDto, json);
+    return minMaxDatesDto;
+}
+
 
 export function toExif(json: string): ExifOfImages {
     let exifs: ExifOfImages = ObjectMapper.deserialize(ExifOfImages, json);

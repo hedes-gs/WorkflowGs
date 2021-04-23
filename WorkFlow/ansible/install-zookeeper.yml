@@ -1,4 +1,4 @@
-- hosts: 192.168.1.200,192.168.1.201,192.168.1.202
+- hosts: ipc0,ipc1,ipc2,ipc7,ipc8
   become: true
   tasks:
     - debug:
@@ -11,6 +11,7 @@
         home: /home/zookeeper
     - name: stop zookeeper service
       shell: "systemctl stop zookeeper"
+      ignore_errors: yes
     - name: Download zookeeper {{ zookeeper_version }}
       get_url: 
         url: https://downloads.apache.org/zookeeper/zookeeper-{{ zookeeper_version }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz
@@ -75,9 +76,11 @@
         mode: 0644
 
     - name: copy zookeeper.keytab
+      vars:
+        Zookeeper_id: "{{ zk_hosts[inventory_hostname].id }}"
       copy:
         owner: zookeeper
-        src: ./tools/zookeeper/zookeeper_all.keytab
+        src: ./tools/zookeeper/zookeeper.keytab
         dest: "{{ zookeeper_install_folder }}/latest/conf/zookeeper.keytab"
         mode: 0600
     - name: copy zookeeper.service
@@ -98,17 +101,23 @@
     user_to_create: zookeeper
     PWD: "{{ lookup('env', 'PWD') }}"
     zookeeper_install_folder: /home/zookeeper
-    zookeeper_version: 3.6.2
+    zookeeper_version: 3.7.0
     
     
     PWD: "{{ lookup('env', 'PWD') }}"
     zk_hosts:
-      192.168.1.200:
+      ipc0:
         value: ipc0
         id: 1
-      192.168.1.201:
+      ipc1:
         value: ipc1
         id: 2
-      192.168.1.202:
+      ipc2:
         value: ipc2
         id: 3
+      ipc7:
+        value: ipc7
+        id: 4
+      ipc8:
+        value: ipc8
+        id: 5

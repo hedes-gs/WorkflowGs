@@ -54,14 +54,11 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
                 this.getHbaseDataInformation()
                     .getTable())) {
             Scan scan = new Scan();
-            scan.addColumn(HbaseExifDataDAO.FAMILY_EXV_BYTES, HbaseExifDataDAO.COLUMN_EXV_BYTES);
-            scan.addColumn(HbaseExifDataDAO.FAMILY_EXV_BYTES, HbaseExifDataDAO.COLUMN_EXV_INTS);
-            scan.addColumn(HbaseExifDataDAO.FAMILY_EXV_BYTES, HbaseExifDataDAO.COLUMN_EXV_SHORTS);
+            scan.addFamily(HbaseExifDataDAO.FAMILY_EXV_BYTES);
             final byte[] imageIdAsbytes = imageId.getBytes("UTF-8");
-            byte[] prefixFilter = new byte[2 + ModelConstants.FIXED_WIDTH_IMAGE_ID + ModelConstants.FIXED_WIDTH_EXIF_TAG
-                + ModelConstants.FIXED_WIDTH_EXIF_PATH];
-            byte[] stopRow = new byte[2 + ModelConstants.FIXED_WIDTH_IMAGE_ID + ModelConstants.FIXED_WIDTH_EXIF_TAG
-                + ModelConstants.FIXED_WIDTH_EXIF_PATH];
+            byte[] prefixFilter = new byte[2 + ModelConstants.FIXED_WIDTH_IMAGE_ID
+                + ModelConstants.FIXED_WIDTH_EXIF_TAG];
+            byte[] stopRow = new byte[2 + ModelConstants.FIXED_WIDTH_IMAGE_ID + ModelConstants.FIXED_WIDTH_EXIF_TAG];
             HbaseExifDataDAO.LOGGER.info("Retreive exif for salt {} - {} ", salt, imageId);
             Bytes.putAsShort(prefixFilter, 0, salt);
             System.arraycopy(imageIdAsbytes, 0, prefixFilter, 2, imageIdAsbytes.length);
@@ -73,7 +70,6 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
 
             ResultScanner rs = table.getScanner(scan);
             rs.forEach((t) -> {
-                HbaseExifDataDAO.LOGGER.info("For salt {} - {} - found somethnig ! ", salt, imageId);
                 HbaseExifDataOfImages instance = new HbaseExifDataOfImages();
                 this.hbaseDataInformation.build(instance, t);
                 this.toExif(instance, imageKey)
@@ -121,6 +117,11 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
             HbaseExifDataDAO.LOGGER.warn("Error when retrieving exif {}", e.getMessage());
         }
         return Optional.empty();
+    }
+
+    @Override
+    public void delete(HbaseExifDataOfImages hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                        // stub
     }
 
 }

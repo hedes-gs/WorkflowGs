@@ -1,5 +1,6 @@
 package com.gs.photos.ws.repositories;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -42,17 +43,21 @@ public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
 
     Optional<ImageDto> addPerson(String id, OffsetDateTime creationDate, int version, String person);
 
-    void addAlbum(String id, OffsetDateTime creationDate, int version, String album);
+    Optional<ImageDto> addAlbum(String id, OffsetDateTime creationDate, int version, String album);
+
+    Optional<ImageDto> deleteAlbum(String id, OffsetDateTime creationDate, int version, String album);
 
     Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
 
     Optional<ImageDto> deletePerson(String id, OffsetDateTime creationDate, int version, String keyword);
 
-    void delete(OffsetDateTime creationDate, String id, int version);
+    void delete(OffsetDateTime creationDate, String id) throws IOException;
 
     Flux<ImageDto> findLastImagesByKeyword(int pageSize, int pageNumber, String keyword);
 
     Flux<ImageDto> findLastImagesByPerson(int pageSize, int pageNumber, String person);
+
+    Flux<ImageDto> findImagesByAlbum(int pageSize, int pageNumber, String album);
 
     ImageDto toImageDTO(HbaseImageThumbnail e);
 

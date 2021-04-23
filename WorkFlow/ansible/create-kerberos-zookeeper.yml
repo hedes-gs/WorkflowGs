@@ -1,4 +1,4 @@
-- hosts: 192.168.1.206
+- hosts: ipc6
   become: true
   tasks:
     - debug:
@@ -6,36 +6,38 @@
     - name: del princip
       shell: kadmin.local -q 'delprinc -force  zookeeper/{{ item }}@GS.COM' 
       loop:
+        - ipc0
+        - ipc1
+        - ipc2
         - ipc6
+        - ipc7
+        - ipc8
     - name: rm keytab
-      shell: rm -f /home/user/keytabs/zk_{{ item }}.keytab
-      loop:
-        - ipc6
+      shell: rm -f /home/user/keytabs/zookeeper.keytab
     - name: ADd princip
       shell: kadmin.local -q 'addprinc  -pw zookeeper zookeeper/{{ item }}@GS.COM' 
       loop:
+        - ipc0
+        - ipc1
+        - ipc2
         - ipc6
+        - ipc7
+        - ipc8
     - name: create keytab
-      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/zk_{{ item }}.keytab  zookeeper/{{ item }}@GS.COM'
+      shell: kadmin.local -q 'ktadd -k /home/user/keytabs/zookeeper.keytab  zookeeper/{{ item }}@GS.COM'
       loop:
+        - ipc0
+        - ipc1
+        - ipc2
         - ipc6
+        - ipc7
+        - ipc8
     - name: get keytab
       fetch:
-        src: /home/user/keytabs/zk_{{ item }}.keytab
+        src: /home/user/keytabs/zookeeper.keytab
         dest: ./tools/zookeeper/
         flat: yes
-      loop:
-        - ipc6
-
- 
   vars:
     ansible_become_pass: granada01
     user_to_create: zookeeper
     PWD: "{{ lookup('env', 'PWD') }}"
-    ids:
-      192.168.1.200:
-        value: IPC0
-      192.168.1.201:
-        value: IPC1
-      192.168.1.202:
-        value: IPC2

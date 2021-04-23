@@ -75,4 +75,8 @@ public class HbaseKeywordsDAO extends AbstractHbaseKeywordsDAO implements IHbase
         return super.countAll(metaData.getKeyword());
     }
 
+    @Override
+    public void delete(HbaseKeywords hbaseData, String family, String column) { // TODO Auto-generated method stub
+    }
+
 }

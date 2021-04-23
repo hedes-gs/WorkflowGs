@@ -35,7 +35,7 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
     protected byte[] getTableSourceFamily() { return PersonMetadataStringCoprocessor.SOURCE_FAMILY; }
 
     @Override
-    protected byte[] toRowKey(String t, long pageNumber) {
+    protected byte[] toTablePageRowKey(String t, long pageNumber) {
         byte[] retValue = Arrays.copyOf(
             t.getBytes(Charset.forName("UTF-8")),
             PersonMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD
@@ -56,7 +56,7 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
     }
 
     @Override
-    protected long extractDateOfRowKeyToIndex(byte[] rowKey) {
+    protected long extractDateOfRowKeyOfTabkeSourceToIndex(byte[] rowKey) {
         return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
     }
 
@@ -66,12 +66,13 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
     }
 
     @Override
-    protected byte[] buildTableMetaDataRowKey(String metaData, byte[] row) {
-        byte[] retValue = Arrays.copyOf(
-            metaData.getBytes(Charset.forName("UTF-8")),
-            PersonMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + row.length);
-        System.arraycopy(row, 0, retValue, PersonMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD, row.length);
-        return retValue;
+    protected long extractPageNumber(byte[] rowKey, int offset, int length) {
+        return Bytes.toLong(rowKey, PersonMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + offset);
+    }
+
+    @Override
+    protected String extractMetadataValue(byte[] rowKey, int pos, int length) {
+        return new String(rowKey, 0, PersonMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + pos);
     }
 
     @Override
@@ -80,7 +81,7 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
             .get(PersonMetadataStringCoprocessor.SOURCE_FAMILY);
         if ((albumCells != null) && (albumCells.size() > 0)) {
             List<Cell> cells = put.getFamilyCellMap()
-                .get(PaginationCoprocessor.TABLE_SOURCE_THUMBNAIL);
+                .get(ImagesPageCoprocessor.TABLE_SOURCE_THUMBNAIL);
 
             if ((cells != null) && (cells.size() > 0)) {
                 return cells.stream()
@@ -94,7 +95,7 @@ public class PersonMetadataStringCoprocessor extends AbstractMetadataStringCopro
                     .findFirst()
                     .isPresent();
             } else {
-                PaginationCoprocessor.LOGGER
+                ImagesPageCoprocessor.LOGGER
                     .warn("Unable to find some thumbnail for {} ", AbstractPageProcessor.toHexString(put.getRow()));
                 return true;
             }

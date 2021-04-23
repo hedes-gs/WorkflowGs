@@ -101,8 +101,7 @@
 	</property>
 	<property>
 		<name>dfs.namenode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nn.keytab
-		</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nn.keytab</value>
 	</property>
 	<property>
 		<name>dfs.namenode.kerberos.internal.spnego.principal</name>
@@ -115,8 +114,7 @@
 
 	<property>
 		<name>dfs.web.authentication.kerberos.keytab</name>
-		<value>{{ hadoop_install_folder
-			}}/latest/keytabs/spnego.service.keytab</value>
+		<value>{{ hadoop_install_folder}}/latest/keytabs/spnego.service.keytab</value>
 	</property>
 	<property>
 		<name>dfs.http.policy</name>
@@ -135,8 +133,7 @@
 	</property>
 	<property>
 		<name>dfs.secondary.namenode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_sn.keytab
-		</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_sn.keytab</value>
 	</property>
 	<property>
 		<name>dfs.secondary.namenode.kerberos.principal</name>
@@ -171,8 +168,7 @@
 	</property>
 	<property>
 		<name>dfs.datanode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_dn.keytab
-		</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_dn.keytab</value>
 	</property>
 	<property>
 		<name>dfs.data.transfer.protection</name>
@@ -192,8 +188,7 @@
 	</property>
 	<property>
 		<name>dfs.journalnode.keytab.file</name>
-		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_jn.keytab
-		</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_jn.keytab</value>
 	</property>
 	<property>
 		<name>dfs.journalnode.kerberos.internal.spnego.principal</name>
@@ -201,8 +196,7 @@
 	</property>
 	<property>
 		<name>dfs.web.authentication.kerberos.keytab</name>
-		<value>{{ hadoop_install_folder
-			}}/latest/keytabs/spnego.service.keytab</value>
+		<value>{{ hadoop_install_folder }}/latest/keytabs/spnego.service.keytab</value>
 	</property>
 	<property>
 		<name>dfs.journalnode.https-address</name>
@@ -216,13 +210,12 @@
 		<value>nm/_HOST@GS.COM</value>
 	</property>
 	<property>
-		<name>yarn.resourcemanager.principal	</name>
+		<name>yarn.resourcemanager.principal</name>
 		<value>rm/_HOST@GS.COM</value>
 	</property>
 	<property>
 		<name>yarn.nodemanager.keytab</name>
-		<value>/{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nm.keytab
-		</value>
+		<value>/{{ hadoop_install_folder }}/latest/keytabs/hdfs_all_nm.keytab</value>
 	</property>
 	<property>
 		<name>yarn.nodemanager.container-executor.class</name>

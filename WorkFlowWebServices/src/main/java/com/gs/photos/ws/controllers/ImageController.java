@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +37,7 @@ import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photos.ws.repositories.IImageRepository;
 import com.gs.photos.ws.services.KafkaConsumerService;
 import com.gs.photos.ws.web.assembler.ImageAssembler;
+import com.gs.photos.ws.web.assembler.MinMaxDateAssembler;
 import com.gs.photos.ws.web.assembler.PageImageAssembler;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.ImageKeyDto;
@@ -60,6 +60,12 @@ public class ImageController {
 
     @Autowired
     protected ImageAssembler       imageAssembler;
+
+    @Autowired
+    protected MinMaxDateAssembler  minMaxDateAssembler;
+
+    @Autowired
+    protected PageImageAssembler   pagedAssembler;
 
     public ImageController() {}
 
@@ -92,16 +98,14 @@ public class ImageController {
         return this.imageAssembler.toModel(img.orElseThrow(), null);
     }
 
-    @GetMapping("/images/delete/{salt}/{id}/{creationDate}/{version}")
-    public Mono<EntityModel<ImageDto>> delete(
+    @PostMapping("/images/delete/{salt}/{id}/{creationDate}")
+    public Mono<Void> delete(
         @PathVariable short salt,
         @PathVariable String id,
-        @PathVariable OffsetDateTime creationDate,
-        @PathVariable int version
+        @PathVariable OffsetDateTime creationDate
     ) throws IOException {
-        Optional<ImageDto> img = this.repository.findById(salt, creationDate, id, version);
-        img.ifPresent((i) -> this.kafkaConsumerService.checkout(i));
-        return this.imageAssembler.toModel(img.orElseThrow(), null);
+        this.repository.delete(salt, creationDate, id);
+        return Mono.empty();
     }
 
     @GetMapping("/images/count/all/{intervallType}")
@@ -114,66 +118,78 @@ public class ImageController {
         return ResponseEntity.ok(this.repository.getDatesLimit());
     }
 
-    @GetMapping("/images/odt/dates/limits/{intervalType}/{firstDate}/{lastDate}")
-    public @ResponseBody ResponseEntity<List<MinMaxDatesDto>> getLimits(
+    @GetMapping(path = "/images/dates/limits/allyears", produces = "application/stream+json")
+    public Flux<EntityModel<MinMaxDatesDto>> getAllYears() throws IOException {
+        MinMaxDatesDto minMax = this.repository.getDatesLimit();
+        Flux<MinMaxDatesDto> result = this.repository.getListOfYearsBetween(
+            minMax.getMinDate()
+                .with(TemporalAdjusters.firstDayOfYear())
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0),
+            minMax.getMaxDate()
+                .with(TemporalAdjusters.lastDayOfYear())
+                .withHour(23)
+                .withMinute(59)
+                .withSecond(59));
+        return this.minMaxDateAssembler.toFlux(result, null);
+    }
+
+    @GetMapping(path = "/images/odt/dates/limits/{intervalType}/{firstDate}/{lastDate}", produces = "application/stream+json")
+    public Flux<EntityModel<MinMaxDatesDto>> getLimits(
         @PathVariable String intervalType,
         @PathVariable OffsetDateTime firstDate,
         @PathVariable OffsetDateTime lastDate
     ) throws IOException {
-        Optional<List<MinMaxDatesDto>> entity = Optional.empty();
+        Flux<MinMaxDatesDto> result = Flux.empty();
         switch (intervalType) {
             case "year":
-                entity = Optional.of(
-                    this.repository.getListOfYearsBetween(
-                        firstDate.with(TemporalAdjusters.firstDayOfYear())
-                            .withHour(0)
-                            .withMinute(0)
-                            .withSecond(0),
-                        lastDate.with(TemporalAdjusters.lastDayOfYear())
-                            .withHour(23)
-                            .withMinute(59)
-                            .withSecond(59)));
+                result = this.repository.getListOfYearsBetween(
+                    firstDate.with(TemporalAdjusters.firstDayOfYear())
+                        .withHour(0)
+                        .withMinute(0)
+                        .withSecond(0),
+                    lastDate.with(TemporalAdjusters.lastDayOfYear())
+                        .withHour(23)
+                        .withMinute(59)
+                        .withSecond(59));
                 break;
             case "month":
-                entity = Optional.of(
-                    this.repository.getListOfMonthsBetween(
-                        firstDate.with(TemporalAdjusters.firstDayOfMonth())
-                            .withHour(0)
-                            .withMinute(0)
-                            .withSecond(0),
-                        lastDate.with(TemporalAdjusters.lastDayOfMonth())
-                            .withHour(23)
-                            .withMinute(59)
-                            .withSecond(59)));
+                result = this.repository.getListOfMonthsBetween(
+                    firstDate.with(TemporalAdjusters.firstDayOfMonth())
+                        .withHour(0)
+                        .withMinute(0)
+                        .withSecond(0),
+                    lastDate.with(TemporalAdjusters.lastDayOfMonth())
+                        .withHour(23)
+                        .withMinute(59)
+                        .withSecond(59));
                 break;
             case "day":
-                entity = Optional.of(
-                    this.repository.getListOfDaysBetween(
-                        firstDate.withHour(0)
-                            .withMinute(0)
-                            .withSecond(0),
-                        lastDate.withHour(23)
-                            .withMinute(59)
-                            .withSecond(59)));
+                result = this.repository.getListOfDaysBetween(
+                    firstDate.withHour(0)
+                        .withMinute(0)
+                        .withSecond(0),
+                    lastDate.withHour(23)
+                        .withMinute(59)
+                        .withSecond(59));
                 break;
             case "hour":
-                entity = Optional.of(
-                    this.repository.getListOfHoursBetween(
-                        firstDate.withMinute(0)
-                            .withSecond(0),
-                        lastDate.withMinute(59)
-                            .withSecond(59)));
+                result = this.repository.getListOfHoursBetween(
+                    firstDate.withMinute(0)
+                        .withSecond(0),
+                    lastDate.withMinute(59)
+                        .withSecond(59));
                 break;
             case "minute":
-                entity = Optional
-                    .of(this.repository.getListOfMinutesBetween(firstDate.withSecond(0), lastDate.withSecond(59)));
+                result = this.repository.getListOfMinutesBetween(firstDate.withSecond(0), lastDate.withSecond(59));
                 break;
             case "second":
-                entity = Optional.of(this.repository.getListOfSecondsBetween(firstDate, lastDate));
+                result = this.repository.getListOfSecondsBetween(firstDate, lastDate);
                 break;
         }
 
-        return ResponseEntity.ok(entity.orElseThrow());
+        return this.minMaxDateAssembler.toFlux(result, null);
     }
 
     @GetMapping("/image/{salt}/{id}/{creationDate}/{version}")
@@ -213,7 +229,8 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getLastImages(@PageableDefault Pageable p) throws IOException {
+    public Flux<EntityModel<ImageDto>> getLastImages(@PageableDefault(size = 100, page = 1) Pageable p)
+        throws IOException {
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
         return this.imageAssembler.toFlux(
             this.repository.findLastImages(p),
@@ -227,8 +244,10 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/keyword/{keyword}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getImagesByKeyword(@PageableDefault Pageable p, @PathVariable String keyword)
-        throws IOException {
+    public Flux<EntityModel<ImageDto>> getImagesByKeyword(
+        @PageableDefault(size = 100, page = 1) Pageable p,
+        @PathVariable String keyword
+    ) throws IOException {
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
         return this.imageAssembler.toFlux(
             this.repository.findImagesByKeyword(p, keyword),
@@ -242,8 +261,10 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/person/{person}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getImagesByPerson(@PageableDefault Pageable p, @PathVariable String person)
-        throws IOException {
+    public Flux<EntityModel<ImageDto>> getImagesByPerson(
+        @PageableDefault(size = 100, page = 1) Pageable p,
+        @PathVariable String person
+    ) throws IOException {
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
         return this.imageAssembler.toFlux(
             this.repository.findImagesByPerson(p, person),
@@ -256,14 +277,29 @@ public class ImageController {
             null);
     }
 
-    @GetMapping(path = "/images/odt/{intervalType}/{startTime}/{stopDate}/{version}", produces = "application/stream+json")
+    @GetMapping(path = "/images/albums/{album}", produces = "application/stream+json")
+    public Flux<EntityModel<ImageDto>> getImagesByAlbum(
+        @PageableDefault(size = 100, page = 1) Pageable p,
+        @PathVariable String album
+    ) throws IOException {
+        if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
+        return this.imageAssembler.toFlux(
+            this.repository.findImagesByAlbum(p, album),
+            new GsPageImpl(Collections.emptyList(), p, this.repository.countAll()),
+            WebFluxLinkBuilder.linkTo(
+                WebFluxLinkBuilder.methodOn(ImageController.class)
+                    .getImagesByAlbum(p, album))
+                .withRel("page")
+                .toMono(),
+            null);
+    }
+
+    @GetMapping(path = "/images/odt/{intervalType}/{startTime}/{stopDate}", produces = "application/stream+json")
     public Flux<EntityModel<ImageDto>> get(
-        @PageableDefault Pageable p,
+        @PageableDefault(size = 100, page = 1) Pageable p,
         @PathVariable String intervalType,
         @PathVariable OffsetDateTime startTime,
-        @PathVariable OffsetDateTime stopDate,
-        @PathVariable short version,
-        PageImageAssembler pagedAssembler
+        @PathVariable OffsetDateTime stopDate
     ) throws IOException {
 
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
@@ -294,7 +330,7 @@ public class ImageController {
             new GsPageImpl(Collections.emptyList(), p, this.repository.countAll()),
             WebFluxLinkBuilder.linkTo(
                 WebFluxLinkBuilder.methodOn(ImageController.class)
-                    .get(p, intervalType, startTime, stopDate, version, pagedAssembler))
+                    .get(p, intervalType, startTime, stopDate))
                 .withRel("page")
                 .toMono(),
             null);
@@ -334,7 +370,7 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             imageDto.getRatings());
-        return this.imageAssembler.toModel(retValue.orElseThrow(), null);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
     }
 
     @PostMapping(path = "/keywords/addToImage/{keyword}")
@@ -347,7 +383,7 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toModel(retValue.orElseThrow(), null);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
     }
 
     @PostMapping(path = "/keywords/deleteInImage/{keyword}")
@@ -360,7 +396,7 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toModel(retValue.orElseThrow(), null);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
     }
 
     @PostMapping(path = "/persons/addToImage/{person}")
@@ -373,10 +409,10 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             person);
-        return this.imageAssembler.toModel(retValue.orElseThrow(), null);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
     }
 
-    @PostMapping(path = "/persons/deleteInImage/{keyword}")
+    @PostMapping(path = "/per7sons/deleteInImage/{keyword}")
     public Mono<EntityModel<ImageDto>> deletePerson(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
         Optional<ImageDto> retValue = this.repository.deletePerson(
             imageDto.getData()
@@ -386,7 +422,33 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toModel(retValue.orElseThrow(), null);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+    }
+
+    @PostMapping(path = "/albums/addToImage/{person}")
+    public Mono<EntityModel<ImageDto>> addAlbum(@RequestBody ImageDto imageDto, @PathVariable String person) {
+        Optional<ImageDto> retValue = this.repository.addAlbum(
+            imageDto.getData()
+                .getImageId(),
+            imageDto.getData()
+                .getCreationDate(),
+            imageDto.getData()
+                .getVersion(),
+            person);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+    }
+
+    @PostMapping(path = "/albums/deleteInImage/{keyword}")
+    public Mono<EntityModel<ImageDto>> deleteAlbum(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+        Optional<ImageDto> retValue = this.repository.deleteAlbum(
+            imageDto.getData()
+                .getImageId(),
+            imageDto.getData()
+                .getCreationDate(),
+            imageDto.getData()
+                .getVersion(),
+            keyword);
+        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
     }
 
     @PostConstruct

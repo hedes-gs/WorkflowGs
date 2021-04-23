@@ -142,12 +142,12 @@
 	</property>
 	<property>
 		<name>hbase.client.keytab.file</name>
-		<value>src/test/resources/config/wf_hbase.keytab</value>
+		<value>src/main/resources/wf_archive.keytab</value>
 	</property>
 
 	<property>
 		<name>hbase.client.keytab.principal</name>
-		<value>wf_hbase@GS.COM</value>
+		<value>wf_archive@GS.COM</value>
 	</property>
 
 

@@ -800,9 +800,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                             .getAlbum()
                             .trim())))
                 .withImportName(
-                    value.getImportEvent()
-                        .getImportName()
-                        .trim())
+                    new HashSet<>(Collections.singleton(
+                        value.getImportEvent()
+                            .getImportName()
+                            .trim())))
                 .withKeyWords(this.getKeywordsInImportEvent(value))
                 .withCreationDate(DateTimeHelper.toEpochMillis(new String(key.getDataAsByte(), "UTF-8").trim()));
         } catch (UnsupportedEncodingException e) {
@@ -831,9 +832,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                         .getAlbum()
                         .trim())))
             .withImportName(
-                value.getImportEvent()
-                    .getImportName()
-                    .trim())
+                new HashSet<>(Collections.singleton(
+                    value.getImportEvent()
+                        .getImportName()
+                        .trim())))
             .withKeyWords(this.getKeywordsInImportEvent(value));
         exifList.getDataCollection()
             .forEach((etd) -> {

@@ -2,6 +2,7 @@ package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Append;
 import org.apache.hadoop.hbase.client.Delete;
@@ -51,6 +53,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
                     return put;
                 })
                 .collect(Collectors.toList());
+
             table.put(puts);
             puts.clear();
         } catch (IOException e) {
@@ -91,6 +94,10 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public TableName getTableName() { return this.getHbaseDataInformation()
+        .getTable(); }
 
     @Override
     public void put(T hbaseData) throws IOException {
@@ -304,9 +311,10 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             .forEach((cf) -> {
                 byte[] bytesOfCfName = cf.getKey()
                     .getBytes();
-                cf.getValue()
-                    .getValues()
-                    .entrySet()
+
+                final Map<byte[], byte[]> values = cf.getValue()
+                    .getValues();
+                values.entrySet()
                     .forEach((q) -> { put.addColumn(bytesOfCfName, q.getKey(), q.getValue()); });
             });
         return put;
@@ -476,13 +484,18 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     protected T toResult(HbaseDataInformation<T> hbaseDataInformation, Result res) {
         try {
             T instance = hbaseDataInformation.getHbaseDataClass()
+                .getDeclaredConstructor()
                 .newInstance();
             hbaseDataInformation.build(instance, res);
 
             return instance;
         } catch (
             InstantiationException |
-            IllegalAccessException e) {
+            IllegalAccessException |
+            IllegalArgumentException |
+            InvocationTargetException |
+            NoSuchMethodException |
+            SecurityException e) {
             e.printStackTrace();
         }
         return null;

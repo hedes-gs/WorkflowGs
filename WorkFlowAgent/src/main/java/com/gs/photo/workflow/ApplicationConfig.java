@@ -15,9 +15,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.common.workflow.AbstractApplicationConfig;
+
 @Configuration
+@ComponentScan("com.gs")
 public class ApplicationConfig extends AbstractApplicationConfig {
     private static final String HBASE_MASTER_KERBEROS_PRINCIPAL       = "hbase.master.kerberos.principal";
     private static final String HBASE_REGIONSERVER_KERBEROS_PRINCIPAL = "hbase.regionserver.kerberos.principal";
@@ -32,7 +36,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @Bean
     protected org.apache.hadoop.conf.Configuration hbaseConfiguration(
         @Value("${zookeeper.hosts}") String zookeeperHosts,
-        @Value("${zookeeper.port}") int zookeeperPort
+        @Value("${zookeeper.port}") int zookeeperPort,
+        @Value("${hbase.client.keytab.file}") String hbaseKeyTabfile
     ) {
 
         org.apache.hadoop.conf.Configuration hBaseConfig = HBaseConfiguration.create();
@@ -45,6 +50,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         hBaseConfig.set(ApplicationConfig.HBASE_RPC_PROTECTION, "authentication");
         hBaseConfig.set(ApplicationConfig.HBASE_REGIONSERVER_KERBEROS_PRINCIPAL, "hbase/_HOST@GS.COM");
         hBaseConfig.set(ApplicationConfig.HBASE_MASTER_KERBEROS_PRINCIPAL, "hbase/_HOST@GS.COM");
+        hBaseConfig.set("hbase.client.keytab.file", hbaseKeyTabfile);
 
         return hBaseConfig;
     }
@@ -88,6 +94,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
         UserGroupInformation.setConfiguration(configuration);
         try {
+            ApplicationConfig.LOGGER.info("Kerberos Login from login {} and keytab {}", principal, keyTab);
+
             UserGroupInformation.loginUserFromKeytab(principal, keyTab);
             ApplicationConfig.LOGGER.info("Kerberos Login from login {} and keytab {}", principal, keyTab);
         } catch (IOException e1) {

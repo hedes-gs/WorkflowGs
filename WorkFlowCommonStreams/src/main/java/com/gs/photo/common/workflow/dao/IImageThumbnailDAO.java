@@ -3,6 +3,8 @@ package com.gs.photo.common.workflow.dao;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import org.apache.hadoop.hbase.TableName;
+
 import com.gs.photo.common.workflow.hbase.dao.IGenericDAO;
 import com.workflow.model.HbaseImageThumbnail;
 
@@ -34,11 +36,16 @@ public interface IImageThumbnailDAO extends IGenericDAO<HbaseImageThumbnail> {
     final byte[] FAMILY_ALBUMS_BYTES                 = "albums".getBytes();
     final byte[] FAMILY_KEYWORDS_BYTES               = "keywords".getBytes();
     final byte[] FAMILY_PERSONS_BYTES                = "persons".getBytes();
+    final byte[] FAMILY_RATINGS_BYTES                = "ratings".getBytes();
+    final byte[] FAMILY_IMPORT_BYTES                 = "import".getBytes();
 
     public HbaseImageThumbnail get(HbaseImageThumbnail hbaseData) throws IOException;
 
     public HbaseImageThumbnail get(byte[] key);
 
     byte[] getKey(HbaseImageThumbnail hbi);
+
+    @Override
+    TableName getTableName();
 
 }

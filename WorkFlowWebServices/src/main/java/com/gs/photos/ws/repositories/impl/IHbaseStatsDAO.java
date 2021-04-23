@@ -24,4 +24,5 @@ public interface IHbaseStatsDAO {
         throws IOException;
 
     void decrement(OffsetDateTime creationDate);
+
 }

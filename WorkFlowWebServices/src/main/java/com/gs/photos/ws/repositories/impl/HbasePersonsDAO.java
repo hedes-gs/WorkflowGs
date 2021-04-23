@@ -62,4 +62,8 @@ public class HbasePersonsDAO extends AbstractHbasePersonsDAO implements IHbasePe
         return 0;
     }
 
+    @Override
+    public void delete(HbasePersons hbaseData, String family, String column) { // TODO Auto-generated method stub
+    }
+
 }

@@ -1,6 +1,8 @@
 package com.gs.photo.common.workflow;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -18,7 +20,6 @@ public class Mailbox<T> {
             .lock();
         try {
             this.value = v;
-            Mailbox.LOGGER.info("Post event {} ", v);
             this.countDownLatch.countDown();
         } finally {
             this.lock.writeLock()
@@ -41,7 +42,6 @@ public class Mailbox<T> {
             if (retValue == null) {
                 this.countDownLatch.await();
             }
-            Mailbox.LOGGER.info("Read event {} ", this.value);
             this.lock.writeLock()
                 .lock();
             try {
@@ -53,6 +53,36 @@ public class Mailbox<T> {
                     .unlock();
             }
         } while (retValue == null);
+        return retValue;
+    }
+
+    public T read(Duration time) throws InterruptedException {
+        Duration nextTime = time.plusMillis(System.currentTimeMillis());
+
+        T retValue = null;
+        do {
+            try {
+                this.lock.readLock()
+                    .lock();
+                retValue = this.value;
+            } finally {
+                this.lock.readLock()
+                    .unlock();
+            }
+            if (retValue == null) {
+                this.countDownLatch.await(nextTime.toMillis() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            }
+            this.lock.writeLock()
+                .lock();
+            try {
+                retValue = this.value;
+                this.value = null;
+                this.countDownLatch = new CountDownLatch(1);
+            } finally {
+                this.lock.writeLock()
+                    .unlock();
+            }
+        } while ((retValue == null) && (nextTime.toMillis() >= System.currentTimeMillis()));
         return retValue;
     }
 

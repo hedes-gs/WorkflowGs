@@ -27,7 +27,8 @@
     state: directory
     owner: "{{ user_to_create }}"
 - name: Download Kafka {{ kafka_version }}
-  get_url: url=http://www-eu.apache.org/dist/kafka/{{ kafka_version }}/kafka_2.13-{{ kafka_version }}.tgz  dest={{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}.tgz  mode=0644 force=no
+  get_url: url=http://www-eu.apache.org/dist/kafka/{{ kafka_version }}/kafka_2.13-{{ kafka_version }}.tgz  dest={{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}.tgz  mode=0644 force=n
+  ignore_errors: true
 - name: Unpack the tar
   shell: tar -xzvf {{ kafka_install_folder }}/kafka_2.13-{{ kafka_version }}.tgz --directory {{ kafka_install_folder }}
 - name: remove symlink /usr/local/kafka to this version

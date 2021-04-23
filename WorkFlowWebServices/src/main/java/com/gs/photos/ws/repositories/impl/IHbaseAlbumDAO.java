@@ -1,19 +1,18 @@
 package com.gs.photos.ws.repositories.impl;
 
-import java.time.OffsetDateTime;
+import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.data.domain.Pageable;
+import com.gs.photo.common.workflow.hbase.dao.IHbaseMetaDataDAO;
+import com.workflow.model.HbaseAlbum;
 
-import com.workflow.model.HbaseImagesOfAlbum;
-import com.workflow.model.dtos.ImageDto;
+public interface IHbaseAlbumDAO extends IHbaseMetaDataDAO<HbaseAlbum, String> {
 
-public interface IHbaseAlbumDAO {
+    List<HbaseAlbum> getAll() throws IOException;
 
-    Optional<ImageDto> getNextImageById(HbaseImagesOfAlbum album, OffsetDateTime creationDate, String id, int version);
+    @Override
+    void flush() throws IOException;
 
-    Optional<ImageDto> getPreviousImageById(HbaseImagesOfAlbum album, OffsetDateTime creationDate, String id, int version);
+    List<HbaseAlbum> getAllAlbumsLike(String Person) throws IOException;
 
-    public List<ImageDto> getThumbNailsByPage(OffsetDateTime firstDate, OffsetDateTime lastDate, Pageable page);
 }

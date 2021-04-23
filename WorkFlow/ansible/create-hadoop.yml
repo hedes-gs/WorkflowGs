@@ -4,7 +4,7 @@
   group:
     name: hadoop
     state: present
-- user: name="{{ user_to_create }}" group=hadoop
+- user: name="{{ user_to_create }}" group=hadoop shell=/bin/bash
 - name: Download hadoop {{ hadoop_version }}
   get_url: 
     url: http://apache.mirrors.tds.net/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz

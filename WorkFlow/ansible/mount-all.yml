@@ -50,6 +50,14 @@
         fstype: ext4
         opts: _netdev 
       when: inventory_hostname == "ipc5"
+    - name: Mount disk /data_usb
+      mount:
+        path: /data_usb
+        src: /dev/sdc1
+        state: mounted
+        fstype: ext4
+        opts: _netdev 
+      when: inventory_hostname == "ipc0" or inventory_hostname == "ipc1"  or inventory_hostname == "ipc2" or inventory_hostname == "ipc3"
     - name: Mount disk /data 
       mount:
         path: /data

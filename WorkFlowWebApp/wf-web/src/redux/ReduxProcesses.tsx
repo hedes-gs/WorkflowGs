@@ -9,12 +9,19 @@ import {
     LastImagesAreLoadedEvent,
     LoadPagesOfImagesEvent,
     SelectedImageEvent,
-    AddImageToDeleteEvent
+    AddImageToDeleteEvent,
+    GetAllDatesOfImagesEvent,
+    DeleteKeywordEvent,
+    DeleteAlbumEvent,
+    AddAlbumEvent,
+    DeletePersonEvent,
+    AddPersonEvent,
+    AddKeywordEvent
 } from './Actions'
 import ApplicationSate from './State'
 
 import Actions from "./ActionsType";
-import { ImageDto, ImageKeyDto } from '../model/ImageDto';
+import { ImageDto, ImageKeyDto, MinMaxDatesDto } from '../model/DataModel';
 
 const initialState: ApplicationSate = {
     lastIntervallRequested: {
@@ -58,7 +65,8 @@ const initialState: ApplicationSate = {
         urlPrev: '',
         pageNumber: 1,
         titleOfImagesList: ''
-    }
+    },
+    datesOfImages: {}
 };
 
 export function reducerDisplayedExif(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
@@ -483,6 +491,78 @@ export function reducerImageIsSelectedToBeDisplayed(state: ApplicationSate, acti
                     });
                 return returnedTarget;
             }
+        case DeleteKeywordEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
+        case DeleteAlbumEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
+        case DeletePersonEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
+        case AddKeywordEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
+        case AddAlbumEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
+        case AddPersonEvent :{
+            const returnedTarget = Object.assign(
+                {},
+                state,
+                {
+                    imageIsSelectedToBeDisplayed: {
+                        isLoading: true,
+                        image: action.payload.image
+                    }
+                });
+            return returnedTarget;
+        }
         case SelectedImageEvent: {
             switch (action.type) {
                 case Actions.DESELECT_IMAGE_TO_DISPLAY: {
@@ -577,9 +657,55 @@ export function reducerDisplayKeywords(state: ApplicationSate, action: Applicati
     if (state != null) {
         return state;
     }
-
     return initialState;
 }
+
+
+export function reducerDatesOfImages(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
+
+    switch (action.payloadType) {
+        case GetAllDatesOfImagesEvent: {
+            switch (action.type) {
+                case Actions.DATES_OF_IMAGES: {
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+                            datesOfImages: {
+                                datesOfImages: null
+                            }
+                        });
+                    return returnedTarget;
+                }
+                case Actions.DATES_OF_IMAGES_ARE_STREAMED: {
+                    var currentDates: MinMaxDatesDto[] | undefined = state.datesOfImages?.datesOfImages;
+                    if (currentDates == null) {
+                        currentDates = action.payload.data;
+                    } else {
+                        if (action.payload.data != null) {
+                            currentDates = currentDates?.concat(action.payload.data);
+                        }
+                    }
+                    const returnedTarget = Object.assign(
+                        {},
+                        state,
+                        {
+                            datesOfImages: {
+                                datesOfImages: currentDates
+                            }
+                        });
+                    return returnedTarget;
+                }
+            }
+        }
+    }
+    if (state != null) {
+        return state;
+    }
+    return initialState;
+}
+
+
 
 export function reducerDisplayPersons(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
     switch (action.type) {

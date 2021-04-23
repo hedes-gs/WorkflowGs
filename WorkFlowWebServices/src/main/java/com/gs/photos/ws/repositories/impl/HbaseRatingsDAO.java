@@ -52,4 +52,8 @@ public class HbaseRatingsDAO extends AbstractMetaDataDAO<HbaseRatings, Long> imp
         return new HashMap<>();
     }
 
+    @Override
+    public void delete(HbaseRatings hbaseData, String family, String column) { // TODO Auto-generated method stub
+    }
+
 }

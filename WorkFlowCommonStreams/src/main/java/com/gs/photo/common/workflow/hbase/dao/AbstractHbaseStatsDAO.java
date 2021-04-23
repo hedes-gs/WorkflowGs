@@ -50,7 +50,28 @@ public abstract class AbstractHbaseStatsDAO<T extends HbaseImageThumbnailKey> ex
     protected static final Logger LOGGER                       = LoggerFactory.getLogger(AbstractHbaseStatsDAO.class);
 
     public static enum KeyEnumType {
-        ALL, YEAR, MONTH, DAY, HOUR, MINUTE, SECOND
+        ALL(
+            "all"
+        ), YEAR(
+            "year"
+        ), MONTH(
+            "month"
+        ), DAY(
+            "day"
+        ), HOUR(
+            "hour"
+        ), MINUTE(
+            "minute"
+        ), SECOND(
+            "second"
+        );
+
+        String name;
+
+        public String getName() { return this.name; }
+
+        KeyEnumType(String name) { this.name = name; }
+
     };
 
     protected static final String                   KEY_YEAR_PREFIX   = "Y:";

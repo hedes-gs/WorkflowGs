@@ -14,4 +14,9 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey>
     @Override
     public void put(HbaseImageThumbnailKey key) { super.put(key, this.getHbaseDataInformation()); }
 
+    @Override
+    public void delete(HbaseImageThumbnailKey hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                         // stub
+    }
+
 }

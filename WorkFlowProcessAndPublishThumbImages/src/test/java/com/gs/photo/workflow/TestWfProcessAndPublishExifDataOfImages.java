@@ -35,9 +35,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.ImmutableSet;
+import com.gs.photo.common.workflow.DateTimeHelper;
+import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO;
+import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photo.workflow.pubthumbimages.ApplicationConfig;
-import com.gs.photo.workflow.pubthumbimages.hbase.dao.AbstractHbaseStatsDAO;
-import com.gs.photo.workflow.pubthumbimages.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.serializers.ExchangedDataSerializer;
 import com.gs.photos.serializers.FileToProcessSerializer;
 import com.gs.photos.serializers.FinalImageSerializer;
@@ -438,7 +439,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
             DateTimeHelper.toEpochMillis(TestWfProcessAndPublishExifDataOfImages.EXIF_DATE),
             outputRecord.value()
                 .getCreationDate());
-        Assert.assertArrayEquals(
+        Assert.assertEquals(
             TestWfProcessAndPublishExifDataOfImages.COMPRESSED_DATA,
             outputRecord.value()
                 .getThumbnail()

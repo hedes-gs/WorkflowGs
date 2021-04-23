@@ -22,8 +22,9 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractMetadataLongCoprocessor extends AbstractPageProcessor<Long> {
 
-    protected static Logger     LOGGER    = LoggerFactory.getLogger(AbstractMetadataLongCoprocessor.class);
-    protected static final long PAGE_SIZE = 1000L;
+    protected static Logger     LOGGER              = LoggerFactory.getLogger(AbstractMetadataLongCoprocessor.class);
+    protected static final long PAGE_SIZE           = 1000L;
+    public static final int     FIXED_WIDTH_RATINGS = 8;
 
     @Override
     public Optional<RegionObserver> getRegionObserver() { return Optional.of(this); }
@@ -45,7 +46,7 @@ public abstract class AbstractMetadataLongCoprocessor extends AbstractPageProces
             Table tablePage = this.hbaseConnection
                 .getTable(TableName.valueOf(namespace + ':' + this.getTablePageForMetadata()))) {
             long pageNumber = this.findFirstPageWithAvailablePlace(tablePage, rowToIndex, metaData);
-            Put put = new Put(this.toRowKey(metaData, pageNumber));
+            Put put = new Put(this.toTablePageRowKey(metaData, pageNumber));
             put.addColumn(AbstractPageProcessor.TABLE_PAGE_LIST_COLUMN_FAMILY, rowToIndex, new byte[] { 1 });
             tablePage.put(put);
 
@@ -67,7 +68,7 @@ public abstract class AbstractMetadataLongCoprocessor extends AbstractPageProces
                     AbstractPageProcessor.toHexString(rowToIndex));
             }
             findPageOf.ifPresent((pageNumber) -> {
-                Delete delete = new Delete(this.toRowKey(metaData, pageNumber));
+                Delete delete = new Delete(this.toTablePageRowKey(metaData, pageNumber));
                 delete.addColumn(AbstractPageProcessor.TABLE_PAGE_LIST_COLUMN_FAMILY, rowToIndex);
                 try {
                     tablePage.delete(delete);
@@ -92,5 +93,26 @@ public abstract class AbstractMetadataLongCoprocessor extends AbstractPageProces
 
     @Override
     protected ByteArrayComparable getByteArrayComparable(Long t) { return new LongComparator(t); }
+
+    @Override
+    protected byte[] buildTableMetaDataRowKey(Long metaData, byte[] row) {
+        byte[] metaDataAsBytes = AbstractPageProcessor.convert(metaData);
+        byte[] retValue = new byte[AbstractPageProcessor.FIXED_WIDTH_REGION_SALT
+            + AbstractMetadataLongCoprocessor.FIXED_WIDTH_RATINGS + row.length];
+        System.arraycopy(
+            metaDataAsBytes,
+            0,
+            retValue,
+            AbstractPageProcessor.FIXED_WIDTH_REGION_SALT,
+            metaDataAsBytes.length);
+        System.arraycopy(row, 0, retValue, 0, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
+        System.arraycopy(
+            row,
+            0,
+            retValue,
+            AbstractMetadataLongCoprocessor.FIXED_WIDTH_RATINGS + AbstractPageProcessor.FIXED_WIDTH_REGION_SALT,
+            row.length);
+        return retValue;
+    }
 
 }

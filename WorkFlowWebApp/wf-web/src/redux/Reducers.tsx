@@ -10,8 +10,9 @@ import {
     reducerDisplayKeywords,
     reducerDisplayPersons,
     reducerMetadata,
-    reducerImagesAreStreamed
-} from "./LoadImagesProcess";
+    reducerImagesAreStreamed,
+    reducerDatesOfImages
+} from "./ReduxProcesses";
 
 export default combineReducers({
     reducerImagesList,
@@ -23,5 +24,6 @@ export default combineReducers({
     reducerDisplayKeywords,
     reducerDisplayPersons,
     reducerMetadata,
-    reducerImagesAreStreamed
+    reducerImagesAreStreamed,
+    reducerDatesOfImages
 });

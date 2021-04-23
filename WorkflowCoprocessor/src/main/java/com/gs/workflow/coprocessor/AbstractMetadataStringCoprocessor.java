@@ -41,15 +41,18 @@ public abstract class AbstractMetadataStringCoprocessor extends AbstractPageProc
                 .getTable(TableName.valueOf(namespace + ':' + this.getTablePageForMetadata()))) {
 
             long pageNumber = this.findFirstPageWithAvailablePlace(tablePage, rowToIndex, metaData);
-            AbstractPageProcessor.LOGGER.info(
-                "[COPROC][{}] createSecundaryIndex, region is {}, metadata is {},  row put is {}, page number found {}",
-                this.getCoprocName(),
-                region,
-                metaData,
-                AbstractPageProcessor.toHexString(rowToIndex),
-                pageNumber);
+            if (AbstractPageProcessor.LOGGER.isDebugEnabled()) {
+                AbstractPageProcessor.LOGGER.debug(
+                    "[COPROC][{}] createSecundaryIndex, region is {}, metadata is {},  row put is {}, page number found {} - tablePage is {}",
+                    this.getCoprocName(),
+                    region,
+                    metaData,
+                    AbstractPageProcessor.toHexString(rowToIndex),
+                    pageNumber,
+                    tablePage);
+            }
 
-            Put put = new Put(this.toRowKey(metaData, pageNumber));
+            Put put = new Put(this.toTablePageRowKey(metaData, pageNumber));
             put.addColumn(AbstractPageProcessor.TABLE_PAGE_LIST_COLUMN_FAMILY, rowToIndex, new byte[] { 1 });
             tablePage.put(put);
         } catch (IOException e) {
@@ -77,7 +80,7 @@ public abstract class AbstractMetadataStringCoprocessor extends AbstractPageProc
             }
             findPageOf.ifPresent((pageNumber) -> {
                 try {
-                    Delete delete = new Delete(this.toRowKey(metaData, pageNumber));
+                    Delete delete = new Delete(this.toTablePageRowKey(metaData, pageNumber));
                     delete.addColumn(AbstractPageProcessor.TABLE_PAGE_LIST_COLUMN_FAMILY, rowToIndex);
                     tablePage.delete(delete);
                 } catch (IOException e) {
@@ -100,5 +103,27 @@ public abstract class AbstractMetadataStringCoprocessor extends AbstractPageProc
 
     @Override
     protected String getMetaData(byte[] cloneQualifier) { return new String(cloneQualifier, Charset.forName("UTF-8")); }
+
+    @Override
+    protected byte[] buildTableMetaDataRowKey(String metaData, byte[] row) {
+        byte[] retValue = new byte[AbstractPageProcessor.FIXED_WIDTH_REGION_SALT
+            + ImportMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + row.length];
+
+        final byte[] metaDataAsBytes = metaData.getBytes(Charset.forName("UTF-8"));
+        System.arraycopy(
+            metaDataAsBytes,
+            0,
+            retValue,
+            AbstractPageProcessor.FIXED_WIDTH_REGION_SALT,
+            metaDataAsBytes.length);
+        System.arraycopy(row, 0, retValue, 0, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
+        System.arraycopy(
+            row,
+            0,
+            retValue,
+            ImportMetadataStringCoprocessor.FIXED_WIDTH_KEYWORD + AbstractPageProcessor.FIXED_WIDTH_REGION_SALT,
+            row.length);
+        return retValue;
+    }
 
 }

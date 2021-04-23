@@ -26,7 +26,7 @@
 	</property>
 	<property>
 		<name>hbase.zookeeper.quorum</name>
-		<value>ipc0,ipc1,ipc2</value>
+		<value>ipc0,ipc1,ipc2,ipc7,ipc8</value>
 	</property>
 
 	<property>
@@ -81,11 +81,30 @@
 	</property>
 	<property>
 		<name>hbase.rpc.timeout</name>
-		<value>1200000</value>
+		<value>4800000</value>
+	</property>
+	<!-- https://stackoverflow.com/questions/17933666/sockettimeoutexception-issue-from-hbase-client -->
+	<property>
+		<name>hbase.client.ipc.pool.type</name>
+		<value>RoundRobinPool</value>
 	</property>
 	<property>
-		<name>zookeeper.session.timeout</name>
+		<name>hbase.client.ipc.pool.size</name>
+		<value>5</value>
+	</property>
+	<!-- https://docs.cloudera.com/documentation/enterprise/latest/topics/admin_hbase_scanner_heartbeat.html -->
+	<property>
+		<name>hbase.client.scanner.timeout.period</name>
+		<value>3600000</value>
+	</property>
+	<property>
+		<name>hbase.cells.scanned.per.heartbeat.check</name>
 		<value>20000</value>
+	</property>
+	 
+	<property>
+		<name>zookeeper.session.timeout</name>
+		<value>60000</value>
 	</property>
 	<property>
 		<name>hbase.regionserver.handler.count</name>
@@ -143,11 +162,12 @@
 		<value>
 			org.apache.hadoop.hbase.security.token.TokenProvider,
 			org.apache.hadoop.hbase.coprocessor.AggregateImplementation,
-			com.gs.workflow.coprocessor.PaginationCoprocessor,
+			com.gs.workflow.coprocessor.ImagesPageCoprocessor,
 			com.gs.workflow.coprocessor.KeyWordMetadataStringCoprocessor,
 			com.gs.workflow.coprocessor.PersonMetadataStringCoprocessor,
 			com.gs.workflow.coprocessor.AlbumMetadataStringCoprocessor,
 			com.gs.workflow.coprocessor.RatingsMetadataStringCoprocessor,
+			com.gs.workflow.coprocessor.ImportMetadataStringCoprocessor,
 			com.gs.workflow.coprocessor.CoprocessorForHbaseExifData
 		</value>
 	</property>

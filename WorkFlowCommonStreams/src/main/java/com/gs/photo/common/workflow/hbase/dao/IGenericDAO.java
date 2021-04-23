@@ -3,6 +3,7 @@ package com.gs.photo.common.workflow.hbase.dao;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Put;
 
@@ -33,4 +34,9 @@ public interface IGenericDAO<T extends HbaseData> {
     public void put(T hbaseData) throws IOException;
 
     void append(T hbaseData, String... familiesToInclude);
+
+    void delete(T hbaseData, String family, String column);
+
+    public TableName getTableName();
+
 }

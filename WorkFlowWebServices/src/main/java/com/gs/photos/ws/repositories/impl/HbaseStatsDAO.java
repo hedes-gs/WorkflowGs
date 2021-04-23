@@ -34,7 +34,6 @@ import org.springframework.stereotype.Component;
 import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.common.workflow.hbase.dao.AbstractDAO;
 import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO;
-import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.workflow.model.HbaseImageThumbnailKey;
 import com.workflow.model.dtos.MinMaxDatesDto;
 
@@ -104,6 +103,8 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey>
                     OffsetDateTime retValue = this.buildOffsetDateTimeFromKey(intervallTypePattern, key);
                     OffsetDateTime endDate;
                     OffsetDateTime minValue;
+                    int countNumber = 0;
+
                     switch (intervallType) {
                         case YEAR:
                             minValue = retValue.with(TemporalAdjusters.firstDayOfYear())
@@ -153,6 +154,8 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey>
 
                     listOfMinMaxDatesDto.add(
                         MinMaxDatesDto.builder()
+                            .withCountNumber((int) this.countImages(minValue, endDate, intervallType))
+                            .withIntervallType(intervallType.getName())
                             .withMinDate(minValue)
                             .withMaxDate(endDate)
                             .build());
@@ -411,5 +414,10 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey>
 
     @Override
     public void decrement(OffsetDateTime creationDate) { // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void delete(HbaseImageThumbnailKey hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                         // stub
     }
 }

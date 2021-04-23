@@ -30,11 +30,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.common.workflow.IBeanTaskExecutor;
+import com.gs.photo.common.workflow.impl.FileUtils;
+import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.workflow.archive.ApplicationConfig;
 import com.gs.photo.workflow.archive.IBeanArchive;
 import com.gs.photo.workflow.archive.IUserGroupInformationAction;
 import com.gs.photo.workflow.archive.impl.BeanArchive;
-import com.gs.photo.workflow.archive.impl.FileUtils;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
@@ -167,7 +169,7 @@ public class TestBeanArchive {
     }
 
     @Test
-    public void test003_shouldCopyLocalToRemoteWhenReceivingOneRecord() throws IOException {
+    public void test003_shouldCopyLocalToRemoteWhenReceivingOneRecord() throws IOException, MissingFileException {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic",
@@ -201,7 +203,8 @@ public class TestBeanArchive {
             .copyRemoteToLocal(
                 (FileToProcess) ArgumentMatchers.any(),
                 (OutputStream) ArgumentMatchers.any(),
-                (Integer) ArgumentMatchers.any(), "/localcache");
+                (Integer) ArgumentMatchers.any(),
+                "/localcache");
     }
 
 }

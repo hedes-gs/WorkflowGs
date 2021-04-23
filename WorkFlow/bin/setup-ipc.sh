@@ -1,17 +1,17 @@
 #!/bin/bash
 
 #Install python sudo apt install python-is-python3
-ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/install-python.yml
+# ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/install-python.yml
 
 # Install kerberos client
 # you have also to run  sudo dpkg-reconfigure krb5-config on the new machines
-ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml --limit ipc8,ipc7  ../../WorkFlow/ansible/install-kerberos-client.yml
+# ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml --limit ipc8,ipc7  ../../WorkFlow/ansible/install-kerberos-client.yml
 
 # disable ipv6
 #ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml  ../../WorkFlow/ansible/disable-ipv6.yml
 
 # Mount disk , only for ipc7, ipc8 because we try to mount /dev/sdb
-#ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml --limit ipc8,ipc7 ../../WorkFlow/ansible/mount-all.yml
+ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/mount-all.yml
 
 # install java
 # ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/install-java.yml
@@ -20,14 +20,14 @@ ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml --limit ipc8,ipc7  ../
 # ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-all-users.yml
 
 # create nfs
-# ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/install-nfs.yml
+ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/install-nfs.yml
 
 # install ignite
-#ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-all-ignite.yml
+ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-all-ignite.yml
 
 # install storm
 #ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-kerberos-storm.yml
-#ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-all-storm.yml
+ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-all-storm.yml
 
 # install kafka
 #ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-kerberos-kafka.yml
@@ -41,6 +41,9 @@ ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml --limit ipc8,ipc7  ../
 ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-kerberos-hbase.yml
 #ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml  ../../WorkFlow/ansible/create-all-hbase.yml
 
+# install filebeat
+ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml ../../WorkFlow/ansible/create-filebeat.yml
+#ansible-playbook -i  ../../WorkFlow/ansible/inventory.yml  ../../WorkFlow/ansible/create-all-hbase.yml
 
 
 #install applications

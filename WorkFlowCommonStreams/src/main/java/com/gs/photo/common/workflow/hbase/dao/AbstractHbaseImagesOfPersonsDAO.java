@@ -1,20 +1,15 @@
 package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Arrays;
 
-import org.apache.hadoop.hbase.CompareOperator;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.RegexStringComparator;
-import org.apache.hadoop.hbase.filter.RowFilter;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,16 +19,19 @@ import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfPersons;
 import com.workflow.model.ModelConstants;
 
-public abstract class AbstractHbaseImagesOfPersonsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfPersons, String>
-    implements IImagesOfPersonsDAO {
+import reactor.core.publisher.Flux;
 
-    protected static Logger      LOGGER = LoggerFactory.getLogger(AbstractHbaseImagesOfPersonsDAO.class);
+public abstract class AbstractHbaseImagesOfPersonsDAO
+    extends AbstractHbaseImagesOfMetadataDAO<HbaseImagesOfPersons, String> implements IImagesOfPersonsDAO {
+
+    protected static Logger       LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfPersonsDAO.class);
+    protected static final String METADATA_FAMILY_NAME = "persons";
 
     @Autowired
-    protected IImageThumbnailDAO hbaseImageThumbnailDAO;
+    protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
 
     @Autowired
-    protected IPersonsDAO        hbasePersonDAO;
+    protected IPersonsDAO         hbasePersonDAO;
 
     @Override
     protected void initializePageTable(Table table) throws IOException {}
@@ -41,9 +39,9 @@ public abstract class AbstractHbaseImagesOfPersonsDAO extends HbaseImagesOfMetad
     @Override
     public void addMetaData(HbaseImageThumbnail hbi, String metaData) {
         try {
-            hbi.getAlbums()
+            hbi.getPersons()
                 .clear();
-            hbi.getAlbums()
+            hbi.getPersons()
                 .add(metaData);
             this.hbaseImageThumbnailDAO.put(hbi);
             this.hbaseImageThumbnailDAO.flush();
@@ -56,8 +54,8 @@ public abstract class AbstractHbaseImagesOfPersonsDAO extends HbaseImagesOfMetad
     public void deleteMetaData(HbaseImageThumbnail hbi, String metaData) {
         try {
             byte[] keyValue = this.hbaseImageThumbnailDAO.createKey(hbi);
-            Delete del = new Delete(keyValue).addColumn(
-                HbaseImageThumbnail.TABLE_FAMILY_ALBUMS_AS_BYTES,
+            Delete del = new Delete(keyValue).addColumns(
+                HbaseImageThumbnail.TABLE_FAMILY_PERSONS_AS_BYTES,
                 metaData.getBytes(Charset.forName("UTF-8")));
             this.hbaseImageThumbnailDAO.delete(del);
             this.hbaseImageThumbnailDAO.flush();
@@ -67,107 +65,117 @@ public abstract class AbstractHbaseImagesOfPersonsDAO extends HbaseImagesOfMetad
     }
 
     @Override
-    public List<HbaseImagesOfPersons> getAllImagesOfMetadata(String person) {
-        List<HbaseImagesOfPersons> retValue = new ArrayList<>();
-        try (
-            Table table = this.connection.getTable(
-                this.getHbaseDataInformation()
-                    .getTable())) {
-            Filter f = new RowFilter(CompareOperator.EQUAL, new RegexStringComparator(person + ".*"));
-
-            HbaseImagesOfPersons hbt = HbaseImagesOfPersons.builder()
-                .withPerson(person)
-                .withCreationDate(0)
-                .withImageId("")
-                .build();
-            byte[] keyStartValue = new byte[this.hbaseDataInformation.getKeyLength()];
-
-            this.hbaseDataInformation.buildKey(hbt, keyStartValue);
-            Scan scan = new Scan().withStartRow(keyStartValue)
-                .setFilter(f);
-
-            ResultScanner rs = table.getScanner(scan);
-            rs.forEach((t) -> this.buildImageOfHbaseImagesOfPersons(retValue, t));
-        } catch (IOException e) {
-            AbstractHbaseImagesOfPersonsDAO.LOGGER.warn("Error ", e);
-            throw new RuntimeException(e);
-        }
-        AbstractHbaseImagesOfPersonsDAO.LOGGER.info("-> end of getAllImagesOfAlbum for {} ", person);
-
-        return retValue;
-
-    }
-
-    protected void buildImageOfHbaseImagesOfPersons(List<HbaseImagesOfPersons> retValue, Result t) {
-        HbaseImagesOfPersons instance = new HbaseImagesOfPersons();
-        this.getHbaseDataInformation()
-            .build(instance, t);
-        retValue.add(instance);
-    }
-
-    @Override
     public void flush() throws IOException {
         super.flush();
         this.hbasePersonDAO.flush();
     }
 
     @Override
-    protected int getOffsetOfImageId() {
-        return ModelConstants.FIXED_WIDTH_ALBUM_NAME + ModelConstants.FIXED_WIDTH_CREATION_DATE;
-    }
-
-    @Override
-    protected int getLengthOfMetaDataKey() { return ModelConstants.FIXED_WIDTH_ALBUM_NAME; }
-
-    @Override
-    protected int compare(HbaseImagesOfPersons t1, HbaseImagesOfPersons t2) {
-
-        final long cmpOfCreationDate = t1.getCreationDate() - t2.getCreationDate();
-        if (cmpOfCreationDate == 0) { return t1.getImageId()
-            .compareTo(t2.getImageId()); }
-        return (int) cmpOfCreationDate;
-    }
-
-    @Override
-    public List<HbaseImagesOfPersons> getAllImagesOfMetadata(String key, int first, int pageSize) { // TODO
-                                                                                                    // Auto-generated
-                                                                                                    // method stub
-        return null;
-    }
-
-    @Override
-    protected byte[] getMinRowProvider() {
-        return this.getKey(
-            HbaseImagesOfPersons.builder()
-                .withPerson("")
-                .withCreationDate(0)
-                .withImageId(" ")
-                .build());
-
-    }
-
-    @Override
-    protected byte[] getMaxRowProvider() {
-        return this.getKey(
-            HbaseImagesOfPersons.builder()
-                .withPerson("")
-                .withCreationDate(Long.MAX_VALUE)
-                .withImageId(" ")
-                .build());
-    }
-
-    @Override
-    protected long getNbOfElements(String key) {
+    public Flux<HbaseImageThumbnail> getAllImagesOfMetadata(String person, int pageNumber, int pageSize) {
         try {
-            return (int) this.hbasePersonDAO.countAll(key);
-        } catch (Throwable e) {
+            Table pageTable = this.connection.getTable(
+                this.getHbaseDataInformation()
+                    .getPageTable());
+            Table thumbTable = this.connection.getTable(this.hbaseImageThumbnailDAO.getTableName());
+            return super.buildPageAsflux(
+                AbstractHbaseImagesOfPersonsDAO.METADATA_FAMILY_NAME,
+                person,
+                pageSize,
+                pageNumber,
+                pageTable,
+                thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
+                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    protected void closeTables(Table pageTable, Table thumbTable) {
+        try {
+            pageTable.close();
+            thumbTable.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Flux<HbaseImageThumbnail> getPrevious(String meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getPrevious(meta, hbi);
+    }
+
+    @Override
+    public Flux<HbaseImageThumbnail> getNext(String meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getNext(meta, hbi);
+    }
+
+    @Override
+    public void delete(HbaseImagesOfPersons hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                       // stub
+    }
+
+    @Override
+    protected byte[] getRowKey(String t, HbaseImageThumbnail hbi) {
+        try {
+            byte[] rowKey = this.hbaseImageThumbnailDAO.getKey(hbi);
+            byte[] retValue = new byte[rowKey.length + ModelConstants.FIXED_WIDTH_PERSON_NAME];
+            final byte[] bytes = t.getBytes("UTF-8");
+            System.arraycopy(rowKey, 0, retValue, ModelConstants.FIXED_WIDTH_PERSON_NAME, rowKey.length);
+            System.arraycopy(bytes, 0, retValue, 0, bytes.length);
+            return retValue;
+        } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected Filter getFilterFor(String key) {
-        return new RowFilter(CompareOperator.EQUAL, new RegexStringComparator(key, Pattern.CASE_INSENSITIVE));
+    protected int getIndexOfImageRowKeyInTablePage() { return 0; }
+
+    @Override
+    protected TableName getMetaDataTable() { return this.hbasePersonDAO.getTableName(); }
+
+    @Override
+    protected byte[] getRowKeyForMetaDataTable(String metadata) {
+        return Arrays.copyOf(metadata.getBytes(Charset.forName("UTF-8")), ModelConstants.FIXED_WIDTH_KEYWORD);
+    }
+
+    @Override
+    protected HbaseImageThumbnail toHbaseImageThumbnail(byte[] rowKey) {
+        return this.hbaseImageThumbnailDAO.get(rowKey);
+    }
+
+    @Override
+    protected HbaseImagesOfPersons build(Integer salt, String meta, HbaseImageThumbnail t) {
+        return HbaseImagesOfPersons.builder()
+            .withThumbNailImage(t)
+            .withPerson(meta)
+            .build();
+
+    }
+
+    @Override
+    protected byte[] toHbaseKey(HbaseImagesOfPersons him) { return this.getHbaseDataInformation()
+        .buildKey(him); }
+
+    @Override
+    protected Get createGetQueryForTablePage(String metaData, Integer x) {
+        try {
+            byte[] rowKey = new byte[8 + ModelConstants.FIXED_WIDTH_PERSON_NAME];
+            byte[] metaDataAsbytes = metaData.getBytes("UTF-8");
+            byte[] xAsbyte = new byte[8];
+            Bytes.putLong(xAsbyte, 0, x);
+
+            Arrays.fill(rowKey, (byte) 0x20);
+            System.arraycopy(metaDataAsbytes, 0, rowKey, 0, metaDataAsbytes.length);
+            System.arraycopy(xAsbyte, 0, rowKey, ModelConstants.FIXED_WIDTH_PERSON_NAME, 8);
+            Get get = new Get(rowKey);
+            return get;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

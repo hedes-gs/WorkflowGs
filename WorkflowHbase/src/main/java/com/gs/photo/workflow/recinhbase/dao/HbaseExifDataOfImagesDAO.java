@@ -79,4 +79,9 @@ public class HbaseExifDataOfImagesDAO extends GenericDAO<HbaseExifDataOfImages> 
         return super.get(hbaseData, this.getHbaseDataInformation());
     }
 
+    @Override
+    public void delete(HbaseExifDataOfImages hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                        // stub
+    }
+
 }

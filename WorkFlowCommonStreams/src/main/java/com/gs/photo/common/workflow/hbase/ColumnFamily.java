@@ -19,4 +19,7 @@ public class ColumnFamily {
 
     public Map<byte[], byte[]> getValues() { return this.values; }
 
+    @Override
+    public String toString() { return "ColumnFamily [cfName=" + this.cfName + ", values=" + this.values + "]"; }
+
 }

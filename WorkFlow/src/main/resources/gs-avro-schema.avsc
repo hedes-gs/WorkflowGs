@@ -875,8 +875,20 @@
     "name" : "albumName",
     "type" : "string"
   }, {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageId",
     "type" : "string"
@@ -966,7 +978,136 @@
     "default" : null
   }, {
     "name" : "importName",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
     "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImagesOfImport",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "importActualName",
+    "type" : "string"
+  }, {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "creationDate",
+    "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "imageId",
+    "type" : "string"
+  }, {
+    "name" : "imageName",
+    "type" : "string"
+  }, {
+    "name" : "thumbName",
+    "type" : "string"
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "width",
+    "type" : "long"
+  }, {
+    "name" : "height",
+    "type" : "long"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
+  }, {
+    "name" : "lens",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "focalLens",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "speed",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "aperture",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "isoSpeed",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
+    "name" : "camera",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "shiftExpo",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "int",
+      "java-class" : "[I"
+    } ],
+    "default" : null
+  }, {
+    "name" : "copyright",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "artist",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "importName",
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "dataCreationDate",
@@ -984,8 +1125,20 @@
     "name" : "keyword",
     "type" : "string"
   }, {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageId",
     "type" : "string"
@@ -1075,7 +1228,11 @@
     "default" : null
   }, {
     "name" : "importName",
-    "type" : [ "null", "string" ],
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "dataCreationDate",
@@ -1090,8 +1247,20 @@
   "name" : "HbaseImagesOfMetadata",
   "namespace" : "com.workflow.model",
   "fields" : [ {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageId",
     "type" : "string"
@@ -1181,7 +1350,11 @@
     "default" : null
   }, {
     "name" : "importName",
-    "type" : [ "null", "string" ],
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "dataCreationDate",
@@ -1199,8 +1372,20 @@
     "name" : "person",
     "type" : "string"
   }, {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageId",
     "type" : "string"
@@ -1290,7 +1475,11 @@
     "default" : null
   }, {
     "name" : "importName",
-    "type" : [ "null", "string" ],
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "dataCreationDate",
@@ -1308,8 +1497,20 @@
     "name" : "ratingValue",
     "type" : "long"
   }, {
+    "name" : "metaDataRegionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
+  }, {
     "name" : "creationDate",
     "type" : "long"
+  }, {
+    "name" : "regionSalt",
+    "type" : {
+      "type" : "int",
+      "java-class" : "java.lang.Short"
+    }
   }, {
     "name" : "imageId",
     "type" : "string"
@@ -1399,7 +1600,11 @@
     "default" : null
   }, {
     "name" : "importName",
-    "type" : [ "null", "string" ],
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "dataCreationDate",
@@ -1529,7 +1734,11 @@
     "default" : null
   }, {
     "name" : "importName",
-    "type" : [ "null", "string" ],
+    "type" : [ "null", {
+      "type" : "array",
+      "items" : "string",
+      "java-class" : "java.util.HashSet"
+    } ],
     "default" : null
   }, {
     "name" : "albums",

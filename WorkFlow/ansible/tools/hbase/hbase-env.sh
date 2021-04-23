@@ -48,13 +48,13 @@ export HBASE_OPTS="$HBASE_OPTS -Djava.security.auth.login.config=/home/hbase/lat
 export HBASE_MANAGES_ZK=false
 
 # Configure PermSize. Only needed in JDK7. You can safely remove it for JDK8+
-export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7001:/home/hbase/latest/monitor/config_prometheus.yml"
-export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7002:/home/hbase/latest/monitor/config_prometheus.yml"
+export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7001:/home/hbase/latest/monitor/config_prometheus.yml"
+export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -Xmx1500M -javaagent:/home/hbase/latest/monitor/jmx_prometheus_javaagent-0.12.0.jar=7002:/home/hbase/latest/monitor/config_prometheus.yml"
 
 # Uncomment one of the below three options to enable java garbage collection logging for the server-side processes.
 
 # This enables basic gc logging to the .out file.
-# export SERVER_GC_OPTS="-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
+export SERVER_GC_OPTS="-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
 
 # This enables basic gc logging to its own file.
 # If FILE-PATH is not replaced, the log file(.gc) would still be generated in the HBASE_LOG_DIR .

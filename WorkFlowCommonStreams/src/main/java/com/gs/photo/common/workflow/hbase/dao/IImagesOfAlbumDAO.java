@@ -1,5 +1,5 @@
 package com.gs.photo.common.workflow.hbase.dao;
 
-import com.workflow.model.HbaseImagesOfAlbum;
+import com.workflow.model.HbaseImageThumbnail;
 
-public interface IImagesOfAlbumDAO extends IHbaseImagesOfMetadataDAO<HbaseImagesOfAlbum, String> {}
+public interface IImagesOfAlbumDAO extends IHbaseImagesOfMetadataDAO<HbaseImageThumbnail, String> {}

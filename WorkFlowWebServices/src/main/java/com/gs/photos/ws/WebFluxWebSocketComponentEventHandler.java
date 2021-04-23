@@ -1,5 +1,6 @@
 package com.gs.photos.ws;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -31,12 +32,10 @@ public class WebFluxWebSocketComponentEventHandler implements WebSocketHandler {
     public static class EventListener {
         protected Mailbox<ComponentEvent> lastEvent;
 
-        public ComponentEvent getLastEvent() throws InterruptedException {
-            try {
-                return this.lastEvent.read();
-            } finally {
-                WebFluxWebSocketComponentEventHandler.LOGGER.info("Returning a message");
-            }
+        public ComponentEvent getLastEvent() throws InterruptedException { return this.lastEvent.read(); }
+
+        public ComponentEvent getLastEvent(Duration waiTime) throws InterruptedException {
+            return this.lastEvent.read(waiTime);
         }
 
         @Subscribe
@@ -62,7 +61,13 @@ public class WebFluxWebSocketComponentEventHandler implements WebSocketHandler {
             executor.execute(() -> {
                 while (true) {
                     try {
-                        e.next(listener.getLastEvent());
+                        ComponentEvent ce = listener.getLastEvent(Duration.ofSeconds(5));
+                        if (ce != null) {
+                            e.next(listener.getLastEvent());
+                        } else {
+                            WebFluxWebSocketComponentEventHandler.LOGGER
+                                .info("Nothing received for the last 5 seconds...");
+                        }
                     } catch (InterruptedException e1) {
                         throw new RuntimeException(e1);
                     }
@@ -77,7 +82,6 @@ public class WebFluxWebSocketComponentEventHandler implements WebSocketHandler {
     @KafkaListener(topics = "${topic.topicComponentStatus}", containerFactory = "KafkaListenerContainerFactory")
     public void consume(@Payload(required = false) ComponentEvent message) {
         if (message != null) {
-            WebFluxWebSocketComponentEventHandler.LOGGER.info("Receiving a message {}", message);
             this.eventBus.post(message);
         } else {
             WebFluxWebSocketComponentEventHandler.LOGGER.warn("Kafka : Receive message null !");

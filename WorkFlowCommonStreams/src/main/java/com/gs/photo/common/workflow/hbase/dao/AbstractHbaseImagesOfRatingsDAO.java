@@ -1,122 +1,42 @@
 package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
-import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset;
-import com.gsphotos.worflow.hbasefilters.FilterRowByLongAtAGivenOffset.TypeValue;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfRatings;
 import com.workflow.model.ModelConstants;
 
-public abstract class AbstractHbaseImagesOfRatingsDAO extends HbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Long>
-    implements IImagesOfRatingsDAO {
+import reactor.core.publisher.Flux;
 
-    protected Logger             LOGGER = LoggerFactory.getLogger(AbstractHbaseImagesOfRatingsDAO.class);
+public abstract class AbstractHbaseImagesOfRatingsDAO
+    extends AbstractHbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Long> implements IImagesOfRatingsDAO {
+
+    protected Logger              LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfRatingsDAO.class);
+    protected static final String METADATA_FAMILY_NAME = "ratings";
+
     @Autowired
-    protected IImageThumbnailDAO hbaseImageThumbnailDAO;
+    protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
     @Autowired
-    protected IRatingsDAO        hbaseRatingsDAO;
+    protected IRatingsDAO         hbaseRatingsDAO;
 
     @Override
     protected void initializePageTable(Table table) throws IOException {}
 
     @Override
-    public List<HbaseImagesOfRatings> getAllImagesOfMetadata(Long keyword) {
-        List<HbaseImagesOfRatings> retValue = new ArrayList<>();
-        try (
-            Table table = this.connection.getTable(
-                this.getHbaseDataInformation()
-                    .getTable())) {
-            Filter f = new FilterRowByLongAtAGivenOffset(0, keyword.longValue(), keyword.longValue(), TypeValue.LONG);
-            byte[] startKey = null;
-
-            Scan scan = new Scan().withStartRow(startKey);
-            scan.setFilter(f);
-            HbaseImagesOfRatings hbt = HbaseImagesOfRatings.builder()
-                .withRatings(keyword)
-                .withCreationDate(0)
-                .withImageId("")
-                .build();
-            byte[] keyStartValue = new byte[this.hbaseDataInformation.getKeyLength()];
-
-            this.hbaseDataInformation.buildKey(hbt, keyStartValue);
-            scan.withStartRow(keyStartValue);
-
-            ResultScanner rs = table.getScanner(scan);
-            rs.forEach((t) -> this.buildImagesOfKeyword(retValue, t));
-        } catch (IOException e) {
-            this.LOGGER.warn("Error ", e);
-            throw new RuntimeException(e);
-        }
-        this.LOGGER.info("-> end of getAllImagesOfAlbum for {} ", keyword);
-
-        return retValue;
-
-    }
-
-    protected void buildImagesOfKeyword(List<HbaseImagesOfRatings> retValue, Result t) {
-        HbaseImagesOfRatings instance = new HbaseImagesOfRatings();
-        this.getHbaseDataInformation()
-            .build(instance, t);
-        retValue.add(instance);
-    }
-
-    @Override
     public void flush() throws IOException {
         super.flush();
         this.hbaseRatingsDAO.flush();
-    }
-
-    @Override
-    protected int getOffsetOfImageId() {
-        return ModelConstants.FIXED_WIDTH_RATINGS + ModelConstants.FIXED_WIDTH_CREATION_DATE;
-    }
-
-    @Override
-    protected int getLengthOfMetaDataKey() { return ModelConstants.FIXED_WIDTH_RATINGS; }
-
-    @Override
-    protected int compare(HbaseImagesOfRatings t1, HbaseImagesOfRatings t2) {
-        final long cmpOfCreationDate = t1.getCreationDate() - t2.getCreationDate();
-        if (cmpOfCreationDate == 0) { return t1.getImageId()
-            .compareTo(t2.getImageId()); }
-        return (int) cmpOfCreationDate;
-    }
-
-    @Override
-    protected byte[] getMinRowProvider() {
-        return this.getKey(
-            HbaseImagesOfRatings.builder()
-                .withRatings(0L)
-                .withCreationDate(0)
-                .withImageId(" ")
-                .build());
-
-    }
-
-    @Override
-    protected byte[] getMaxRowProvider() {
-        return this.getKey(
-            HbaseImagesOfRatings.builder()
-                .withRatings(Long.MAX_VALUE)
-                .withCreationDate(Long.MAX_VALUE)
-                .withImageId(" ")
-                .build());
     }
 
     @Override
@@ -148,15 +68,109 @@ public abstract class AbstractHbaseImagesOfRatingsDAO extends HbaseImagesOfMetad
     }
 
     @Override
-    protected long getNbOfElements(Long key) {
+    public Flux<HbaseImageThumbnail> getAllImagesOfMetadata(Long rating, int pageNumber, int pageSize) {
         try {
-            return this.hbaseRatingsDAO.countAll(key);
-        } catch (Throwable e) {
+            Table pageTable = this.connection.getTable(
+                this.getHbaseDataInformation()
+                    .getPageTable());
+            Table thumbTable = this.connection.getTable(this.hbaseImageThumbnailDAO.getTableName());
+            return super.buildPageAsflux(
+                AbstractHbaseImagesOfRatingsDAO.METADATA_FAMILY_NAME,
+                rating,
+                pageSize,
+                pageNumber,
+                pageTable,
+                thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
+                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
+        } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+
+    }
+
+    protected void closeTables(Table pageTable, Table thumbTable) {
+        try {
+            pageTable.close();
+            thumbTable.close();
+        } catch (IOException e) {
+
+            e.printStackTrace();
         }
     }
 
     @Override
-    protected Filter getFilterFor(Long key) { return new PrefixFilter(Bytes.toBytes(key)); }
+    public Flux<HbaseImageThumbnail> getPrevious(Long meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getPrevious(meta, hbi);
+    }
+
+    @Override
+    public Flux<HbaseImageThumbnail> getNext(Long meta, HbaseImageThumbnail hbi) throws IOException {
+        return super.getNext(meta, hbi);
+    }
+
+    @Override
+    public void delete(HbaseImagesOfRatings hbaseData, String family, String column) { // TODO Auto-generated method
+                                                                                       // stub
+    }
+
+    @Override
+    protected byte[] getRowKey(Long t, HbaseImageThumbnail hbi) {
+        byte[] rowKey = this.hbaseImageThumbnailDAO.getKey(hbi);
+        byte[] retValue = new byte[rowKey.length + ModelConstants.FIXED_WIDTH_RATINGS];
+        final byte[] bytes = Bytes.toBytes(t);
+        System.arraycopy(rowKey, 0, retValue, ModelConstants.FIXED_WIDTH_RATINGS, rowKey.length);
+        System.arraycopy(bytes, 0, retValue, 0, bytes.length);
+        return retValue;
+    }
+
+    @Override
+    protected int getIndexOfImageRowKeyInTablePage() { return 0; }
+
+    @Override
+    protected TableName getMetaDataTable() { return this.hbaseRatingsDAO.getTableName(); }
+
+    @Override
+    protected byte[] getRowKeyForMetaDataTable(Long key) { return AbstractHbaseImagesOfMetadataDAO.convert(key); }
+
+    @Override
+    protected HbaseImageThumbnail toHbaseImageThumbnail(byte[] rowKey) {
+        return this.hbaseImageThumbnailDAO.get(rowKey);
+    }
+
+    @Override
+    protected HbaseImagesOfRatings build(Integer salt, Long meta, HbaseImageThumbnail t) {
+        return HbaseImagesOfRatings.builder()
+            .withThumbNailImage(t)
+            .withRatings(meta)
+            .build();
+
+    }
+
+    @Override
+    protected byte[] toHbaseKey(HbaseImagesOfRatings him) { return this.getHbaseDataInformation()
+        .buildKey(him); }
+
+    @Override
+    protected Get createGetQueryForTablePage(Long metaData, Integer x) {
+        byte[] rowKey = new byte[8 + ModelConstants.FIXED_WIDTH_RATINGS];
+        byte[] metaDataAsbytes = new byte[8];
+        Bytes.putLong(metaDataAsbytes, 0, metaData);
+        byte[] xAsbyte = new byte[8];
+        Bytes.putLong(xAsbyte, 0, x);
+
+        Arrays.fill(rowKey, (byte) 0x20);
+        System.arraycopy(metaDataAsbytes, 0, rowKey, 0, metaDataAsbytes.length);
+        System.arraycopy(xAsbyte, 0, rowKey, ModelConstants.FIXED_WIDTH_RATINGS, 8);
+        Get get = new Get(rowKey);
+        return get;
+    }
+
+    @Override
+    protected byte[] metadataColumnValuetoByte(Long metaData) {
+        final byte[] retValue = new byte[8];
+        Bytes.putLong(retValue, 0, metaData);
+        return retValue;
+    }
 
 }

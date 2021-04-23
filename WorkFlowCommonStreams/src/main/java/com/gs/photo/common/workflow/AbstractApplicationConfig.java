@@ -278,7 +278,7 @@ public abstract class AbstractApplicationConfig {
 
         // threadPoolTaskExecutor.setDaemon(false);
         threadPoolTaskExecutor.setCorePoolSize(6);
-        threadPoolTaskExecutor.setMaxPoolSize(16);
+        threadPoolTaskExecutor.setMaxPoolSize(64);
         threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
         threadPoolTaskExecutor.initialize();
         return threadPoolTaskExecutor;

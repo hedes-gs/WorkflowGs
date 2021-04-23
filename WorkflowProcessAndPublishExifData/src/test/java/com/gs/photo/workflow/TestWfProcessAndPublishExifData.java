@@ -33,6 +33,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.google.common.collect.ImmutableSet;
+import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.workflow.pubexifdata.ApplicationConfig;
 import com.gs.photos.serializers.HbaseDataSerDe;
 import com.gs.photos.serializers.HbaseDataSerializer;
@@ -43,6 +44,7 @@ import com.workflow.model.FieldType;
 import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseImageThumbnail;
+import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.events.WfEvents;
 
 @RunWith(SpringRunner.class)
@@ -355,8 +357,13 @@ public class TestWfProcessAndPublishExifData {
         ConsumerRecordFactory<String, HbaseImageThumbnail> factoryForHbaseImageThumbnail,
         String key
     ) {
-        HashMap<Integer, byte[]> map = new HashMap<>();
-        map.put(2, TestWfProcessAndPublishExifData.THUMBNAIL);
+        HashMap<Integer, SizeAndJpegContent> map = new HashMap<>();
+        SizeAndJpegContent sizeAndJpegContent = SizeAndJpegContent.builder()
+            .withHeight(10)
+            .withWidth(10)
+            .withJpegContent(TestWfProcessAndPublishExifData.THUMBNAIL)
+            .build();
+        map.put(2, sizeAndJpegContent);
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         builder.withCreationDate(TestWfProcessAndPublishExifData.CREATION_DATE)
             .withHeight(TestWfProcessAndPublishExifData.HEIGHT)

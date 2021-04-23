@@ -12,10 +12,14 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoprocessor {
 
-    private static final byte[] SOURCE_FAMILY             = "ratings".getBytes(Charset.forName("UTF-8"));
-    public static final int     FIXED_WIDTH_RATINGS       = 8;
-    public static final int     FIXED_WIDTH_IMAGE_ID      = 64;
-    public static final int     FIXED_WIDTH_CREATION_DATE = 8;
+    private static final String TABLE_METADATA_RATINGS         = "ratings";
+    private static final String TABLE_META_DATA_IMAGES_RATINGS = "images_ratings";
+    private static final String TABLE_SOURCE_IMAGE_THUMBNAIL   = "image_thumbnail";
+    private static final byte[] SOURCE_FAMILY                  = RatingsMetadataStringCoprocessor.TABLE_METADATA_RATINGS
+        .getBytes(Charset.forName("UTF-8"));
+    public static final int     FIXED_WIDTH_RATINGS            = 8;
+    public static final int     FIXED_WIDTH_IMAGE_ID           = 64;
+    public static final int     FIXED_WIDTH_CREATION_DATE      = 8;
 
     @Override
     protected String getTablePageForMetadata() { return "page_images_ratings"; }
@@ -24,13 +28,15 @@ public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoproc
     protected byte[] getTableSourceFamily() { return RatingsMetadataStringCoprocessor.SOURCE_FAMILY; }
 
     @Override
-    protected String getTableSource() { return "image_thumbnail"; }
+    protected String getTableSource() { return RatingsMetadataStringCoprocessor.TABLE_SOURCE_IMAGE_THUMBNAIL; }
 
     @Override
-    protected String getTableImagesOfMetaData() { return "images_ratings"; }
+    protected String getTableImagesOfMetaData() {
+        return RatingsMetadataStringCoprocessor.TABLE_META_DATA_IMAGES_RATINGS;
+    }
 
     @Override
-    protected String getTableMetaData() { return "ratings"; }
+    protected String getTableMetaData() { return RatingsMetadataStringCoprocessor.TABLE_METADATA_RATINGS; }
 
     @Override
     protected byte[] getRowKeyForMetaDataTable(Long metadata) { // TODO Auto-generated method stub
@@ -38,7 +44,7 @@ public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoproc
     }
 
     @Override
-    protected byte[] toRowKey(Long metaData, long pageNumber) {
+    protected byte[] toTablePageRowKey(Long metaData, long pageNumber) {
         byte[] retValue = Arrays.copyOf(
             AbstractPageProcessor.convert(metaData),
             RatingsMetadataStringCoprocessor.FIXED_WIDTH_RATINGS
@@ -53,8 +59,20 @@ public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoproc
     }
 
     @Override
-    protected long extractDateOfRowKeyToIndex(byte[] rowKey) {
+    protected long extractDateOfRowKeyOfTabkeSourceToIndex(byte[] rowKey) {
         return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT);
+    }
+
+    @Override
+    protected long extractPageNumber(byte[] rowKey, int pos, int length) {
+        return Bytes.toLong(rowKey, RatingsMetadataStringCoprocessor.FIXED_WIDTH_RATINGS + pos);
+
+    }
+
+    @Override
+    protected Long extractMetadataValue(byte[] rowKey, int pos, int length) {
+        return Bytes.toLong(rowKey, AbstractPageProcessor.FIXED_WIDTH_REGION_SALT + pos);
+
     }
 
     @Override
@@ -80,21 +98,12 @@ public class RatingsMetadataStringCoprocessor extends AbstractMetadataLongCoproc
                     .findFirst()
                     .isPresent();
             } else {
-                PaginationCoprocessor.LOGGER
+                ImagesPageCoprocessor.LOGGER
                     .warn("Unable to find some thumbnail for {} ", AbstractPageProcessor.toHexString(put.getRow()));
                 return true;
             }
         }
         return false;
-    }
-
-    @Override
-    protected byte[] buildTableMetaDataRowKey(Long metaData, byte[] row) {
-        byte[] metaDataAsBytes = AbstractPageProcessor.convert(metaData);
-        byte[] retValue = Arrays
-            .copyOf(metaDataAsBytes, RatingsMetadataStringCoprocessor.FIXED_WIDTH_RATINGS + row.length);
-        System.arraycopy(row, 0, retValue, RatingsMetadataStringCoprocessor.FIXED_WIDTH_RATINGS, row.length);
-        return retValue;
     }
 
     @Override
