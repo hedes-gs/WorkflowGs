@@ -1,0 +1,13 @@
+[Unit]
+Description=High-available, distributed message broker
+After=network.target
+[Service]
+User=hadoop
+ExecStart=/home/hadoop/latest/sbin/start-all.sh
+ExecStop=/home/hadoop/latest/sbin/stop-all.sh
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=hadoop
+
+[Install]
+WantedBy=multi-user.target

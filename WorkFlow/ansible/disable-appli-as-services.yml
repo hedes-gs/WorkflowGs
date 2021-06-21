@@ -1,0 +1,22 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Disable appli
+      shell: systemctl disable {{item}}_appli.service
+      with_items: "{{ applis }}"
+      ignore_errors: true
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"
+    applis:
+      wf_hbase:
+      wf_archive:
+      wf_copy_files:
+      wf_cmp_hashkey:
+      wf_dupcheck:
+      wf_ext_img_infos:
+      wf_proc_and_publish_exif_data:
+      wf_proc_and_publish_photo:
+      wf_scan:
+      wf_monitor:

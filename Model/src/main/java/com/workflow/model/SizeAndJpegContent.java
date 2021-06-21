@@ -62,6 +62,8 @@ public class SizeAndJpegContent implements Serializable {
         builder2.append(this.height);
         builder2.append(", width=");
         builder2.append(this.width);
+        builder2.append(", length=");
+        builder2.append(this.jpegContent.length);
         builder2.append(", jpegContent=");
         builder2.append(
             this.jpegContent != null
@@ -73,7 +75,7 @@ public class SizeAndJpegContent implements Serializable {
 
     /**
      * Creates builder to build {@link SizeAndJpegContent}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -90,7 +92,7 @@ public class SizeAndJpegContent implements Serializable {
 
         /**
          * Builder method for height parameter.
-         * 
+         *
          * @param height
          *            field to set
          * @return builder
@@ -102,7 +104,7 @@ public class SizeAndJpegContent implements Serializable {
 
         /**
          * Builder method for width parameter.
-         * 
+         *
          * @param width
          *            field to set
          * @return builder
@@ -114,7 +116,7 @@ public class SizeAndJpegContent implements Serializable {
 
         /**
          * Builder method for jpegContent parameter.
-         * 
+         *
          * @param jpegContent
          *            field to set
          * @return builder
@@ -126,7 +128,7 @@ public class SizeAndJpegContent implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public SizeAndJpegContent build() { return new SizeAndJpegContent(this); }

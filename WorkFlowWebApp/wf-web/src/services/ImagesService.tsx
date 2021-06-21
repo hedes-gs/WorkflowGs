@@ -1,11 +1,12 @@
-import { MinMaxDatesDto } from '../model/MinMaxDatesDto'
 import axios, { AxiosInstance } from 'axios';
 import MomentTimezone from 'moment-timezone';
 import { ServiceConfig } from './api.config'
 import { Moment } from 'moment-timezone';
 import { ApplicationEvent } from '../redux/Actions';
-import { ImageKeyDto, ImageDto, toJsonImageDto } from '../model/ImageDto';
+import { ImageKeyDto, ImageDto, toJsonImageDto } from '../model/DataModel';
 import { Console } from 'console';
+import { Observable } from 'rxjs';
+var NDJsonRxJS = require('ndjson-rxjs');
 
 
 export interface ImagesService {
@@ -17,14 +18,9 @@ export interface ImagesService {
     checkout(img: ImageDto): Promise<string>;
     getLastImages(pageNumber: number): Promise<ReadableStream>;
 
-    getPageOfImages(url: string): Promise<ReadableStream>;
+    getPageOfImages(url?: string): Promise<ReadableStream>;
 
-    getImagesByDate(
-        min: Moment,
-        max: Moment,
-        intervalType: string): Promise<ReadableStream>;
 }
-
 export default class ImagesServiceImpl implements ImagesService {
 
     axiosInstance: AxiosInstance;
@@ -117,27 +113,7 @@ export default class ImagesServiceImpl implements ImagesService {
         return '';
     }
 
-    async getImagesByDate(
-        min: Moment,
-        max: Moment,
-        intervalType: string): Promise<ReadableStream> {
-        const urlToGetDates = this.buildURLToGetDates(min, max, intervalType);
-
-        const reponse = await fetch(urlToGetDates, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/stream+json',
-                'Accept': 'application/stream+json'
-            }
-        });
-        if (reponse.body != null) {
-            return reponse.body.pipeThrough(new TextDecoderStream());
-        }
-        return Promise.resolve(new ReadableStream());
-    }
-
     getString(r: any): string {
-        console.log('.... getString ' + r)
         return r != null ? r : ''
     }
 
@@ -154,33 +130,59 @@ export default class ImagesServiceImpl implements ImagesService {
     async getLastImages(pageNumber: number): Promise<ReadableStream> {
         const url = this.buildURLToGetLastImages(pageNumber);
         console.log("Calling url to get last images : " + url);
-        const reponse = await fetch(url, {
+        const reponse: Observable<string> = await NDJsonRxJS.stream(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/stream+json',
                 'Accept': 'application/stream+json'
             }
         });
-        if (reponse.body != null) {
-            return reponse.body.pipeThrough(new TextDecoderStream());
-        }
-        return Promise.resolve(new ReadableStream());
 
+        return new ReadableStream({
+            start(controller) {
+                pump();
+                async function pump() {
+                    reponse.subscribe({
+                        next(v: string): void {
+                            controller.enqueue(v);
+                        },
+                        complete(): void {
+                            controller.close();
+                        }
+
+                    })
+                }
+            }
+        });
     }
 
     async getPageOfImages(url: string): Promise<ReadableStream> {
 
-        const reponse = await fetch(url, {
+        console.log("Calling url to get last images : " + url);
+        const reponse: Observable<string> = await NDJsonRxJS.stream(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/stream+json',
                 'Accept': 'application/stream+json'
             }
         });
-        if (reponse.body != null) {
-            return reponse.body.pipeThrough(new TextDecoderStream());
-        }
-        return Promise.resolve(new ReadableStream());
+
+        return new ReadableStream({
+            start(controller) {
+                pump();
+                async function pump() {
+                    reponse.subscribe({
+                        next(v: string): void {
+                            controller.enqueue(v);
+                        },
+                        complete(): void {
+                            controller.close();
+                        }
+
+                    })
+                }
+            }
+        });
     }
 
     async getNextImage(url: string): Promise<string> {

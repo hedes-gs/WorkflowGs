@@ -17,6 +17,13 @@
       poll: 0
     - name: clean stream-dir if exists
       file:
+        path: ~{{ user_to_create }}/'${logPath}'
+        state: absent
+      ignore_errors: yes
+      async: 5
+      poll: 0
+    - name: clean stream-dir if exists
+      file:
         path: ~{{ user_to_create }}/stream-dir
         state: absent
       ignore_errors: yes
@@ -100,10 +107,6 @@
         mode: 0744
     - name: reload daemon
       shell: systemctl  daemon-reload    
-      async: 5
-      poll: 0
-    - name: enable {{user_to_create }}_appli.service
-      shell: systemctl enable {{user_to_create }}_appli.service
       async: 5
       poll: 0
     - name: Copy jars

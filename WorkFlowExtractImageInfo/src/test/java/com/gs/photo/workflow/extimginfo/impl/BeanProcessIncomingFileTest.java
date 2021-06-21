@@ -132,7 +132,7 @@ class BeanProcessIncomingFileTest {
 
     @Test
     public void test001_shouldRetrieveNoCopyrightAndArtist() throws IOException {
-        final Collection<IFD> IFDs = this.beanFileMetadataExtractor.readIFDs("1")
+        final Collection<IFD> IFDs = this.beanFileMetadataExtractor.readIFDs(null)
             .get();
 
         List<TiffFieldAndPath> optionalParameters = IFD.tiffFieldsAsStream(IFDs.stream())

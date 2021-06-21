@@ -7,7 +7,7 @@ import Paper from '@material-ui/core/Paper';
 import { CSSProperties } from '@material-ui/styles';
 
 import { ClientApplicationState } from '../redux/State';
-import { Metadata } from '../model/ImageDto'
+import { Metadata } from '../model/DataModel'
 import {
     ApplicationThunkDispatch,
     ApplicationEvent,

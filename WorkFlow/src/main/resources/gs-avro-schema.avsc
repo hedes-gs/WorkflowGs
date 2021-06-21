@@ -194,7 +194,7 @@
     "name" : "importName",
     "type" : "string"
   }, {
-    "name" : "scanFolder",
+    "name" : "urlScanFolder",
     "type" : "string"
   }, {
     "name" : "forTest",
@@ -432,16 +432,10 @@
     "type" : [ "null", "FileToProcess" ],
     "default" : null
   }, {
+    "name" : "url",
+    "type" : "string"
+  }, {
     "name" : "name",
-    "type" : "string"
-  }, {
-    "name" : "rootForNfs",
-    "type" : "string"
-  }, {
-    "name" : "path",
-    "type" : "string"
-  }, {
-    "name" : "host",
     "type" : "string"
   }, {
     "name" : "imageId",
@@ -1796,6 +1790,28 @@
       "type" : "int",
       "java-class" : "java.lang.Short"
     }
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
+  "name" : "HbaseImport",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "importName",
+    "type" : "string"
+  }, {
+    "name" : "description",
+    "type" : [ "null", "string" ],
+    "default" : null
+  }, {
+    "name" : "nbOfElements",
+    "type" : "long"
   }, {
     "name" : "dataCreationDate",
     "type" : "long"

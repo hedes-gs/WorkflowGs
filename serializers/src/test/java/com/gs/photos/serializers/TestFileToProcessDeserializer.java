@@ -18,12 +18,10 @@ public class TestFileToProcessDeserializer {
             FileToProcessDeserializer deser = new FileToProcessDeserializer()) {
             FileToProcess data = FileToProcess.builder()
                 .withCompressedFile(true)
-                .withRootForNfs("/root")
+                .withUrl("nfs://192.168.1.101/Public/Shared Pictures/vacances-2016/2016-07-17 12.28.07/_DSC8298.ARW")
                 .withDataId("MonFile.ARW")
                 .withDataCreationDate(0)
-                .withHost("IPC3")
                 .withName("nom.arw")
-                .withPath("/ici")
                 .withImportEvent(
                     ImportEvent.builder()
                         .withAlbum("MyAlbum")
@@ -56,9 +54,7 @@ public class TestFileToProcessDeserializer {
         return FileToProcess.builder()
             .withDataId(file.getName())
             .withName(file.getName())
-            .withRootForNfs("/root")
-            .withHost("IPC3")
-            .withPath(file.getAbsolutePath())
+            .withUrl("nfs://192.168.1.101/Public/Shared Pictures/vacances-2016/2016-07-17 12.28.07/_DSC8298.ARW")
             .withCompressedFile(isCompressed)
             .withImportEvent(
                 ImportEvent.builder()

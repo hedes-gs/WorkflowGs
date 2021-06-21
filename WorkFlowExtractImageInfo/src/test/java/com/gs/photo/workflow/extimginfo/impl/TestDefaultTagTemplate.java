@@ -97,7 +97,7 @@ public class TestDefaultTagTemplate {
 
     @Test
     public void testCreateSimpleTiffFields() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .forEach((tif) -> {

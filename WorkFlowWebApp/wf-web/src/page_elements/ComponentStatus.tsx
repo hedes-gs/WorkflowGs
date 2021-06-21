@@ -20,7 +20,7 @@ import { CSSProperties } from '@material-ui/styles';
 import { withStyles } from '@material-ui/core/styles';
 import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox';
 import { ImportEvent } from '../model/WfEvents'
-import { toComponentEvent, ComponentEvent } from '../model/ImageDto'
+import { toComponentEvent, ComponentEvent } from '../model/DataModel'
 import { Badge } from '@material-ui/core';
 import { ClientApplicationState } from '../redux/State';
 import { ApplicationThunkDispatch, ApplicationEvent, dispatchLoadRealtimeImages, loadRealTimeImages } from '../redux/Actions';
@@ -182,7 +182,7 @@ class ComponentStatus extends React.Component<ComponentStatusProps, ComponentSta
             dataId: '',
             keyWords: this.keywords.split(','),
             scanners: [key],
-            scanFolder: folder,
+            urlScanFolder: folder,
             album: this.album,
             importDate: 0,
             importName: this.importName

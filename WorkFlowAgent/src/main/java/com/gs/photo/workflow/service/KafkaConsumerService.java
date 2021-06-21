@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,7 +91,10 @@ public class KafkaConsumerService implements ConsumerSeekAware {
         final HbaseImageThumbnail hbi = this.hbaseImageThumbnailDAO.get(message);
         KafkaConsumerService.LOGGER.info("Receive, {}", hbi);
 
-        String importName = Strings.isEmpty(hbi.getImportName()) ? "DEFAULT_IMPORT" : hbi.getImportName();
+        String importName = hbi.getImportName()
+            .stream()
+            .findAny()
+            .orElse("DEFAULT_IMPORT");
         String key = hbi.getImageId();
         final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
 
@@ -205,7 +207,10 @@ public class KafkaConsumerService implements ConsumerSeekAware {
     }
 
     protected Path getHdfsDirectoryPath(HbaseImageThumbnail hbi, java.nio.file.Path file) {
-        String importName = Strings.isEmpty(hbi.getImportName()) ? "DEFAULT_IMPORT" : hbi.getImportName();
+        String importName = hbi.getImportName()
+            .stream()
+            .findAny()
+            .orElse("DEFAULT_IMPORT");
         String key = hbi.getImageId();
 
         final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
@@ -219,7 +224,10 @@ public class KafkaConsumerService implements ConsumerSeekAware {
     }
 
     protected Path getHdfsPath(HbaseImageThumbnail hbi, java.nio.file.Path file) {
-        String importName = Strings.isEmpty(hbi.getImportName()) ? "DEFAULT_IMPORT" : hbi.getImportName();
+        String importName = hbi.getImportName()
+            .stream()
+            .findAny()
+            .orElse("DEFAULT_IMPORT");
         String key = hbi.getImageId();
 
         final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));

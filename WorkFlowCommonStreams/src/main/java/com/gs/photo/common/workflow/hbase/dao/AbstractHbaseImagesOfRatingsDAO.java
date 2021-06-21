@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.HbaseImagesOfRatings;
+import com.workflow.model.HbaseRatings;
 import com.workflow.model.ModelConstants;
 
 import reactor.core.publisher.Flux;
@@ -171,6 +172,18 @@ public abstract class AbstractHbaseImagesOfRatingsDAO
         final byte[] retValue = new byte[8];
         Bytes.putLong(retValue, 0, metaData);
         return retValue;
+    }
+
+    public long countAll() throws IOException, Throwable {
+        return super.countWithCoprocessorJob(this.getHbaseDataInformation());
+    }
+
+    public long countAll(HbaseImagesOfRatings metaData) throws IOException, Throwable {
+        return super.countAll(metaData.getRatingValue());
+    }
+
+    public long countAll(HbaseRatings metaData) throws IOException, Throwable {
+        return super.countAll(metaData.getRatings());
     }
 
 }

@@ -27,9 +27,21 @@
         src: "/usr/lib/jvm/jdk-13.0.2+8"
         dest: "/usr/lib/jvm/jdk-13"
         state: link
+    - name: create link to java 16
+      file:
+        src: "/usr/lib/jvm/jdk-16.0.1+9"
+        dest: "/usr/lib/jvm/jdk-16"
+        state: link
+    - name: create link to java 11
+      file:
+        src: "/usr/lib/jvm/jdk-11.0.11+9"
+        dest: "/usr/lib/jvm/jdk-11"
+        state: link
   vars:
     ansible_become_pass: granada01
     jdks:
       java_jdk_8: https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u275-b01/OpenJDK8U-jdk_x64_linux_hotspot_8u275b01.tar.gz
+      java_jdk_11: https://github.com/AdoptOpenJDK/openjdk11-binaries/releases/download/jdk-11.0.11%2B9/OpenJDK11U-jdk_x64_linux_hotspot_11.0.11_9.tar.gz
       java_jdk_13: https://github.com/AdoptOpenJDK/openjdk13-binaries/releases/download/jdk-13.0.2%2B8/OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz
       java_jdk_15: https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.1%2B9/OpenJDK15U-jdk_x64_linux_hotspot_15.0.1_9.tar.gz
+      java_jdk_16: https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-16.0.1%2B9/OpenJDK16U-jdk_x64_linux_hotspot_16.0.1_9.tar.gz	  

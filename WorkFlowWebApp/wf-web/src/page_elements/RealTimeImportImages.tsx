@@ -1,7 +1,7 @@
 import React from 'react';
 import { Client, Message, IMessage } from '@stomp/stompjs';
 import { ClientApplicationState } from '../redux/State';
-import { ImageDto, ImageLinks, PageOfImageDto, ImageKeyDto } from '../model/ImageDto';
+import { ImageDto, ImageLinks, PageOfImageDto, ImageKeyDto, toSingleImageDto } from '../model/DataModel';
 import { GridList, GridListTile, GridListTileBar, IconButton } from '@material-ui/core';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -23,7 +23,6 @@ import {
     dispatchImageToSelect,
     downloadSelectedImage
 } from '../redux/Actions';
-import { toSingleImageDto } from '../model/ImageDto'
 import { Badge } from '@material-ui/core';
 import InfoIcon from '@material-ui/icons/Info';
 import TrashIcon from '@material-ui/icons/Delete';

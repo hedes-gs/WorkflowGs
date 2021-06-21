@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.exif.IExifService;
+import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photos.workflow.extimginfo.metadata.AbstractTemplateTag;
 import com.gs.photos.workflow.extimginfo.metadata.FileChannelDataInput;
@@ -22,6 +23,7 @@ import com.gs.photos.workflow.extimginfo.metadata.ReadStrategyII;
 import com.gs.photos.workflow.extimginfo.metadata.ReadStrategyMM;
 import com.gs.photos.workflow.extimginfo.metadata.TemplateTagFactory;
 import com.gs.photos.workflow.extimginfo.metadata.exif.RootTiffTag;
+import com.workflow.model.files.FileToProcess;
 
 @Service
 public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
@@ -36,13 +38,58 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
     @Autowired
     protected IExifService  exifService;
 
+    @Autowired
+    protected FileUtils     fileUtils;
+
     @Override
-    public Optional<Collection<IFD>> readIFDs(String key) {
-        Optional<byte[]> igniteValue = this.iIgniteDAO.get(key);
-        igniteValue.ifPresentOrElse(
-            (t) -> {},
-            () -> BeanFileMetadataExtractor.LOGGER.warn("Unable to get key " + key + " in Ignite"));
-        Optional<Collection<IFD>> values = igniteValue.map((b) -> this.processFile(b, key));
+    public Optional<Collection<IFD>> readIFDs(FileToProcess fileToProcess) {
+        Optional<Collection<IFD>> values = this.iIgniteDAO.get(fileToProcess.getImageId())
+            .or(() -> {
+                BeanFileMetadataExtractor.LOGGER.warn(
+                    "[EVENT][{}]Unable to get key Ignite - get direct value from source {}",
+                    fileToProcess.getImageId(),
+                    fileToProcess);
+                try {
+                    return Optional.ofNullable(this.fileUtils.readFirstBytesOfFileRetry(fileToProcess));
+                } catch (Exception e) {
+                    BeanFileMetadataExtractor.LOGGER.warn(
+                        "[EVENT][{}]Unable to get key Ignite for {},  unexpected error {}",
+                        fileToProcess.getImageId(),
+                        fileToProcess,
+                        ExceptionUtils.getStackTrace(e));
+                    throw new RuntimeException(e);
+                }
+            })
+            .map((b) -> {
+                Collection<IFD> retValue = null;
+                boolean end = false;
+                byte[] localbuffer = b;
+                int nbOfTries = 1;
+                do {
+                    try {
+                        retValue = this.processFile(localbuffer, fileToProcess.getImageId());
+                        end = true;
+                    } catch (Exception e) {
+                        BeanFileMetadataExtractor.LOGGER.error(
+                            "[EVENT][{}]Unexpected Error when processing file {}, retries are {}, exception is {} ",
+                            fileToProcess.getImageId(),
+                            fileToProcess,
+                            nbOfTries,
+                            e.getMessage());
+                        localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
+                        nbOfTries++;
+                        if (nbOfTries > 2) {
+                            BeanFileMetadataExtractor.LOGGER.error(
+                                "[EVENT][{}]Unexpected Error when processing file {}: {} ",
+                                fileToProcess.getImageId(),
+                                fileToProcess,
+                                ExceptionUtils.getStackTrace(e));
+                            throw new RuntimeException(e);
+                        }
+                    }
+                } while (!end);
+                return retValue;
+            });
         return values;
     }
 
@@ -62,10 +109,10 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
                 }
             }
             return allIfds;
-        } catch (IOException e) {
+        } catch (Exception e) {
             BeanFileMetadataExtractor.LOGGER
-                .error("Error when processing {} : {} ", key, ExceptionUtils.getStackTrace(e));
-            return null;
+                .error("[EVENT][{}]Unexpected Error when processing file: {} ", key, ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
         }
     }
 

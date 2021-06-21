@@ -10,7 +10,7 @@ import java.util.Objects;
 public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
     private static final long serialVersionUID = 1L;
 
-    @Column(hbaseName = "rating_value", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_RATINGS)
+    @Column(hbaseName = "rating_value", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_RATINGS)
     protected long            ratingValue;
 
     private HbaseImagesOfRatings(Builder builder) {
@@ -185,16 +185,11 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
         private int[]           shiftExpo;
         private String          copyright;
         private String          artist;
-        private String          importName;
-        private HashSet<String> albums;
-        private HashSet<String> keyWords;
-        private HashSet<String> persons;
-        private HashSet<Long>   ratingsOfImage;
+        private HashSet<String> importName;
         private Long            ratingValue;
 
         public Builder withThumbNailImage(HbaseImageThumbnail hbi) {
-            return this.withAlbums(hbi.getAlbums())
-                .withAperture(hbi.getAperture())
+            return this.withAperture(hbi.getAperture())
                 .withArtist(hbi.getArtist())
                 .withCamera(hbi.getCamera())
                 .withCopyright(hbi.getCopyright())
@@ -207,14 +202,11 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
                 .withImportDate(hbi.getImportDate())
                 .withImportName(hbi.getImportName())
                 .withIsoSpeed(hbi.getIsoSpeed())
-                .withKeyWords(hbi.getKeyWords())
                 .withLens(hbi.getLens())
                 .withOrientation(hbi.getOrientation())
                 .withOriginalHeight(hbi.getOriginalHeight())
                 .withOriginalWidth(hbi.getOriginalWidth())
                 .withPath(hbi.getPath())
-                .withPersons(hbi.getPersons())
-                .withRatingsOfImage(hbi.getRatings())
                 .withShiftExpo(hbi.getShiftExpo())
                 .withSpeed(hbi.getSpeed())
                 .withThumbName(hbi.getThumbName())
@@ -494,56 +486,8 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
          *            field to set
          * @return builder
          */
-        public Builder withImportName(String importName) {
+        public Builder withImportName(HashSet<String> importName) {
             this.importName = importName;
-            return this;
-        }
-
-        /**
-         * Builder method for albums parameter.
-         *
-         * @param albums
-         *            field to set
-         * @return builder
-         */
-        public Builder withAlbums(HashSet<String> albums) {
-            this.albums = albums;
-            return this;
-        }
-
-        /**
-         * Builder method for keyWords parameter.
-         *
-         * @param keyWords
-         *            field to set
-         * @return builder
-         */
-        public Builder withKeyWords(HashSet<String> keyWords) {
-            this.keyWords = keyWords;
-            return this;
-        }
-
-        /**
-         * Builder method for persons parameter.
-         *
-         * @param persons
-         *            field to set
-         * @return builder
-         */
-        public Builder withPersons(HashSet<String> persons) {
-            this.persons = persons;
-            return this;
-        }
-
-        /**
-         * Builder method for ratingsOfImage parameter.
-         *
-         * @param ratingsOfImage
-         *            field to set
-         * @return builder
-         */
-        public Builder withRatingsOfImage(HashSet<Long> ratingsOfImage) {
-            this.ratingsOfImage = ratingsOfImage;
             return this;
         }
 

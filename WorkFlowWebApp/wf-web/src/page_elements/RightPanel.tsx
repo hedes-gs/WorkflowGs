@@ -3,7 +3,7 @@ import 'moment/locale/fr'
 import { connect } from "react-redux";
 import React from 'react';
 import { ClientApplicationState } from '../redux/State';
-import { ImageDto, ImageKeyDto, ExifOfImages, ExifDTO, ExifDToes, ExifsLink } from '../model/ImageDto';
+import { ImageDto, ImageKeyDto, ExifOfImages, ExifDTO, ExifDToes, ExifsLink } from '../model/DataModel';
 import { IconButton } from '@material-ui/core';
 import TrashIcon from '@material-ui/icons/Delete';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
@@ -44,7 +44,7 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 
 import ChipInput from 'material-ui-chip-input'
-import { PersonsElement, KeywordsElement } from '../components/KeyWordsPersonsAutoSuggest'
+import { PersonsElement, KeywordsElement, AlbumsElement } from '../components/KeyWordsPersonsAutoSuggest'
 import CircularProgress from '@material-ui/core/CircularProgress';
 
 
@@ -102,13 +102,21 @@ export const styles = {
         },
         '.MuiTableCell-sizeSmall': {
             fontSize: '10px'
-
+        },
+        '.MuiRating-root': {
+            fontSize: '0.8rem'
+        },
+        '.MuiSvgIcon-root': {
+            fontSize: '0.8rem'
         },
         '.MuiToolbar-regular': {
             minHeight: 'unset'
         },
         '.MuiTableRow-head': {
             backgroundColor: '#999999'
+        },
+        '.WAMuiChipInput-inputRoot-13' :{
+            flex: 'none'
         },
         '*::-webkit-scrollbar': {
             width: '1.2em'
@@ -310,7 +318,10 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             const imgHeight = this.getImgHeight(img);
             const imgWidth = this.getImgWidth(img);
 
-            const ratioH = viewportHeight / imgHeight / 1.1;
+            const maxAllowedHeight = viewportHeight * 0.80;
+
+
+            const ratioH = maxAllowedHeight / imgHeight;
             const ratioW = imgWidth > viewportWidth / 2.25 ? viewportWidth / 2.25 / imgWidth : viewportWidth / imgWidth;
             const ratio = Math.min(ratioH, ratioW);
             return {
@@ -329,7 +340,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
 
         const tableStyle = {
             fontSize: '12px',
-            maxHeight: '550px',
+            maxHeight: '53.4vh',
             marginTop: '15px'
         }
         const aroundKeywords: CSSProperties = {
@@ -368,16 +379,29 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             border: 'solid 1px rgba(0,0,0,0.3)',
             borderRadius: '7px'
         }
-        const overLayStyleRight: CSSProperties = {
-            backgroundColor: 'rgba(0,0,0,0.0)',
+
+        const overLayStyleBottomLeft: CSSProperties = {
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            color: '#ffffff',
+            position: 'absolute',
+            bottom: '10px',
+            display: 'table',
+            border: 'solid 1px rgba(0,0,0,0.3)',
+            borderRadius: '7px',
+            fontSize: '0.8rem',
+            marginLeft: '5px',
+        }
+
+        const overLayStyleBottomRight: CSSProperties = {
+            backgroundColor: 'rgba(0,0,0,0.3)',
             float: 'right',
             position: 'absolute',
-            top: '10px',
+            bottom: '10px',
             right: '0px',
-            fontSize: '10px',
+            fontSize: '0.8rem',
             display: 'table',
-            padding: '8px',
-            margin: '5px',
+            padding: '10px',
+            marginRight: '5px',
             border: 'solid 1px rgba(0,0,0,0.3)',
             borderRadius: '7px'
         }
@@ -385,6 +409,19 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             position: 'absolute',
             right: '0px',
             top: '60px'
+        }
+
+        const titleProperties: CSSProperties = {
+            position: 'absolute',
+            top: '-0.8em',
+            backgroundColor: 'rgba(81, 81, 81, 1)',
+            color: 'rgba(255, 255, 255, 0.6)',
+            paddingRight: '15px',
+            paddingLeft: '15px',
+            marginTop: '0.2em',
+            paddingBottom: '0.2em',
+            borderRadius: '5px',
+            fontSize: '0.5em'
         }
 
 
@@ -401,7 +438,7 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
         const exifDToesToDisplay = exifDToes != null ? exifDToes : new ExifDToes();
         return (
             <div >
-                <Grid container direction="row" >
+                <Grid container direction="row" style={{ height: '80vh' }} >
                     <Grid item >
                         <div style={{ marginLeft: '5px' }}>
                             <div style={{ position: 'relative' }}>
@@ -418,7 +455,25 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                     <div style={{ float: 'left' }}> APN</div> <div>{img != null ? img.camera : ''}</div>
                                     <div style={{ float: 'left' }}> Objecttif</div> <div>{img != null ? img.lens : ''}</div>
                                 </div>
-                                <div style={overLayStyleRight}>
+
+                                <div style={overLayStyleBottomLeft}>
+                                    <IconButton style={{ fontSize: '0.8rem' }} onClick={(e) => this.handleClickPrevious(this.state.image)} >
+                                        <SkipPreviousIcon />
+                                    </IconButton>
+                                    <IconButton style={{ fontSize: '0.8rem' }} >
+                                        <CloudDownloadIcon onClick={(e) => this.handleClickDownload(img)}></CloudDownloadIcon>
+                                    </IconButton >
+                                    <IconButton style={{ fontSize: '0.8rem' }} onClick={(e) => this.closeImage()}>
+                                        <CloseIcon />
+                                    </IconButton>
+                                    <IconButton style={{ fontSize: '0.8rem' }} onClick={(e) => this.handleClickDelete(this.state.image)}>
+                                        <TrashIcon />
+                                    </IconButton>
+                                    <IconButton style={{ fontSize: '0.8rem' }} onClick={(e) => this.handleClickNext(this.state.image)}>
+                                        <SkipNextIcon />
+                                    </IconButton>
+                                </div>
+                                <div style={overLayStyleBottomRight}>
                                     <Rating
                                         name="simple-controlled"
                                         value={ratingValue}
@@ -437,83 +492,20 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                     </Grid>
 
                     <Grid item style={exifTableStyle} >
-                        <Toolbar classes={{ gutters: 'Local-MuiToolbar-gutters' }}>
-                            <Grid
-                                container
-                                style={{ backgroundColor: '#555555', marginLeft: '5px' }}
-
-                            >
-                                <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.closeImage()}>
-                                        <CloseIcon />
-                                    </IconButton>
-                                </Grid>
-                                <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickPrevious(this.state.image)} >
-                                        <SkipPreviousIcon />
-                                    </IconButton>
-                                </Grid>
-                                <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickDelete(this.state.image)}>
-                                        <TrashIcon />
-                                    </IconButton>
-                                </Grid>
-                                <Grid item xs zeroMinWidth>
-                                    <IconButton >
-                                        <CloudDownloadIcon onClick={(e) => this.handleClickDownload(img)}></CloudDownloadIcon>
-                                    </IconButton>
-                                </Grid>
-                                <Grid item xs zeroMinWidth>
-                                    <IconButton onClick={(e) => this.handleClickNext(this.state.image)}>
-                                        <SkipNextIcon />
-                                    </IconButton>
-                                </Grid>
-                            </Grid>
-                        </Toolbar>
                         <div style={aroundKeywords}>
-                            <div style={{
-                                position: 'absolute',
-                                top: '-0.8em',
-                                backgroundColor: 'rgba(81, 81, 81, 1)',
-                                color: 'rgba(255, 255, 255, 0.3)',
-                                paddingRight: '15px',
-                                paddingLeft: '15px',
-                                marginTop: '0.4em',
-                                paddingBottom: '0.2em',
-                                borderRadius: '5px',
-                                fontSize: '0.8em'
-                            }}>Mots-clés</div>
+                            <div style={titleProperties}>Mots-clés</div>
                             <KeywordsElement />
                         </div>
                         <div style={aroundPersons}>
-                            <div style={{
-                                position: 'absolute',
-                                top: '-0.8em',
-                                backgroundColor: 'rgba(81, 81, 81, 1)',
-                                color: 'rgba(255, 255, 255, 0.3)',
-                                paddingRight: '15px',
-                                paddingLeft: '15px',
-                                marginTop: '0.2em',
-                                paddingBottom: '0.2em',
-                                borderRadius: '5px',
-                                fontSize: '0.8em'
-                            }}>Personnes identifiées</div>
+                            <div style={titleProperties}>Personnes identifiées</div>
                             <PersonsElement />
                         </div>
-
                         <div style={aroundPersons}>
-                            <div style={{
-                                position: 'absolute',
-                                top: '-0.8em',
-                                backgroundColor: 'rgba(81, 81, 81, 1)',
-                                color: 'rgba(255, 255, 255, 0.3)',
-                                paddingRight: '15px',
-                                paddingLeft: '15px',
-                                marginTop: '0.2em',
-                                paddingBottom: '0.2em',
-                                borderRadius: '5px',
-                                fontSize: '0.8em'
-                            }}>Paramètres EXIFs</div>
+                            <div style={titleProperties}>Albums</div>
+                            <AlbumsElement />
+                        </div>
+                        <div style={aroundPersons}>
+                            <div style={titleProperties}>Paramètres EXIFs</div>
                             <TableContainer style={tableStyle} component={Paper}>
                                 <Table stickyHeader size="small" >
                                     <TableHead>

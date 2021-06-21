@@ -788,7 +788,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     private HbaseImageThumbnail buildHBaseImageThumbnail(ExchangedTiffData key, FileToProcess value) {
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         try {
-            builder.withPath(value.getPath())
+            builder.withPath(value.getUrl())
                 .withImageName(value.getName())
                 .withThumbnail(new HashMap<>())
                 .withThumbName(value.getName())
@@ -820,7 +820,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
         MutableObject<byte[]> lens = new MutableObject<>();
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
-        builder.withPath(value.getPath())
+        builder.withPath(value.getUrl())
             .withImageName(value.getName())
             .withThumbnail(new HashMap<>())
             .withThumbName(value.getName())

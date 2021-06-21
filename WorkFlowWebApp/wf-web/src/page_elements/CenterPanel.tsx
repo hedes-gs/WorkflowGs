@@ -4,7 +4,7 @@ import Grid, { GridProps } from '@material-ui/core/Grid';
 import { connect } from "react-redux";
 import React from 'react';
 import { ClientApplicationState } from '../redux/State';
-import { ImageDto, ImageLinks, PageOfImageDto, ImageKeyDto } from '../model/ImageDto';
+import { ImageDto, ImageLinks, PageOfImageDto, ImageKeyDto } from '../model/DataModel';
 import { GridList, GridListTile, GridListTileBar, IconButton } from '@material-ui/core';
 import InfoIcon from '@material-ui/icons/Info';
 import TrashIcon from '@material-ui/icons/Delete';
@@ -41,8 +41,9 @@ export interface CenterPanelProps {
     max?: number,
     status?: string,
     displaySelectedImage: boolean,
-    selectedImageIsPresent?: boolean
-    displayImportImages?: boolean
+    selectedImageIsPresent?: boolean,
+    displayImportImages?: boolean,
+    startStreaming?: boolean
 }
 export interface CenterPanelState {
     min: number,
@@ -76,6 +77,10 @@ export const styles = {
         '*::-webkit-scrollbar-thumb': {
             outline: '1px solid slategrey',
             backgroundColor: 'rgba(81, 81, 81, .6)'
+        },
+        '.MuiChip-root': {
+            borderRadius: '8px',
+            fontSize: '12px'
         },
         '*::-webkit-scrollbar': {
             width: '0.8em'
@@ -139,6 +144,13 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
         window.removeEventListener('resize', this.updateWindowDimensions);
     }
 
+    shouldComponentUpdate(nextProps: CenterPanelProps, nextState: CenterPanelState): boolean {
+        return nextProps.displayImportImages ||
+            (nextProps.startStreaming != this.props.startStreaming) ||
+            (nextProps.displaySelectedImage != this.props.displaySelectedImage) ||
+            (nextProps.imgs != null && nextProps.imgs._embedded != null && (this.props.imgs != null && this.props.imgs._embedded != null && this.props.imgs._embedded.imageDtoList.length != nextProps.imgs._embedded.imageDtoList.length))
+    }
+
 
     getWidth(img: ImageDto, cellHeight: number): number {
         if (img.orientation == 8) {
@@ -156,82 +168,101 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
         return imgLinks != null ? (imgLinks._img != null ? imgLinks._img.href : '') : '';
     }
 
+    getLowImgRef(imgLinks?: ImageLinks | null): string {
+        return imgLinks != null ? (imgLinks._lowRes != null ? imgLinks._lowRes.href : '') : '';
+    }
+
 
     render() {
+        const titleOfImagesList = this.props.titleOfImagesList;
+        const imageDtoes = this.props.imgs?._embedded;
+        const iconStyle = {
+            transform: "scale(0.5)"
+        };
+
+
         if (this.props.displayImportImages) {
             return (<RealtimeImportImages />)
-        } else
-            if (this.props.imgs != null && this.props.imgs._embedded != null) {
-                const titleOfImagesList = this.props.titleOfImagesList;
-                const imageDtoes = this.props.imgs._embedded;
-                const iconStyle = {
-                    transform: "scale(0.5)"
-                };
-                var imageContent;
-                imageContent = <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#424242' }}><RightPanel /></div>;
+        }
+        else if (this.props.startStreaming != null && this.props.startStreaming) {
+            return (
+                <div style={{ backgroundColor: '#000000', height: '80vh' }}>
+                    <CircularProgress color="secondary" style={{ backgroundColor: '#000000', marginTop: '50vh' }} />
+                    <div style={{ color: '#ff0000' }}>
+                        Images en cours de chargement...
+                </div>
+                </div>);
 
-                if (this.props.displaySelectedImage) {
-                    return (
-                        <React.Fragment>
-                            <Grid container spacing={0} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
-                                <Grid item ref={this.refToLeftColum}>
-                                    <GridList cellHeight={200} cols={1} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
-                                        <GridListTile key="Subheader" style={{ height: 'auto' }}>
-                                            <ListSubheader component="div">{titleOfImagesList}</ListSubheader>
-                                        </GridListTile>
-                                        <GridListTile key="Subheader" style={{ height: 'auto' }}>
-                                            <Grid container spacing={0} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
-                                                <Grid item style={{ width: '100%' }} >
-                                                    <GridList component="div" cellHeight={200} style={{ width: '100%', backgroundColor: 'rgb(66, 66, 66)', display: 'block', height: '90vh' }} cols={2}>
-                                                        {imageDtoes.imageDtoList.filter(img => img.data != null && img.data.version == 1).map((img) => (
-                                                            <GridListTile style={{ float: 'left', width: '50%' }} component="div">
-                                                                <img src={this.getImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
-                                                                <GridListTileBar
-                                                                    classes={{
-                                                                        titleWrap: 'Mon-MuiGridListTileBar-titleWrap',
-                                                                    }}
-                                                                    title={
-                                                                        <div style={{ display: 'table' }}>
-                                                                            <div>{img.creationDateAsString}</div>
-                                                                            <div>{img.imageId}</div>
-                                                                        </div>
-                                                                    }
-                                                                    actionIcon={
-                                                                        <div style={{ float: 'right', width: '100%' }}>
-                                                                            <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickInfo(img)}>
-                                                                                <InfoIcon style={iconStyle} />
-                                                                            </IconButton>
-                                                                            <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDelete(img)} >
-                                                                                <TrashIcon style={iconStyle} />
-                                                                            </IconButton>
-                                                                            <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDownload(img)}>
-                                                                                <CloudDownloadIcon style={iconStyle} />
-                                                                            </IconButton>
-                                                                        </div>
-                                                                    }
-                                                                />
-                                                            </GridListTile>
-                                                        ))
-                                                        }
-                                                    </GridList>
-                                                </Grid>
+        } else if (this.props.displaySelectedImage) {
+            var imageContent;
+            imageContent = <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#424242' }}><RightPanel /></div>;
+            return (
+                <div>
+                    <div style={{ display: 'block', height: '80vh', flexWrap: 'wrap', justifyContent: 'space-around', overflowX: 'hidden', overflowY: 'hidden' }}>
+                        <Grid container spacing={0} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
+                            <Grid item ref={this.refToLeftColum}>
+                                <GridList cellHeight={200} cols={1} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
+                                    <GridListTile key="Subheader" style={{ height: 'auto' }}>
+                                        <ListSubheader component="div">{titleOfImagesList}</ListSubheader>
+                                    </GridListTile>
+                                    <GridListTile key="Subheader" style={{ height: 'auto' }}>
+                                        <Grid container spacing={0} style={{ backgroundColor: 'rgb(66, 66, 66)' }}>
+                                            <Grid item style={{ width: '100%' }} >
+                                                <GridList component="div" cellHeight={200} style={{ width: '100%', backgroundColor: 'rgb(66, 66, 66)', display: 'block', height: '80vh' }} cols={4}>
+                                                    {imageDtoes?.imageDtoList.filter(img => img.data != null && img.data.version == 1).map((img) => (
+                                                        <GridListTile style={{ float: 'left', width: '50%' }} component="div">
+                                                            <img src={this.getLowImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
+                                                            <GridListTileBar
+                                                                classes={{
+                                                                    titleWrap: 'Mon-MuiGridListTileBar-titleWrap',
+                                                                }}
+                                                                title={
+                                                                    <div style={{ display: 'table' }}>
+                                                                        <div>{img.creationDateAsString}</div>
+                                                                        <div>{img.imageId}</div>
+                                                                    </div>
+                                                                }
+                                                                actionIcon={
+                                                                    <div style={{ float: 'right', width: '100%' }}>
+                                                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickInfo(img)}>
+                                                                            <InfoIcon style={iconStyle} />
+                                                                        </IconButton>
+                                                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDelete(img)} >
+                                                                            <TrashIcon style={iconStyle} />
+                                                                        </IconButton>
+                                                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDownload(img)}>
+                                                                            <CloudDownloadIcon style={iconStyle} />
+                                                                        </IconButton>
+                                                                    </div>
+                                                                }
+                                                            />
+                                                        </GridListTile>
+                                                    ))
+                                                    }
+                                                </GridList>
                                             </Grid>
-                                        </GridListTile>
+                                        </Grid>
+                                    </GridListTile>
 
 
-                                    </GridList>
-                                </Grid>
-                                <Grid item>
-                                    {imageContent}
-                                </Grid>
+                                </GridList>
                             </Grid>
-                        </React.Fragment >);
-                } else {
-                    return (
+                            <Grid item>
+                                {imageContent}
+                            </Grid>
+                        </Grid>
+                    </div>
+                </div>
+            );
+        }
+        else {
+            return (
+                <div>
+                    <div style={{ display: 'block', height: '80vh', flexWrap: 'wrap', justifyContent: 'space-around', overflowX: 'hidden', overflowY: 'scroll' }}>
                         <GridList cellHeight={200} cols={this.nbOfColumnsInFullSize} style={{ backgroundColor: '#000000' }}>
-                            {imageDtoes.imageDtoList.filter(img => img.data != null && img.data.version == 1).map((img) => (
+                            {imageDtoes?.imageDtoList.map((img) => (
                                 <GridListTile cols={1} >
-                                    <img src={this.getImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
+                                    <img src={this.getLowImgRef(img._links)} width="200" height="200" />
                                     <GridListTileBar
                                         classes={{
                                             titleWrap: 'Mon-MuiGridListTileBar-titleWrap', // class name, e.g. `classes-nesting-root-x`
@@ -260,18 +291,12 @@ class CenterPanel extends React.Component<CenterPanelProps, CenterPanelState> {
                             ))
                             }
                         </GridList>
-                    );
-                }
-            } else {
-                // to put : <Backdrop />
-                return (
-                    <div style={{ backgroundColor: '#000000', height: '100vh' }}>
-                        <CircularProgress color="secondary" style={{ backgroundColor: '#000000', marginTop: '50vh' }} />
-                        <div style={{ color: '#ff0000' }}>
-                            Images en cours de chargement...
+
                     </div>
-                    </div>);
-            }
+
+                </div>
+            );
+        }
     }
 }
 
@@ -291,6 +316,7 @@ const mapStateToProps = (state: ClientApplicationState): CenterPanelProps => {
             imgs: currentPage,
             selectedImageIsPresent: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null,
             titleOfImagesList: state.reducerImagesList.imagesLoaded.titleOfImagesList,
+            startStreaming: false
         };
     }
 
@@ -303,7 +329,8 @@ const mapStateToProps = (state: ClientApplicationState): CenterPanelProps => {
                 max: state.reducerImagesAreStreamed.lastIntervallRequested.min,
                 imgs: null,
                 titleOfImagesList: state.reducerImagesAreStreamed.imagesAreStreamed.titleOfImagesList,
-                displaySelectedImage: false
+                displaySelectedImage: false,
+                startStreaming: true
             };
         }
         case 'STREAMING': {
@@ -314,14 +341,11 @@ const mapStateToProps = (state: ClientApplicationState): CenterPanelProps => {
                 max: state.reducerImagesAreStreamed.lastIntervallRequested.min,
                 imgs: state.reducerImagesAreStreamed.imagesAreStreamed.images,
                 titleOfImagesList: state.reducerImagesAreStreamed.imagesAreStreamed.titleOfImagesList,
-                displaySelectedImage: false
+                displaySelectedImage: false,
+                startStreaming: false
             };
         }
     }
-
-
-
-
     return {
         id: idGlobal++,
         status: 'Not known',

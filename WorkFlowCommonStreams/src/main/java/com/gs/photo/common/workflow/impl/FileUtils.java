@@ -1,15 +1,19 @@
 package com.gs.photo.common.workflow.impl;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Collections;
@@ -18,12 +22,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
@@ -41,14 +47,55 @@ import com.google.common.collect.Streams;
 import com.google.common.io.Files;
 import com.workflow.model.files.FileToProcess;
 
+import jcifs.CIFSContext;
+import jcifs.CIFSException;
+import jcifs.config.PropertyConfiguration;
+import jcifs.context.BaseContext;
+import jcifs.smb.NtlmPasswordAuthenticator;
+import jcifs.smb.SmbFile;
+
 @Service
 @ConditionalOnClass(value = com.emc.ecs.nfsclient.nfs.io.Nfs3File.class)
 public class FileUtils {
+    public static final int NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = (int) (2.0 * 1024 * 1024);
 
-    private static final int    NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = 4 * 1024 * 1024;
+    private static URLStreamHandler getProtocol(String protocol) {
+        switch (protocol) {
+            case "smb": {
+                try {
+                    BaseContext bc = new BaseContext(new PropertyConfiguration(System.getProperties()));
+                    final CIFSContext ct = bc.withCredentials(new NtlmPasswordAuthenticator("admin", "QuenVal@1303"));
+                    return new URLStreamHandler() {
 
-    protected static Logger     LOGGER                               = LoggerFactory.getLogger(FileUtils.class);
-    protected Map<String, Nfs3> mapOfNfs3client                      = new ConcurrentHashMap<>();
+                        @Override
+                        public URLConnection openConnection(URL u) throws IOException {
+                            if (FileUtils.LOGGER.isDebugEnabled()) {
+                                FileUtils.LOGGER.debug("Opening file " + u);
+                            }
+                            return URLConnectionWrapper.of(new SmbFile(u, ct));
+                        }
+
+                    };
+                } catch (CIFSException e) {
+                }
+                break;
+            }
+            case "nfs": {
+                return new NFSHandler();
+            }
+            case "localfile": {
+                return new LocalFileHandler();
+            }
+        }
+        return null;
+    }
+
+    static {
+        URL.setURLStreamHandlerFactory(protocol -> FileUtils.getProtocol(protocol));
+    }
+
+    protected static Logger     LOGGER          = LoggerFactory.getLogger(FileUtils.class);
+    protected Map<String, Nfs3> mapOfNfs3client = new ConcurrentHashMap<>();
 
     static String               LOCAL_ADDRESSES;
     static {
@@ -118,65 +165,116 @@ public class FileUtils {
         return retValue;
     }
 
+    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
+        return this.readFirstBytesOfFile(file, FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+    }
+
     public byte[] readFirstBytesOfFile(FileToProcess file, int bufferSize) throws IOException {
-        byte[] retValue = new byte[bufferSize];
-        Nfs3 nfs3 = new Nfs3(file.getHost(), file.getRootForNfs(), new CredentialUnix(0, 0, null), 3);
-        Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
-        try (
-            NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File, bufferSize)) {
-            inputStream.read(retValue);
-        } catch (IOException e) {
-            throw e;
+
+        if (!file.isCompressedFile()) {
+            return this.readFirstBytesOfFile(new URL(file.getUrl()), bufferSize);
+        } else {
+            return this.readFirstBytesOfCompressedFile(new URL(file.getUrl()), bufferSize);
+        }
+    }
+
+    public byte[] readFirstBytesOfFileRetry(FileToProcess file) {
+        byte[] retValue = null;
+        int nbOfRetries = 0;
+        try {
+            do {
+                try {
+                    nbOfRetries++;
+                    FileUtils.LOGGER.info(
+                        "[EVENT][{}] readFirstBytesOfFile of {} - try : {}",
+                        file.getImageId(),
+                        file,
+                        nbOfRetries);
+                    retValue = this.readFirstBytesOfFile(file);
+                    if ((retValue == null)) {
+                        FileUtils.LOGGER.warn(
+                            " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
+                            file,
+                            retValue == null ? "<null>" : retValue.length);
+                        throw new IOException("unable to read file " + file);
+                    }
+                } catch (Exception e) {
+                    if (nbOfRetries < 5) {
+                        FileUtils.LOGGER.error(
+                            "[EVENT][{}] Unable to get first bytes for {} , retrying in 1 seconds  ",
+                            file.getImageId(),
+                            file);
+                        TimeUnit.SECONDS.sleep(1);
+                    } else {
+                        FileUtils.LOGGER.error(
+                            "[EVENT][{}] Error when readFirstBytesOfFile of {} : unable to read first byte : {}",
+                            file.getImageId(),
+                            file,
+                            ExceptionUtils.getStackTrace(e));
+                    }
+                }
+            } while ((retValue == null) && (nbOfRetries < 5));
+        } catch (Exception e) {
+            FileUtils.LOGGER.error(
+                " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
+                file,
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
         }
         return retValue;
     }
 
-    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
-        FileUtils.LOGGER.debug(" readFirstBytesOfFile of {}", file);
-        byte[] retValue = new byte[FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED];
-        String root = file.getRootForNfs();
-        Nfs3 nfs3 = new Nfs3(file.getHost(), root, new CredentialUnix(0, 0, null), 3);
-        Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
-        if (!file.isCompressedFile()) {
-            try (
-                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
-                    FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED)) {
-                inputStream.read(retValue);
-            } catch (IOException e) {
-                FileUtils.LOGGER.error(
-                    "ERROR : unable to compute hash key for {} error is {} ",
-                    file,
-                    ExceptionUtils.getStackTrace(e));
-                throw e;
-            }
-        } else {
-            try (
-                NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File,
-                    FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
-                ZipInputStream zis = new ZipInputStream(inputStream)) {
-                ZipEntry entry = zis.getNextEntry();
-                do {
-                    if (FilenameUtils.isExtension(entry.getName(), "ARW")) {
-                        zis.read(retValue);
-                        break;
+    public byte[] readFirstBytesOfFileRetryWithbufferIncreased(FileToProcess file) {
+        byte[] retValue = null;
+        int nbOfRetries = 0;
+        try {
+            do {
+                try {
+                    nbOfRetries++;
+                    FileUtils.LOGGER.info(
+                        "[EVENT][{}] readFirstBytesOfFile of {} - try : {}",
+                        file.getImageId(),
+                        file,
+                        nbOfRetries);
+                    retValue = this.readFirstBytesOfFile(file, 10 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                    if ((retValue == null)) {
+                        FileUtils.LOGGER.warn(
+                            " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
+                            file,
+                            retValue == null ? "<null>" : retValue.length);
+                        throw new IOException("unable to read file " + file);
                     }
-                } while ((entry = zis.getNextEntry()) != null);
-
-            } catch (IOException e) {
-                FileUtils.LOGGER.error(
-                    "ERROR : unable to compute hash key for {} error is {} ",
-                    file,
-                    ExceptionUtils.getStackTrace(e));
-                throw e;
-            }
+                } catch (Exception e) {
+                    if (nbOfRetries < 5) {
+                        FileUtils.LOGGER.error(
+                            "[EVENT][{}] Unable to get first bytes for {} , retrying in 1 seconds  ",
+                            file.getImageId(),
+                            file);
+                        TimeUnit.SECONDS.sleep(1);
+                    } else {
+                        FileUtils.LOGGER.error(
+                            "[EVENT][{}] Error when readFirstBytesOfFile of {} : unable to read first byte : {}",
+                            file.getImageId(),
+                            file,
+                            ExceptionUtils.getStackTrace(e));
+                    }
+                }
+            } while ((retValue == null) && (nbOfRetries < 5));
+        } catch (Exception e) {
+            FileUtils.LOGGER.error(
+                " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
+                file,
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
         }
         return retValue;
     }
 
     public boolean deleteIfLocal(FileToProcess file, String root) throws IOException {
         InetAddress ip = InetAddress.getLocalHost();
-        String remoteHostName = file.getHost();
-        String remoteFolder = file.getPath();
+        URL url = new URL(file.getUrl());
+        String remoteHostName = url.getHost();
+        String remoteFolder = url.getPath();
         String localHostname = ip.getHostName();
         if (Objects.equal(remoteHostName.toLowerCase(), localHostname.toLowerCase())) {
             final File sourceFile = new File(root + "/" + remoteFolder);
@@ -187,83 +285,6 @@ public class FileUtils {
             }
         }
         return false;
-    }
-
-    public long copyRemoteToLocal(FileToProcess file, OutputStream os, Integer bufferSize, String root)
-        throws IOException, MissingFileException {
-        long retValue = 0;
-        String remoteHostName = file.getHost();
-        String remoteFolder = file.getPath();
-        InetAddress ip = InetAddress.getLocalHost();
-        String localHostname = ip.getHostName();
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        try {
-            if (Objects.equal(remoteHostName.toLowerCase(), localHostname.toLowerCase())) {
-                final File sourceFile = new File(root + "/" + remoteFolder);
-                if (sourceFile.exists()) {
-                    FileUtils.LOGGER.info(
-                        "[EVENT][{}] detected local host, using normal file copy - source file is {}",
-                        file.getImageId(),
-                        sourceFile);
-                    byte[] buffer = new byte[bufferSize];
-                    try (
-                        FileInputStream inputStream = new FileInputStream(sourceFile);) {
-                        int nbOfBytes = inputStream.read(buffer);
-                        while (nbOfBytes >= 0) {
-                            retValue = retValue + nbOfBytes;
-                            os.write(buffer, 0, nbOfBytes);
-                            nbOfBytes = inputStream.read(buffer);
-                        }
-                    } catch (IOException e) {
-                        FileUtils.LOGGER.error(
-                            "[EVENT][{}] Unexptected error when copy remote to local : {}",
-                            file.getImageId(),
-                            ExceptionUtils.getStackTrace(e));
-                        throw e;
-                    }
-                } else {
-                    FileUtils.LOGGER.error(
-                        "[EVENT][{}] detected local host, using normal file copy - source file  {} does not exist. Maybe already processed",
-                        file.getImageId(),
-                        sourceFile);
-                    throw new MissingFileException(file);
-                }
-            } else {
-                FileUtils.LOGGER.info(
-                    "[EVENT][{}] detected remote host, using ftp file copy - source file {}",
-                    file.getImageId(),
-                    file.getPath());
-                byte[] buffer = new byte[bufferSize];
-                String mountPoint = file.getRootForNfs();
-                Nfs3 nfs3 = this.createNFS3client(file, mountPoint);
-                Nfs3File nfs3File = new Nfs3File(nfs3, file.getPath());
-                try (
-                    NfsFileInputStream inputStream = new NfsFileInputStream(nfs3File, bufferSize)) {
-                    int nbOfBytes = inputStream.read(buffer);
-                    while (nbOfBytes >= 0) {
-                        retValue = retValue + nbOfBytes;
-                        os.write(buffer, 0, nbOfBytes);
-                        nbOfBytes = inputStream.read(buffer);
-                    }
-                } catch (IOException e) {
-                    FileUtils.LOGGER.error(
-                        "[EVENT][{}] Unexptected error when copy remote to local - {}",
-                        file.getImageId(),
-                        ExceptionUtils.getStackTrace(e));
-                    throw e;
-                }
-            }
-
-            return retValue;
-        } finally {
-            stopWatch.stop();
-            FileUtils.LOGGER.info(
-                "[EVENT][{}] Terminated copy, duration is {}, nb of byte {} Mb",
-                file.getImageId(),
-                stopWatch.formatTime(),
-                FileUtils.humanReadableByteCountBin(retValue));
-        }
     }
 
     public static String humanReadableByteCountBin(long bytes) {
@@ -366,6 +387,132 @@ public class FileUtils {
         return stream;
     }
 
+    public Stream<AbstractRemoteFile> toStream(URL url, final String... extensions) throws IOException {
+        return ((URLConnectionWrapper) url.openConnection()).listFiles(extensions)
+            .flatMap((x) -> this.findChildrenIfDirectoryFound(x, extensions));
+    }
+
+    public byte[] readFirstBytesOfFile(URL url, int bufferSize) throws IOException {
+        byte[] retValue = new byte[bufferSize];
+        int offset = 0;
+        int nbOfBytes = 0;
+        try (
+            InputStream is = url.openConnection()
+                .getInputStream()) {
+            do {
+                nbOfBytes = is.read(retValue, offset, retValue.length - offset);
+                if (nbOfBytes >= 0) {
+                    offset = offset + nbOfBytes;
+                }
+            } while ((nbOfBytes != -1) && (offset != retValue.length));
+        }
+        if (offset < retValue.length) {
+            byte[] truncated = new byte[offset];
+            System.arraycopy(retValue, 0, truncated, 0, offset);
+            return truncated;
+        }
+
+        return retValue;
+    }
+
+    public byte[] readFirstBytesOfCompressedFile(URL url, int bufferSize) throws IOException {
+        byte[] retValue = new byte[bufferSize];
+        int offset = 0;
+        try (
+            InputStream is = url.openConnection()
+                .getInputStream();
+            ZipInputStream zis = new ZipInputStream(is)) {
+            ZipEntry entry = zis.getNextEntry();
+            do {
+                if (FilenameUtils.isExtension(entry.getName(), "ARW")) {
+                    zis.read(retValue);
+                    break;
+                }
+            } while ((entry = zis.getNextEntry()) != null);
+        }
+        return retValue;
+    }
+
+    public long copyRemoteToLocal(URL url, Path localPath) throws IOException {
+        final File file = localPath.toFile();
+        org.apache.commons.io.FileUtils.copyURLToFile(url, file);
+        return file.length();
+    }
+
+    public long copyRemoteToLocal(URL url, OutputStream os) throws IOException {
+        try (
+            InputStream is = url.openStream()) {
+            return IOUtils.copyLarge(is, os);
+        }
+    }
+
+    public long copyRemoteToLocal(FileToProcess fileToProcess, Path localPath) throws IOException {
+        long retValue = -1;
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        try {
+            retValue = this.copyRemoteToLocal(new URL(fileToProcess.getUrl()), localPath);
+        } finally {
+            stopWatch.stop();
+            FileUtils.LOGGER.info(
+                "[EVENT][{}] Terminated copy, duration is {}, nb of byte {} Mb",
+                fileToProcess.getImageId(),
+                stopWatch.formatTime(),
+                FileUtils.humanReadableByteCountBin(retValue));
+        }
+        return retValue;
+    }
+
+    public long copyRemoteToLocal(FileToProcess fileToProcess, OutputStream localPath) throws IOException {
+        long retValue = -1;
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        try {
+            retValue = this.copyRemoteToLocal(new URL(fileToProcess.getUrl()), localPath);
+        } finally {
+            stopWatch.stop();
+            FileUtils.LOGGER.info(
+                "[EVENT][{}] Terminated copy, duration is {}, nb of byte {} Mb",
+                fileToProcess.getImageId(),
+                stopWatch.formatTime(),
+                FileUtils.humanReadableByteCountBin(retValue));
+        }
+        return retValue;
+    }
+
+    private Stream<AbstractRemoteFile> findChildrenIfDirectoryFound(AbstractRemoteFile x, final String... extensions) {
+        if (x.isDirectory()) {
+            FileUtils.LOGGER.info("List file {} ", x);
+            return Stream.of(x.listFiles((y) -> this.filterFile(y, extensions)))
+                .flatMap((t) -> this.findChildrenIfDirectoryFound(t, extensions));
+        }
+        return Stream.of(x);
+    }
+
+    protected boolean filterFile(File f, final String... extensions) {
+        if (!f.isDirectory()) {
+            for (String e : extensions) {
+                if (f.getName()
+                    .toLowerCase()
+                    .endsWith(e.toLowerCase())) { return true; }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    protected boolean filterFile(AbstractRemoteFile f, final String... extensions) {
+        if (!f.isDirectory()) {
+            for (String e : extensions) {
+                if (f.getName()
+                    .toLowerCase()
+                    .endsWith(e.toLowerCase())) { return true; }
+            }
+            return false;
+        }
+        return true;
+    }
+
     public Stream<File> toStream(String coordinates, String filePath, final String... extensions) throws IOException {
         Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
         Nfs3File file = new Nfs3File(nfs3, filePath);
@@ -436,15 +583,10 @@ public class FileUtils {
 
     }
 
-    protected Nfs3 createNFS3client(FileToProcess file, String root) throws IOException {
-        return this.mapOfNfs3client.computeIfAbsent(file.getHost() + "/root", (e) -> {
-            try {
-                FileUtils.LOGGER.info("Creating a Nfs3 client {} , {}", file.getHost(), root);
-                return new Nfs3(file.getHost(), root, new CredentialUnix(0, 0, null), 3);
-            } catch (IOException e1) {
-                throw new RuntimeException(e1);
-            }
-        });
+    public static String getSimpleNameFromUrl(String url) {
+        final Path urlPath = Paths.get(url);
+        final Path lastSegment = urlPath.getName(urlPath.getNameCount() - 1);
+        return lastSegment.toString();
     }
 
 }

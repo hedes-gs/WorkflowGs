@@ -63,7 +63,7 @@ public class WebFluxWebSocketComponentEventHandler implements WebSocketHandler {
                     try {
                         ComponentEvent ce = listener.getLastEvent(Duration.ofSeconds(5));
                         if (ce != null) {
-                            e.next(listener.getLastEvent());
+                            e.next(ce);
                         } else {
                             WebFluxWebSocketComponentEventHandler.LOGGER
                                 .info("Nothing received for the last 5 seconds...");

@@ -16,6 +16,7 @@ import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";
 import KeywordsServiceImpl, { KeywordsService } from '../services/KeywordsServices'
 import PersonsServiceImpl, { PersonsService } from "../services/PersonsServices";
+import AlbumsServiceImpl, { AlbumsService } from "../services/AlbumsServices";
 
 import {
     ApplicationThunkDispatch,
@@ -24,14 +25,18 @@ import {
     deleteKeywords,
     addPerson,
     deletePerson,
+    addAlbum,
+    deleteAlbum,
     dispatchAddKeywordEvent,
     dispatchDeleteKeywordEvent,
     dispatchAddPersonEvent,
     dispatchDeletePersonEvent,
+    dispatchAddAlbumEvent,
+    dispatchDeleteAlbumEvent,
     selectedImageIsLoading
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
-import { toArrayOfString, ImageDto } from '../model/ImageDto';
+import { toArrayOfString, ImageDto } from '../model/DataModel';
 
 interface ReactAutosuggestRemoteProp {
     id?: number,
@@ -53,6 +58,7 @@ interface ReactAutosuggestRemoteStat {
 var globalId: number;
 const keywordsService: KeywordsService = new KeywordsServiceImpl();
 const personsService: PersonsService = new PersonsServiceImpl();
+const albumsService: AlbumsService = new AlbumsServiceImpl();
 
 
 
@@ -97,14 +103,15 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         return (
             <div style={{ marginTop: '0.8em', marginBottom: '0.2em' }}>
                 <ChipInput
+                    fullWidthInput = {true}
+                    fullWidth = {true}
                     clearInputValueOnChange
                     onUpdateInput={(e) => this.handleChipInputChange(e, inputProps.onChange)}
                     value={this.state.value}
                     inputRef={inputProps.ref}
                     onAdd={inputProps.onAdd}
                     onDelete={this.handleDeleteChip}
-                    fullWidthInput={true}
-                    style={{ width: '100%', paddingTop: '0.6em' }}
+                    style={{paddingTop: '0.6em', flex: 'none' }}
 
                     {...other}
                 />
@@ -161,6 +168,7 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
 
         return (
             <Paper {...containerProps} style={{ zIndex: 100 }}>
+                
                 {children}
             </Paper>
         )
@@ -181,7 +189,6 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
                 selected={params.isHighlighted}
                 onMouseDown={(e: MouseEvent) => e.preventDefault()} // prevent the click causing the input to be blurred
             >
-                <div>
                     {parts.map((part, index) => {
                         return part.highlight ? (
                             <span key={String(index)} style={{ fontWeight: 500 }}>
@@ -193,7 +200,6 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
                                 </span>
                             )
                     })}
-                </div>
             </MenuItem>
         )
 
@@ -219,28 +225,11 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         return (
             <ElementAutosuggest
                 theme={{
-                    container: {
-                        flexGrow: 1,
-                        position: 'relative'
-                    },
-                    suggestionsContainerOpen: {
-                        position: 'absolute',
-                        marginTop: 1,
-                        marginBottom: 1 * 3,
-                        left: 0,
-                        right: 0,
-                        zIndex: 1
-                    },
-                    suggestion: {
-                        display: 'block'
-                    },
                     suggestionsList: {
                         margin: 0,
                         padding: 0,
-                        listStyleType: 'none'
-                    },
-                    textField: {
-                        width: '100%'
+                        listStyleType: 'none',
+                        backgroundColor: '#202020'
                     }
                 }}
                 renderInputComponent={this.renderInput}
@@ -283,7 +272,6 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
             return dispatch(r);
         },
         thunkActionForDeleteElement: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
-            dispatch(loadingEvent);
             const r = dispatchDeleteKeywordEvent(x);
             return dispatch(r);
         },
@@ -306,6 +294,20 @@ const mapStateToPropsForPerson = (state: ClientApplicationState, previousState: 
     return previousState;
 };
 
+const mapStateToPropsForAlbum = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
+
+    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+        return {
+            id: globalId++,
+            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.albums.flatMap((s) => s),
+
+        };
+    }
+    return previousState;
+};
+
+
 const mapDispatchToPropsForPerson = (dispatch: ApplicationThunkDispatch) => {
     return {
         addElement: addPerson,
@@ -315,12 +317,29 @@ const mapDispatchToPropsForPerson = (dispatch: ApplicationThunkDispatch) => {
             return dispatch(r);
         },
         thunkActionForDeleteElement: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
-            dispatch(loadingEvent);
             const r = dispatchDeletePersonEvent(x);
             return dispatch(r);
         },
         thunkActionForGetElement: (x: string) => {
             return personsService.getPersonsLike(x);
+        }
+    }
+};
+
+const mapDispatchToPropsForAlbum = (dispatch: ApplicationThunkDispatch) => {
+    return {
+        addElement: addAlbum,
+        deleteElement: deleteAlbum,
+        thunkActionForAddElement: (x: ApplicationEvent) => {
+            const r = dispatchAddAlbumEvent(x);
+            return dispatch(r);
+        },
+        thunkActionForDeleteElement: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => {
+            const r = dispatchDeleteAlbumEvent(x);
+            return dispatch(r);
+        },
+        thunkActionForGetElement: (x: string) => {
+            return albumsService.getAlbumsLike(x);
         }
     }
 };
@@ -332,6 +351,7 @@ function fetch() {
 
 const KeywordsElement = connect(mapStateToProps, mapDispatchToProps)(fetch());
 const PersonsElement = connect(mapStateToPropsForPerson, mapDispatchToPropsForPerson)(fetch());
+const AlbumsElement = connect(mapStateToPropsForAlbum, mapDispatchToPropsForAlbum)(fetch());
 
-export { KeywordsElement, PersonsElement }
+export { KeywordsElement, PersonsElement, AlbumsElement }
 

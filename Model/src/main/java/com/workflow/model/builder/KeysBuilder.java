@@ -460,23 +460,16 @@ public class KeysBuilder {
     }
 
     public static class TopicFileKeyBuilder {
-        protected String fileName;
-        protected String filePath;
+        protected String url;
 
-        public TopicFileKeyBuilder withFileName(String fileName) {
-            this.fileName = fileName;
-            return this;
-        }
-
-        public TopicFileKeyBuilder withFilePath(String filePath) {
-            this.filePath = filePath;
+        public TopicFileKeyBuilder withUrl(String url) {
+            this.url = url;
             return this;
         }
 
         public String build() {
             StringJoiner joiner = new StringJoiner("-");
-            return joiner.add(this.filePath)
-                .add(this.fileName)
+            return joiner.add(this.url)
                 .toString();
         }
 

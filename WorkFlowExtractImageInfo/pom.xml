@@ -112,6 +112,15 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>eu.agno3.jcifs</groupId>
+			<artifactId>jcifs-ng</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.emc.ecs</groupId>
+			<artifactId>nfs-client</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>

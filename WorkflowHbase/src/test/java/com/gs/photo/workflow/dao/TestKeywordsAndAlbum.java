@@ -1,6 +1,8 @@
 package com.gs.photo.workflow.dao;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -339,6 +341,66 @@ public class TestKeywordsAndAlbum {
         Assertions.assertEquals(0, imagesAfterDelete.size());
         Assertions.assertEquals(0, (int) this.hbaseImagesOfRatingsDAO.countAll(5l));
 
+    }
+
+    @Test
+    public void test016_get1005AlbumWhenAddingBulkOf1005AlbumsWithAPageOf1000() throws Throwable {
+        TestKeywordsAndAlbum.LOGGER.info("... test016");
+        this.hbaseImagesOfAlbumDAO.truncate();
+        Collection<HbaseImageThumbnail> hbaseDatas = new ArrayList<>();
+        for (int k = 0; k < 1005; k++) {
+            HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234_" + k, 120L, (short) 1);
+            hbi.getAlbums()
+                .add("Album1");
+            hbaseDatas.add(hbi);
+        }
+        this.hbaseImageThumbnailDAO.put(hbaseDatas);
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("Album1");
+        Assertions.assertEquals(1005, images.size());
+    }
+
+    @Test
+    public void test017_get999AlbumWhenAddingBulkOf1005AlbumsWithAPageOf1000AndRemove6Albums() throws Throwable {
+        TestKeywordsAndAlbum.LOGGER.info("... test017");
+        this.hbaseImagesOfAlbumDAO.truncate();
+        List<HbaseImageThumbnail> hbaseDatas = new ArrayList<>();
+        for (int k = 0; k < 1005; k++) {
+            HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234_" + k, 120L, (short) 1);
+            hbi.getAlbums()
+                .add("Album1");
+            hbaseDatas.add(hbi);
+        }
+        this.hbaseImageThumbnailDAO.put(hbaseDatas);
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("Album1");
+        Assertions.assertEquals(1005, images.size());
+        for (int k = 0; k < 6; k++) {
+            this.hbaseImagesOfAlbumDAO.deleteMetaData(hbaseDatas.get(k), "Album1");
+        }
+        images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("Album1");
+        Assertions.assertEquals(999, images.size());
+    }
+
+    @Test
+    public void test018_get1001AlbumWhenAddingBulkOf1000AlbumsWithAPageOf1000AndAddOneAlbumAtTheBeginning()
+        throws Throwable {
+        TestKeywordsAndAlbum.LOGGER.info("... test018");
+        this.hbaseImagesOfAlbumDAO.truncate();
+        List<HbaseImageThumbnail> hbaseDatas = new ArrayList<>();
+        for (int k = 1; k <= 1000; k++) {
+            HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234_" + k, 120L, (short) 1);
+            hbi.getAlbums()
+                .add("Album1");
+            hbaseDatas.add(hbi);
+        }
+        this.hbaseImageThumbnailDAO.put(hbaseDatas);
+        List<HbaseImageThumbnail> images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("Album1");
+        Assertions.assertEquals(1000, images.size());
+        HbaseImageThumbnail hbi = this.buildVersionHbaseImageThumbnail("1234_0", 0L, (short) 1);
+        hbi.getAlbums()
+            .add("Album1");
+        this.hbaseImageThumbnailDAO.put(hbi);
+        images = this.hbaseImagesOfAlbumDAO.getAllImagesOfMetadata("Album1");
+        Assertions.assertEquals(1001, images.size());
     }
 
     private HbaseImageThumbnail toHbaseImageOfKeyword(HbaseImageThumbnail hbi, String... kw) {

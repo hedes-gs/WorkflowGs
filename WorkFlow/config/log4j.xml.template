@@ -17,8 +17,7 @@
 		</Console>
 
 		<RollingFile name="RollingFile"
-			filename="logs/{{ application_id }}.log"
-			filepattern="${logPath}/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
+			filepattern="logs/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
 			<param name="append" value="false" />
 			<PatternLayout
 				pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n" />
@@ -28,8 +27,7 @@
 			<DefaultRolloverStrategy max="20" />
 		</RollingFile>
 		<RollingFile name="RollingFileJson"
-			filename="logs/json_{{ application_id }}.log"
-			filepattern="${logPath}/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
+			filepattern="logs/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
 			<param name="append" value="false" />
 			<JsonLayout compact="true" locationInfo="true"
 				complete="false" includeStacktrace="true" stacktraceAsString="true"
@@ -46,10 +44,12 @@
 		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Root level="debug">
-			<AppenderRef ref="RollingFile" level="info" />
-			<AppenderRef ref="RollingFileJson" level="warn" />
+		<Root level="info">
+			<AppenderRef ref="RollingFile" />
 		</Root>
+		<Logger name="org" level="warn">
+			<AppenderRef ref="RollingFileJson" />
+		</Logger>
 		<Logger name="com.gs" level="info">
 			<AppenderRef ref="RollingFileJson" />
 		</Logger>

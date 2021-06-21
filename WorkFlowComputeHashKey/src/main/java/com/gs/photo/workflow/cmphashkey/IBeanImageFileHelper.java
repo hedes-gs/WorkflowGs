@@ -11,8 +11,6 @@ public interface IBeanImageFileHelper {
 
     String computeHashKey(byte[] byteBuffer) throws IOException;
 
-    byte[] readFirstBytesOfFile(String filePath, String coordinates) throws IOException;
-
     byte[] readFirstBytesOfFile(FileToProcess file) throws IOException;
 
 }

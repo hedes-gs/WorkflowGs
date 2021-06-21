@@ -32,7 +32,6 @@ import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
-import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.archive.IBeanArchive;
@@ -227,16 +226,17 @@ public class BeanArchive implements IBeanArchive {
                     final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
                     boolean dirIsCreated = this.hdfsFileSystem.mkdirs(folderWhereRecord);
                     if (dirIsCreated) {
-                        final Path hdfsFilePath = this.build(folderWhereRecord, "/" + value.getName());
+                        final Path hdfsFilePath = this
+                            .build(folderWhereRecord, "/" + FileUtils.getSimpleNameFromUrl(value.getUrl()));
                         try (
                             FSDataOutputStream fdsOs = this.hdfsFileSystem.create(hdfsFilePath, true)) {
                             try {
-                                this.fileUtils.copyRemoteToLocal(value, fdsOs, BeanArchive.BUFFER_SIZE, "/localcache");
+                                this.fileUtils.copyRemoteToLocal(value, fdsOs);
                                 boolean isDeleted = this.fileUtils.deleteIfLocal(value, "/localcache");
                                 if (!isDeleted) {
                                     BeanArchive.LOGGER.warn("[ARCHIVE]File {} is not deleted ", value);
                                 }
-                            } catch (MissingFileException e) {
+                            } catch (IOException e) {
                                 if (this.hdfsFileSystem.exists(hdfsFilePath)) {
                                     BeanArchive.LOGGER.warn("[ARCHIVE]File {} already exist - {} ", value);
                                 } else {

@@ -95,11 +95,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
     // .withThumbNb(1)
     // .build();
     private static final FileToProcess      FILE_TO_PROCESS = FileToProcess.builder()
-        .withPath("/path")
-        .withHost("IPC3")
-        .withName("1234")
-        .withImageId("1234")
-        .withRootForNfs("/root")
+        .withUrl("nfs://ipc3:/path")
         .withImportEvent(
             ImportEvent.builder()
                 .withAlbum("album")
@@ -454,7 +450,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
             outputRecord.value()
                 .getHeight());
         Assert.assertEquals(
-            TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS.getPath(),
+            TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS.getUrl(),
             outputRecord.value()
                 .getPath());
         Assert.assertEquals(

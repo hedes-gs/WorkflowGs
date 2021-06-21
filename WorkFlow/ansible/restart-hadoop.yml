@@ -1,0 +1,20 @@
+---
+- hosts: ipc5
+  become: true
+  tasks:
+    - debug:
+        msg: "demarrage {{ PWD }}"
+    - name: build hadoop.service from template
+      template:
+        src: ./tools/hadoop/hadoop.service
+        dest: /etc/systemd/system/hadoop.service
+        owner: root
+        mode: 0666
+    - name: current_working_directory
+      shell: pwd
+      register: current_working_directory
+    - name: Start hadoop
+      shell: "systemctl restart hadoop.service"
+  vars:
+    ansible_become_pass: granada01
+    PWD: "{{ lookup('env', 'PWD') }}"

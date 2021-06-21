@@ -2,13 +2,13 @@ import 'moment/locale/fr'
 
 import { connect } from "react-redux";
 
-import { loadImagesInterval, ApplicationThunkDispatch, dispatchNewSelectedDateImagesInterval, ApplicationEvent, dispatchLastImages, loadLastImages } from '../redux/Actions';
+import { loadImagesInterval, ApplicationThunkDispatch,  ApplicationEvent, dispatchLastImages, loadLastImages } from '../redux/Actions';
 import React from 'react';
 import TreeView from '@material-ui/lab/TreeView';
 
 import Drawer from '@material-ui/core/SwipeableDrawer';
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
-import { MinMaxDatesDto } from '../model/MinMaxDatesDto'
+import { MinMaxDatesDto } from '../model/DataModel'
 import TreeLimitDates from '../components/TreeLimitDates'
 import { KeywordsComponent, PersonsComponent } from '../components/KeywordsComponent'
 
@@ -23,7 +23,7 @@ interface LeftPanelProps {
     isOpenedStateId?: number | 0;
     drawerIsOpen?: boolean | null;
     onClose?(): void | null;
-    loadImagesInterval?(min: number, max: number, intervallType: string, title: string): ApplicationEvent;
+    loadImagesInterval?(intervallType: string, title: string, min?: number, max?: number): ApplicationEvent;
     thunkAction?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
 }
 interface LeftPanelState {
@@ -50,13 +50,17 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
         this.handleIntervalSelected = this.handleIntervalSelected.bind(this);
     }
 
-    handleIntervalSelected(min: number, max: number, intervallType: string) {
+    handleIntervalSelected(intervallType: string, min?: number, max?: number) {
         if (this.props.loadImagesInterval != null && this.props.thunkAction != null) {
             this.setState({
                 drawerIsOpen: false,
                 minMaxDates: this.state.minMaxDates
             });
-            this.props.thunkAction(this.props.loadImagesInterval(min, max, intervallType, ' Photos du ' + MomentTimeZone(min).format('ddd DD MMMM YYYY, HH:mm:ss')))
+            this.props.thunkAction(this.props.loadImagesInterval(
+                intervallType,
+                min != null ? ' Photos du ' + MomentTimeZone(min).format('ddd DD MMMM YYYY, HH:mm:ss') : '',
+                min,
+                max))
         }
     }
 
@@ -148,8 +152,8 @@ export class LeftPanelClass extends React.Component<LeftPanelProps, LeftPanelSta
                         <TreeView>
                             <TreeLimitDates
                                 parentNodeType="init"
-                                min={min.valueOf()}
-                                max={max.valueOf()}
+                                min={min?.valueOf() ?? 0}
+                                max={max?.valueOf() ?? 0}
                                 ref={this.refToTreeLimitDatesElement}
                                 handleIntervalSelected={this.handleIntervalSelected} />
                         </TreeView>
@@ -182,11 +186,6 @@ const initialProps = (dispatch: ApplicationThunkDispatch) => {
     return {
         loadImagesInterval: loadImagesInterval,
         isOpened: false,
-        thunkAction: (x: ApplicationEvent) => {
-            const r = dispatchNewSelectedDateImagesInterval(x);
-            return dispatch(r);
-        }
-
     }
 };
 

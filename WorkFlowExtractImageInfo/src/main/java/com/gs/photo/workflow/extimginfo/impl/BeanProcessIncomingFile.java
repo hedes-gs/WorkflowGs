@@ -326,7 +326,13 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     }
 
     protected Stream<GenericKafkaManagedObject<?>> toKafkaManagedObject(ConsumerRecord<String, FileToProcess> rec) {
-        final Optional<Collection<IFD>> optionalFDs = this.beanFileMetadataExtractor.readIFDs(rec.key());
+        BeanProcessIncomingFile.LOGGER.info(
+            "[EVENT][{}] Reading IFDs for file = {}, at offset = {}, topic = {} ",
+            rec.key(),
+            rec.value(),
+            rec.offset(),
+            rec.topic());
+        final Optional<Collection<IFD>> optionalFDs = this.beanFileMetadataExtractor.readIFDs(rec.value());
         final Optional<Stream<GenericKafkaManagedObject<?>>> kmoAsStreamed = optionalFDs
             .map((ifd) -> this.toStreamOfKMO(ifd, rec));
         kmoAsStreamed.ifPresentOrElse(
@@ -424,6 +430,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     protected List<IFD> getSortedByLengthImages(Collection<IFD> ifd, ConsumerRecord<String, FileToProcess> rec) {
         List<IFD> foundImages = IFD.ifdsAsStream(ifd)
             .filter((i) -> i.imageIsPresent())
+            .filter((x) -> x.getJpegImage().length <= (2 * 1024 * 1024))
             .collect((Collectors.toList()));
         foundImages.sort((a, b) -> b.getJpegImage().length - a.getJpegImage().length);
         for (int k = 0; k < foundImages.size(); k++) {

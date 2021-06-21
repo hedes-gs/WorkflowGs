@@ -160,7 +160,7 @@ public class FinalImageBolt extends BaseRichBolt {
             this.doExecute(tuples);
             this.collector.ack(inputWindow);
         } catch (Exception e) {
-            FinalImageBolt.LOGGER.error("Unexpected error", ExceptionUtils.getStackTrace(e));
+            FinalImageBolt.LOGGER.error("Unexpected error, {} ", ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -169,10 +169,12 @@ public class FinalImageBolt extends BaseRichBolt {
         tuples.forEach((input) -> {
 
             FinalImage currentImage = (FinalImage) input.getValueByField(FinalImageBolt.FINAL_IMAGE);
-            FinalImageBolt.LOGGER.info("[EVENT][{}] receive one bolt FinalImageBolt", currentImage.getDataId());
-
             short version = input.getShortByField(FinalImageBolt.VERSION);
             String imgKey = input.getStringByField(FinalImageBolt.IMAGE_KEY);
+            FinalImageBolt.LOGGER.info(
+                "[EVENT][{}] receive one image in bolt FinalImageBolt - version is {} ",
+                currentImage.getDataId(),
+                version);
             Dim dim = this.get(currentImage.getCompressedImage());
             FinalImage.Builder builder = FinalImage.builder();
             builder.withCompressedData(currentImage.getCompressedImage())
@@ -182,13 +184,25 @@ public class FinalImageBolt extends BaseRichBolt {
                 .withDataId(currentImage.getDataId());
             FinalImage finalImage = builder.build();
             finalImage.setDataId(FinalImageKeyBuilder.build(finalImage, Short.toString(version)));
-            this.producerOfFinalImage.send(
-                new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage),
-                (a, e) -> this.process(finalImage.getDataId() + "-" + version, a, e));
-            final WfEvent wfEvent = this.buildEvent(imgKey, finalImage, currentImage.getDataId());
-            multiMapOfEvents.put(imgKey, wfEvent);
             FinalImageBolt.LOGGER
-                .info("[EVENT][{}] Produce finalImage, version is {}", finalImage.getDataId(), finalImage.getVersion());
+                .info("[EVENT][{}] in finalImageBolt {} before sending in topic", imgKey, finalImage.getDataId());
+            try {
+                this.producerOfFinalImage.send(
+                    new ProducerRecord<String, Object>(this.outputTopic, imgKey, finalImage),
+                    (a, e) -> this.process(imgKey, finalImage.getDataId() + "-" + version, a, e));
+                final WfEvent wfEvent = this.buildEvent(imgKey, finalImage, currentImage.getDataId());
+                multiMapOfEvents.put(imgKey, wfEvent);
+            } catch (Exception e) {
+                FinalImageBolt.LOGGER.error(
+                    "[EVENT][{}] unexpected error in bolt FinalImageBolt : {} ",
+                    currentImage.getDataId(),
+                    ExceptionUtils.getStackTrace(e));
+            }
+            FinalImageBolt.LOGGER.info(
+                "[EVENT][{}] Produce finalImage with data id {}, version is {}",
+                imgKey,
+                finalImage.getDataId(),
+                finalImage.getVersion());
         });
         multiMapOfEvents.keySet()
             .forEach(
@@ -200,8 +214,13 @@ public class FinalImageBolt extends BaseRichBolt {
                             .withProducer("STORM_BUILD_FINAL_IMAGE")
                             .withEvents(multiMapOfEvents.get(k))
                             .build())));
-        this.producerOfFinalImage.flush();
-        this.producerOfEvents.flush();
+        try {
+            this.producerOfFinalImage.flush();
+            this.producerOfEvents.flush();
+        } catch (Exception e) {
+            FinalImageBolt.LOGGER
+                .error("Unexpected error in bolt FinalImageBolt when flusing {} ", ExceptionUtils.getStackTrace(e));
+        }
     }
 
     private WfEvent buildEvent(String imgKey, FinalImage finalImage, String parentImageId) {
@@ -213,25 +232,17 @@ public class FinalImageBolt extends BaseRichBolt {
             .build();
     }
 
-    private void process(String imgId, RecordMetadata a, Exception e) {
+    private void process(String imgKey, String imgId, RecordMetadata a, Exception e) {
         if (e != null) {
-            FinalImageBolt.LOGGER
-                .warn("[EVENT][{}] finalImage not sent due to the error", imgId, ExceptionUtils.getStackFrames(e));
+            FinalImageBolt.LOGGER.warn(
+                "[EVENT][{}] finalImage for id : {} not sent due to the error",
+                imgKey,
+                imgId,
+                ExceptionUtils.getStackFrames(e));
         } else {
-            FinalImageBolt.LOGGER.info("[EVENT][{}] finalImage, sent at offset {}", imgId, a.toString());
+            FinalImageBolt.LOGGER
+                .info("[EVENT][{}] finalImage with id {} , sent at offset {}", imgKey, imgId, a.toString());
         }
-    }
-
-    private WfEvent buildEvent(String imageKey, String parentDataId, String dataId) {
-        return WfEventProduced.builder()
-            .withDataId(dataId)
-            .withParentDataId(parentDataId)
-            .withImgId(imageKey)
-            .withStep(
-                WfEventStep.builder()
-                    .withStep(WfEventStep.CREATED_FROM_STEP_IMG_PROCESSOR)
-                    .build())
-            .build();
     }
 
     public String getKafkaBrokers() { return this.kafkaBrokers; }

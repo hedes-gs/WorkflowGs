@@ -193,7 +193,12 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
             byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(f.value());
             String key = this.beanImageFileHelper.computeHashKey(rawFile);
 
-            this.LOGGER.debug("[EVENT][{}] getting bytes to compute hash key, length is {}", key, rawFile.length);
+            this.LOGGER.info(
+                "[EVENT][{}] getting bytes to compute hash key, length is {} [kafka : offset {}, topic {}] ",
+                key,
+                rawFile.length,
+                f.offset(),
+                f.topic());
             return KafkaManagedFileToProcess.builder()
                 .withHashKey(key)
                 .withRawFile(rawFile)

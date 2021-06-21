@@ -3,6 +3,9 @@
   tasks:
     - debug:
         msg: Download processexporter "{{ processexporter_version }}"
+    - name: stop processexporter
+      shell: "systemctl stop process_exporter.service"
+      ignore_errors: yes
     - user: name="{{ user_to_create }}" group=nogroup
     - name: Download processexporter {{ processexporter_version }}
       get_url: 
@@ -51,5 +54,5 @@
     user_to_create: processexporter
     PWD: "{{ lookup('env', 'PWD') }}"
     processexporter_install_folder: /home/processexporter
-    processexporter_version: 0.5.0
+    processexporter_version: 0.7.5
 

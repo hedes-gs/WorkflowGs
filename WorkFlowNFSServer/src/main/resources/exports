@@ -8,5 +8,5 @@
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
 #
-/localcache ipc?(rw,noacl,all_squash) IPC?(rw,noacl,all_squash) 192.168.1.*(rw,noacl,no_root_squash)
-/usb-input-sdcard  ipc?(rw,noacl,all_squash) IPC?(rw,noacl,all_squash)  192.168.1.*(rw,noacl,no_root_squash)
+/localcache ipc?(rw,noacl,all_squash) IPC?(rw,noacl,no_root_squash)
+/usb-input-sdcard  10.0.0.0/24(rw,noacl,all_squash) 192.168.1.*(rw,noacl,no_root_squash)

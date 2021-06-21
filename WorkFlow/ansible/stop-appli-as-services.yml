@@ -4,8 +4,8 @@
   tasks:
     - name: Stop appli
       shell: systemctl stop {{item}}_appli.service
-      when: inventory_hostname in groups[item]
       with_items: "{{ applis }}"
+      ignore_errors: true
   vars:
     ansible_become_pass: granada01
     PWD: "{{ lookup('env', 'PWD') }}"

@@ -7,37 +7,14 @@ import java.util.Map;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
-import com.gs.photo.common.workflow.hbase.dao.AbstractMetaDataDAO;
+import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseRatingsDAO;
 import com.workflow.model.HbaseRatings;
 
 @Component
-public class HbaseRatingsDAO extends AbstractMetaDataDAO<HbaseRatings, Long> implements IHbaseRatingsDAO {
+public class HbaseRatingsDAO extends AbstractHbaseRatingsDAO implements IHbaseRatingsDAO {
 
     // @Autowired
     protected SimpMessagingTemplate template;
-
-    @Override
-    protected byte[] createKey(Long rating) throws IOException {
-        HbaseRatings HbaseKeywords = com.workflow.model.HbaseRatings.builder()
-            .withRatings(rating)
-            .build();
-
-        byte[] keyValue = new byte[this.getHbaseDataInformation()
-            .getKeyLength()];
-        this.getHbaseDataInformation()
-            .buildKey(HbaseKeywords, keyValue);
-        return keyValue;
-    }
-
-    @Override
-    public long countAll() throws IOException, Throwable {
-        return super.countWithCoprocessorJob(this.getHbaseDataInformation());
-    }
-
-    @Override
-    public long countAll(HbaseRatings metaData) throws IOException, Throwable {
-        return super.countAll(metaData.getRatings());
-    }
 
     protected Map<String, Long> countAllPerRatings() throws IOException {
         try {

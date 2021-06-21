@@ -1,9 +1,9 @@
 - name: stop ignite 
   shell: "systemctl stop apache-ignite@cluster-server.xml"
   ignore_errors: yes
-- name: Install aptitude using apt
-  shell: "apt install dirmngr --no-install-recommends"
-  ignore_errors: yes
+# - name: Install aptitude using apt
+#   shell: "apt install dirmngr --no-install-recommends"
+#   ignore_errors: yes
 - name: clean
   file:
     path: /var/lib/apache-ignite/db/

@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +29,7 @@ public class ComponentController {
     @PostMapping(path = "/import/start")
     public boolean startImport(@RequestBody ImportEvent importEvent) throws IOException {
         ComponentController.LOGGER.info("Request to start import with {}", importEvent);
-        importEvent.setForTest(false);
+        importEvent.setForTest(true);
         importEvent.setNbMaxOfImages(500);
         this.kafkaTemplate.send(this.topicImportEvent, importEvent);
         return true;

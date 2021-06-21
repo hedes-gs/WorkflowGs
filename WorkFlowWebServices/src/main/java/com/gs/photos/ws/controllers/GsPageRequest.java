@@ -210,4 +210,15 @@ public class GsPageRequest implements Pageable, Serializable {
         public GsPageRequest build() { return new GsPageRequest(this); }
     }
 
+    @Override
+    public Pageable withPage(int pageNumber) {
+
+        return new Builder().withFirstRow(this.firstRow)
+            .withLastRow(this.lastRow)
+            .withPage(pageNumber - 1)
+            .withPageSize(this.pageSize)
+            .build();
+
+    }
+
 }

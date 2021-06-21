@@ -1,0 +1,12 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: schedule shutdown
+    - cron:
+        name: "schedule shutdown"
+        minute: "0"
+        hour: "23"
+        job: "shutdown -P now"
+  vars:
+    ansible_become_pass: granada01

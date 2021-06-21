@@ -30,12 +30,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import org.cliffc.high_scale_lib.NonBlockingHashMap;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.dcache.auth.GidPrincipal;
 import org.dcache.auth.UidPrincipal;
 import org.dcache.nfs.FsExport;
@@ -66,19 +66,19 @@ import com.google.common.primitives.Longs;
  */
 public class LocalFileSystem implements VirtualFileSystem {
 
-    protected static Logger                      LOGGER         = LoggerFactory.getLogger(LocalFileSystem.class);
+    protected static Logger                  LOGGER         = LoggerFactory.getLogger(LocalFileSystem.class);
 
-    private final Path                           _root;
-    private final NonBlockingHashMapLong<Path>   inodeToPath    = new NonBlockingHashMapLong<>();
-    private final NonBlockingHashMap<Path, Long> pathToInode    = new NonBlockingHashMap<>();
-    private final AtomicLong                     fileId         = new AtomicLong(1);                             // numbering
-                                                                                                                 // starts
-                                                                                                                 // at 1
-    private final NfsIdMapping                   _idMapper      = new SimpleIdMap();
-    private final UserPrincipalLookupService     _lookupService = FileSystems.getDefault()
+    private final Path                       _root;
+    private final Map<Long, Path>            inodeToPath    = new ConcurrentHashMap<>();
+    private final Map<Path, Long>            pathToInode    = new ConcurrentHashMap<>();
+    private final AtomicLong                 fileId         = new AtomicLong(1);                             // numbering
+                                                                                                             // starts
+                                                                                                             // at 1
+    private final NfsIdMapping               _idMapper      = new SimpleIdMap();
+    private final UserPrincipalLookupService _lookupService = FileSystems.getDefault()
         .getUserPrincipalLookupService();
 
-    private final static boolean                 IS_UNIX;
+    private final static boolean             IS_UNIX;
     static {
         IS_UNIX = !System.getProperty("os.name")
             .startsWith("Win");
@@ -175,7 +175,7 @@ public class LocalFileSystem implements VirtualFileSystem {
         LocalFileSystem.LOGGER.info(" subDir  are {}", subDir);
         // map existing structure (if any)
         this.map(this.fileId.getAndIncrement(), this._root); // so root is always inode #1
-        subDir.forEach((f) -> buildInodes(f));
+        subDir.forEach((f) -> this.buildInodes(f));
     }
 
     protected void buildInodes(Path f) {
@@ -517,7 +517,7 @@ public class LocalFileSystem implements VirtualFileSystem {
         } else {
             DosFileAttributes dosAttrs = (DosFileAttributes) attrs;
             stat.setGid(0);
-            stat.setUid(0);
+            stat.setUid(1000);
             int type = dosAttrs.isSymbolicLink() ? Stat.S_IFLNK : dosAttrs.isDirectory() ? Stat.S_IFDIR : Stat.S_IFREG;
             stat.setMode(type | (dosAttrs.isReadOnly() ? 0400 : 0600));
             stat.setNlink(1);

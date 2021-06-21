@@ -673,7 +673,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
         scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_PERSONS_BYTES);
         return scan;
     }
@@ -685,7 +685,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
         scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_META_BYTES);
+        scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_PERSONS_BYTES);
         return scan;
     }

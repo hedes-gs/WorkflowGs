@@ -2,7 +2,7 @@
 import React from 'react';
 import Rating from '@material-ui/lab/Rating';
 import { connect } from "react-redux";
-import { toMap } from '../model/ImageDto'
+import { toMap } from '../model/DataModel'
 import { ClientApplicationState } from '../redux/State';
 import { ApplicationThunkDispatch, ApplicationEvent, updateImage, dispatchLoadRatings, loadingRatings } from '../redux/Actions';
 import { withStyles } from '@material-ui/core/styles';

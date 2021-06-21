@@ -3,6 +3,7 @@ package com.workflow.model;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -11,11 +12,14 @@ import org.apache.avro.reflect.Nullable;
 public class HbaseImagesOfMetadata extends HbaseData implements Comparable<HbaseImagesOfMetadata> {
     private static final long serialVersionUID = 1L;
 
-    @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 1, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
+    @Column(hbaseName = "region_salt", isPartOfRowkey = true, rowKeyNumber = 0, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+    protected Short           metaDataRegionSalt;
+    @Column(hbaseName = "creation_date", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteLong.class, fixedWidth = ModelConstants.FIXED_WIDTH_CREATION_DATE)
     protected long            creationDate;
-    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 2, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
+    @Column(hbaseName = "region_salt", isPartOfRowkey = true, rowKeyNumber = 3, toByte = ToByteShort.class, fixedWidth = ModelConstants.FIXED_WIDTH_SHORT)
+    protected Short           regionSalt;
+    @Column(hbaseName = "image_id", isPartOfRowkey = true, rowKeyNumber = 4, toByte = ToByteString.class, fixedWidth = ModelConstants.FIXED_WIDTH_IMAGE_ID)
     protected String          imageId;
-
     // Data
 
     @Column(hbaseName = "image_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 100)
@@ -64,9 +68,9 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
     @Column(hbaseName = "artist", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 118)
     @Nullable
     protected String          artist;
-    @Column(hbaseName = "importName", toByte = ToByteString.class, columnFamily = "meta", rowKeyNumber = 119)
+    @Column(hbaseName = HbaseImageThumbnail.TABLE_FAMILY_IMPORT_NAME, toByte = ToByteString.class, columnFamily = HbaseImageThumbnail.TABLE_FAMILY_IMPORT_NAME, rowKeyNumber = 119)
     @Nullable
-    protected String          importName;
+    protected HashSet<String> importName;
 
     public HbaseImagesOfMetadata() { super(); }
 
@@ -156,9 +160,13 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
 
     public void setArtist(String artist) { this.artist = artist; }
 
-    public String getImportName() { return this.importName; }
+    public HashSet<String> getImportName() { return this.importName; }
 
-    public void setImportName(String importName) { this.importName = importName; }
+    public void setImportName(HashSet<String> importName) { this.importName = importName; }
+
+    public static long getSerialversionuid() { return HbaseImagesOfMetadata.serialVersionUID; }
+
+    public Short getRegionSalt() { return this.regionSalt; }
 
     @Override
     public String toString() {

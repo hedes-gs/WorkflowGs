@@ -4,9 +4,13 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ColumnFamily {
     protected String              cfName;
     protected Map<byte[], byte[]> values;
+    protected static Logger       LOGGER = LoggerFactory.getLogger(HbaseDataInformation.class);
 
     public void addColumn(String key, byte[] value) { this.values.put(key.getBytes(Charset.forName("UTF-8")), value); }
 

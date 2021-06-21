@@ -85,8 +85,7 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
 
         KeySet(byte[] key) {
             this.key = key;
-            this.salt = Bytes.toShort(key, 8);
-
+            this.salt = Bytes.toShort(key, 0);
         }
     }
 
@@ -333,7 +332,6 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
             .groupBy((key) -> key.getSalt())
             .flatMap(Flux::collectList)
             .map((x) -> this.toScan(x, metaData, metaDataFamily))
-
             .flatMap((x) -> this.toIterable(x, thumbTable))
             .map((x) -> x.getRow());
 
@@ -364,10 +362,6 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
 
     private Flux<Result> toIterable(Scan scan, Table thumbTable) {
         try {
-            final ResultScanner scanner = thumbTable.getScanner(scan);
-            Result re = scanner.next();
-            AbstractHbaseImagesOfMetadataDAO.LOGGER.info(" -- > {} ", Arrays.toString(re.getRow()));
-            scanner.close();
             return Flux.fromIterable(thumbTable.getScanner(scan));
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -396,9 +390,11 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
         filter.setFilterIfMissing(true);
         filter.setLatestVersionOnly(true);
         AbstractHbaseImagesOfMetadataDAO.LOGGER.info(
-            "[HBASE_IMG_THUMBNAIL_DAO]Scan first row is {}, last row is {} - filter is {}",
+            "[HBASE_IMG_THUMBNAIL_DAO]Scan first row is {}/{}, last row is {}/{} - filter is {}",
             Arrays.toString(firstKeyToRetrieve),
+            new String(firstKeyToRetrieve),
             Arrays.toString(lastKeyToRetrieve),
+            new String(lastKeyToRetrieve),
             filter);
         Scan scan = this.createScanToGetAllColumnsWithoutImages()
             .setFilter(filter)

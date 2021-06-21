@@ -19,13 +19,14 @@ public class ImageDto implements Serializable {
     protected int             originalWidth;
     protected int             originalHeight;
     protected int             orientation;
+    protected String          importName;
     protected String          caption;
     protected String          iso;
     protected String          aperture;
     protected String          speed;
     protected String[]        keywords;
     protected String[]        persons;
-    protected String          album;
+    protected String[]        albums;
     protected String          camera;
     protected String          lens;
     protected long            ratings;
@@ -40,17 +41,20 @@ public class ImageDto implements Serializable {
         this.originalWidth = builder.originalWidth;
         this.originalHeight = builder.originalHeight;
         this.orientation = builder.orientation;
+        this.importName = builder.importName;
         this.caption = builder.caption;
         this.iso = builder.iso;
         this.aperture = builder.aperture;
         this.speed = builder.speed;
         this.keywords = builder.keywords;
         this.persons = builder.persons;
-        this.album = builder.album;
+        this.albums = builder.albums;
         this.camera = builder.camera;
         this.lens = builder.lens;
         this.ratings = builder.ratings;
     }
+
+    public String getImportName() { return this.importName; }
 
     public String[] getPersons() { return this.persons; }
 
@@ -64,9 +68,9 @@ public class ImageDto implements Serializable {
 
     public void setKeywords(String[] keywords) { this.keywords = keywords; }
 
-    public String getAlbum() { return this.album; }
+    public String[] getAlbums() { return this.albums; }
 
-    public void setAlbum(String album) { this.album = album; }
+    public void setAlbums(String[] album) { this.albums = album; }
 
     public String getCamera() { return this.camera; }
 
@@ -173,13 +177,14 @@ public class ImageDto implements Serializable {
         private int           originalWidth;
         private int           originalHeight;
         private int           orientation;
+        private String        importName;
         private String        caption;
         private String        iso;
         private String        aperture;
         private String        speed;
         private String[]      keywords;
         private String[]      persons;
-        private String        album;
+        private String[]      albums;
         private String        camera;
         private String        lens;
         private long          ratings;
@@ -295,6 +300,18 @@ public class ImageDto implements Serializable {
         }
 
         /**
+         * Builder method for importName parameter.
+         *
+         * @param importName
+         *            field to set
+         * @return builder
+         */
+        public Builder withImportName(String importName) {
+            this.importName = importName;
+            return this;
+        }
+
+        /**
          * Builder method for caption parameter.
          *
          * @param caption
@@ -373,8 +390,8 @@ public class ImageDto implements Serializable {
          *            field to set
          * @return builder
          */
-        public Builder withAlbum(String album) {
-            this.album = album;
+        public Builder withAlbums(String[] album) {
+            this.albums = album;
             return this;
         }
 

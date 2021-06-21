@@ -80,17 +80,19 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
                     try {
                         table.append(app);
                     } catch (IOException e) {
+                        GenericDAO.LOGGER.error("Unable to process {}", app);
                         throw new RuntimeException(e);
                     }
                     return app;
                 })
                 .collect(Collectors.toList());
             appends.clear();
-        } catch (IOException e) {
+        } catch (Throwable e) {
             GenericDAO.LOGGER.warn(
                 "Unable to record some data in {}, error is {}",
                 hbaseDataInformation.getTable(),
                 ExceptionUtils.getStackTrace(e));
+            hbaseData.forEach((t) -> GenericDAO.LOGGER.error(" ----> {} ", t));
             throw new RuntimeException(e);
         }
     }

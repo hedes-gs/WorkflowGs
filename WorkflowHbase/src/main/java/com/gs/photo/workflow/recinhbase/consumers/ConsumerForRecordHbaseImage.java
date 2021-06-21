@@ -180,7 +180,7 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
             ConsumerForRecordHbaseImage.LOGGER.info(
                 "[CONSUMER][{}] End of flusing DAOs - duration is {} ",
                 this.getConsumer(),
-                stopWatch.formatSplitTime());
+                stopWatch.formatTime());
         }
 
     }

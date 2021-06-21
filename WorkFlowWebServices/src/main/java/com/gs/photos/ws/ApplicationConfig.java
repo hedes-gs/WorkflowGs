@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.autoconfigure.web.format.DateTimeFormatters;
 import org.springframework.boot.autoconfigure.web.format.WebConversionService;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -343,7 +344,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
     @Bean
     public WebConversionService webConversionService() {
-        WebConversionService conversionService = new WebConversionService(DateTimeHelper.SPRING_DATE_TIME_PATTERN) {
+        WebConversionService conversionService = new WebConversionService(
+            new DateTimeFormatters().timeFormat(DateTimeHelper.SPRING_DATE_TIME_PATTERN)) {
 
         };
 

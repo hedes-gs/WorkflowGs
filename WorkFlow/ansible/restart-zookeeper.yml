@@ -1,0 +1,10 @@
+---
+- hosts: ipc0,ipc1,ipc2,ipc7,ipc8
+  become: true
+  tasks:
+    - debug:
+        msg: "Restart zookeeper"
+    - name: Start zookeeper
+      shell: "systemctl restart zookeeper.service"
+  vars:
+    ansible_become_pass: granada01

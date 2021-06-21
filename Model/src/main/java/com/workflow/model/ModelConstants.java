@@ -13,6 +13,7 @@ public interface ModelConstants {
     public static final int FIXED_WIDTH_EXIF_PATH     = 10;
     public static final int FIXED_WIDTH_KEYWORD       = 64;
     public static final int FIXED_WIDTH_ALBUM_NAME    = 64;
+    public static final int FIXED_WIDTH_IMPORT_NAME   = 64;
     public static final int FIXED_WIDTH_RATINGS       = 8;
     public static final int FIXED_WIDTH_PERSON_NAME   = 128;
 }

@@ -17,8 +17,7 @@ import DirectionsIcon from '@material-ui/icons/Directions';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
-import { MinMaxDatesDto } from '../model/MinMaxDatesDto'
-import LeftPanel, { LeftPanelClass } from './leftpanel'
+import { MinMaxDatesDto, ImageKeyDto, ImageDto } from '../model/DataModel'
 import { ParagraphTitle } from '../styles';
 import { KeyboardDateTimePicker } from "@material-ui/pickers";
 import MomentTimeZone, { Moment } from 'moment-timezone';
@@ -27,20 +26,20 @@ import { connect } from "react-redux";
 import {
     loadImagesInterval,
     ApplicationThunkDispatch,
-    dispatchNewSelectedDateImagesInterval,
     dispatchCheckoutImage,
     ApplicationEvent,
     dispatchLastImages,
+    dispatchGetAllDatesOfImages,
     loadLastImages,
     loadPagesOfImages,
     dispatchNextPage,
     dispatchPrevPage,
-    downloadImage
+    downloadImage,
+    getAllDatesOfImages
 
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
 import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date';
-import { ImageKeyDto, ImageDto } from '../model/ImageDto';
 import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
 import { Badge } from '@material-ui/core';
 import RightPanel from './RightPanel';
@@ -63,8 +62,10 @@ export interface HeaderProps {
     intervallType?: string;
     loadLastImages?(pageNumber: number, title: string): ApplicationEvent;
     loadPagesOfImages?(url: string, title: string): ApplicationEvent;
+    loadDatesOfImages?(): ApplicationEvent;
     downloadImage?(img: ImageDto): ApplicationEvent;
     thunkActionToLoadAllImages?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
+    thunkActionToGetDatesOfImages?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     thunkActionToCheckoutImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     loadImagesInterval?(min: number, max: number, intervallType: string): ApplicationEvent;
     thunkAction?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
@@ -108,12 +109,10 @@ export const styles = {
 export class Header extends React.Component<HeaderProps, HeaderState> {
 
     protected limitDatesService: LimitDatesService;
-    protected refToLeftPanel: React.RefObject<LeftPanelClass>;
     protected pageNumber: number;
 
     constructor(props: HeaderProps) {
         super(props);
-        this.openLeftPanel = this.openLeftPanel.bind(this);
         this.state = {
             pageNumber: 1,
             headerIsUpdating: false,
@@ -121,7 +120,6 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
             lastSelectedDate: MomentTimeZone()
         }
         this.limitDatesService = new LimitDatesServiceImpl();
-        this.refToLeftPanel = React.createRef();
         this.handleSecundDateChange = this.handleSecundDateChange.bind(this);
         this.handleFirstDateChange = this.handleFirstDateChange.bind(this);
         this.handleUpdate = this.handleUpdate.bind(this);
@@ -263,20 +261,20 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
     }
 
     openLeftPanel() {
-        if (this.refToLeftPanel.current != null) {
-            this.refToLeftPanel.current.handleOnOpen();
-        }
     }
     componentDidMount() {
         if (this.props.loadLastImages != null && this.props.thunkActionToLoadAllImages != null) {
             this.props.thunkActionToLoadAllImages(this.props.loadLastImages(1, 'Dernières images'))
+        }
+        if (this.props.thunkActionToGetDatesOfImages != null && this.props.loadDatesOfImages != null) {
+            this.props.thunkActionToGetDatesOfImages(this.props.loadDatesOfImages());
         }
         this.limitDatesService.getLimits((lim?: MinMaxDatesDto) => {
             this.setState({
                 headerIsUpdating: false,
                 leftPanelIsOpened: this.state.leftPanelIsOpened,
                 minMaxDates: lim,
-                totalImages: lim == null ? 0 : lim.nbOfImages,
+                totalImages: lim == null ? 0 : lim.countNumber,
                 firstSelectDate: MomentTimeZone(),
                 lastSelectedDate: MomentTimeZone(),
             });
@@ -340,11 +338,11 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                             <div style={{ display: 'table-row' }} >
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={'Date premiere image'} size='10px' />
-                                    <ParagraphTitle text={(currentMinMax != null ? currentMinMax.minDate.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") : 'unset')} />
+                                    <ParagraphTitle text={(currentMinMax?.minDate?.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") ?? 'unset')} />
                                 </div>
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={'Date derniere image '} size='10px' />
-                                    <ParagraphTitle text={(currentMinMax != null ? currentMinMax.maxDate.locale('fr').format("ddd DD MMMM  YYYY HH:mm:ss") : 'unset')} />
+                                    <ParagraphTitle text={(currentMinMax?.maxDate?.locale('fr').format("ddd DD MMMM  YYYY HH:mm:ss") ?? 'unset')} />
                                 </div>
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={"Nombre total d'images"} size='10px' />
@@ -379,23 +377,6 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
                             <div style={{ backgroundColor: '#424242', display: 'flex' }}>
                                 <div style={searchElementStyle} >
-                                    <IconButton edge="start" color="inherit" >
-                                        <ImageSearchIcon onClick={this.handleUpdate} />
-                                    </IconButton>
-                                    <KeyboardDateTimePicker
-                                        ampm={false}
-                                        label="Date courante finale"
-                                        value={selectedDateLast}
-                                        onChange={this.handleSecundDateChange}
-                                    />
-                                    <KeyboardDateTimePicker
-                                        ampm={false}
-                                        label="Date courante initiale"
-                                        value={selectedDateFirst}
-                                        onChange={this.handleFirstDateChange}
-                                    />
-                                </div>
-                                <div style={searchElementStyle} >
                                     <IconButton color="inherit"  >
                                         <SkipPreviousIcon onClick={this.handlePreviousPage} />
                                     </IconButton>
@@ -421,7 +402,6 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
                     </Toolbar>
                 </AppBar>
-                <LeftPanel ref={this.refToLeftPanel} />
             </React.Fragment >
         );
 
@@ -506,16 +486,17 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
         loadLastImages: loadLastImages,
         loadPagesOfImages: loadPagesOfImages,
         downloadImage: downloadImage,
+        loadDatesOfImages: getAllDatesOfImages,
         thunkActionToLoadAllImages: (x: ApplicationEvent) => {
             const r = dispatchLastImages(x);
             return dispatch(r);
         },
-        thunkActionToCheckoutImage: (x: ApplicationEvent) => {
-            const r = dispatchCheckoutImage(x);
+        thunkActionToGetDatesOfImages: (x: ApplicationEvent) => {
+            const r = dispatchGetAllDatesOfImages(x);
             return dispatch(r);
         },
-        thunkAction: (x: ApplicationEvent) => {
-            const r = dispatchNewSelectedDateImagesInterval(x);
+        thunkActionToCheckoutImage: (x: ApplicationEvent) => {
+            const r = dispatchCheckoutImage(x);
             return dispatch(r);
         },
         thunkActionToLoadNextPage: (x: ApplicationEvent) => {

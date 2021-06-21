@@ -68,8 +68,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,19 +175,7 @@ public class IgniteSpringBean
      * @param cfg
      *            Ignite configuration.
      */
-    public void setConfiguration(IgniteConfiguration cfg) {
-        this.cfg = cfg;
-        if (this.cfg != null) {
-            var systemViewExporter = new JmxSystemViewExporterSpi();
-            systemViewExporter.setExportFilter((__) -> false);
-
-            var metricExporter = new JmxMetricExporterSpi();
-            metricExporter.setExportFilter((__) -> false);
-            this.cfg.setSystemViewExporterSpi(systemViewExporter)
-                .setMetricExporterSpi(metricExporter);
-            IgniteSpringBean.LOGGER.info("Ignite configuration : deactivate exporters");
-        }
-    }
+    public void setConfiguration(IgniteConfiguration cfg) { this.cfg = cfg; }
 
     /**
      * Gets the spring application context this Ignite runs in.
@@ -216,13 +202,6 @@ public class IgniteSpringBean
     public void afterSingletonsInstantiated() {
         if (this.cfg == null) {
             this.cfg = new IgniteConfiguration();
-            var systemViewExporter = new JmxSystemViewExporterSpi();
-            systemViewExporter.setExportFilter((__) -> false);
-
-            var metricExporter = new JmxMetricExporterSpi();
-            metricExporter.setExportFilter((__) -> false);
-            this.cfg.setSystemViewExporterSpi(systemViewExporter)
-                .setMetricExporterSpi(metricExporter);
             IgniteSpringBean.LOGGER.info("Ignite configuration afterSingletonsInstantiated : deactivate exporters");
         }
 

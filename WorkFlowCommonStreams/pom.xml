@@ -50,6 +50,16 @@
 			<artifactId>kafka-streams</artifactId>
 			<scope>provided</scope>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient -->
+		<dependency>
+			<groupId>commons-httpclient</groupId>
+			<artifactId>commons-httpclient</artifactId>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.projectreactor/reactor-core -->
 		<dependency>
 			<groupId>io.projectreactor</groupId>
@@ -105,6 +115,10 @@
 			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-core</artifactId>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.agno3.jcifs</groupId>
+			<artifactId>jcifs-ng</artifactId>
 		</dependency>
 	</dependencies>
 	<build>

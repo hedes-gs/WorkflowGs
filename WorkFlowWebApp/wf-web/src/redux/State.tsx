@@ -1,4 +1,4 @@
-import { ImageDto, PageOfImageDto, ImageKeyDto, ExifOfImages, Metadata } from "../model/ImageDto";
+import { ImageDto, PageOfImageDto, MinMaxDatesDto, ExifOfImages, Metadata } from "../model/DataModel";
 
 export interface ApplicationState {
     lastIntervallRequested: {
@@ -51,6 +51,9 @@ export interface ApplicationState {
     realTimeSelected: {
         isLoading: boolean,
     }
+    datesOfImages: {
+        datesOfImages?: MinMaxDatesDto[]
+    }
 };
 
 export interface ClientApplicationState {
@@ -64,6 +67,7 @@ export interface ClientApplicationState {
     reducerDisplayPersons: ApplicationState,
     reducerImageIsSelectedToBeDisplayed: ApplicationState,
     reducerImagesAreStreamed: ApplicationState,
+    reducerDatesOfImages: ApplicationState,
 }
 
 export default ApplicationState;

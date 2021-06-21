@@ -99,10 +99,7 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<Optiona
     public static String toString(KafkaManagedFileToProcess r) {
         StringJoiner strJoiner = new StringJoiner("-");
         r.getValue()
-            .ifPresent(
-                (o) -> strJoiner.add(o.getHost())
-                    .add(o.getPath())
-                    .add(o.getName()));
+            .ifPresent((o) -> strJoiner.add(o.getUrl()));
         return strJoiner.toString();
     }
 

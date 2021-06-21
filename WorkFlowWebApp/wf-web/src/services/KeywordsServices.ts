@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { ServiceConfig } from './api.config'
-import { ImageDto, toJsonImageDto } from '../model/ImageDto';
+import { ImageDto, toJsonImageDto } from '../model/DataModel';
 
 export interface KeywordsService {
     addKeyword(keyword: string, img: ImageDto): Promise<string>;

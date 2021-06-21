@@ -5,15 +5,17 @@ import {
     ImageDto, toImageDto, toMetadataDto,
     ExifOfImages, toExif, toPageOfImageDto,
     toSingleImageDto, PageOfImageDto, ImageKeyDto,
-    toMap, Metadata
-} from '../model/ImageDto';
+    toMap, Metadata, toSingleMinMaxDto, MinMaxDatesDto
+} from '../model/DataModel';
 import ImagesServiceImpl, { ImagesService } from "../services/ImagesService";
 import ExifImagesServiceImpl, { ExifImagesService } from "../services/ExifImagesService";
+import LimitDatesServiceImpl, { LimitDatesService } from "../services/LimitDates";
 
 import MomentTimezone from 'moment-timezone';
 import RatingsServiceImpl, { RatingsService } from "../services/RatingsServices";
 import KeywordsServiceImpl, { KeywordsService } from "../services/KeywordsServices";
 import PersonsServiceImpl, { PersonsService } from "../services/PersonsServices";
+import AlbumsServiceImpl, { AlbumsService } from "../services/AlbumsServices";
 import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
 import { ImportEvent } from "../model/WfEvents";
 
@@ -23,8 +25,10 @@ const imagesService: ImagesService = new ImagesServiceImpl();
 const ratingsService: RatingsService = new RatingsServiceImpl();
 const exifImagesService: ExifImagesService = new ExifImagesServiceImpl();
 const keywordService: KeywordsService = new KeywordsServiceImpl();
+const albumService: AlbumsService = new AlbumsServiceImpl();
 const personService: PersonsService = new PersonsServiceImpl();
 const wfEventsServices: WfEventsServices = new WfEventsServicesImpl();
+const limitDatesService: LimitDatesService = new LimitDatesServiceImpl();
 
 export type ThunkResult<R> = ThunkAction<R, ApplicationState, undefined, ApplicationEvent>;
 export type ApplicationThunkDispatch = ThunkDispatch<ApplicationState, undefined, ApplicationEvent>;
@@ -32,11 +36,11 @@ export const UnknownSelectedEventValue = "0";
 export const PayloadIntervalDatesSelectedEvent = "1";
 export const PayloadLoadedImagesEvent = '2'
 export const AddImageToDeleteEvent = '3'
+export const LastImagesAreLoadedEvent = '7'
 export const SaveImageEvent = '12'
 export const AddKeywordEvent = '15'
-export const DeleteKeywordEvent = '17'
-
 export const SelectedImageEvent = '16';
+export const DeleteKeywordEvent = '17'
 export const LoadImagesOfMetadataEvent = '20';
 export const LoadPagesOfImagesEvent = '21'
 export const DownloadSelectedImageEvent = '22'
@@ -45,8 +49,20 @@ export const DeletePersonEvent = '24'
 export const LoadAllPersonsEvent = '25'
 export const AllPersonsAreLoadedEvent = '26'
 export const DisplayRealTimeImagesEvent = '27'
-export const LastImagesAreLoadedEvent = '7'
 export const DownloadImageEvent = '28'
+export const GetAllDatesOfImagesEvent = '29'
+export const AddAlbumEvent = '30' ;
+export const DeleteAlbumEvent = '31' ;
+
+export interface GetAllDatesOfImagesEvent {
+    payloadType: typeof GetAllDatesOfImagesEvent,
+    type: Actions,
+    payload: {
+        url?: string,
+        urlToGetfirstPage?: string,
+        data?: MinMaxDatesDto[]
+    }
+}
 
 export interface DownloadImageEvent {
     payloadType: typeof DownloadImageEvent,
@@ -203,12 +219,30 @@ export interface AddPersonEvent {
     }
 }
 
+export interface AddAlbumEvent {
+    payloadType: typeof AddAlbumEvent,
+    type: Actions,
+    payload: {
+        image: ImageDto,
+        album: string
+    }
+}
+
 export interface DeletePersonEvent {
     payloadType: typeof DeletePersonEvent,
     type: Actions,
     payload: {
         image: ImageDto,
         person: string
+    }
+}
+
+export interface DeleteAlbumEvent {
+    payloadType: typeof DeleteAlbumEvent,
+    type: Actions,
+    payload: {
+        image: ImageDto,
+        album: string
     }
 }
 
@@ -320,14 +354,29 @@ export type ApplicationEvent =
     DownloadSelectedImageEvent |
     AddPersonEvent |
     DeletePersonEvent |
+    AddAlbumEvent |
+    DeleteAlbumEvent |
     DisplayRealTimeImagesEvent |
-    DownloadImageEvent;
+    DownloadImageEvent |
+    GetAllDatesOfImagesEvent;
 
 const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     type: Actions.UNDEFINED,
     payloadType: UnknownSelectedEventValue,
     payload: {}
 };
+
+export const getAllDatesOfImages = (url?: string, urlToGetfirstPage?: string): ApplicationEvent => {
+    return {
+        payloadType: GetAllDatesOfImagesEvent,
+        type: Actions.DATES_OF_IMAGES,
+        payload: {
+            url: url,
+            urlToGetfirstPage: urlToGetfirstPage
+        }
+    }
+
+}
 
 export const loadRealTimeImages = (loadingState: boolean, importEvent: ImportEvent): ApplicationEvent => {
     return {
@@ -365,9 +414,8 @@ export const loadImages = (json: string, titleOfImagesList: string): Application
     }
 };
 
-export const loadImagesAsJsonD = (json: string, titleOfImagesList: string): ApplicationEvent => {
-    const jsons = json.split(/[\r\n]+/);
-    const images: ImageDto[] = jsons.filter(j => j.length > 0).map(j => toSingleImageDto(JSON.parse(j)))
+export const loadImagesAsJsonD = (json: string[], titleOfImagesList: string): ApplicationEvent => {
+    const images: ImageDto[] =  json.map((j) =>toSingleImageDto(j)) ;
     const page: PageOfImageDto = {
         _embedded: {
             imageDtoList: images
@@ -389,6 +437,22 @@ export const loadImagesAsJsonD = (json: string, titleOfImagesList: string): Appl
         }
     }
 };
+
+export const loadDatesOfImagesAsJsonD = (json: string): ApplicationEvent => {
+    //const jsons = json.split(/[\r\n]+/);
+    // const data: MinMaxDatesDto[] = jsons.filter(j => j.length > 0).map(j => toSingleMinMaxDto(JSON.parse(j)))
+    // console.log(' loadDatesOfImagesAsJsonD  ' + json)
+    const data: MinMaxDatesDto[] = [toSingleMinMaxDto(json)];
+    return {
+        payloadType: GetAllDatesOfImagesEvent,
+        type: Actions.DATES_OF_IMAGES_ARE_STREAMED,
+        payload: {
+            data: data
+        }
+    }
+};
+
+
 
 
 
@@ -433,8 +497,6 @@ export const loadLastImages = (pageNumber: number, titleOfImagesList: string): A
         }
     }
 };
-
-
 
 
 export const loadImage = (json: string): ApplicationEvent => {
@@ -489,6 +551,30 @@ export const addKeywords = (img: ImageDto, keyword: string): ApplicationEvent =>
         }
     }
 };
+
+export const addAlbum = (img: ImageDto, album: string): ApplicationEvent => {
+    return {
+        payloadType: AddAlbumEvent,
+        type: Actions.ALBUMS,
+        payload: {
+            image: img,
+            album: album
+        }
+    }
+};
+
+export const deleteAlbum = (img: ImageDto, album: string): ApplicationEvent => {
+    return {
+        payloadType: DeleteAlbumEvent,
+        type: Actions.ALBUMS,
+        payload: {
+            image: img,
+            album: album
+        }
+    }
+};
+
+
 
 export const addPerson = (img: ImageDto, person: string): ApplicationEvent => {
     return {
@@ -669,7 +755,6 @@ export function dispatchLoadRealtimeImages(x: ApplicationEvent): ThunkResult<Pro
     };
 }
 
-
 export function dispatchLoadRatings(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
         if (x.payloadType == '14') {
@@ -687,24 +772,8 @@ export function dispatchLastImages(x: ApplicationEvent): ThunkResult<Promise<App
         if (x.payloadType == LastImagesAreLoadedEvent) {
             dispatch(x);
             imagesService.getLastImages(x.payload.pageNumber)
-                .then((r) => r.getReader())
-                .then((reader) => new ReadableStream({
-                    start(controller) {
-                        pump();
-                        async function pump() {
-                            return reader.read().then((r: any) => {
-                                if (r.done) {
-                                    controller.close();
-                                    return;
-                                }
-                                controller.enqueue(r.value);
-                                dispatch(loadImagesAsJsonD(r.value, 'Test !! '))
-                                pump();
-                            });
-                        }
-                    }
-                })
-                )
+            .then((r) => r.getReader())
+            .then((reader) => getReadableStreamForImages(reader,dispatch,'Date page'))
         };
         return Promise.resolve(DefaultUnknownSelectedEvent);
     }
@@ -721,34 +790,74 @@ export function dispatchCheckoutImage(x: ApplicationEvent): ThunkResult<Promise<
     }
 }
 
-export function dispatchNewSelectedDateImagesInterval(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+export function dispatchGetAllDatesOfImages(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == PayloadIntervalDatesSelectedEvent) {
+        if (x.payloadType == GetAllDatesOfImagesEvent) {
             dispatch(x);
-            imagesService.getImagesByDate(MomentTimezone(x.payload.min), MomentTimezone(x.payload.max), x.payload.intervallType)
+            limitDatesService.getDatesOfImagesWithURL(x.payload.url)
                 .then((r) => r.getReader())
-                .then((reader) => new ReadableStream({
-                    start(controller) {
-                        pump();
-                        async function pump() {
-                            return reader.read().then((r: any) => {
-                                // When no more data needs to be consumed, close the stream
-                                if (r.done) {
-                                    controller.close();
-                                    return;
-                                }
-                                // Enqueue the next data chunk into our target stream
-                                controller.enqueue(r.value);
-                                dispatch(loadImagesAsJsonD(r.value, 'Test !! '))
-                                pump();
-                            });
-                        }
+                .then((reader) => getReadableStreamForDatesOfImages(reader, dispatch))
+                .then(() => {
+                    if (x.payload.urlToGetfirstPage != null) {
+                        dispatch(loadPagesOfImages(x.payload.urlToGetfirstPage, 'Date page'));
+                        imagesService.getPageOfImages(x.payload.urlToGetfirstPage)
+                            .then((r) => r.getReader())
+                            .then((reader) => getReadableStreamForImages(reader,dispatch,'Date page'))
+                    } else {
+                        dispatch(loadLastImages(1, 'Page'));
+                        imagesService.getLastImages(1)
+                            .then((r) => r.getReader())
+                            .then((reader) => getReadableStreamForImages(reader,dispatch,'Date page'))
                     }
                 })
-                )
         };
         return Promise.resolve(DefaultUnknownSelectedEvent);
     }
+}
+
+function getReadableStreamForDatesOfImages(reader: ReadableStreamDefaultReader<any>, dispatch: ApplicationThunkDispatch): ReadableStream<any> | PromiseLike<ReadableStream<any>> {
+    return new ReadableStream({
+        start(controller) {
+            pump();
+            async function pump() {
+                return reader.read().then((r: any) => {
+                    if (r.done) {
+                        controller.close();
+                        return;
+                    }
+                    controller.enqueue(r.value);
+                    dispatch(loadDatesOfImagesAsJsonD(r.value));
+                    pump();
+                });
+            }
+        }
+    });
+}
+
+function getReadableStreamForImages(reader: ReadableStreamDefaultReader<any>, dispatch: ApplicationThunkDispatch, title: string): ReadableStream<any> | PromiseLike<ReadableStream<any>> {
+    return new ReadableStream({
+        
+        start(controller) {
+            const buffer : string[] = [];
+            pump();
+            async function pump() {
+                return reader.read().then((r: any) => {
+                    if (r.done) {
+                        controller.close();
+                        dispatch(loadImagesAsJsonD(buffer,title));
+                        return;
+                    }
+                    controller.enqueue(r.value);
+                    buffer.push(r.value) ;
+                    if ( buffer.length > 50 ) {
+                        dispatch(loadImagesAsJsonD(buffer,title));
+                        buffer.length =0 ;
+                    }
+                    pump();
+                });
+            }
+        }
+    });
 }
 
 
@@ -853,12 +962,32 @@ export function dispatchAddPersonEvent(x: ApplicationEvent): ThunkResult<Promise
     };
 }
 
+export function dispatchAddAlbumEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == AddAlbumEvent) {
+            dispatch(x);
+            return albumService.addAlbum (x.payload.album, x.payload.image)
+                .then(json => dispatch(selectedImageIsLoaded(json)))
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
+export function dispatchDeleteAlbumEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == DeleteAlbumEvent) {
+            dispatch(x);
+            return albumService.deleteAlbum (x.payload.album, x.payload.image)
+                .then(json => dispatch(selectedImageIsLoaded(json)))
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
 
 export function dispatchDeleteKeywordEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
         if (x.payloadType == DeleteKeywordEvent) {
             dispatch(x);
-            dispatch(selectedImageIsLoading(x.payload.image))
             return keywordService.deleteKeyword(x.payload.keyword, x.payload.image)
                 .then(json => dispatch(selectedImageIsLoaded(json)));
         }
@@ -870,7 +999,6 @@ export function dispatchDeletePersonEvent(x: ApplicationEvent): ThunkResult<Prom
     return async (dispatch: ApplicationThunkDispatch, getState) => {
         if (x.payloadType == DeletePersonEvent) {
             dispatch(x);
-            dispatch(selectedImageIsLoading(x.payload.image))
             return personService.deletePerson(x.payload.person, x.payload.image)
                 .then(json => dispatch(selectedImageIsLoaded(json)));
         }
@@ -954,39 +1082,12 @@ export function dispatchLoadImagesOfMetadata(x: ApplicationEvent): ThunkResult<P
 
 
 export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
-    /*    return async (dispatch: ApplicationThunkDispatch, getState) => {
-            if (x.payloadType == LoadPagesOfImagesEvent) {
-                dispatch(x);
-                return imagesService.getPageOfImages(x.payload.url)
-                    .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
-            }
-            return Promise.resolve(DefaultUnknownSelectedEvent);
-        };
-    */
     return async (dispatch: ApplicationThunkDispatch, getState) => {
         if (x.payloadType == LoadPagesOfImagesEvent) {
             dispatch(x);
             imagesService.getPageOfImages(x.payload.url)
                 .then((r) => r.getReader())
-                .then((reader) => new ReadableStream({
-                    start(controller) {
-                        pump();
-                        async function pump() {
-                            return reader.read().then((r: any) => {
-                                // When no more data needs to be consumed, close the stream
-                                if (r.done) {
-                                    controller.close();
-                                    return;
-                                }
-                                // Enqueue the next data chunk into our target stream
-                                controller.enqueue(r.value);
-                                dispatch(loadImagesAsJsonD(r.value, 'Test !! '))
-                                pump();
-                            });
-                        }
-                    }
-                })
-                )
+                .then((reader) => getReadableStreamForImages(reader,dispatch,'Date page'))
         };
         return Promise.resolve(DefaultUnknownSelectedEvent);
     }
@@ -994,39 +1095,12 @@ export function dispatchNextPage(x: ApplicationEvent): ThunkResult<Promise<Appli
 }
 
 export function dispatchPrevPage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
-    /*    return async (dispatch: ApplicationThunkDispatch, getState) => {
-            if (x.payloadType == LoadPagesOfImagesEvent) {
-                dispatch(x);
-                return imagesService.getPageOfImages(x.payload.url)
-                    .then(json => dispatch(loadImages(json, x.payload.titleOfImagesList)))
-            }
-            return Promise.resolve(DefaultUnknownSelectedEvent);
-        };
-    */
     return async (dispatch: ApplicationThunkDispatch, getState) => {
         if (x.payloadType == LoadPagesOfImagesEvent) {
             dispatch(x);
             imagesService.getPageOfImages(x.payload.url)
-                .then((r) => r.getReader())
-                .then((reader) => new ReadableStream({
-                    start(controller) {
-                        pump();
-                        async function pump() {
-                            return reader.read().then((r: any) => {
-                                // When no more data needs to be consumed, close the stream
-                                if (r.done) {
-                                    controller.close();
-                                    return;
-                                }
-                                // Enqueue the next data chunk into our target stream
-                                controller.enqueue(r.value);
-                                dispatch(loadImagesAsJsonD(r.value, 'Test !! '))
-                                pump();
-                            });
-                        }
-                    }
-                })
-                )
+            .then((r) => r.getReader())
+            .then((reader) => getReadableStreamForImages(reader,dispatch,'Date page'))
         };
         return Promise.resolve(DefaultUnknownSelectedEvent);
     }

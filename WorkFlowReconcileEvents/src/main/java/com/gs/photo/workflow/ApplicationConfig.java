@@ -24,12 +24,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photos.serializers.HbaseDataSerDe;
 import com.gs.photos.serializers.WfEventSerDe;
 import com.gs.photos.serializers.WfEventsSerDe;
 import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEvent;
-import com.workflow.model.events.WfEvents;
 
 @Configuration
 public class ApplicationConfig extends AbstractApplicationConfig {
@@ -110,9 +110,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     ) {
         ApplicationConfig.LOGGER.info("Starting application with windowsOfEvents : {}", windowsOfEvents);
         StreamsBuilder builder = new StreamsBuilder();
-        final KStream<String, WfEvents> kstreamToGetProducedEvent = this
+        final KStream<String, WfEvent> kstreamToGetProducedEvent = this
             .buildKStreamToGetProducedEventsValue(builder, topicEvent);
-        final KStream<String, WfEvents> kstreamToGetRecordedEvent = this
+        final KStream<String, WfEvent> kstreamToGetRecordedEvent = this
             .buildKStreamToGetProducedEventsValue(builder, topicProcessedEvent);
 
         KStream<String, WfEvent> kstreamOfProducedEvent = kstreamToGetProducedEvent.flatMap(
@@ -140,7 +140,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
     private KeyValue<String, WfEvent> toKeyValue(WfEvent e) { return null; }
 
-    private KStream<String, WfEvents> buildKStreamToGetProducedEventsValue(
+    private KStream<String, WfEvent> buildKStreamToGetProducedEventsValue(
         StreamsBuilder streamsBuilder,
         String topicExif
     ) {

@@ -17,7 +17,7 @@ public class ImportEvent extends HbaseData implements Serializable {
     private String            album;
     private long              importDate;
     private String            importName;
-    private String            scanFolder;
+    private String            urlScanFolder;
     private boolean           forTest;
     private int               nbMaxOfImages;
 
@@ -29,7 +29,7 @@ public class ImportEvent extends HbaseData implements Serializable {
         this.album = builder.album;
         this.importDate = builder.importDate;
         this.importName = builder.importName;
-        this.scanFolder = builder.scanFolder;
+        this.urlScanFolder = builder.scanFolder;
         this.forTest = builder.forTest;
         this.nbMaxOfImages = builder.nbMaxOfImages;
     }
@@ -54,9 +54,9 @@ public class ImportEvent extends HbaseData implements Serializable {
 
     public void setImportName(String importName) { this.importName = importName; }
 
-    public String getScanFolder() { return this.scanFolder; }
+    public String getUrlScanFolder() { return this.urlScanFolder; }
 
-    public void setScanFolder(String scanFolder) { this.scanFolder = scanFolder; }
+    public void setUrlScanFolder(String scanFolder) { this.urlScanFolder = scanFolder; }
 
     public boolean isForTest() { return this.forTest; }
 
@@ -69,7 +69,8 @@ public class ImportEvent extends HbaseData implements Serializable {
     @Override
     public String toString() {
         return "ImportEvent [keyWords=" + this.keyWords + ", scanners=" + this.scanners + ", album=" + this.album
-            + ", importDate=" + this.importDate + ", importName=" + this.importName + "]";
+            + ", importDate=" + this.importDate + ", importName=" + this.importName + ", urlScanFolder="
+            + this.urlScanFolder + ", forTest=" + this.forTest + ", nbMaxOfImages=" + this.nbMaxOfImages + "]";
     }
 
     public ImportEvent() { super("<not set>",
@@ -80,10 +81,13 @@ public class ImportEvent extends HbaseData implements Serializable {
         final int prime = 31;
         int result = super.hashCode();
         result = (prime * result) + ((this.album == null) ? 0 : this.album.hashCode());
+        result = (prime * result) + (this.forTest ? 1231 : 1237);
         result = (prime * result) + (int) (this.importDate ^ (this.importDate >>> 32));
         result = (prime * result) + ((this.importName == null) ? 0 : this.importName.hashCode());
         result = (prime * result) + ((this.keyWords == null) ? 0 : this.keyWords.hashCode());
+        result = (prime * result) + this.nbMaxOfImages;
         result = (prime * result) + ((this.scanners == null) ? 0 : this.scanners.hashCode());
+        result = (prime * result) + ((this.urlScanFolder == null) ? 0 : this.urlScanFolder.hashCode());
         return result;
     }
 
@@ -96,6 +100,7 @@ public class ImportEvent extends HbaseData implements Serializable {
         if (this.album == null) {
             if (other.album != null) { return false; }
         } else if (!this.album.equals(other.album)) { return false; }
+        if (this.forTest != other.forTest) { return false; }
         if (this.importDate != other.importDate) { return false; }
         if (this.importName == null) {
             if (other.importName != null) { return false; }
@@ -103,15 +108,19 @@ public class ImportEvent extends HbaseData implements Serializable {
         if (this.keyWords == null) {
             if (other.keyWords != null) { return false; }
         } else if (!this.keyWords.equals(other.keyWords)) { return false; }
+        if (this.nbMaxOfImages != other.nbMaxOfImages) { return false; }
         if (this.scanners == null) {
             if (other.scanners != null) { return false; }
         } else if (!this.scanners.equals(other.scanners)) { return false; }
+        if (this.urlScanFolder == null) {
+            if (other.urlScanFolder != null) { return false; }
+        } else if (!this.urlScanFolder.equals(other.urlScanFolder)) { return false; }
         return true;
     }
 
     /**
      * Creates builder to build {@link ImportEvent}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -135,7 +144,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -147,7 +156,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -159,7 +168,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for keyWords parameter.
-         * 
+         *
          * @param keyWords
          *            field to set
          * @return builder
@@ -171,7 +180,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for scanners parameter.
-         * 
+         *
          * @param scanners
          *            field to set
          * @return builder
@@ -183,7 +192,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for album parameter.
-         * 
+         *
          * @param album
          *            field to set
          * @return builder
@@ -195,7 +204,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for importDate parameter.
-         * 
+         *
          * @param importDate
          *            field to set
          * @return builder
@@ -207,7 +216,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for importName parameter.
-         * 
+         *
          * @param importName
          *            field to set
          * @return builder
@@ -219,7 +228,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for scanFolder parameter.
-         * 
+         *
          * @param scanFolder
          *            field to set
          * @return builder
@@ -231,7 +240,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for forTest parameter.
-         * 
+         *
          * @param forTest
          *            field to set
          * @return builder
@@ -243,7 +252,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for nbMaxOfImages parameter.
-         * 
+         *
          * @param nbMaxOfImages
          *            field to set
          * @return builder
@@ -255,7 +264,7 @@ public class ImportEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public ImportEvent build() { return new ImportEvent(this); }

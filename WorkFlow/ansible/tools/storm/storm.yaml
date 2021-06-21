@@ -19,13 +19,14 @@ storm.zookeeper.servers:
  - ipc0
  - ipc1
  - ipc2
- 
+ - ipc7
+ - ipc8
  
 storm.local.dir: "/home/storm/local"
 storm.log.dir: "/home/storm/latest/logs"
 storm.log4j2.conf.dir: "log4j2"
 
-nimbus.seeds: ["ipc0", "ipc1"]
+nimbus.seeds: ["ipc0","ipc1"]
 
 nimbus.thrift.port: 49627
 supervisor.slots.ports:
@@ -45,7 +46,7 @@ nimbus.supervisor.users: ["storm","wf_storm"]
 nimbus.admins: ["storm"]
 storm.principal.tolocal: "org.apache.storm.security.auth.KerberosPrincipalToLocal"
 storm.thrift.transport: "org.apache.storm.security.auth.kerberos.KerberosSaslTransportPlugin"
-supervisor.heartbeat.frequency.secs: 20
+supervisor.heartbeat.frequency.secs: 120
 worker.heartbeat.frequency.secs: 5
 supervisor.thrift.threads: 4
 
@@ -55,16 +56,17 @@ ui.childopts: "-Xmx768m -Djava.security.auth.login.config=/home/storm/latest/con
 supervisor.childopts: "-Xmx256m -Djava.security.auth.login.config=/home/storm/latest/conf/client_jaas.conf "
 storm.zookeeper.superACL: "sasl:storm"
 
-worker.heap.memory.mb: 768
-worker.childopts: "-Djava.security.auth.login.config=/home/wf_storm/config/client_jaas.conf -Dlog4j.configurationFile=/home/wf_storm/config/log4j.xml -Xmx512m -XX:+PrintGCDetails -Xloggc:artifacts/gc.log -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=artifacts/heapdump"
+worker.heap.memory.mb: 1512
+worker.childopts: "-Djava.security.auth.login.config=/home/wf_storm/config/client_jaas.conf -Dlog4j.configurationFile=/home/wf_storm/config/log4j.xml -Xmx1512m -XX:+PrintGCDetails -Xloggc:artifacts/gc.log -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=10 -XX:GCLogFileSize=1M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=artifacts/heapdump"
 
 
-storm.messaging.netty.server_worker_threads: 3
-storm.messaging.netty.client_worker_threads: 3
+storm.messaging.netty.server_worker_threads: 5
+storm.messaging.netty.client_worker_threads: 5
 
-supervisor.monitor.frequency.secs: 10
-supervisor.worker.timeout.secs: 60
-topology.worker.receiver.thread.count: 3
+supervisor.monitor.frequency.secs: 30
+supervisor.worker.timeout.secs: 180
+worker.max.timeout.secs: 180
+topology.worker.receiver.thread.count: 5
 storm.scheduler: "org.apache.storm.scheduler.DefaultScheduler"
 # 
 # 

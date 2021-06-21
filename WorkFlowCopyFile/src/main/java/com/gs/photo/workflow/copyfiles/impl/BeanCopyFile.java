@@ -38,7 +38,6 @@ import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
-import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.copyfiles.ICopyFile;
@@ -262,11 +261,11 @@ public class BeanCopyFile implements ICopyFile {
             final File destFile = destPath.toFile();
             try (
                 OutputStream os = new FileOutputStream(destFile)) {
-                this.fileUtils.copyRemoteToLocal(rec.value(), os, BeanCopyFile.BUFFER_COPY, "/localcache");
+                this.fileUtils.copyRemoteToLocal(rec.value(), os);
                 ;
                 destFile.setWritable(true, false);
                 destFile.setReadable(true, false);
-            } catch (MissingFileException e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             BeanCopyFile.LOGGER.info(
@@ -284,15 +283,14 @@ public class BeanCopyFile implements ICopyFile {
                             .withImportEvent(origin.getImportEvent())
                             .withImageId(origin.getImageId())
                             .withDataId(origin.getDataId())
-                            .withHost(this.hostname)
-                            .withRootForNfs(this.repository)
-                            .withPath(
-                                "/" + destPath.toAbsolutePath()
+                            .withUrl(
+                                "nfs://" + this.hostname + ":/" + this.repository + "/" + destPath.toAbsolutePath()
                                     .subpath(1, destPath.getNameCount())
                                     .toString())
                             .withName(
-                                rec.key() + "-" + rec.value()
-                                    .getName())
+                                rec.key() + "-" + FileUtils.getSimpleNameFromUrl(
+                                    rec.value()
+                                        .getUrl()))
                             .build()))
                 .withKafkaOffset(rec.offset())
                 .withPartition(rec.partition())

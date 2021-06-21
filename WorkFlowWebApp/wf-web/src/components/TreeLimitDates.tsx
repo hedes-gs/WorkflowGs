@@ -1,15 +1,15 @@
 
 import React from 'react';
 import PhotoAlbumIcon from '@material-ui/icons/PhotoAlbum';
-import { MinMaxDatesDto } from '../model/MinMaxDatesDto';
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
 import MomentTimeZone, { Moment } from 'moment-timezone';
 import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem';
 import { ParagraphTitleTree } from '../styles';
+import { MinMaxDatesDto } from '../model/DataModel';
 
 interface TreeLimitDatesProp {
     parentNodeType: string;
-    handleIntervalSelected(min: number, max: number, intervallType: string): void;
+    handleIntervalSelected(intervallType: string, min?: number, max?: number): void;
     min: number;
     max: number;
 }
@@ -56,7 +56,7 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
         }
     }
 
-    handleClickOnLabel(min: number, max: number) {
+    handleClickOnLabel(min?: number, max?: number) {
         var nodeType: string = '';
         switch (this.state.nodeType) {
             case 'init': nodeType = 'init'; break;
@@ -69,7 +69,7 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
             case 'final': nodeType = 'final'; break;
 
         }
-        this.props.handleIntervalSelected(min, max, nodeType);
+        this.props.handleIntervalSelected(nodeType, min, max);
     }
 
     reload() {
@@ -96,18 +96,17 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
 
 
     renderTree(node: MinMaxDatesDto) {
-        const min = node.minDate.valueOf();
-        const max = node.maxDate.valueOf();
-        const id = min.toString() + ' - '
-        max.toString();
+        const min = node.minDate?.valueOf() ?? 0;
+        const max = node.maxDate?.valueOf() ?? 0;
+        const id = min?.toString() + ' - ' + max?.toString() ?? 'unset';
 
         return (
-            <TreeItem key={id != null ? id : 'unset'} nodeId={id != null ? id : 'unset'}
+            <TreeItem key={id} nodeId={id}
                 onIconClick={this.handleClickOnLabel.bind(this, min, max)}
                 onLabelClick={this.handleClickOnIconTree}
                 icon={<PhotoAlbumIcon />}
                 label={
-                    <ParagraphTitleTree text={node.minDate.format(this.dateNodeFormat)} />
+                    <ParagraphTitleTree text={node.minDate?.format(this.dateNodeFormat) ?? ''} />
                 }>
                 <TreeLimitDates
                     handleIntervalSelected={this.props.handleIntervalSelected}

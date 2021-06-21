@@ -121,7 +121,10 @@
 			<groupId>com.emc.ecs</groupId>
 			<artifactId>nfs-client</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>eu.agno3.jcifs</groupId>
+			<artifactId>jcifs-ng</artifactId>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

@@ -11,19 +11,25 @@
   vars:
     ansible_become_pass: granada01
   tasks:
-    - name: remove nfs-kernel-server
-      shell: "apt-get -y  remove nfs-kernel-server"
-      ignore_errors: yes
     - name: stop nfs
       shell: "systemctl stop wf_nfs.service"
       ignore_errors: yes
-    - name: stop nfs
-      shell: "systemctl stop wf_nfs.service"
-      ignore_errors: yes
+    - name: clean stream-dir if exists
+      file:
+        path: /home/wf_nfs/bin
+        state: absent
+    - name: clean stream-dir if exists
+      file:
+        path: /home/wf_nfs/bin
+        state: directory
     - name: copy wf_nfs.service
       copy:
         src: ./tools/nfs/wf_nfs.service
         dest: "/etc/systemd/system/wf_nfs.service"
+    - name: copy ../../WorkFlowNFSServer/src/main/resources
+      copy: 
+        src: "../../WorkFlowNFSServer/src/main/resources/log4j2.xml"
+        dest: "/home/wf_nfs/config/log4j2.xml"
     - name: copy ../../WorkFlowNFSServer/target/WorkFlowNFSServer.jar
       copy: 
         src: "../../WorkFlowNFSServer/target/WorkFlowNFSServer.jar"

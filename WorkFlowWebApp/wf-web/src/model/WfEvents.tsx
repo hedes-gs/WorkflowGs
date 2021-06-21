@@ -4,7 +4,7 @@ export interface ImportEvent {
     dataId: string;
     keyWords: string[];
     scanners: string[];
-    scanFolder: string;
+    urlScanFolder: string;
     album: string;
     importDate: number;
     importName: string;

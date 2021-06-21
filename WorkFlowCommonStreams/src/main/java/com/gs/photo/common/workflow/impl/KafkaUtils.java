@@ -26,7 +26,12 @@ public class KafkaUtils {
     protected static Logger LOGGER = LoggerFactory.getLogger(KafkaUtils.class);
 
     public static <K, V> Stream<ConsumerRecord<K, V>> toStream(Consumer<K, V> consumer) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> new Iterator<ConsumerRecord<K, V>>() {
+        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils.getIteratorFromConsumer(consumer);
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    private static <K, V> Iterator<ConsumerRecord<K, V>> getIteratorFromConsumer(Consumer<K, V> consumer) {
+        return new Iterator<>() {
             Iterator<ConsumerRecord<K, V>> records;
 
             @Override
@@ -50,7 +55,6 @@ public class KafkaUtils {
             @Override
             public ConsumerRecord<K, V> next() { return this.records.next(); }
         };
-        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     public static interface PreCommitAction { void apply(int nbOfRecord); }
@@ -314,7 +318,19 @@ public class KafkaUtils {
         BeforeProcessAction beforeProcessAction,
         boolean parallelStream
     ) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> new Iterator<ConsumerRecord<K, V>>() {
+        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils
+            .getIteratorForConsumer(consumer, preCommitAction, beforeProcessAction, parallelStream, pollDurationInMs);
+        return StreamSupport.stream(iterable.spliterator(), parallelStream);
+    }
+
+    private static <V, K> Iterator<ConsumerRecord<K, V>> getIteratorForConsumer(
+        Consumer<K, V> consumer,
+        PreCommitAction preCommitAction,
+        BeforeProcessAction beforeProcessAction,
+        boolean parallelStream,
+        int pollDurationInMs
+    ) {
+        return new Iterator<ConsumerRecord<K, V>>() {
             ReentrantLock                     lock      = new ReentrantLock();
             boolean                           first     = true;
             Iterator<ConsumerRecord<K, V>>    records;
@@ -386,7 +402,6 @@ public class KafkaUtils {
             @Override
             public ConsumerRecord<K, V> next() { return this.nextValue.get(); }
         };
-        return StreamSupport.stream(iterable.spliterator(), parallelStream);
     }
 
     public static <K, V, K1, V1> Stream<ConsumerRecord<K, V>> toTransactionalStream(
@@ -395,7 +410,18 @@ public class KafkaUtils {
         PreCommitAction preCommitAction,
         BeforeProcessAction beforeProcessAction
     ) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> new Iterator<ConsumerRecord<K, V>>() {
+        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils
+            .getIteratorForConsumer(consumer, preCommitAction, beforeProcessAction, pollDurationInMs);
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    private static <K, V> Iterator<ConsumerRecord<K, V>> getIteratorForConsumer(
+        Consumer<K, V> consumer,
+        PreCommitAction preCommitAction,
+        BeforeProcessAction beforeProcessAction,
+        int pollDurationInMs
+    ) {
+        return new Iterator<ConsumerRecord<K, V>>() {
             Iterator<ConsumerRecord<K, V>> records;
             int                            currentNbOfRecords;
 
@@ -426,7 +452,6 @@ public class KafkaUtils {
             @Override
             public ConsumerRecord<K, V> next() { return this.records.next(); }
         };
-        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     static public interface GetPartition<T> { int get(T t); }

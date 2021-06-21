@@ -1,6 +1,7 @@
 package com.workflow.model.events;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import org.apache.avro.reflect.Nullable;
 
@@ -66,7 +67,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link ComponentEvent}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -87,7 +88,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -99,7 +100,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -111,7 +112,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for status parameter.
-         * 
+         *
          * @param status
          *            field to set
          * @return builder
@@ -123,7 +124,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for componentType parameter.
-         * 
+         *
          * @param componentType
          *            field to set
          * @return builder
@@ -135,7 +136,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for message parameter.
-         * 
+         *
          * @param message
          *            field to set
          * @return builder
@@ -147,7 +148,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for scannedFolder parameter.
-         * 
+         *
          * @param scannedFolder
          *            field to set
          * @return builder
@@ -159,7 +160,7 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method for componentName parameter.
-         * 
+         *
          * @param componentName
          *            field to set
          * @return builder
@@ -171,10 +172,30 @@ public class ComponentEvent extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public ComponentEvent build() { return new ComponentEvent(this); }
+    }
+
+    @Override
+    public String toString() {
+        final int maxLen = 10;
+        StringBuilder builder2 = new StringBuilder();
+        builder2.append("ComponentEvent [status=");
+        builder2.append(this.status);
+        builder2.append(", componentType=");
+        builder2.append(this.componentType);
+        builder2.append(", message=");
+        builder2.append(this.message);
+        builder2.append(", scannedFolder=");
+        builder2.append(
+            this.scannedFolder != null ? Arrays.asList(this.scannedFolder)
+                .subList(0, Math.min(this.scannedFolder.length, maxLen)) : null);
+        builder2.append(", componentName=");
+        builder2.append(this.componentName);
+        builder2.append("]");
+        return builder2.toString();
     }
 
 }

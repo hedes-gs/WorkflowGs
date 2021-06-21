@@ -32,11 +32,11 @@ import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.exif.ExifServiceImpl;
 import com.gs.photo.workflow.extimginfo.ApplicationConfig;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
-import com.gs.photo.workflow.extimginfo.impl.BeanFileMetadataExtractor;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
 import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
 import com.gs.photos.workflow.extimginfo.metadata.tiff.TiffField;
 import com.gs.photos.workflow.extimginfo.metadata.tiff.TiffTag;
+import com.workflow.model.files.FileToProcess;
 
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
@@ -91,7 +91,7 @@ public class TestBeanFileReadIFDs {
         MockitoAnnotations.initMocks(this);
         Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
         FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
-        ByteBuffer bb = ByteBuffer.allocate(2 * 1024 * 1024);
+        ByteBuffer bb = ByteBuffer.allocate(20 * 1024 * 1024);
         fc.read(bb);
         Mockito.when(this.iIgniteDAO.get("1"))
             .thenReturn(Optional.of(bb.array()));
@@ -99,7 +99,10 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet115TiffFieldWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
+            FileToProcess.builder()
+                .withImageId("1")
+                .build())
             .get();
         Assert.assertEquals(
             115,
@@ -110,7 +113,10 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldPrint90TiffFieldWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
+            FileToProcess.builder()
+                .withImageId("1")
+                .build())
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .forEach((tif) -> this.LOGGER.info(tif));
@@ -118,7 +124,10 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldFilter13TiffFieldsWhenSonyARWIsAnA7IIInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
+            FileToProcess.builder()
+                .withImageId("1")
+                .build())
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .filter((t) -> this.isARecordedField(t))
@@ -174,7 +183,7 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet2JpgFilesWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
             .get();
         Assert.assertEquals(
             2,
@@ -200,7 +209,7 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet2DateTimeExifAtPath0x2A_0x8769‬_WhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs("1")
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
             .get();
 
         long count = IFD.tiffFieldsAsStream(allIfds.stream())

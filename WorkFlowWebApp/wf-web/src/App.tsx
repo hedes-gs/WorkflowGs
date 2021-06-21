@@ -10,14 +10,14 @@ import { createStore, applyMiddleware } from 'redux';
 
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import CenterPanel from './page_elements/CenterPanel';
-import rootReducer from './redux/reducers';
+import rootReducer from './redux/Reducers';
 import { ApplicationEvent, dispatchLastImages, loadLastImages } from './redux/Actions';
 import ApplicationState from './redux/State';
 import 'reflect-metadata';
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
-
 // pick a date util library
 import MomentUtils from '@date-io/moment';
+import Footer from './page_elements/Footer';
 
 const loggerMiddleWare = createLogger();
 
@@ -84,8 +84,8 @@ function App() {
                 <div className="App">
                     <MuiPickersUtilsProvider utils={MomentUtils}>
                         <Header min={0} max={0} intervallType={'year'} />
-
                         <CenterPanel />
+                        <Footer/>
                     </MuiPickersUtilsProvider>
                 </div>
             </ThemeProvider>
