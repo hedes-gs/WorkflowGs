@@ -1,0 +1,16 @@
+[Unit]
+Description=High-available, distributed message broker
+Requires=network.target {{ mount_points }}
+After=network.target {{ mount_points }}
+
+[Service]
+Type=forking
+User=hadoop
+ExecStart=/home/hadoop/bin/start-nm.sh
+ExecStop=/home/hadoop/bin/stop-nm.sh
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=hadoop
+
+[Install]
+WantedBy=multi-user.target

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Repository;
 
 import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
 import com.gs.photos.ws.repositories.IHbaseImageThumbnailDAO;
+import com.gs.photos.ws.repositories.IHbaseImageThumbnailService;
 import com.gs.photos.ws.repositories.IImageRepository;
 import com.gs.photos.ws.services.IHFileServices;
 import com.gs.photos.ws.web.assembler.ImageAssembler;
@@ -34,28 +35,31 @@ import reactor.core.publisher.Flux;
 @Repository
 public class ImageRepositoryImpl implements IImageRepository {
 
-    private static Logger               LOGGER = LoggerFactory.getLogger(ImageRepositoryImpl.class);
+    private static Logger                 LOGGER = LoggerFactory.getLogger(ImageRepositoryImpl.class);
 
     @Autowired
-    protected ImageAssembler            imageAssembler;
+    protected ImageAssembler              imageAssembler;
 
     @Autowired
-    protected IHbaseImageThumbnailDAO   hbaseImageThumbnailDAO;
+    protected IHbaseImageThumbnailService hbaseImageThumbnailService;
 
     @Autowired
-    protected IHbaseStatsDAO            ihbaseStatsDAO;
+    protected IHbaseImageThumbnailDAO     hbaseImageThumbnailDAO;
 
     @Autowired
-    protected IHbaseImagesOfKeywordsDAO ihbaseImagesOfKeywordsDAO;
+    protected IHbaseStatsDAO              ihbaseStatsDAO;
 
     @Autowired
-    protected IHbaseImagesOfPersonsDAO  ihbaseImagesOfPersonsDAO;
+    protected IHbaseImagesOfKeywordsDAO   ihbaseImagesOfKeywordsDAO;
 
     @Autowired
-    protected IHFileServices            ihFileServices;
+    protected IHbaseImagesOfPersonsDAO    ihbaseImagesOfPersonsDAO;
+
+    @Autowired
+    protected IHFileServices              ihFileServices;
 
     // @Autowired
-    protected SimpMessagingTemplate     template;
+    protected SimpMessagingTemplate       template;
 
     @Override
     public long countAll() throws IOException {
@@ -71,19 +75,19 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Override
     public Optional<ImageDto> findById(short salt, OffsetDateTime creationDate, String id, int version) {
-        return Optional.of(this.hbaseImageThumbnailDAO.findById(salt, creationDate, id, version));
+        return Optional.of(this.hbaseImageThumbnailService.findById(salt, creationDate, id, version));
     }
 
     @Override
     public Optional<ImageDto> getNextImageById(short salt, OffsetDateTime creationDate, String id, int version) {
-        Optional<ImageDto> nextImageById = this.hbaseImageThumbnailDAO
+        Optional<ImageDto> nextImageById = this.hbaseImageThumbnailService
             .getNextImageById(salt, creationDate, id, version);
         return nextImageById;
     }
 
     @Override
     public Optional<ImageDto> getPreviousImageById(short salt, OffsetDateTime creationDate, String id, int version) {
-        Optional<ImageDto> previousImageById = this.hbaseImageThumbnailDAO
+        Optional<ImageDto> previousImageById = this.hbaseImageThumbnailService
             .getPreviousImageById(salt, creationDate, id, version);
         return previousImageById;
     }
@@ -95,7 +99,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.YEAR, versions);
         return images;
     }
@@ -107,7 +111,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.MONTH, versions);
         return images;
     }
@@ -119,7 +123,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.DAY, versions);
         return images;
     }
@@ -131,7 +135,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.HOUR, versions);
         return images;
     }
@@ -143,7 +147,7 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.MINUTE, versions);
         return images;
     }
@@ -155,14 +159,14 @@ public class ImageRepositoryImpl implements IImageRepository {
         Pageable page,
         short... versions
     ) throws IOException {
-        Flux<ImageDto> images = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> images = this.hbaseImageThumbnailService
             .getThumbNailsByDate(firstDate, lastDate, page, KeyEnumType.SECOND, versions);
         return images;
     }
 
     @Override
     public byte[] getJpegImage(short salt, OffsetDateTime creationDate, String id, int version) {
-        return this.hbaseImageThumbnailDAO.findImageRawById(salt, creationDate, id, version);
+        return this.hbaseImageThumbnailService.findImageRawById(salt, creationDate, id, version);
     }
 
     @Override
@@ -197,26 +201,26 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Override
     public Flux<ImageDto> findLastImages(Pageable page) throws IOException {
-        return this.hbaseImageThumbnailDAO.findLastImages(page.getPageSize(), page.getPageNumber());
+        return this.hbaseImageThumbnailService.findLastImages(page.getPageSize(), page.getPageNumber());
     }
 
     @Override
     public Flux<ImageDto> findImagesByKeyword(Pageable page, String keyword) throws IOException {
-        Flux<ImageDto> retValue = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> retValue = this.hbaseImageThumbnailService
             .findLastImagesByKeyword(page.getPageSize(), page.getPageNumber(), keyword);
         return retValue;
     }
 
     @Override
     public Flux<ImageDto> findImagesByPerson(Pageable page, String person) throws IOException {
-        Flux<ImageDto> retValue = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> retValue = this.hbaseImageThumbnailService
             .findLastImagesByPerson(page.getPageSize(), page.getPageNumber(), person);
         return retValue;
     }
 
     @Override
     public Flux<ImageDto> findImagesByAlbum(Pageable page, String album) throws IOException {
-        Flux<ImageDto> retValue = this.hbaseImageThumbnailDAO
+        Flux<ImageDto> retValue = this.hbaseImageThumbnailService
             .findImagesByAlbum(page.getPageSize(), page.getPageNumber(), album);
         return retValue;
 
@@ -275,37 +279,37 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Override
     public Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, long rating) {
-        return this.hbaseImageThumbnailDAO.updateRating(id, creationDate, version, rating);
+        return this.hbaseImageThumbnailService.updateRating(id, creationDate, version, rating);
     }
 
     @Override
     public Optional<ImageDto> addKeyword(String id, OffsetDateTime creationDate, int version, String keyword) {
-        return this.hbaseImageThumbnailDAO.addKeyword(id, creationDate, version, keyword);
+        return this.hbaseImageThumbnailService.addKeyword(id, creationDate, version, keyword);
     }
 
     @Override
     public Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword) {
-        return this.hbaseImageThumbnailDAO.deleteKeyword(id, creationDate, version, keyword);
+        return this.hbaseImageThumbnailService.deleteKeyword(id, creationDate, version, keyword);
     }
 
     @Override
     public Optional<ImageDto> addPerson(String imageId, OffsetDateTime creationDate, int version, String person) {
-        return this.hbaseImageThumbnailDAO.addPerson(imageId, creationDate, version, person);
+        return this.hbaseImageThumbnailService.addPerson(imageId, creationDate, version, person);
     }
 
     @Override
     public Optional<ImageDto> deletePerson(String imageId, OffsetDateTime creationDate, int version, String person) {
-        return this.hbaseImageThumbnailDAO.deletePerson(imageId, creationDate, version, person);
+        return this.hbaseImageThumbnailService.deletePerson(imageId, creationDate, version, person);
     }
 
     @Override
     public Optional<ImageDto> addAlbum(String id, OffsetDateTime creationDate, int version, String album) {
-        return this.hbaseImageThumbnailDAO.addAlbum(id, creationDate, version, album);
+        return this.hbaseImageThumbnailService.addAlbum(id, creationDate, version, album);
     }
 
     @Override
     public Optional<ImageDto> deleteAlbum(String id, OffsetDateTime creationDate, int version, String album) {
-        return this.hbaseImageThumbnailDAO.deleteAlbum(id, creationDate, version, album);
+        return this.hbaseImageThumbnailService.deleteAlbum(id, creationDate, version, album);
     }
 
     @Override
@@ -350,9 +354,9 @@ public class ImageRepositoryImpl implements IImageRepository {
 
     @Override
     public void delete(short salt, OffsetDateTime creationDate, String id) throws IOException {
-        final ImageDto imageToDelete = this.hbaseImageThumbnailDAO.findById(salt, creationDate, id, 1);
+        final ImageDto imageToDelete = this.hbaseImageThumbnailService.findById(salt, creationDate, id, 1);
         this.ihFileServices.delete(imageToDelete);
-        this.hbaseImageThumbnailDAO.delete(creationDate, id);
+        this.hbaseImageThumbnailService.delete(creationDate, id);
     }
 
     int nbOfMessages = 0;
@@ -369,7 +373,7 @@ public class ImageRepositoryImpl implements IImageRepository {
                         && (((WfEventRecorded) e).getRecordedEventType() == RecordedEventType.THUMB))
                 .map((e) -> this.findImageByEvent(e))
                 .filter((e) -> e != null)
-                .map((e) -> this.hbaseImageThumbnailDAO.toImageDTO(e))
+                .map((e) -> this.hbaseImageThumbnailService.toImageDTO(e))
                 .peek((e) -> ImageRepositoryImpl.LOGGER.info("[THUMBNAIL_DAO]Found image {}", e))
                 .map((e) -> this.extracted(e))
                 .forEach((e) -> this.processIncomingMessage(e));
@@ -387,7 +391,7 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     protected void processIncomingMessage(EntityModel<ImageDto> e) {
-        this.hbaseImageThumbnailDAO.invalidCache();
+        this.hbaseImageThumbnailService.invalidCache();
         this.template.convertAndSend("/topic/realtimeImportImages", e);
     }
 

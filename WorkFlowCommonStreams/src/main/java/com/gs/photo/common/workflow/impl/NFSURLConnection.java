@@ -5,9 +5,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.apache.commons.httpclient.util.URIUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
 import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
@@ -15,8 +19,11 @@ import com.emc.ecs.nfsclient.rpc.CredentialUnix;
 
 public class NFSURLConnection extends URLConnection {
 
-    protected final Nfs3               nfs3;
-    protected final AbstractRemoteFile file;
+    protected static Logger                  LOGGER = LoggerFactory.getLogger(FileUtils.class);
+
+    protected static final Map<String, Nfs3> nfs3   = new ConcurrentHashMap<>();
+    // protected final Nfs3 nfs3;
+    protected final AbstractRemoteFile       file;
 
     public Stream<AbstractRemoteFile> listFiles(String... extensions) throws IOException {
         return Stream.of(this.file.listFiles((f) -> {
@@ -51,11 +58,22 @@ public class NFSURLConnection extends URLConnection {
                     .toString()
                     .replace("\\", "/");
             }
-
-            this.nfs3 = new Nfs3(nfsRoot, new CredentialUnix(0, 0, null), 3);
-            this.file = new NFSFile(new Nfs3File(this.nfs3, subPath));
+            if (NFSURLConnection.nfs3.get(nfsRoot) == null) {
+                NFSURLConnection.LOGGER.info("Creating NFS3 Client for {} ", nfsRoot);
+            }
+            NFSURLConnection.nfs3.computeIfAbsent(nfsRoot, (x) -> this.createNFS3(x));
+            this.file = new NFSFile(new Nfs3File(NFSURLConnection.nfs3.get(nfsRoot), subPath));
         } catch (IOException e) {
             throw e;
+        }
+    }
+
+    private Nfs3 createNFS3(String x) {
+        try {
+            NFSURLConnection.LOGGER.info("Creating NFS3 Client for {} ", x);
+            return new Nfs3(x, new CredentialUnix(0, 0, null), 3);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -3,6 +3,7 @@ package com.gs.photo.common.workflow.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -32,7 +33,7 @@ public class LocalFileURLConnection extends URLConnection {
     protected LocalFileURLConnection(URL u) throws IOException {
         super(u);
         try {
-            this.file = new LocalFile(new File(u.toURI()));
+            this.file = new LocalFile(new File(new URI("file://" + u.getFile())));
         } catch (IOException e) {
             throw e;
         } catch (URISyntaxException e) {

@@ -329,7 +329,7 @@ public class BeanScan implements IScan {
                             file.getName()
                                 .indexOf("."))
                         + BeanScan.EXTENSION_FILE_ARW);
-                if (associatedFile.exists()) {
+                if ((associatedFile != null) && associatedFile.exists()) {
                     this.publishFile(
                         this.buildFileToProcess(importEvent, file, associatedFile),
                         this.outputParentTopic);

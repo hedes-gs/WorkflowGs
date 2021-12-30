@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,14 +55,18 @@ import jcifs.smb.SmbFile;
 @Service
 @ConditionalOnClass(value = com.emc.ecs.nfsclient.nfs.io.Nfs3File.class)
 public class FileUtils {
+
+    protected static Logger LOGGER                               = LoggerFactory.getLogger(FileUtils.class);
     public static final int NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED = (int) (2.0 * 1024 * 1024);
 
     private static URLStreamHandler getProtocol(String protocol) {
         switch (protocol) {
             case "smb": {
+                String password = System.getProperty("smb.password");
+                String user = System.getProperty("smb.user");
                 try {
                     BaseContext bc = new BaseContext(new PropertyConfiguration(System.getProperties()));
-                    final CIFSContext ct = bc.withCredentials(new NtlmPasswordAuthenticator("admin", "QuenVal@1303"));
+                    final CIFSContext ct = bc.withCredentials(new NtlmPasswordAuthenticator(user, password));
                     return new URLStreamHandler() {
 
                         @Override
@@ -94,10 +96,7 @@ public class FileUtils {
         URL.setURLStreamHandlerFactory(protocol -> FileUtils.getProtocol(protocol));
     }
 
-    protected static Logger     LOGGER          = LoggerFactory.getLogger(FileUtils.class);
-    protected Map<String, Nfs3> mapOfNfs3client = new ConcurrentHashMap<>();
-
-    static String               LOCAL_ADDRESSES;
+    static String LOCAL_ADDRESSES;
     static {
         try {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -281,8 +280,16 @@ public class FileUtils {
             if (sourceFile.exists()) {
                 return sourceFile.delete();
             } else {
-                FileUtils.LOGGER.warn("[EVENT][{}] unable to delete local file, it does not exist", file.getImageId());
+                FileUtils.LOGGER.warn(
+                    "[EVENT][{}] unable to delete local file : {} , it does not exist",
+                    file.getImageId(),
+                    sourceFile);
             }
+        } else if ((file.getIsLocal() != null) && file.getIsLocal()) {
+
+        } else {
+            FileUtils.LOGGER
+                .warn("[EVENT][{}] unable to delete local file : {} as it is remote ", file.getImageId(), file);
         }
         return false;
     }

@@ -438,6 +438,9 @@
     "name" : "name",
     "type" : "string"
   }, {
+    "name" : "isLocal",
+    "type" : "boolean"
+  }, {
     "name" : "imageId",
     "type" : [ "null", "string" ],
     "default" : null

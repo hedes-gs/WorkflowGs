@@ -14,6 +14,7 @@ public class FileToProcess extends HbaseData implements Serializable {
     private FileToProcess     parent;
     private String            url;
     private String            name;
+    private Boolean           isLocal;
     @Nullable
     private String            imageId;
     private boolean           compressedFile;
@@ -26,6 +27,7 @@ public class FileToProcess extends HbaseData implements Serializable {
         this.parent = builder.parent;
         this.url = builder.url;
         this.name = builder.name;
+        this.isLocal = builder.isLocal;
         this.imageId = builder.imageId;
         this.compressedFile = builder.compressedFile;
         this.importDate = builder.importDate;
@@ -52,11 +54,23 @@ public class FileToProcess extends HbaseData implements Serializable {
 
     public void setName(String name) { this.name = name; }
 
+    public Boolean getIsLocal() { return this.isLocal; }
+
+    public void setIsLocal(Boolean isLocal) { this.isLocal = isLocal; }
+
+    public void setParent(FileToProcess parent) { this.parent = parent; }
+
+    public void setCompressedFile(boolean compressedFile) { this.compressedFile = compressedFile; }
+
+    public void setImportDate(long importDate) { this.importDate = importDate; }
+
+    public void setImportEvent(ImportEvent importEvent) { this.importEvent = importEvent; }
+
     @Override
     public String toString() {
-        return "FileToProcess [parent=" + this.parent + ", url=" + this.url + ", name=" + this.name + ", imageId="
-            + this.imageId + ", compressedFile=" + this.compressedFile + ", importDate=" + this.importDate
-            + ", importEvent=" + this.importEvent + "]";
+        return "FileToProcess [parent=" + this.parent + ", url=" + this.url + ", name=" + this.name + ", isLocal="
+            + this.isLocal + ", imageId=" + this.imageId + ", compressedFile=" + this.compressedFile + ", importDate="
+            + this.importDate + ", importEvent=" + this.importEvent + "]";
     }
 
     public FileToProcess() { super("<not set>",
@@ -70,6 +84,7 @@ public class FileToProcess extends HbaseData implements Serializable {
         result = (prime * result) + ((this.imageId == null) ? 0 : this.imageId.hashCode());
         result = (prime * result) + (int) (this.importDate ^ (this.importDate >>> 32));
         result = (prime * result) + ((this.importEvent == null) ? 0 : this.importEvent.hashCode());
+        result = (prime * result) + ((this.isLocal == null) ? 0 : this.isLocal.hashCode());
         result = (prime * result) + ((this.name == null) ? 0 : this.name.hashCode());
         result = (prime * result) + ((this.parent == null) ? 0 : this.parent.hashCode());
         result = (prime * result) + ((this.url == null) ? 0 : this.url.hashCode());
@@ -90,6 +105,9 @@ public class FileToProcess extends HbaseData implements Serializable {
         if (this.importEvent == null) {
             if (other.importEvent != null) { return false; }
         } else if (!this.importEvent.equals(other.importEvent)) { return false; }
+        if (this.isLocal == null) {
+            if (other.isLocal != null) { return false; }
+        } else if (!this.isLocal.equals(other.isLocal)) { return false; }
         if (this.name == null) {
             if (other.name != null) { return false; }
         } else if (!this.name.equals(other.name)) { return false; }
@@ -102,22 +120,15 @@ public class FileToProcess extends HbaseData implements Serializable {
         return true;
     }
 
-    /**
-     * Creates builder to build {@link FileToProcess}.
-     *
-     * @return created builder
-     */
     public static Builder builder() { return new Builder(); }
 
-    /**
-     * Builder to build {@link FileToProcess}.
-     */
     public static final class Builder {
         private long          dataCreationDate;
         private String        dataId;
         private FileToProcess parent;
         private String        url;
         private String        name;
+        private Boolean       isLocal;
         private String        imageId;
         private boolean       compressedFile;
         private long          importDate;
@@ -182,6 +193,18 @@ public class FileToProcess extends HbaseData implements Serializable {
          */
         public Builder withName(String name) {
             this.name = name;
+            return this;
+        }
+
+        /**
+         * Builder method for isLocal parameter.
+         *
+         * @param isLocal
+         *            field to set
+         * @return builder
+         */
+        public Builder withIsLocal(Boolean isLocal) {
+            this.isLocal = isLocal;
             return this;
         }
 

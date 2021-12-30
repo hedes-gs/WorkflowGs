@@ -283,6 +283,7 @@ public class BeanCopyFile implements ICopyFile {
                             .withImportEvent(origin.getImportEvent())
                             .withImageId(origin.getImageId())
                             .withDataId(origin.getDataId())
+                            .withIsLocal(true)
                             .withUrl(
                                 "nfs://" + this.hostname + ":/" + this.repository + "/" + destPath.toAbsolutePath()
                                     .subpath(1, destPath.getNameCount())

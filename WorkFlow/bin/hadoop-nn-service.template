@@ -1,0 +1,13 @@
+[Unit]
+Description=High-available, distributed message broker
+After=network.target
+[Service]
+User={{ user_to_create }}
+ExecStart=/home/{{ user_to_create }}/bin/start-nn.sh
+ExecStop=/home/{{ user_to_create }}/bin/stop-nn.sh
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier={{ user_to_create }}
+
+[Install]
+WantedBy=multi-user.target

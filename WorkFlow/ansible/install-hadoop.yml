@@ -240,6 +240,7 @@
       shell:  "rm -rf {{ hadoop_install_folder }}/latest/yarn/*"
     - name: remove logs
       shell:  "rm -rf {{ hadoop_install_folder }}/latest/logs/*"
+      
   vars:
     ansible_become_pass: granada01
     hadoop_version: 3.2.1

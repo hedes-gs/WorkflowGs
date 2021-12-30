@@ -228,7 +228,106 @@
     state: directory
     mode: 0777
     owner: "root"
+- name: Create folder {{ hadoop_install_folder }}/bin
+  file:
+    path: "{{ hadoop_install_folder }}/bin"
+    state: directory
+    mode: 0777
+    owner: "{{ user_to_create }}"
+
+- name: Install start/Stop node manager node bash - start-nm.sh
+  template:
+    src: tools/hadoop/start-nm.sh
+    dest: "{{ hadoop_install_folder }}/bin/start-nm.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+  when: inventory_hostname == "ipc5"
+- name: Install start/Stop node manager node bash - stop-nm.sh
+  template:
+    src: tools/hadoop/start-nm.sh
+    dest: "{{ hadoop_install_folder }}/bin/stop-nm.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+  when: inventory_hostname == "ipc5"
+
+- name: Install start/Stop data node bash - start-dn.sh
+  template:
+    src: tools/hadoop/start-dn.sh
+    dest: "{{ hadoop_install_folder }}/bin/start-dn.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+- name: Install start/Stop data node bash - stop-dn.sh
+  template:
+    src: tools/hadoop/stop-dn.sh
+    dest: "{{ hadoop_install_folder }}/bin/stop-dn.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744	
+
+- name: Install start/Stop data node bash - start-rn.sh
+  template:
+    src: tools/hadoop/start-rn.sh
+    dest: "{{ hadoop_install_folder }}/bin/start-rn.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+  when: inventory_hostname == "ipc5"
+- name: Install start/Stop data node bash - stop-rn.sh
+  template:
+    src: tools/hadoop/stop-rn.sh
+    dest: "{{ hadoop_install_folder }}/bin/stop-rn.sh"
+    owner: "{{ user_to_create }}"
+    mode: 0744	
+  when: inventory_hostname == "ipc5"
+
+- name: Install service data node
+  template:
+    src: tools/hadoop/hadoop-dn.service
+    dest: "/etc/systemd/system/{{user_to_create }}_dn.service"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+- name: Install service resources manager
+  template:
+    src: tools/hadoop/hadoop-rn.service
+    dest: "/etc/systemd/system/{{user_to_create }}_rn.service"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+  when: inventory_hostname == "ipc5"
+- name: Install service nodename manager
+  template:
+    src: tools/hadoop/hadoop-nn.service
+    dest: "/etc/systemd/system/{{user_to_create }}_nn.service"
+    owner: "{{ user_to_create }}"
+    mode: 0744
+  when: inventory_hostname == "ipc5"
+
+- name: enable hadoop-rn.service
+  shell: systemctl enable {{user_to_create }}_rn.service 
+  when: inventory_hostname == "ipc5"
+- name: enable hadoop-nn.service
+  shell: systemctl enable {{user_to_create }}_nn.service 
+  when: inventory_hostname == "ipc5"
+- name: enable hadoop-dn.service
+  shell: systemctl enable {{user_to_create }}_dn.service 
+
+- name: reload daemon
+  shell: systemctl  daemon-reload    
+  async: 5
+  poll: 0
 - name: remove logs
   shell:  "rm -rf {{ hadoop_install_folder }}/latest/yarn/*"
 - name: remove logs
   shell:  "rm -rf {{ hadoop_install_folder }}/latest/logs/*"
+
+- name: "{{user_to_create }}_nn.service restarted"
+  ansible.builtin.service:
+    name: "{{user_to_create }}_nn.service"
+    state: restarted
+  when: inventory_hostname == "ipc5"
+- name: "{{user_to_create }}_rn.service restarted"
+  ansible.builtin.service:
+    name: "{{user_to_create }}_rn.service"
+    state: restarted
+  when: inventory_hostname == "ipc5"
+- name: "{{user_to_create }}_dn.service restarted"
+  ansible.builtin.service:
+    name: "{{user_to_create }}_dn.service"
+    state: restarted	

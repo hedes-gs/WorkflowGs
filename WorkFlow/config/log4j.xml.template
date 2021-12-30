@@ -2,33 +2,35 @@
 <Configuration status="WARN">
 
 	<Appenders>
-		<!-- http://logging.apache.org/log4j/2.x/manual/layouts.html#PatternLayout -->
-		<DefaultRolloverStrategy max="20" />
-		<JsonLayout compact="true" locationInfo="true"
-			complete="false" includeStacktrace="true" stacktraceAsString="true"
-			eventEol="true">
-			<KeyValuePair key="application"
-				value="{{ application_id }}" />
-		</JsonLayout>
-
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout
 				pattern="%d{YYYY-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %msg%n" />
 		</Console>
 
-		<RollingFile name="RollingFile"
-			filepattern="logs/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
-			<param name="append" value="false" />
-			<PatternLayout
-				pattern="%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n" />
+		<RollingFile name="rolling-file"
+			fileName="logs/{{ application_id }}.log"
+			filePattern="logs/{{ application_id }}_%d{YYYY_MM_dd}.%i.log.gz">
+			<PatternLayout>
+				<Pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%t] %-5p %c{1}:%L - %msg%n
+				</Pattern>
+			</PatternLayout>
 			<Policies>
-				<SizeBasedTriggeringPolicy size="100 MB" />
+				<OnStartupTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="100MB" />
+				<TimeBasedTriggeringPolicy />
 			</Policies>
-			<DefaultRolloverStrategy max="20" />
+			<DefaultRolloverStrategy>
+				<Delete basePath="${baseDir}" maxDepth="2">
+					<IfFileName glob="logs/{{ application_id }}.*.log.gz" />
+					<IfLastModified age="5d" />
+				</Delete>
+			</DefaultRolloverStrategy>
 		</RollingFile>
-		<RollingFile name="RollingFileJson"
-			filepattern="logs/%d{YYYYMMddHHmmss}-{{ application_id }}.log">
-			<param name="append" value="false" />
+
+		<RollingFile name="json-rolling-file"
+			fileName="logs/json_{{ application_id }}.log"
+			filePattern="logs/json_{{ application_id }}_%d{YYYY_MM_dd}.%i.log.gz">
+
 			<JsonLayout compact="true" locationInfo="true"
 				complete="false" includeStacktrace="true" stacktraceAsString="true"
 				eventEol="true">
@@ -38,20 +40,28 @@
 					value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
 			</JsonLayout>
 			<Policies>
-				<SizeBasedTriggeringPolicy size="100 MB" />
+				<OnStartupTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="100MB" />
+				<TimeBasedTriggeringPolicy />
 			</Policies>
-			<DefaultRolloverStrategy max="20" />
+			<DefaultRolloverStrategy>
+				<Delete basePath="${baseDir}" maxDepth="2">
+					<IfFileName
+						glob="logs/json_{{ application_id }}.*.log.gz" />
+					<IfLastModified age="5d" />
+				</Delete>
+			</DefaultRolloverStrategy>
 		</RollingFile>
 	</Appenders>
 	<Loggers>
 		<Root level="info">
-			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="rolling-file" />
 		</Root>
 		<Logger name="org" level="warn">
-			<AppenderRef ref="RollingFileJson" />
+			<AppenderRef ref="json-rolling-file" />
 		</Logger>
 		<Logger name="com.gs" level="info">
-			<AppenderRef ref="RollingFileJson" />
+			<AppenderRef ref="json-rolling-file" />
 		</Logger>
 	</Loggers>
 </Configuration>

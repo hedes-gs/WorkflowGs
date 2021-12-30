@@ -8,7 +8,7 @@ while [  ! -z $PID  ] && [ $count -lt 20 ]
 do
    kill $PID
    PID=`ps axo user:20,pid,command | grep java | grep {{ user_to_create }} | grep java | grep -v grep | awk '{print $2}'`
-   if [ -z $PID]
+   if [ -z $PID ]
    then
     sleep 1
    fi

@@ -17,9 +17,7 @@ all:
         ipc8:
     wf_hbase:
       hosts:
-        ipc1:
         ipc2:
-        ipc3:
         ipc6:
         ipc7:
         ipc8:
@@ -52,8 +50,8 @@ all:
         ipc8:
     wf_dupcheck:
       hosts:
-        ipc1:
-        ipc3:
+        ipc7:
+        ipc8:
     wf_ext_img_infos:
       hosts:
         ipc0:

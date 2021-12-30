@@ -40,7 +40,7 @@
 
 	<property>
 		<name>dfs.datanode.data.dir</name>
-		<value>file:/data/hadoop/hadoop_tmp/hdfs/datanode</value>
+		<value>{{ hdfs_mounts }}</value>
 	</property>
 	<property>
 		<name>dfs.namenode.checkpoint.dir</name>

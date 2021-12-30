@@ -1,6 +1,7 @@
 [Unit]
 Description=High-available, distributed message broker
-After=network.target
+After=network.target data.mount
+
 [Service]
 User=kafka
 ExecStart=/opt/kafka/latest/bin/run.sh
@@ -8,6 +9,8 @@ ExecStop=/opt/kafka/latest/bin/kafka-server-stop.sh
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=kafka
+Restart=always
+TimeoutSec=900
 
 [Install]
 WantedBy=multi-user.target

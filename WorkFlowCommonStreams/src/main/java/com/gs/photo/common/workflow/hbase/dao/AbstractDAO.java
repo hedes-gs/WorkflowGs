@@ -113,7 +113,7 @@ public abstract class AbstractDAO<T extends HbaseData> {
         }
     }
 
-    protected static byte[] convert(Long p) {
+    public static byte[] convert(Long p) {
         byte[] retValue = new byte[8];
         Bytes.putLong(retValue, 0, p);
         return retValue;

@@ -343,6 +343,12 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
             maxHeight: '53.4vh',
             marginTop: '15px'
         }
+        const tableExifStyle = {
+            fontSize: '12px',
+            maxHeight: '40.4vh',
+            marginTop: '15px',
+
+        }
         const aroundKeywords: CSSProperties = {
             padding: '8px',
             marginTop: '15px',
@@ -506,13 +512,13 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                         </div>
                         <div style={aroundPersons}>
                             <div style={titleProperties}>Paramètres EXIFs</div>
-                            <TableContainer style={tableStyle} component={Paper}>
+                            <TableContainer style={tableExifStyle} component={Paper}>
                                 <Table stickyHeader size="small" >
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell align="right">Exif tag</TableCell>
-                                            <TableCell align="right">Nom</TableCell>
-                                            <TableCell align="right">Valeur</TableCell>
+                                            <TableCell align="left">Exif tag</TableCell>
+                                            <TableCell align="left">Nom</TableCell>
+                                            <TableCell align="left">Valeur</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -521,8 +527,8 @@ class RightPanel extends React.Component<RightPanelProps, RightPanelState> {
                                                 <TableCell component="th" scope="row">
                                                     {'0x' + this.decimalToHexString(row.tagValue)}
                                                 </TableCell>
-                                                <TableCell align="right">{row.displayableName}</TableCell>
-                                                <TableCell align="right">{row.displayableValue}, path : {row.path}</TableCell>
+                                                <TableCell align="left">{row.displayableName}</TableCell>
+                                                <TableCell align="left">{row.displayableValue}, path : {row.path}</TableCell>
                                             </StyledTableRow>
                                         ))}
                                     </TableBody>

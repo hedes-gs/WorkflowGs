@@ -540,10 +540,8 @@ public class LocalFileSystem implements VirtualFileSystem {
 
     @Override
     public Stat getattr(Inode inode) throws IOException {
-        LocalFileSystem.LOGGER.info("Get attributes {} ", inode);
         long inodeNumber = this.getInodeNumber(inode);
         Path path = this.resolveInode(inodeNumber);
-        LocalFileSystem.LOGGER.info("Get path of {} : {} ", inode, path);
         return this.statPath(path, inodeNumber);
 
     }

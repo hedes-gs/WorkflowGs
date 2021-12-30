@@ -1,8 +1,27 @@
 #!/bin/bash
+
+export HADOOP_HOME=/home/hadoop/latest
+kinit hadoop <<EOL
+hadoop
+EOL
+
+while $HADOOP_HOME/bin/hdfs dfsadmin -safemode wait  2>&1  | grep ConnectionRefused
+do
+    echo connection refused..
+    sleep 1s # Or 10s or 1m or whatever time
+done
+while $HADOOP_HOME/bin/hdfs dfsadmin -safemode wait | grep ON
+do
+    echo connection done, waiting for safe mode off ..
+    sleep 1s # Or 10s or 1m or whatever time
+done
+unset HADOOP_HOME
+
+
 export JAR_FILE={{ jar_name }}
 cd /home/{{ user_to_create }}
 # options for JAVA 16 : --add-exports java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED
-/usr/lib/jvm/jdk-16/bin/java --enable-preview -XX:+UnlockExperimentalVMOptions -XX:+UseZGC \
+/usr/lib/jvm/jdk-17/bin/java --enable-preview -XX:+UnlockExperimentalVMOptions -XX:+UseZGC \
 --add-exports java.security.jgss/sun.security.krb5=ALL-UNNAMED \
 --add-opens java.base/java.lang.invoke=ALL-UNNAMED \
 --add-opens java.base/java.nio=ALL-UNNAMED  \

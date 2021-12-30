@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
+import org.apache.hadoop.hbase.client.Scan;
 import org.springframework.data.domain.Pageable;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO.KeyEnumType;
+import com.gs.photo.common.workflow.hbase.dao.PageDescription;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.dtos.ImageDto;
+import com.workflow.model.dtos.ImageKeyDto;
+import com.workflow.model.dtos.ImageVersionDto;
 
 import reactor.core.publisher.Flux;
 
@@ -37,30 +41,24 @@ public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
 
     Flux<ImageDto> findLastImages(int pageSize, int pageNumber);
 
-    Optional<ImageDto> updateRating(String id, OffsetDateTime creationDate, int version, long rating);
-
-    Optional<ImageDto> addKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
-
-    Optional<ImageDto> addPerson(String id, OffsetDateTime creationDate, int version, String person);
-
-    Optional<ImageDto> addAlbum(String id, OffsetDateTime creationDate, int version, String album);
-
-    Optional<ImageDto> deleteAlbum(String id, OffsetDateTime creationDate, int version, String album);
-
-    Optional<ImageDto> deleteKeyword(String id, OffsetDateTime creationDate, int version, String keyword);
-
-    Optional<ImageDto> deletePerson(String id, OffsetDateTime creationDate, int version, String keyword);
-
     void delete(OffsetDateTime creationDate, String id) throws IOException;
-
-    Flux<ImageDto> findLastImagesByKeyword(int pageSize, int pageNumber, String keyword);
-
-    Flux<ImageDto> findLastImagesByPerson(int pageSize, int pageNumber, String person);
-
-    Flux<ImageDto> findImagesByAlbum(int pageSize, int pageNumber, String album);
 
     ImageDto toImageDTO(HbaseImageThumbnail e);
 
     void invalidCache();
+
+    PageDescription<HbaseImageThumbnail> loadPageInTablePage(long pageNumberInTablePage, int pageSize);
+
+    Flux<HbaseImageThumbnail> getNextThumbNailsOf(HbaseImageThumbnail initialKey, boolean includeRow);
+
+    Flux<HbaseImageThumbnail> getPreviousThumbNailsOf(HbaseImageThumbnail initialKey, boolean incluseRow);
+
+    Flux<ImageDto> getSimpleList(final Scan scan);
+
+    ImageDto getImageDto(ImageKeyDto imageKeyDto, OffsetDateTime creationDate, String id, int version);
+
+    Optional<ImageVersionDto> getImageVersionDto(OffsetDateTime creationDate, String id, int version);
+
+    void delete(HbaseImageThumbnail hbaseData) throws IOException;
 
 }

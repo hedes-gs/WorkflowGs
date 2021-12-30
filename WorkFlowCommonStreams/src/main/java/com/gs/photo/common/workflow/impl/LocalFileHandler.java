@@ -45,7 +45,7 @@ public class LocalFileHandler extends URLStreamHandler {
 
     @Override
     public URLConnection openConnection(URL u) throws IOException {
-        return URLConnectionWrapper.of(u.openConnection());
+        return URLConnectionWrapper.of(new LocalFileURLConnection(u));
     }
 
 }

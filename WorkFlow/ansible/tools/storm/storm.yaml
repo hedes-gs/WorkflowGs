@@ -26,9 +26,9 @@ storm.local.dir: "/home/storm/local"
 storm.log.dir: "/home/storm/latest/logs"
 storm.log4j2.conf.dir: "log4j2"
 
-nimbus.seeds: ["ipc0","ipc1"]
+nimbus.seeds: ["IPC1"]
 
-nimbus.thrift.port: 49627
+nimbus.thrift.port: 49625
 supervisor.slots.ports:
 - 6700
 

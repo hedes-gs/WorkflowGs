@@ -1,0 +1,9 @@
+- hosts: all
+  become: true
+  tasks:
+    - debug:
+        msg: reboot
+    - name: reboot
+      shell: reboot
+  vars:
+    ansible_become_pass: granada01

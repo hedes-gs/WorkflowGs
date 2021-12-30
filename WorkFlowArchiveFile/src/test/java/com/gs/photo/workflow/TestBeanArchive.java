@@ -107,9 +107,8 @@ public class TestBeanArchive {
                 "1",
                 FileToProcess.builder()
                     .withDataId("<dataId>")
-                    .withHost("localhost")
+                    .withUrl("file://file")
                     .withName("file")
-                    .withPath("/")
                     .withImportEvent(
                         ImportEvent.builder()
                             .withImportName("import test")
@@ -143,9 +142,8 @@ public class TestBeanArchive {
                 "1",
                 FileToProcess.builder()
                     .withDataId("<dataId>")
-                    .withHost("localhost")
+                    .withUrl("file://localhost")
                     .withName("file")
-                    .withPath("/")
                     .withImportEvent(
                         ImportEvent.builder()
                             .withImportName("import test")
@@ -178,9 +176,8 @@ public class TestBeanArchive {
                 "1",
                 FileToProcess.builder()
                     .withDataId("<dataId>")
-                    .withHost("localhost")
+                    .withUrl("file://localhost")
                     .withName("file")
-                    .withPath("/")
                     .withImportEvent(
                         ImportEvent.builder()
                             .withImportName("import test")
@@ -200,11 +197,7 @@ public class TestBeanArchive {
         } catch (ExceptionToStop e) {
         }
         Mockito.verify(this.fileUtils, Mockito.times(1))
-            .copyRemoteToLocal(
-                (FileToProcess) ArgumentMatchers.any(),
-                (OutputStream) ArgumentMatchers.any(),
-                (Integer) ArgumentMatchers.any(),
-                "/localcache");
+            .copyRemoteToLocal((FileToProcess) ArgumentMatchers.any(), (OutputStream) ArgumentMatchers.any());
     }
 
 }

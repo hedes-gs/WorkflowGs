@@ -37,42 +37,43 @@ import com.workflow.model.files.FileToProcess;
 @Service
 public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
 
-    protected final Logger                    LOGGER = LoggerFactory.getLogger(IProcessInputForHashKeyCompute.class);
+    protected final Logger         LOGGER = LoggerFactory.getLogger(BeanProcessInputForHashKeyCompute.class);
     @Value("${topic.topicScannedFiles}")
-    protected String                          topicScanOutput;
+    protected String               topicScanOutput;
 
     @Value("${topic.topicFileHashKey}")
-    protected String                          topicHashKeyOutput;
+    protected String               topicHashKeyOutput;
 
     @Autowired
     @Qualifier("producerForTopicWithFileToProcessValue")
-    protected Producer<String, FileToProcess> producerForTopicWithFileToProcessValue;
+    // protected Producer<String, FileToProcess>
+    // producerForTopicWithFileToProcessValue;
 
     @Value("${kafka.consumer.batchSizeForParallelProcessingIncomingRecords}")
-    protected int                             batchSizeForParallelProcessingIncomingRecords;
+    protected int                  batchSizeForParallelProcessingIncomingRecords;
 
     @Autowired
-    protected IIgniteDAO                      igniteDAO;
+    protected IIgniteDAO           igniteDAO;
 
     @Autowired
-    protected IBeanTaskExecutor               beanTaskExecutor;
+    protected IBeanTaskExecutor    beanTaskExecutor;
 
     @Autowired
-    protected IBeanImageFileHelper            beanImageFileHelper;
+    protected IBeanImageFileHelper beanImageFileHelper;
 
     @Value("${kafka.pollTimeInMillisecondes}")
-    protected int                             kafkaPollTimeInMillisecondes;
+    protected int                  kafkaPollTimeInMillisecondes;
 
     @Autowired
-    private ApplicationContext                context;
+    private ApplicationContext     context;
 
     @PostConstruct
     public void init() { this.beanTaskExecutor.execute(() -> this.processIncomingFile()); }
 
     protected void processIncomingFile() {
-        boolean ready = true;
         boolean stop = false;
         do {
+            boolean ready = true;
             do {
                 try {
                     TimeUnit.SECONDS.sleep(1);
@@ -81,50 +82,54 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                     break;
                 }
             } while (!this.igniteDAO.isReady());
-            this.LOGGER.info("Ignite is finally ready, let's go !!!");
-            Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue = this.context
-                .getBean("consumerForTopicWithFileToProcessValue", Consumer.class);
-            consumerForTopicWithFileToProcessValue.subscribe(Collections.singleton((this.topicScanOutput)));
-            this.producerForTopicWithFileToProcessValue = this.context
-                .getBean("producerForTopicWithFileToProcessValue", Producer.class);
-            while (ready) {
+            if (ready) {
+                this.LOGGER.info("Ignite is finally ready, let's go !!!");
                 try (
-                    TimeMeasurement timeMeasurement = TimeMeasurement.of(
-                        "BATCH_PROCESS_FILES",
-                        (d) -> this.LOGGER.info(" Perf. metrics {}", d),
-                        System.currentTimeMillis())) {
-                    Stream<ConsumerRecord<String, FileToProcess>> stream = KafkaUtils.toStreamV2(
-                        this.kafkaPollTimeInMillisecondes,
-                        consumerForTopicWithFileToProcessValue,
-                        this.batchSizeForParallelProcessingIncomingRecords,
-                        true,
-                        (i) -> this.loggerStart(i),
-                        timeMeasurement);
-                    Map<TopicPartition, OffsetAndMetadata> offsets = stream.map((r) -> this.create(r))
-                        .map((r) -> this.saveInIgnite(r))
-                        .map((r) -> this.sendToNext(r))
-                        .collect(
-                            () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
-                            (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
-                            (r, t) -> this.merge(r, t));
-                    this.LOGGER.info("Offset to commit {} ", offsets);
-                    consumerForTopicWithFileToProcessValue.commitSync(offsets);
-                    this.producerForTopicWithFileToProcessValue.flush();
-                } catch (Throwable e) {
-                    if ((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException)) {
-                        this.LOGGER.info("Stopping process...");
-                        stop = true;
-                        ready = false;
-                    } else {
-                        this.LOGGER.error("Unexpected error {} ", ExceptionUtils.getStackTrace(e));
-                        ready = false;
-                    }
-                    consumerForTopicWithFileToProcessValue.close();
-                    try {
-                        this.producerForTopicWithFileToProcessValue.close();
-                    } catch (Exception e1) {
-                        this.LOGGER.error("Unexpected error when aborting transaction {}", e1.getMessage());
+                    Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue = this.context
+                        .getBean("consumerForTopicWithFileToProcessValue", Consumer.class);
+                    Producer<String, FileToProcess> producerForTopicWithFileToProcessValue = this.context
+                        .getBean("producerForTopicWithFileToProcessValue", Producer.class)) {
+                    consumerForTopicWithFileToProcessValue.subscribe(Collections.singleton((this.topicScanOutput)));
+                    while (ready) {
+                        try (
+                            TimeMeasurement timeMeasurement = TimeMeasurement.of(
+                                "BATCH_PROCESS_FILES",
+                                (d) -> this.LOGGER.info(" Perf. metrics {}", d),
+                                System.currentTimeMillis())) {
+                            Stream<ConsumerRecord<String, FileToProcess>> stream = KafkaUtils.toStreamV2(
+                                this.kafkaPollTimeInMillisecondes,
+                                consumerForTopicWithFileToProcessValue,
+                                this.batchSizeForParallelProcessingIncomingRecords,
+                                true,
+                                (i) -> this.loggerStart(i),
+                                timeMeasurement);
+                            Map<TopicPartition, OffsetAndMetadata> offsets = stream.map((r) -> this.create(r))
+                                .map((r) -> this.saveInIgnite(r))
+                                .map((r) -> this.sendToNext(producerForTopicWithFileToProcessValue, r))
+                                .collect(
+                                    () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
+                                    (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
+                                    (r, t) -> this.merge(r, t));
+                            this.LOGGER.info("Offset to commit {} ", offsets);
+                            consumerForTopicWithFileToProcessValue.commitSync(offsets);
+                            producerForTopicWithFileToProcessValue.flush();
+                        } catch (Throwable e) {
+                            if ((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException)) {
+                                this.LOGGER.info("Stopping process...");
+                                stop = true;
+                                ready = false;
+                            } else {
+                                this.LOGGER.error("Unexpected error {} ", ExceptionUtils.getStackTrace(e));
+                                ready = false;
+                            }
+                            consumerForTopicWithFileToProcessValue.close();
+                            try {
+                                producerForTopicWithFileToProcessValue.close();
+                            } catch (Exception e1) {
+                                this.LOGGER.error("Unexpected error when aborting transaction {}", e1.getMessage());
 
+                            }
+                        }
                     }
                 }
             }
@@ -150,11 +155,14 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 
     private void loggerStart(int nbOfRecords) { this.LOGGER.info("Starting to process {} records", nbOfRecords); }
 
-    private KafkaManagedFileToProcess sendToNext(KafkaManagedFileToProcess fileToProcess) {
+    private KafkaManagedFileToProcess sendToNext(
+        Producer<String, FileToProcess> producerForTopicWithFileToProcessValue,
+        KafkaManagedFileToProcess fileToProcess
+    ) {
         fileToProcess.getValue()
             .ifPresentOrElse((o) -> {
                 o.setImageId(fileToProcess.getHashKey());
-                this.producerForTopicWithFileToProcessValue.send(
+                producerForTopicWithFileToProcessValue.send(
                     new ProducerRecord<String, FileToProcess>(this.topicHashKeyOutput, fileToProcess.getHashKey(), o));
             },
                 () -> this.LOGGER.warn(

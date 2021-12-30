@@ -37,6 +37,11 @@
         src: "/usr/lib/jvm/jdk-11.0.11+9"
         dest: "/usr/lib/jvm/jdk-11"
         state: link
+    - name: create link to java 17
+      file:
+        src: "/usr/lib/jvm/jdk-17.0.1+12"
+        dest: "/usr/lib/jvm/jdk-17"
+        state: link
   vars:
     ansible_become_pass: granada01
     jdks:
@@ -45,3 +50,4 @@
       java_jdk_13: https://github.com/AdoptOpenJDK/openjdk13-binaries/releases/download/jdk-13.0.2%2B8/OpenJDK13U-jdk_x64_linux_hotspot_13.0.2_8.tar.gz
       java_jdk_15: https://github.com/AdoptOpenJDK/openjdk15-binaries/releases/download/jdk-15.0.1%2B9/OpenJDK15U-jdk_x64_linux_hotspot_15.0.1_9.tar.gz
       java_jdk_16: https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-16.0.1%2B9/OpenJDK16U-jdk_x64_linux_hotspot_16.0.1_9.tar.gz	  
+      java_jdk_17: https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.1%2B12/OpenJDK17U-jdk_x64_linux_hotspot_17.0.1_12.tar.gz

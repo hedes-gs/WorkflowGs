@@ -10,8 +10,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.httpclient.URIException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LocalFile extends AbstractRemoteFile {
+    protected static Logger   LOGGER           = LoggerFactory.getLogger(LocalFile.class);
+
     /**
     *
     */
@@ -48,11 +52,16 @@ public class LocalFile extends AbstractRemoteFile {
     public AbstractRemoteFile[] listFiles(FileFilter filter) {
         java.io.FileFilter nfsFilter = pathName -> filter.accept(LocalFile.of(pathName));
         List<AbstractRemoteFile> retValue;
-        retValue = Arrays.asList(this.localFile.listFiles(nfsFilter))
-            .stream()
-            .map((x) -> LocalFile.of(x))
-            .collect(Collectors.toList());
-        return retValue.toArray(new AbstractRemoteFile[retValue.size()]);
+        if (this.localFile.isDirectory()) {
+            retValue = Arrays.asList(this.localFile.listFiles(nfsFilter))
+                .stream()
+                .map((x) -> LocalFile.of(x))
+                .collect(Collectors.toList());
+            return retValue.toArray(new AbstractRemoteFile[retValue.size()]);
+        } else {
+            LocalFile.LOGGER.warn("Unable to parse directory {}, {}", this.localFile, this.localFile.getAbsolutePath());
+        }
+        return new AbstractRemoteFile[0];
     }
 
     @Override

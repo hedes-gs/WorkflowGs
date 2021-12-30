@@ -5,7 +5,7 @@
       include_tasks: create-storm.yml
   vars:
     ansible_become_pass: granada01
-    storm_version: 2.2.0
+    storm_version: 2.3.0
     user_to_create: storm
     storm_install_folder: /home/storm
     PWD: "{{ lookup('env', 'PWD') }}"

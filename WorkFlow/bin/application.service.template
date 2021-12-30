@@ -1,6 +1,8 @@
 [Unit]
 Description=High-available, distributed message broker
-After=network.target
+After=network.target data.mount hadoop_dn.service
+Requires=network.target data.mount hadoop_dn.service
+
 [Service]
 User={{ user_to_create }}
 ExecStart=/home/{{ user_to_create }}/bin/run.sh
@@ -8,6 +10,8 @@ ExecStop=/home/{{ user_to_create }}/bin/stop.sh
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier={{ user_to_create }}
+Restart=always
+TimeoutSec=900
 
 [Install]
 WantedBy=multi-user.target

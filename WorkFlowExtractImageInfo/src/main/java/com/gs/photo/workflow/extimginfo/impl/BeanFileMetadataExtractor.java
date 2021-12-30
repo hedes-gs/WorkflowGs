@@ -3,6 +3,7 @@ package com.gs.photo.workflow.extimginfo.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -99,16 +100,25 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
         try (
             FileChannelDataInput fcdi = new FileChannelDataInput(buffer)) {
 
-            int offset = this.readHeader(fcdi);
-            for (RootTiffTag rtt : RootTiffTag.values()) {
-                AbstractTemplateTag dtp = TemplateTagFactory.create(rtt, this.exifService);
-                offset = dtp.createSimpleTiffFields(fcdi, offset, ifdContext);
-                allIfds.add(dtp.getRootIFD());
-                if (offset == 0) {
-                    break;
+            try {
+                int offset = this.readHeader(fcdi);
+                for (RootTiffTag rtt : RootTiffTag.values()) {
+                    AbstractTemplateTag dtp = TemplateTagFactory.create(rtt, this.exifService);
+                    offset = dtp.createSimpleTiffFields(fcdi, offset, ifdContext);
+                    allIfds.add(dtp.getRootIFD());
+                    if (offset == 0) {
+                        break;
+                    }
                 }
+                return allIfds;
+            } catch (InvalidHeaderException e) {
+                BeanFileMetadataExtractor.LOGGER.error(
+                    "[EVENT][{}]Unexpected header when processing file - {} - return empty in order to skip it",
+                    key,
+                    e.getMessage(),
+                    ExceptionUtils.getStackTrace(e));
+                return Collections.EMPTY_LIST;
             }
-            return allIfds;
         } catch (Exception e) {
             BeanFileMetadataExtractor.LOGGER
                 .error("[EVENT][{}]Unexpected Error when processing file: {} ", key, ExceptionUtils.getStackTrace(e));
@@ -126,8 +136,9 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
         } else if (endian == IOUtils.LITTLE_ENDIAN) {
             rin.setReadStrategy(ReadStrategyII.getInstance());
         } else {
-            throw new IOException("Invalid TIFF byte order : " + Integer.toHexString(endian) + " expected value "
-                + Integer.toHexString(IOUtils.BIG_ENDIAN) + " or " + Integer.toHexString(IOUtils.LITTLE_ENDIAN));
+            throw new InvalidHeaderException(
+                "Invalid TIFF byte order : " + Integer.toHexString(endian) + " expected value "
+                    + Integer.toHexString(IOUtils.BIG_ENDIAN) + " or " + Integer.toHexString(IOUtils.LITTLE_ENDIAN));
         }
         // Read TIFF identifier
         rin.position(offset);

@@ -92,7 +92,7 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
     private int compare(KeySet a, KeySet b) { return UnsignedBytes.lexicographicalComparator()
         .compare(a.key, b.key); }
 
-    protected static byte[] convert(Long p) {
+    public static byte[] convert(Long p) {
         byte[] retValue = new byte[8];
         Bytes.putLong(retValue, 0, p);
         return retValue;
