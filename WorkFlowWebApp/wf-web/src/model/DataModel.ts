@@ -35,13 +35,13 @@ class ArrayImageLinksSerializerDeserializer implements Deserializer, Serializer 
     }
 }
 
-@CacheKey("ArrayImageDtoLinksSerializerDeserializer")
-class ArrayImageDtoLinksSerializerDeserializer implements Deserializer, Serializer {
+@CacheKey("ArrayExchangedImageDTOLinksSerializerDeserializer")
+class ArrayExchangedImageDTOLinksSerializerDeserializer implements Deserializer, Serializer {
 
-    deserialize = (json: string): ImageDto[] => {
-        return ObjectMapper.deserializeArray(ImageDto, json);
+    deserialize = (json: string): ExchangedImageDTO[] => {
+        return ObjectMapper.deserializeArray(ExchangedImageDTO, json);
     }
-    serialize = (json: ImageDto[]): string => {
+    serialize = (json: ExchangedImageDTO[]): string => {
         return ObjectMapper.serialize(json).toString();
     }
 }
@@ -97,7 +97,7 @@ export class ImageKeyDto {
         deserializer: MomentSerializerDeserializer,
         serializer: MomentSerializerDeserializer
     })
-    creationDate?: Moment | null = null;
+    creationDate?: Moment ;
     version: number = 0;
     imageId: string = '';
 }
@@ -106,42 +106,43 @@ export class ImageKeyDto {
 
 
 export class DefaultLink {
-    self?: PageLink | null = null;
+    self?: PageLink ;
 }
 
 export class ExifsLink extends DefaultLink {
-    _img?: PageLink | null = null;
-    _prev?: PageLink | null = null;
-    _next?: PageLink | null = null;
+    _img?: PageLink ;
+    _prev?: PageLink ;
+    _next?: PageLink ;
 }
 
 export class MinMaxDatesLinks {
-    _subinterval?: PageLink | null = null;
-    _imgs?: PageLink | null = null;
+    _subinterval?: PageLink ;
+    _imgs?: PageLink ;
 }
 
 export class ImageLinks extends DefaultLink {
-    _exif?: PageLink | null = null;
-    _img?: PageLink | null = null;
-    _lowRes?: PageLink | null = null;
-    _upd?: PageLink | null = null;
-    _prev?: PageLink | null = null;
-    _next?: PageLink | null = null;
-    next?: PageLink | null = null;
-    prev?: PageLink | null = null;
-    first?: PageLink | null = null;
-    last?: PageLink | null = null;
-    self?: PageLink | null = null;
-    _checkout?: PageLink | null = null;
+    _exif?: PageLink ;
+    _img?: PageLink ;
+    _lowRes?: PageLink ;
+    _upd?: PageLink ;
+    _prev?: PageLink ;
+    _next?: PageLink ;
+    next?: PageLink ;
+    prev?: PageLink ;
+    first?: PageLink ;
+    last?: PageLink ;
+    self?: PageLink ;
+    _checkout?: PageLink ;
+    _del?: PageLink ;
 }
 
 export class MetadataLinks {
-    _page: PageLink | null = null;
+    _page?: PageLink ;
 }
 
 export class Metadata {
     content: string = '';
-    _links: MetadataLinks | null = null;
+    _links?: MetadataLinks ;
 }
 
 export class StringsOfMetadata {
@@ -154,7 +155,7 @@ export class StringsOfMetadata {
 }
 
 export class MetadataWrapper {
-    _embedded: StringsOfMetadata | null = null;
+    _embedded?: StringsOfMetadata ;
 }
 
 export class MinMaxDatesDto {
@@ -163,26 +164,26 @@ export class MinMaxDatesDto {
         deserializer: MomentSerializerDeserializer,
         serializer: MomentSerializerDeserializer
     })
-    minDate?: Moment | null = null;
+    minDate?: Moment ;
     @JsonProperty({
         type: MomentType,
         deserializer: MomentSerializerDeserializer,
         serializer: MomentSerializerDeserializer
     })
-    maxDate?: Moment | null = null;
+    maxDate?: Moment ;
     countNumber: number = 0;
     intervallType: string = '';
     @JsonProperty({ type: MinMaxDatesLinks })
-    _links?: MinMaxDatesLinks | null = null;
+    _links?: MinMaxDatesLinks ;
 
 }
 export class ImageDto {
 
     @JsonProperty({ type: ImageKeyDto })
-    data?: ImageKeyDto | null = null;
+    data?: ImageKeyDto ;
     imageName: string = '';
     creationDateAsString: string = '';
-    importDate: Date | null = null;
+    importDate?: Date ;
     thumbnailWidth: number = 0;
     thumbnailHeight: number = 0;
     originalWidth: number = 0;
@@ -196,24 +197,44 @@ export class ImageDto {
     albums: string[] = [];
     camera: string = '';
     lens: string = '';
-    creationDate: Date | null = null;
+    creationDate?: Date ;
     imageId: string = '';
     ratings: number = 0;
-    @JsonProperty({ type: ImageLinks })
-    _links?: ImageLinks | null = null;
     orientation: number = 0;
+}
+
+export class ExchangedImageDTO {
+    @JsonProperty({ type: ImageDto })
+    image?: ImageDto ;
+    currentPage: number = 0;
+    pageSize: number  = 0;
+    totalNbOfElements : number  = 0;
+    @JsonProperty({
+        type: MomentType,
+        deserializer: MomentSerializerDeserializer,
+        serializer: MomentSerializerDeserializer
+    })
+    minDate?: Moment ;
+    @JsonProperty({
+        type: MomentType,
+        deserializer: MomentSerializerDeserializer,
+        serializer: MomentSerializerDeserializer
+    })
+    maxDate?: Moment ;
+    @JsonProperty({ type: ImageLinks })
+    _links?: ImageLinks ;
 }
 
 
 export class ExifDTO {
     @JsonProperty({ type: ImageKeyDto })
-    imageOwner?: ImageKeyDto | null = null;
+    imageOwner?: ImageKeyDto ;
     path: number[] = [];
     displayableName: string = '';
     description: string = '';
     tagValue: number = 0;
     displayableValue: string = '';
-    _links?: DefaultLink | null = null;
+    _links?: DefaultLink ;
 }
 
 export class ExifDToes {
@@ -223,9 +244,9 @@ export class ExifDToes {
 
 export class ExifOfImages {
     @JsonProperty({ type: ExifDToes })
-    _embedded?: ExifDToes | null = null;
+    _embedded?: ExifDToes  ;
     @JsonProperty({ type: ExifsLink })
-    _links?: ExifsLink | null = null;
+    _links?: ExifsLink  ;
 }
 
 
@@ -240,40 +261,40 @@ export class PageInformation {
 }
 
 export class PageLinks {
-    first: PageLink | null = null;
-    last: PageLink | null = null;
-    next: PageLink | null = null;
-    self: PageLink | null = null;
-    prev: PageLink | null = null;
+    first?: PageLink ;
+    last?: PageLink ;
+    next?: PageLink ;
+    self?: PageLink ;
+    prev?: PageLink ;
 }
 
 export class ComponentEvent {
-    dataId: string | null = null;
-    status: string | null = null;
-    componentType: string | null = null;
-    message: string | null = null;
-    scannedFolder: string[] | null = null;
-    componentName: string | null = null;
+    dataId?: string ;
+    status?: string ;
+    componentType?: string ;
+    message?: string ;
+    scannedFolder?: string[] ;
+    componentName?: string ;
 }
 
 
 export class PageContent {
-    @JsonProperty({ type: ImageDto, deserializer: ArrayImageDtoLinksSerializerDeserializer, serializer: ArrayImageDtoLinksSerializerDeserializer })
-    imageDtoList: ImageDto[] = [];
+    @JsonProperty({ type: ExchangedImageDTO, deserializer: ArrayExchangedImageDTOLinksSerializerDeserializer, serializer: ArrayExchangedImageDTOLinksSerializerDeserializer })
+    ExchangedImageDTOList: ExchangedImageDTO[] = [];
 }
 
 
-export class PageOfImageDto {
+export class PageOfExchangedImageDTO {
     @JsonProperty({ type: PageInformation })
-    page?: PageInformation | null = null;
+    page?: PageInformation ;
     @JsonProperty({ type: PageContent })
-    _embedded?: PageContent | null = null;
+    _embedded?: PageContent ;
     @JsonProperty({ type: PageLinks })
-    _links: PageLinks | null = null;
+    _links?: PageLinks ;
 }
 
-export function toImageDto(json: string): ImageDto[] {
-    let imgDtos: ImageDto[] = ObjectMapper.deserializeArray(ImageDto, json);
+export function toExchangedImageDTO(json: string): ExchangedImageDTO[] {
+    let imgDtos: ExchangedImageDTO[] = ObjectMapper.deserializeArray(ExchangedImageDTO, json);
     return imgDtos;
 }
 
@@ -283,13 +304,13 @@ export function toMetadataDto(json: string): Metadata[] {
 }
 
 
-export function toPageOfImageDto(json: string): PageOfImageDto {
-    let imgDtos: PageOfImageDto = ObjectMapper.deserialize(PageOfImageDto, json);
+export function toPageOfExchangedImageDTO(json: string): PageOfExchangedImageDTO {
+    let imgDtos: PageOfExchangedImageDTO = ObjectMapper.deserialize(PageOfExchangedImageDTO, json);
     return imgDtos;
 }
 
-export function toSingleImageDto(json: string): ImageDto {
-    let imgDto: ImageDto = ObjectMapper.deserialize(ImageDto, json);
+export function toSingleExchangedImageDTO(json: string): ExchangedImageDTO {
+    let imgDto: ExchangedImageDTO = ObjectMapper.deserialize(ExchangedImageDTO, json);
     return imgDto;
 }
 
@@ -304,9 +325,17 @@ export function toExif(json: string): ExifOfImages {
     return exifs;
 }
 
-export function toJsonImageDto(event: ImageDto) {
+export function toJsonExchangedImageDTO(event: ExchangedImageDTO) {
     return ObjectMapper.serialize(event);
 }
+
+export function toJsonImageDTO(event?: ImageDto) {
+    if ( event != null ) {
+        return ObjectMapper.serialize(event);
+    }
+    return '';
+}
+
 
 export function toMap(json: string): Map<string, number> {
     const deser: MapDeserializer = new MapDeserializer();

@@ -1,25 +1,24 @@
 import React from 'react';
-import Button from '@material-ui/core/Button';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import TextField from '@material-ui/core/TextField';
-import Input from '@material-ui/core/Input';
+import Button from '@mui/material/Button';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import TextField from '@mui/material/TextField';
+import Input from '@mui/material/Input';
 
 
-import Typography from '@material-ui/core/Typography';
-import IconButton from '@material-ui/core/IconButton';
-import MenuIcon from '@material-ui/icons/Menu';
-import ImageSearchIcon from '@material-ui/icons/ImageSearch';
-import SearchIcon from '@material-ui/icons/Search';
-import SkipNextIcon from '@material-ui/icons/SkipNext';
-import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-import DirectionsIcon from '@material-ui/icons/Directions';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import MenuIcon from '@mui/icons-material/Menu';
+import ImageSearchIcon from '@mui/icons-material/ImageSearch';
+import SearchIcon from '@mui/icons-material/Search';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import DirectionsIcon from '@mui/icons-material/Directions';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
-import { MinMaxDatesDto, ImageKeyDto, ImageDto } from '../model/DataModel'
+import { MinMaxDatesDto, ImageKeyDto, ExchangedImageDTO } from '../model/DataModel'
 import { ParagraphTitle } from '../styles';
-import { KeyboardDateTimePicker } from "@material-ui/pickers";
 import MomentTimeZone, { Moment } from 'moment-timezone';
 import { FloatProperty, DisplayInside, TableLayoutProperty } from 'csstype';
 import { connect } from "react-redux";
@@ -27,6 +26,7 @@ import {
     loadImagesInterval,
     ApplicationThunkDispatch,
     dispatchCheckoutImage,
+    dispatchDeleteImage,
     ApplicationEvent,
     dispatchLastImages,
     dispatchGetAllDatesOfImages,
@@ -35,38 +35,41 @@ import {
     dispatchNextPage,
     dispatchPrevPage,
     downloadImage,
+    deleteImage,
     getAllDatesOfImages
 
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
-import { MaterialUiPickersDate } from '@material-ui/pickers/typings/date';
-import DeleteForeverIcon from '@material-ui/icons/DeleteForever';
-import { Badge } from '@material-ui/core';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { Badge } from '@mui/material';
 import RightPanel from './RightPanel';
 import ComponentStatus from './ComponentStatus';
 import RatingsList from '../components/RatingsList'
-import { withStyles } from '@material-ui/core/styles';
-import FavoriteIcon from '@material-ui/icons/Favorite';
-import Paper from '@material-ui/core/Paper';
-import Divider from '@material-ui/core/Divider';
+import withStyles from '@mui/styles/withStyles';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
 
 export interface HeaderProps {
     urlNext?: string;
     urlPrevious?: string;
     nbOfPhotos?: number;
-    photosToDelete?: Set<ImageDto> | null;
-    photosToDownload?: Set<ImageDto> | null;
-    pageNumber?: number
-    min?: number;
-    max?: number;
+    photosToDelete?: Set<ExchangedImageDTO> | null;
+    photosToDownload?: Set<ExchangedImageDTO> | null;
+    pageNumber?: number ;
+    totalStreamedImages?: number ;
+    min?: Moment;
+    max?: Moment;
     intervallType?: string;
     loadLastImages?(pageNumber: number, title: string): ApplicationEvent;
     loadPagesOfImages?(url: string, title: string): ApplicationEvent;
     loadDatesOfImages?(): ApplicationEvent;
-    downloadImage?(img: ImageDto): ApplicationEvent;
+    downloadImage?(img: ExchangedImageDTO): ApplicationEvent;
+    deleteImage?(img: ExchangedImageDTO): ApplicationEvent;
     thunkActionToLoadAllImages?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     thunkActionToGetDatesOfImages?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     thunkActionToCheckoutImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
+    thunkActionToDeleteImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     loadImagesInterval?(min: number, max: number, intervallType: string): ApplicationEvent;
     thunkAction?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
     thunkActionToLoadNextPage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
@@ -79,7 +82,10 @@ interface HeaderState {
     pageNumber: number
     headerIsUpdating: boolean
     leftPanelIsOpened: boolean;
-    minMaxDates?: MinMaxDatesDto | null;
+    streamedMinDate?: Moment ;
+    streamedMaxDate?: Moment ;
+    minMaxDates?: MinMaxDatesDto;
+    totalStreamedImages?: number;
     totalImages: number;
     firstSelectDate: Moment;
     lastSelectedDate: Moment;
@@ -128,18 +134,22 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         this.handleNextPage = this.handleNextPage.bind(this);
         this.handlePreviousPage = this.handlePreviousPage.bind(this);
         this.handleClickCheckout = this.handleClickCheckout.bind(this);
+        this.handleClickDelete = this.handleClickDelete.bind(this);
         this.pageNumber = 1;
-
     }
     static getDerivedStateFromProps(props: HeaderProps, state: HeaderState): HeaderState {
         if (props != null) {
             if (state.headerIsUpdating) {
+
                 return {
                     pageNumber: state.pageNumber,
                     headerIsUpdating: false,
                     leftPanelIsOpened: state.leftPanelIsOpened,
                     minMaxDates: state.minMaxDates,
+                    streamedMinDate: props.min,
+                    streamedMaxDate: props.max,
                     totalImages: state.totalImages,
+                    totalStreamedImages : props.totalStreamedImages,
                     firstSelectDate: state.firstSelectDate,
                     lastSelectedDate: state.lastSelectedDate,
                 }
@@ -149,7 +159,10 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                     headerIsUpdating: false,
                     leftPanelIsOpened: state.leftPanelIsOpened,
                     minMaxDates: state.minMaxDates,
+                    streamedMinDate: props.min,
+                    streamedMaxDate: props.max,
                     totalImages: state.totalImages,
+                    totalStreamedImages : props.totalStreamedImages,
                     firstSelectDate: state.firstSelectDate,
                     lastSelectedDate: state.lastSelectedDate,
                 }
@@ -187,7 +200,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         }
     }
 
-    handleFirstDateChange(date: MaterialUiPickersDate) {
+    handleFirstDateChange(date: any) {
         const moment: Moment = (date != null ? date : MomentTimeZone());
         this.setState({
             pageNumber: this.state.pageNumber,
@@ -201,7 +214,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
     }
 
-    handleSecundDateChange(date: MaterialUiPickersDate) {
+    handleSecundDateChange(date: any) {
         const moment: Moment = (date != null ? date : MomentTimeZone());
         this.setState({
             pageNumber: this.state.pageNumber,
@@ -260,6 +273,19 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         }
     }
 
+    handleClickDelete() {
+        if (this.props.thunkActionToDeleteImage != null) {
+            this.props.photosToDelete?.forEach(
+                (img) => {
+                    if (this.props.thunkActionToDeleteImage != null && this.props.deleteImage != null) {
+                        this.props.thunkActionToDeleteImage(
+                            this.props.deleteImage(img))
+                    }
+                });
+        }
+    }
+
+
     openLeftPanel() {
     }
     componentDidMount() {
@@ -285,15 +311,17 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
         const nbOfImagesToDelete = this.props.photosToDelete != null ? this.props.photosToDelete.size : 0;
         const nbOfImagesToDownload = this.props.photosToDownload != null ? this.props.photosToDownload.size : 0;
         const currentMinMax = this.state.minMaxDates;
-        const totalImages = this.state.totalImages;
+        const streamedMinDate = this.state.streamedMinDate ;
+        const streamedMaxDate = this.state.streamedMaxDate ;
+        const totalImages = this.state.totalStreamedImages != null ? this.state.totalStreamedImages : this.state.totalImages;
         const pageNumber = this.state.pageNumber;
         const right: FloatProperty = "right";
         const left: FloatProperty = "left";
 
         const tableFixed: TableLayoutProperty = "fixed";
         const dispalyInside: DisplayInside = "table";
-        const selectedDateFirst = this.state.headerIsUpdating ? this.state.firstSelectDate : (this.props.min != 0 ? MomentTimeZone(this.props.min) : MomentTimeZone());
-        const selectedDateLast = this.state.headerIsUpdating ? this.state.lastSelectedDate : (this.props.max != 0 ? MomentTimeZone(this.props.max) : MomentTimeZone());
+        const selectedDateFirst = this.state.headerIsUpdating ? this.state.firstSelectDate : (this.props.min != null  ? this.props.min : MomentTimeZone());
+        const selectedDateLast = this.state.headerIsUpdating ? this.state.lastSelectedDate : (this.props.max != null  ? this.props.max : MomentTimeZone());
 
         const divStyle = {
             float: right,
@@ -324,11 +352,10 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
 
         return (
-
             <React.Fragment>
                 <AppBar position="static">
                     <Toolbar>
-                        <IconButton edge="start" color="inherit" aria-label="menu">
+                        <IconButton edge="start" color="inherit" aria-label="menu" size="large">
                             <MenuIcon onClick={this.openLeftPanel} />
                         </IconButton>
                         <Typography variant="h6" >
@@ -338,11 +365,11 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                             <div style={{ display: 'table-row' }} >
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={'Date premiere image'} size='10px' />
-                                    <ParagraphTitle text={(currentMinMax?.minDate?.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") ?? 'unset')} />
+                                    <ParagraphTitle text={( streamedMinDate?.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") ?? (currentMinMax?.minDate?.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") ?? 'unset'))} />
                                 </div>
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={'Date derniere image '} size='10px' />
-                                    <ParagraphTitle text={(currentMinMax?.maxDate?.locale('fr').format("ddd DD MMMM  YYYY HH:mm:ss") ?? 'unset')} />
+                                    <ParagraphTitle text={( streamedMaxDate?.locale('fr').format("ddd DD MMMM YYYY HH:mm:ss") ?? ( currentMinMax?.maxDate?.locale('fr').format("ddd DD MMMM  YYYY HH:mm:ss") ?? 'unset'))} />
                                 </div>
                                 <div style={{ float: 'left', margin: '5px' }} >
                                     <ParagraphTitle text={"Nombre total d'images"} size='10px' />
@@ -363,7 +390,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                                 </Button>
                             </Badge>
                             <Badge badgeContent={nbOfImagesToDelete} color="primary" style={{ display: 'table-cell', margin: '5px', padding: '5px' }} >
-                                <Button  >
+                                <Button  onClick={this.handleClickDelete}  >
                                     <DeleteForeverIcon />
                                 </Button>
                             </Badge>
@@ -377,14 +404,14 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
 
                             <div style={{ backgroundColor: '#424242', display: 'flex' }}>
                                 <div style={searchElementStyle} >
-                                    <IconButton color="inherit"  >
+                                    <IconButton color="inherit" size="large">
                                         <SkipPreviousIcon onClick={this.handlePreviousPage} />
                                     </IconButton>
                                     <TextField style={{ width: '60%' }} label="Page" type="number" value={pageNumber} onChange={(e) => { this.handlePageNumberUpdate(e.target.value); }} />
-                                    <IconButton color="inherit" >
+                                    <IconButton color="inherit" size="large">
                                         <ImageSearchIcon onClick={this.handleRefresh} />
                                     </IconButton>
-                                    <IconButton color="inherit">
+                                    <IconButton color="inherit" size="large">
                                         <SkipNextIcon onClick={this.handleNextPage} />
                                     </IconButton>
                                 </div>
@@ -392,7 +419,7 @@ export class Header extends React.Component<HeaderProps, HeaderState> {
                                     <TextField
                                         placeholder="Mots-clé" style={{ width: '80%' }}
                                     />
-                                    <IconButton type="submit" aria-label="search" >
+                                    <IconButton type="submit" aria-label="search" size="large">
                                         <SearchIcon />
                                     </IconButton>
                                 </div>
@@ -424,12 +451,19 @@ const mapStateToProps = (state: ClientApplicationState, ownProps: HeaderProps): 
             };
         }
         case 'STREAMING': {
-            const urlNext = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.imageDtoList[0]?._links?.next?.href;
-            const urlPrevious = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.imageDtoList[0]?._links?.prev?.href;
+            const urlNext = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?._links?.next?.href;
+            const urlPrevious = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?._links?.prev?.href;
+            const pageNumber = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?.currentPage;
+            const minDate = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?.minDate ;
+            const maxDate = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?.maxDate ;
+            const totalStreamedImages = state.reducerImagesAreStreamed.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList[0]?.totalNbOfElements ;
             return {
-                pageNumber: state.reducerImagesList.imagesLoaded.pageNumber,
+                pageNumber: pageNumber,
                 urlNext: urlNext,
                 urlPrevious: urlPrevious,
+                min: minDate,
+                max: maxDate,
+                totalStreamedImages: totalStreamedImages,
                 nbOfPhotos: nbOfPhotosToDelete + nbOfPhotosToDownload,
                 photosToDelete: state.reducerImagesToDelete.imagesToDelete.images != null ? state.reducerImagesToDelete.imagesToDelete.images : null,
                 photosToDownload: state.reducerImagesToDownload.imagesToDownload.images != null ? state.reducerImagesToDownload.imagesToDownload.images : null,
@@ -440,8 +474,6 @@ const mapStateToProps = (state: ClientApplicationState, ownProps: HeaderProps): 
     switch (state.reducerImagesList.lastIntervallRequested.state) {
         case 'LOADING': {
             return {
-                min: state.reducerImagesList.lastIntervallRequested.min,
-                max: state.reducerImagesList.lastIntervallRequested.max,
                 intervallType: state.reducerImagesList.lastIntervallRequested.intervallType,
                 nbOfPhotos: nbOfPhotosToDelete + nbOfPhotosToDownload,
                 photosToDelete: state.reducerImagesToDelete.imagesToDelete.images != null ? state.reducerImagesToDelete.imagesToDelete.images : null,
@@ -486,6 +518,7 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
         loadLastImages: loadLastImages,
         loadPagesOfImages: loadPagesOfImages,
         downloadImage: downloadImage,
+        deleteImage: deleteImage,
         loadDatesOfImages: getAllDatesOfImages,
         thunkActionToLoadAllImages: (x: ApplicationEvent) => {
             const r = dispatchLastImages(x);
@@ -497,6 +530,10 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
         },
         thunkActionToCheckoutImage: (x: ApplicationEvent) => {
             const r = dispatchCheckoutImage(x);
+            return dispatch(r);
+        },
+        thunkActionToDeleteImage: (x: ApplicationEvent) => {
+            const r = dispatchDeleteImage(x);
             return dispatch(r);
         },
         thunkActionToLoadNextPage: (x: ApplicationEvent) => {

@@ -113,8 +113,26 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
             Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
             Append append = this.createHbaseAppend(
                 GenericDAO.getKey(hbaseData, this.hbaseDataInformation),
-                this.getCfList(hbaseData, this.hbaseDataInformation, familiesToInclude));
+                this.getCfList(hbaseData, this.hbaseDataInformation, false, familiesToInclude));
             table.append(append);
+        } catch (IOException e) {
+            GenericDAO.LOGGER.warn(
+                "Unable to record some data in {}, error is {}",
+                this.hbaseDataInformation.getTable(),
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void put(T hbaseData, String... familiesToInclude) {
+        this.checkForClass(this.hbaseDataInformation.getHbaseDataClass());
+        try (
+            Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
+            Put append = this.createHbasePut(
+                GenericDAO.getKey(hbaseData, this.hbaseDataInformation),
+                this.getCfList(hbaseData, this.hbaseDataInformation, true, familiesToInclude));
+            table.put(append);
         } catch (IOException e) {
             GenericDAO.LOGGER.warn(
                 "Unable to record some data in {}, error is {}",
@@ -247,6 +265,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
         this.checkForClass(hbaseDataInformation.getHbaseDataClass());
         try (
             Table table = AbstractDAO.getTable(this.connection, hbaseDataInformation.getTable())) {
+            GenericDAO.LOGGER.info("Deleting data {} ", hbaseData);
             Delete delete = this.createHbaseDelete(GenericDAO.getKey(hbaseData, hbaseDataInformation));
             table.delete(delete);
         } catch (IOException e) {
@@ -353,16 +372,17 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     }
 
     protected Map<String, ColumnFamily> getCfList(T hbaseData, HbaseDataInformation<T> hbaseDataInformation) {
-        return hbaseDataInformation.buildValue(hbaseData);
+        return hbaseDataInformation.buildValue(hbaseData, false);
     }
 
     protected Map<String, ColumnFamily> getCfList(
         T hbaseData,
         HbaseDataInformation<T> hbaseDataInformation,
+        boolean ignoreNullValue,
         String... families
     ) {
         List<String> familiesToInclude = Arrays.asList(families);
-        return hbaseDataInformation.buildValue(hbaseData)
+        return hbaseDataInformation.buildValue(hbaseData, ignoreNullValue)
             .entrySet()
             .stream()
             .filter(((e) -> familiesToInclude.contains(e.getKey())))

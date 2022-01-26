@@ -1,6 +1,7 @@
 package com.gs.photos.ws.web.assembler;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.gs.photos.ws.controllers.ImageController;
 import com.gs.photos.ws.controllers.ImageExifController;
+import com.workflow.model.dtos.ExchangedImageDto;
 import com.workflow.model.dtos.ImageDto;
 
 import reactor.core.publisher.Flux;
@@ -34,14 +36,14 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 @Component
-public class ImageAssembler implements SimpleReactiveRepresentationModelAssembler<ImageDto> {
+public class ImageAssembler implements SimpleReactiveRepresentationModelAssembler<ExchangedImageDto> {
 
     protected static Logger                                    LOGGER = LoggerFactory.getLogger(ImageAssembler.class);
     private final HateoasPageableHandlerMethodArgumentResolver pageableResolver;
     private final Optional<UriComponents>                      baseUri;
 
     @Override
-    public Mono<EntityModel<ImageDto>> toModel(ImageDto entity, ServerWebExchange exchange) {
+    public Mono<EntityModel<ExchangedImageDto>> toModel(ExchangedImageDto entity, ServerWebExchange exchange) {
         return this.toReactiveEntityModel(entity);
     }
 
@@ -52,23 +54,30 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
                 .build());
     }
 
-    public EntityModel<ImageDto> toEntityModel(ImageDto entity) {
-        EntityModel<ImageDto> entityModel = EntityModel.of(entity);
+    public EntityModel<ExchangedImageDto> toEntityModel(ImageDto entity) {
+        EntityModel<ExchangedImageDto> entityModel = EntityModel.of(
+            ExchangedImageDto.builder()
+                .withImage(entity)
+                .build());
         entityModel = this.addLinks(entityModel, null);
         return entityModel;
     }
 
-    public Mono<EntityModel<ImageDto>> toReactiveEntityModel(ImageDto entity) {
+    public Mono<EntityModel<ExchangedImageDto>> toReactiveEntityModel(ExchangedImageDto entity) {
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .checkout(
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getSalt(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getImageId(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getCreationDate(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getVersion()))
             .withRel(LinkRelation.of("_checkout"))
             .toMono()
@@ -93,17 +102,25 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
             .map((t) -> this.update(t));
     }
 
-    public Mono<EntityModel<ImageDto>> toEntityModel(ImageDto entity, Page<?> page, Mono<Link> baseLink) {
+    public Mono<EntityModel<ExchangedImageDto>> toEntityModel(
+        ExchangedImageDto entity,
+        Page<?> page,
+        Mono<Link> baseLink
+    ) {
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .checkout(
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getSalt(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getImageId(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getCreationDate(),
-                    entity.getData()
+                    entity.getImage()
+                        .getData()
                         .getVersion()))
             .withRel(LinkRelation.of("_checkout"))
             .toMono()
@@ -130,103 +147,136 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
             .map((t) -> this.updatePaginationLinks(t, page));
     }
 
-    private EntityModel<ImageDto> updatePaginationLinks(Tuple2<EntityModel<ImageDto>, Link> t, Page<?> page) {
+    private EntityModel<ExchangedImageDto> updatePaginationLinks(
+        Tuple2<EntityModel<ExchangedImageDto>, Link> t,
+        Page<?> page
+    ) {
         return this.addPaginationLinks(t.getT1(), page, t.getT2());
     }
 
-    private EntityModel<ImageDto> update(Tuple2<EntityModel<ImageDto>, Link> t) { return t.getT1()
-        .add(t.getT2()); }
-
-    public Flux<EntityModel<ImageDto>> toFlux(Flux<ImageDto> entities, ServerWebExchange exchange) {
-        return entities.flatMap(entity -> this.toModel(entity, exchange));
+    private EntityModel<ExchangedImageDto> update(Tuple2<EntityModel<ExchangedImageDto>, Link> t) {
+        return t.getT1()
+            .add(t.getT2());
     }
 
-    public Flux<EntityModel<ImageDto>> toFlux(
+    public Flux<EntityModel<ExchangedImageDto>> toFlux(Flux<ImageDto> entities, ServerWebExchange exchange) {
+        return entities.map(
+            (x) -> ExchangedImageDto.builder()
+                .withImage(x)
+                .build())
+            .flatMap(entity -> this.toModel(entity, exchange));
+    }
+
+    public Flux<EntityModel<ExchangedImageDto>> toFlux(
         Flux<ImageDto> entities,
         Page<?> page,
         Mono<Link> baseLink,
         ServerWebExchange exchange
     ) {
-        return entities.flatMap((entity) -> this.toEntityModel(entity, page, baseLink));
+        return entities.map(
+            (x) -> ExchangedImageDto.builder()
+                .withCurrentPage(page.getNumber())
+                .withImage(x)
+                .withPageSize(page.getNumberOfElements())
+                .build())
+            .flatMap((entity) -> this.toEntityModel(entity, page, baseLink));
     }
 
-    private Mono<Link> getLinkForImg(EntityModel<ImageDto> entity) {
+    public Flux<EntityModel<ExchangedImageDto>> toFlux(
+        Flux<ImageDto> entities,
+        Page<?> page,
+        Mono<Link> baseLink,
+        ServerWebExchange exchange,
+        LocalDateTime minDate,
+        LocalDateTime maxDate,
+        long totalNbOfElements
+    ) {
+        return entities.map(
+            (x) -> ExchangedImageDto.builder()
+                .withCurrentPage(page.getNumber())
+                .withImage(x)
+                .withPageSize(page.getNumberOfElements())
+                .withMinDate(minDate)
+                .withMaxDate(maxDate)
+                .withTotalNbOfElements((int) totalNbOfElements)
+                .build())
+            .flatMap((entity) -> this.toEntityModel(entity, page, baseLink));
+    }
+
+    private Mono<Link> getLinkForImg(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .getImageWithMediaType(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
                     1))
             .withRel(LinkRelation.of("_img"))
             .toMono();
     }
 
-    private Mono<Link> getLinkForLowResImg(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForLowResImg(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .getImageWithMediaType(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
                     2))
             .withRel(LinkRelation.of("_lowRes"))
             .toMono();
     }
 
-    private Mono<Link> getLinkForSelfRel(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForSelfRel(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .getImageById(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getVersion()))
             .withSelfRel()
             .toMono();
     }
 
-    private Mono<Link> getLinkForUpd(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForUpd(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
-                .updateRating(entity.getContent()))
+                .updateRating(image))
             .withRel(LinkRelation.of("_upd"))
             .toMono();
     }
 
-    private Mono<Link> getLinkForDelete(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForDelete(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         try {
             return WebFluxLinkBuilder.linkTo(
                 WebFluxLinkBuilder.methodOn(ImageController.class)
                     .delete(
-                        entity.getContent()
-                            .getData()
+                        image.getData()
                             .getSalt(),
-                        entity.getContent()
-                            .getData()
+                        image.getData()
                             .getImageId(),
-                        entity.getContent()
-                            .getData()
+                        image.getData()
                             .getCreationDate()))
                 .withRel(LinkRelation.of("_del"))
                 .toMono();
@@ -235,67 +285,66 @@ public class ImageAssembler implements SimpleReactiveRepresentationModelAssemble
         }
     }
 
-    private Mono<Link> getLinkForExif(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForExif(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageExifController.class)
                 .getExifsByImageId(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getVersion()))
             .withRel(LinkRelation.of("_exif"))
             .toMono();
     }
 
-    private Mono<Link> getLinkForNext(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForNext(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .getNextImageById(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getVersion()))
             .withRel(LinkRelation.of("_next"))
             .toMono();
     }
 
-    private Mono<Link> getLinkForPrev(EntityModel<ImageDto> entity) {
+    private Mono<Link> getLinkForPrev(EntityModel<ExchangedImageDto> entity) {
+        final ImageDto image = entity.getContent()
+            .getImage();
         return WebFluxLinkBuilder.linkTo(
             WebFluxLinkBuilder.methodOn(ImageController.class)
                 .getPreviousImageById(
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getSalt(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getImageId(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getCreationDate(),
-                    entity.getContent()
-                        .getData()
+                    image.getData()
                         .getVersion()))
             .withRel(LinkRelation.of("_prev"))
             .toMono();
     }
 
-    protected EntityModel<ImageDto> addPaginationLinks(EntityModel<ImageDto> resources, Page<?> page, Link link) {
+    protected EntityModel<ExchangedImageDto> addPaginationLinks(
+        EntityModel<ExchangedImageDto> resources,
+        Page<?> page,
+        Link link
+    ) {
+
         UriTemplate base = this.getUriTemplate(link);
         boolean isNavigable = page.hasPrevious() || page.hasNext();
         if (isNavigable) {

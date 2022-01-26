@@ -50,7 +50,7 @@ public interface IHbaseImageThumbnailService {
 
     Optional<ImageDto> deletePerson(String id, OffsetDateTime creationDate, int version, String keyword);
 
-    void delete(OffsetDateTime creationDate, String id) throws IOException;
+    Optional<ImageDto> delete(OffsetDateTime creationDate, String id) throws IOException;
 
     Flux<ImageDto> findLastImagesByKeyword(int pageSize, int pageNumber, String keyword);
 

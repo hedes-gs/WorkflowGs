@@ -3,8 +3,7 @@ Description=process Exporter
 After=network.target
  
 [Service]
-User=processexporter
-Group=nogroup
+User=root
 Type=simple
 ExecStart=/home/processexporter/latest/process-exporter -config.path /home/processexporter/latest/config_process_exporter.yml
  

@@ -670,32 +670,34 @@ public class ExifServiceImpl implements IExifService {
 
     @Override
     public String toString(FieldType fieldType, Object data) {
-        switch (fieldType) {
-            case ASCII: {
-                if (data instanceof byte[]) {
-                    byte[] valueAsByte = (byte[]) data;
-                    return new String(valueAsByte, 0, valueAsByte.length - 1, Charset.forName("UTF-8"));
-                } else if (data instanceof String) { return (String) data; }
-                break;
-            }
-            case RATIONAL:
-            case SRATIONAL: {
-                int[] valueAsInt = (int[]) data;
-                if (valueAsInt.length < 2) { throw new IllegalArgumentException("Input data length is too short"); }
-                if (valueAsInt[1] == 0) { throw new ArithmeticException("Divided by zero"); }
+        if (data != null) {
+            switch (fieldType) {
+                case ASCII: {
+                    if (data instanceof byte[]) {
+                        byte[] valueAsByte = (byte[]) data;
+                        return new String(valueAsByte, 0, valueAsByte.length - 1, Charset.forName("UTF-8"));
+                    } else if (data instanceof String) { return (String) data; }
+                    return "<not processed>";
+                }
+                case RATIONAL:
+                case SRATIONAL: {
+                    int[] valueAsInt = (int[]) data;
+                    if (valueAsInt.length < 2) { throw new IllegalArgumentException("Input data length is too short"); }
+                    if (valueAsInt[1] == 0) { throw new ArithmeticException("Divided by zero"); }
 
-                long numerator = valueAsInt[0];
-                long denominator = valueAsInt[1];
-                numerator = (numerator & 0xffffffffL);
-                denominator = (denominator & 0xffffffffL);
-                return ExifServiceImpl.df.format((1.0 * numerator) / denominator) + " [" + numerator + " / "
-                    + denominator + "]";
-            }
-            default: {
-                return "<not processed>";
+                    long numerator = valueAsInt[0];
+                    long denominator = valueAsInt[1];
+                    numerator = (numerator & 0xffffffffL);
+                    denominator = (denominator & 0xffffffffL);
+                    return ExifServiceImpl.df.format((1.0 * numerator) / denominator) + " [" + numerator + " / "
+                        + denominator + "]";
+                }
+                default: {
+                    return "<not processed>";
+                }
             }
         }
-        return "<not processed>";
+        return "<data is null>";
     }
 
     @Override

@@ -3,8 +3,7 @@ Description=Node Exporter
 After=network.target
  
 [Service]
-User=nodeexporter
-Group=nogroup
+User=root
 Type=simple
 ExecStart=/home/nodeexporter/latest/node_exporter
  

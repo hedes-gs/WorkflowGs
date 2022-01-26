@@ -1,6 +1,7 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +32,7 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
     public static final int STREAM_HEAD = 0x00;
 
-    private static Logger   LOGGER      = LoggerFactory.getLogger(IFileMetadataExtractor.class);
+    private static Logger   LOGGER      = LoggerFactory.getLogger(BeanFileMetadataExtractor.class);
 
     @Autowired
     protected IIgniteDAO    iIgniteDAO;
@@ -62,14 +63,34 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
                 }
             })
             .map((b) -> {
-                Collection<IFD> retValue = null;
+                Collection<IFD> retValue = Collections.EMPTY_SET;
                 boolean end = false;
                 byte[] localbuffer = b;
                 int nbOfTries = 1;
+                boolean bufferAlreadyIncreased = false;
                 do {
                     try {
+                        BeanFileMetadataExtractor.LOGGER.info(
+                            "[EVENT][{}]Retries are {} -  Buffer size is {} ",
+                            fileToProcess.getImageId(),
+                            fileToProcess,
+                            nbOfTries,
+                            localbuffer.length);
                         retValue = this.processFile(localbuffer, fileToProcess.getImageId());
                         end = true;
+                    } catch (BufferUnderflowException e) {
+                        if (bufferAlreadyIncreased) {
+                            BeanFileMetadataExtractor.LOGGER.error(
+                                "[EVENT][{}]Unable to process even after increasing it - ignoring ",
+                                fileToProcess.getImageId());
+
+                            end = true;
+                        } else {
+                            BeanFileMetadataExtractor.LOGGER
+                                .warn("[EVENT][{}]Buffer too small, increasing it", fileToProcess.getImageId());
+                            localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
+                            bufferAlreadyIncreased = true;
+                        }
                     } catch (Exception e) {
                         BeanFileMetadataExtractor.LOGGER.error(
                             "[EVENT][{}]Unexpected Error when processing file {}, retries are {}, exception is {} ",
@@ -77,14 +98,15 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
                             fileToProcess,
                             nbOfTries,
                             e.getMessage());
-                        localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
+
                         nbOfTries++;
                         if (nbOfTries > 2) {
                             BeanFileMetadataExtractor.LOGGER.error(
-                                "[EVENT][{}]Unexpected Error when processing file {}: {} ",
+                                "[EVENT][{}]Unexpected Error when processing file {}: {} - nb of tries are {} ",
                                 fileToProcess.getImageId(),
                                 fileToProcess,
-                                ExceptionUtils.getStackTrace(e));
+                                ExceptionUtils.getStackTrace(e),
+                                nbOfTries);
                             throw new RuntimeException(e);
                         }
                     }
@@ -119,9 +141,15 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
                     ExceptionUtils.getStackTrace(e));
                 return Collections.EMPTY_LIST;
             }
+        } catch (BufferUnderflowException e) {
+            BeanFileMetadataExtractor.LOGGER.error(
+                "[EVENT][{}]Buffer too small... when processing file: {} ",
+                key,
+                ExceptionUtils.getStackTrace(e));
+            throw e;
         } catch (Exception e) {
             BeanFileMetadataExtractor.LOGGER
-                .error("[EVENT][{}]Unexpected Error when processing file: {} ", key, ExceptionUtils.getStackTrace(e));
+                .error("[EVENT][{}]Unexpected error when processing file: {} ", key, ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         }
     }

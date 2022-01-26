@@ -831,7 +831,11 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
 
     public final static int compareForSorting(HbaseImageThumbnail o1, HbaseImageThumbnail o2) {
         return Comparator.comparing(HbaseImageThumbnail::getCreationDate)
-            .thenComparing(HbaseImageThumbnail::getImageName)
+            .thenComparing((a, b) -> {
+                System.out.println("Comparing " + a.getImageName() + " / " + b.getImageName());
+                return a.getImageName()
+                    .compareToIgnoreCase(b.getImageName());
+            })
             .compare(o1, o2);
     }
 

@@ -5,7 +5,7 @@
       include_tasks: create-hadoop.yml
   vars:
     ansible_become_pass: granada01
-    hadoop_version: 3.2.1
+    hadoop_version: 3.3.1
     user_to_create: hadoop
     hadoop_install_folder: /home/hadoop
     PWD: "{{ lookup('env', 'PWD') }}"

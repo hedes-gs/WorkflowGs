@@ -112,7 +112,7 @@ public class HbaseDataInformation<T extends HbaseData> {
         }
     }
 
-    public Map<String, ColumnFamily> buildValue(T hbaseData) {
+    public Map<String, ColumnFamily> buildValue(T hbaseData, boolean ignoreNullValue) {
         Map<String, ColumnFamily> cfList = new HashMap<>();
 
         this.fieldsData.forEach((hdfi) -> {
@@ -120,9 +120,11 @@ public class HbaseDataInformation<T extends HbaseData> {
                 hdfi.field.setAccessible(true);
                 Object valueToConvert = hdfi.field.get(hbaseData);
                 if (valueToConvert == null) {
-                    if (!hdfi.field.isAnnotationPresent(org.apache.avro.reflect.Nullable.class)) {
-                        throw new IllegalArgumentException(
-                            " Value is null for " + this.hbaseDataClass + " / " + hdfi.field);
+                    if (!ignoreNullValue) {
+                        if (!hdfi.field.isAnnotationPresent(org.apache.avro.reflect.Nullable.class)) {
+                            throw new IllegalArgumentException(
+                                " Value is null for " + this.hbaseDataClass + " / " + hdfi.field);
+                        }
                     }
                 } else {
                     String cf = hdfi.columnFamily;

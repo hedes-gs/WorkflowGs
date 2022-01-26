@@ -118,10 +118,8 @@ public class AlbumMetadataStringCoprocessor extends AbstractMetadataStringCoproc
 
     @Override
     protected boolean shouldFamilyInsourceBeRecordedInMetadata(byte[] familySource) {
-        for (byte[] b : AbstractPageProcessor.SOURCE_FAMILIES_TO_EXCLUDE) {
-            if (Objects.deepEquals(b, familySource)) { return false; }
-        }
-        return true;
+        return (Objects.deepEquals(AlbumMetadataStringCoprocessor.SOURCE_FAMILY_AS_BYTES, familySource));
+
     }
 
     @Override

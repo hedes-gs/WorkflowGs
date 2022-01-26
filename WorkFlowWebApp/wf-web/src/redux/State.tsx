@@ -1,4 +1,4 @@
-import { ImageDto, PageOfImageDto, MinMaxDatesDto, ExifOfImages, Metadata } from "../model/DataModel";
+import { ExchangedImageDTO, PageOfExchangedImageDTO, MinMaxDatesDto, ExifOfImages, Metadata } from "../model/DataModel";
 
 export interface ApplicationState {
     lastIntervallRequested: {
@@ -13,7 +13,7 @@ export interface ApplicationState {
         urlPrev: string,
         pageNumber: number,
         titleOfImagesList: string,
-        images: PageOfImageDto | null
+        images: PageOfExchangedImageDTO | null
     },
     imagesAreStreamed: {
         state: string,
@@ -21,16 +21,16 @@ export interface ApplicationState {
         urlPrev: string,
         pageNumber: number,
         titleOfImagesList: string,
-        images: PageOfImageDto | null
+        images: PageOfExchangedImageDTO | null
     },
     imagesToDelete: {
-        images?: Set<ImageDto> | null;
+        images?: Set<ExchangedImageDTO> | null;
     }
     imagesToDownload: {
-        images?: Set<ImageDto> | null;
+        images?: Set<ExchangedImageDTO> | null;
     }
     displayedExif: {
-        imageOwner?: ImageDto | null,
+        imageOwner?: ExchangedImageDTO | null,
         exifs?: ExifOfImages | null;
     }
     displayedRatings: {
@@ -46,7 +46,7 @@ export interface ApplicationState {
     }
     imageIsSelectedToBeDisplayed: {
         isLoading: boolean,
-        image?: ImageDto | null
+        image?: ExchangedImageDTO | null
     }
     realTimeSelected: {
         isLoading: boolean,

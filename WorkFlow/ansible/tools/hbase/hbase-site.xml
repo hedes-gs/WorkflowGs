@@ -162,6 +162,7 @@
 		<value>
 			org.apache.hadoop.hbase.security.token.TokenProvider,
 			org.apache.hadoop.hbase.coprocessor.AggregateImplementation,
+			com.gs.workflow.coprocessor.BulkDeleteEndpoint,
 			com.gs.workflow.coprocessor.ImagesPageCoprocessor,
 			com.gs.workflow.coprocessor.KeyWordMetadataStringCoprocessor,
 			com.gs.workflow.coprocessor.PersonMetadataStringCoprocessor,
@@ -181,10 +182,15 @@
 		<value>hbase/{{ hbase_slave_host }}@GS.COM</value>
 	</property>
 
+	<property>
+		<name>hbase.server.keyvalue.maxsize</name>
+		<value>40485760</value>
+	</property>
 
-
-
-
+	<property>
+		<name>hbase.client.keyvalue.maxsize</name>
+		<value>40485760</value>
+	</property>
 	<property>
 		<name>hbase.regionserver.kerberos.principal</name>
 		<value>hbase/_HOST@GS.COM</value>

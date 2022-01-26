@@ -10,9 +10,19 @@ import java.util.stream.Stream;
 import jcifs.smb.SmbFile;
 
 public abstract class URLConnectionWrapper extends URLConnection {
+    private URLConnection urlConnection;
+
     public abstract Stream<AbstractRemoteFile> listFiles(String... extensions) throws IOException;
 
-    public URLConnectionWrapper(URL url) { super(url); }
+    public URLConnection getUrlConnection() { return this.urlConnection; }
+
+    public URLConnectionWrapper(
+        URL url,
+        URLConnection urlConnection
+    ) {
+        super(url);
+        this.urlConnection = urlConnection;
+    }
 
     private static class NFSURLConnectionWrapper extends URLConnectionWrapper {
 
@@ -22,7 +32,8 @@ public abstract class URLConnectionWrapper extends URLConnection {
         public OutputStream getOutputStream() throws IOException { return this.nFSURLConnection.getOutputStream(); }
 
         public NFSURLConnectionWrapper(NFSURLConnection nFSURLConnection) {
-            super(nFSURLConnection.getURL());
+            super(nFSURLConnection.getURL(),
+                nFSURLConnection);
             this.nFSURLConnection = nFSURLConnection;
         }
 
@@ -47,7 +58,8 @@ public abstract class URLConnectionWrapper extends URLConnection {
         public InputStream getInputStream() throws IOException { return this.smbFile.openInputStream(); }
 
         public SMBURLConnectionWrapper(SmbFile smbFile) {
-            super(smbFile.getURL());
+            super(smbFile.getURL(),
+                smbFile);
             this.smbFile = (SmbResourceFile) SmbResourceFile.of(smbFile);
         }
 
@@ -79,7 +91,8 @@ public abstract class URLConnectionWrapper extends URLConnection {
         public InputStream getInputStream() throws IOException { return this.localFileURLConnection.getInputStream(); }
 
         public FileURLConnectionWrapper(LocalFileURLConnection localFileConnection) {
-            super(localFileConnection.getURL());
+            super(localFileConnection.getURL(),
+                localFileConnection);
             this.localFileURLConnection = localFileConnection;
         }
 

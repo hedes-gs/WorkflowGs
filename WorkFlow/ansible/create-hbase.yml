@@ -13,23 +13,34 @@
     owner: "{{ user_to_create }}"
     group: nogroup
     mode: 0755
+- name: clean version if exists
+  file:
+    path: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
+    state: absent
+  ignore_errors: yes  
+
 - name: Download hbase {{ hbase_version }}
-  get_url: 
-    url: http://www-eu.apache.org/dist/hbase/{{ hbase_version }}/hbase-{{ hbase_version }}-bin.tar.gz
+  copy: 
+    src: ../../../hbase/hbase/hbase-assembly/target/hbase-{{ hbase_version }}-bin.tar.gz
     owner: "{{ user_to_create }}"
     dest: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
     mode: 0644
     force: no
-  ignore_errors: yes
+- name: clean version if exists
+  file:
+    path: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}"
+    state: absent
+  ignore_errors: yes  
+- name: remove symlink to this version
+  file:
+    path: "{{ hbase_install_folder }}/latest"
+    state: absent
 - name: Unpack the tar
   unarchive:
     src: "{{ hbase_install_folder }}/hbase-{{ hbase_version }}.tgz"
     dest: "{{ hbase_install_folder }}"
     remote_src: true
-- name: remove symlink to this version
-  file:
-    path: "{{ hbase_install_folder }}/latest"
-    state: absent
+
 - name: Symlink {{ hbase_install_folder }}/latest to this version
   file:
     path: "{{ hbase_install_folder }}"
@@ -126,6 +137,10 @@
     owner: "{{ user_to_create }}"
     group: nogroup
     mode: 0600
+- name: Execute dos2unix on several files
+  shell: "/usr/bin/dos2unix {{ hbase_install_folder }}/latest/bin/*"    
+- name: Execute dos2unix on several files
+  shell: "/usr/bin/dos2unix {{ hbase_install_folder }}/latest/conf/*"    
 - name: Create folder  {{ hbase_install_folder }}/latest/monitor
   file:
     path: "{{ hbase_install_folder }}/latest/monitor"

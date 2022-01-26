@@ -32,3 +32,4 @@ target
 /WorkFlow/ansible/tmp.txt
 /WorkFlow/ansible/tools/hbase/Valse viennoise.txt
 *.springBeans
+env.template

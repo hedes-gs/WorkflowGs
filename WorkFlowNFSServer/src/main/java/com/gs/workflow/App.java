@@ -1,5 +1,6 @@
 package com.gs.workflow;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,6 +54,19 @@ public class App {
         if (this.exportsFile != null) {
             exportFile = new ExportFile(this.exportsFile.toFile());
         } else {
+            try (
+                InputStream in = Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream("exports");
+                Reader reader = new InputStreamReader(in);
+                BufferedReader br = new BufferedReader(reader)) {
+                String line = br.readLine();
+                do {
+                    App.LOGGER.info("-> line : {} ", line);
+                    line = br.readLine();
+                } while (line != null);
+            }
+
             try (
                 InputStream in = Thread.currentThread()
                     .getContextClassLoader()

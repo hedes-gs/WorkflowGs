@@ -21,10 +21,10 @@
         state: absent
       ignore_errors: yes
       async: 5
-      poll: 0
+      poll: 0      
     - name: clean stream-dir if exists
       file:
-        path: ~{{ user_to_create }}/stream-dir
+        path: ~{{ user_to_create }}/'${logPath}'
         state: absent
       ignore_errors: yes
       async: 5
@@ -81,6 +81,12 @@
         dest: ~{{ user_to_create }}/config/log4j.xml
         owner: "{{ user_to_create }}"
         mode: 0744
+    - name: Deploy env file
+      template:
+        src: ../config/env.template
+        dest: ~{{ user_to_create }}/config/.env
+        owner: "{{ user_to_create }}"
+        mode: 0600
     - name: Deploy jaas file
       template:
         src: ../config/client_jaas.conf.template

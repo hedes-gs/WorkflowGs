@@ -2,16 +2,16 @@
 import React, { MouseEvent } from 'react';
 import { connect } from "react-redux";
 
+import { styled } from '@mui/material/styles';
 
 import { SuggestionsFetchRequestedParams, RenderSuggestionParams, ChangeEvent } from 'react-autosuggest';
-import ChipInput, { Props } from 'material-ui-chip-input';
 // import match from 'autosuggest-highlight/match'
 // import parse from 'autosuggest-highlight/parse'
-import Paper from '@material-ui/core/Paper'
-import MenuItem from '@material-ui/core/MenuItem'
-import ElementAutosuggest, { InputProps } from "react-autosuggest";
-import * as Autosuggest from "react-autosuggest";
-
+import Paper from '@mui/material/Paper'
+import MenuItem from '@mui/material/MenuItem'
+import Chip from '@mui/material/Chip';
+import Autocomplete, { AutocompleteChangeDetails, AutocompleteChangeReason, createFilterOptions } from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
 import match from "autosuggest-highlight/match";
 import parse from "autosuggest-highlight/parse";
 import KeywordsServiceImpl, { KeywordsService } from '../services/KeywordsServices'
@@ -36,22 +36,30 @@ import {
     selectedImageIsLoading
 } from '../redux/Actions';
 import { ClientApplicationState } from '../redux/State';
-import { toArrayOfString, ImageDto } from '../model/DataModel';
+import { toArrayOfString, ExchangedImageDTO } from '../model/DataModel';
+import { AutocompleteValue } from '@mui/material';
+import is from 'date-fns/esm/locale/is/index';
 
 interface ReactAutosuggestRemoteProp {
     id?: number,
-    image?: ImageDto,
+    title?: string,
+    image?: ExchangedImageDTO,
     elements?: string[],
-    addElement?(img: ImageDto, keyword: string): ApplicationEvent,
-    deleteElement?(img: ImageDto, keyword: string): ApplicationEvent,
+    addElement?(img: ExchangedImageDTO, keyword: string): ApplicationEvent,
+    deleteElement?(img: ExchangedImageDTO, keyword: string): ApplicationEvent,
     thunkActionForAddElement?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForDeleteElement?: (x: ApplicationEvent, loadingEvent: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForGetElement?: (x: string) => Promise<string>
 }
 
+interface optionsType {
+    inputValue?: string,
+    title?: string
+};
+
 interface ReactAutosuggestRemoteStat {
-    suggestions: string[],
-    value: string[],
+    suggestions: optionsType[],
+    value?: optionsType[],
     textFieldInput: string
 };
 
@@ -63,6 +71,8 @@ const albumsService: AlbumsService = new AlbumsServiceImpl();
 
 
 class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp, ReactAutosuggestRemoteStat> {
+
+    filter = createFilterOptions<optionsType>();
 
 
     constructor(props: ReactAutosuggestRemoteProp) {
@@ -80,13 +90,15 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         this.handleDeleteChip = this.handleDeleteChip.bind(this);
         this.renderSuggestion = this.renderSuggestion.bind(this);
         this.handleSuggestionsClearRequested = this.handleSuggestionsClearRequested.bind(this);
+        this.onInputChange = this.onInputChange.bind(this);
     }
 
     static getDerivedStateFromProps(props: ReactAutosuggestRemoteProp, state: ReactAutosuggestRemoteStat): ReactAutosuggestRemoteStat {
         if (props != null && props.image != null && props.elements != null) {
             return {
                 suggestions: state.suggestions,
-                value: props.elements,
+                value: props.elements.map(
+                    (x) => { return { inputValue: x, title: x } }),
                 textFieldInput: state.textFieldInput
             }
         } else {
@@ -102,19 +114,7 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         const { value, onChange, ref, ...other } = inputProps
         return (
             <div style={{ marginTop: '0.8em', marginBottom: '0.2em' }}>
-                <ChipInput
-                    fullWidthInput = {true}
-                    fullWidth = {true}
-                    clearInputValueOnChange
-                    onUpdateInput={(e) => this.handleChipInputChange(e, inputProps.onChange)}
-                    value={this.state.value}
-                    inputRef={inputProps.ref}
-                    onAdd={inputProps.onAdd}
-                    onDelete={this.handleDeleteChip}
-                    style={{paddingTop: '0.6em', flex: 'none' }}
 
-                    {...other}
-                />
             </div>
         )
     }
@@ -125,13 +125,15 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
                 var listOfCountries = toArrayOfString(json);
                 listOfCountries.push(request.value)
                 this.setState({
-                    suggestions: listOfCountries,
+                    suggestions: listOfCountries.map(
+                        (x) => { return { inputValue: x, title: x } }),
                 })
             })
         } else {
             const listOfCountries = [request.value];
             this.setState({
-                suggestions: listOfCountries,
+                suggestions: listOfCountries.map(
+                    (x) => { return { inputValue: x, title: x } }),
             })
 
         }
@@ -150,16 +152,10 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
         })
     };
 
-    handleAddChip(chip: string) {
-        if (this.props.thunkActionForAddElement != null && this.props.image != null && this.props.addElement != null) {
+    handleAddChip(chip?: string) {
+        if (this.props.thunkActionForAddElement != null && this.props.image != null && this.props.addElement != null && chip != null) {
             this.props.thunkActionForAddElement(this.props.addElement(this.props.image, chip));
         }
-        // the value in state object should be updated when the value is returned by the server
-        /*        this.setState({
-                    value: this.state.value.concat([chip]),
-                    textFieldInput: ''
-                })
-        */
     }
 
 
@@ -168,7 +164,6 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
 
         return (
             <Paper {...containerProps} style={{ zIndex: 100 }}>
-                
                 {children}
             </Paper>
         )
@@ -189,29 +184,51 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
                 selected={params.isHighlighted}
                 onMouseDown={(e: MouseEvent) => e.preventDefault()} // prevent the click causing the input to be blurred
             >
-                    {parts.map((part, index) => {
-                        return part.highlight ? (
-                            <span key={String(index)} style={{ fontWeight: 500 }}>
-                                {part.text}
-                            </span>
-                        ) : (
-                                <span key={String(index)}>
-                                    {part.text}
-                                </span>
-                            )
-                    })}
+                {parts.map((part, index) => {
+                    return part.highlight ? (
+                        <span key={String(index)} style={{ fontWeight: 500 }}>
+                            {part.text}
+                        </span>
+                    ) : (
+                        <span key={String(index)}>
+                            {part.text}
+                        </span>
+                    )
+                })}
             </MenuItem>
         )
 
     }
 
-    handleDeleteChip(chip: string, index: number) {
+
+    onChange(event: React.SyntheticEvent,
+        value: AutocompleteValue<optionsType[], boolean | undefined, boolean | undefined, boolean | undefined>,
+        reason: AutocompleteChangeReason,
+        details?: AutocompleteChangeDetails<optionsType>) {
+        // if (typeof value === 'optionsType[]') 
+        {
+            console.log("onChange " + details + ', ' + typeof value);
+            if (details != null && details.option != null) {
+                if (reason == "removeOption") {
+                    this.handleDeleteChip(details.option.inputValue);
+                } else {
+                    this.handleAddChip(details.option.inputValue);
+                }
+            }
+        }
+
+    }
+
+    onInputChange(event: React.SyntheticEvent, value: string, reason: string) {
+        console.log("onInputChange " + value);
+    }
+
+    handleDeleteChip(chip?: string) {
         if (this.props.thunkActionForDeleteElement != null &&
             this.props.image != null &&
             this.props.image._links != null &&
-            this.props.image._links.self != null &&
-            this.props.image._links._exif != null &&
-            this.props.deleteElement != null) {
+            this.props.deleteElement != null && 
+            chip != null) {
             this.props.thunkActionForDeleteElement(
                 this.props.deleteElement(this.props.image, chip),
                 selectedImageIsLoading(this.props.image));
@@ -221,31 +238,49 @@ class ReactAutosuggestRemote extends React.Component<ReactAutosuggestRemoteProp,
 
 
     render() {
-
+        const label = this.props.title ?? '';
         return (
-            <ElementAutosuggest
-                theme={{
-                    suggestionsList: {
-                        margin: 0,
-                        padding: 0,
-                        listStyleType: 'none',
-                        backgroundColor: '#202020'
+
+            <Autocomplete
+                sx={{ width: 500 }}
+                size="small"
+                onInputChange={(a, b, c) => this.onInputChange(a, b, c)}
+                onChange={(a, b, c, d) => this.onChange(a, b, c, d)}
+                fullWidth={true}
+                value={this.state.value}
+                multiple
+                id="tags-outlined"
+                options={this.state.suggestions}
+                defaultValue={[this.state.suggestions[0]]}
+                filterOptions={(options, params) => {
+                    const filtered = this.filter(options, params);
+
+                    if (params.inputValue !== '') {
+                        filtered.push(
+                            {
+                                inputValue: params.inputValue,
+                                title: `Ajouter "${params.inputValue}"`,
+                            }
+                        );
                     }
+
+                    return filtered;
                 }}
-                renderInputComponent={this.renderInput}
-                suggestions={this.state.suggestions}
-                onSuggestionsFetchRequested={this.handleSuggestionsFetchRequested}
-                onSuggestionsClearRequested={this.handleSuggestionsClearRequested}
-                renderSuggestionsContainer={this.renderSuggestionsContainer}
-                getSuggestionValue={this.getSuggestionValue}
-                renderSuggestion={this.renderSuggestion}
-                onSuggestionSelected={(e, { suggestionValue }) => { this.handleAddChip(suggestionValue); e.preventDefault() }}
-                focusInputOnSuggestionClick
-                inputProps={{
-                    onChange: this.handletextFieldInputChange,
-                    value: this.state.textFieldInput,
+                getOptionLabel={(option) => {
+                    return option?.inputValue ?? 'Not def';
                 }}
+                renderOption={(props, option) => <li {...props}>{option.title}</li>}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        placeholder="Ajouter.."
+                    />
+                )}
+                noOptionsText="A remplir..."
             />
+
+
+
         )
     }
 }
@@ -255,13 +290,43 @@ const mapStateToProps = (state: ClientApplicationState, previousState: ReactAuto
     if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
         return {
             id: globalId++,
+            title: 'Tags',
             image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
-            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.keywords.flatMap((s) => s),
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image?.image?.keywords.flatMap((s) => s),
 
         };
     }
     return previousState;
 };
+
+const mapStateToPropsForPerson = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
+
+    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+        return {
+            id: globalId++,
+            title: 'Personnes',
+            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image?.image?.persons.flatMap((s) => s),
+
+        };
+    }
+    return previousState;
+};
+
+const mapStateToPropsForAlbum = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
+
+    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
+        return {
+            id: globalId++,
+            title: 'Album',
+            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
+            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image?.image?.albums.flatMap((s) => s),
+
+        };
+    }
+    return previousState;
+};
+
 
 const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
     return {
@@ -279,32 +344,6 @@ const mapDispatchToProps = (dispatch: ApplicationThunkDispatch) => {
             return keywordsService.getKeywordsLike(x);
         }
     }
-};
-
-const mapStateToPropsForPerson = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
-
-    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
-        return {
-            id: globalId++,
-            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
-            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.persons.flatMap((s) => s),
-
-        };
-    }
-    return previousState;
-};
-
-const mapStateToPropsForAlbum = (state: ClientApplicationState, previousState: ReactAutosuggestRemoteProp): ReactAutosuggestRemoteProp => {
-
-    if (!state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.isLoading && state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image != null) {
-        return {
-            id: globalId++,
-            image: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image,
-            elements: state.reducerImageIsSelectedToBeDisplayed.imageIsSelectedToBeDisplayed.image.albums.flatMap((s) => s),
-
-        };
-    }
-    return previousState;
 };
 
 

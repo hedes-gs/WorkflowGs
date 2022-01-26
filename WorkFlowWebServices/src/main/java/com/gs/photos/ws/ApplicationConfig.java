@@ -137,6 +137,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                     .entryCapacity(cacheImagesSize)
                     .keyType(ImageKeyDto.class)
                     .valueType(ImageDto.class),
+
                 /*
                  * b -> b.name(cacheJpegImagesName) .expireAfterWrite(cacheJpegImagesExpire,
                  * TimeUnit.SECONDS) .entryCapacity(cacheJpegImagesSize) .keyType(String.class)

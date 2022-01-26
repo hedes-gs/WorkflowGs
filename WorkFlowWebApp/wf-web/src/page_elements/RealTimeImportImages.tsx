@@ -1,17 +1,17 @@
 import React from 'react';
 import { Client, Message, IMessage } from '@stomp/stompjs';
 import { ClientApplicationState } from '../redux/State';
-import { ImageDto, ImageLinks, PageOfImageDto, ImageKeyDto, toSingleImageDto } from '../model/DataModel';
-import { GridList, GridListTile, GridListTileBar, IconButton } from '@material-ui/core';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
+import { ExchangedImageDTO, ImageLinks, PageOfExchangedImageDTO, ImageKeyDto, toSingleExchangedImageDTO } from '../model/DataModel';
+import { ImageList, ImageListItem, ImageListItemBar, IconButton } from '@mui/material';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
 import { connect } from "react-redux";
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import { CSSProperties } from '@material-ui/styles';
-import { withStyles } from '@material-ui/core/styles';
-import Checkbox, { CheckboxProps } from '@material-ui/core/Checkbox';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import { CSSProperties } from '@mui/styles';
+import withStyles from '@mui/styles/withStyles';
+import Checkbox, { CheckboxProps } from '@mui/material/Checkbox';
 import WfEventsServicesImpl, { WfEventsServices } from '../services/EventsServices'
 import {
     ApplicationThunkDispatch,
@@ -23,23 +23,23 @@ import {
     dispatchImageToSelect,
     downloadSelectedImage
 } from '../redux/Actions';
-import { Badge } from '@material-ui/core';
-import InfoIcon from '@material-ui/icons/Info';
-import TrashIcon from '@material-ui/icons/Delete';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import { Badge } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
+import TrashIcon from '@mui/icons-material/Delete';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 export interface RealtimeImportImagesProps {
     thunkActionForDeleteImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForSelectImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>,
     thunkActionForDownloadImage?: (x: ApplicationEvent) => Promise<ApplicationEvent>;
-    deleteImage?(img: ImageKeyDto): ApplicationEvent;
-    selectImage?(url: string, exifUrl: string): ApplicationEvent;
-    downloadImage?(img: ImageDto): ApplicationEvent;
+    deleteImage?(img?: ImageKeyDto | null): ApplicationEvent;
+    selectImage?(url?: string, exifUrl?: string): ApplicationEvent;
+    downloadImage?(img?: ExchangedImageDTO): ApplicationEvent;
 
 }
 
 export interface RealtimeImportImagesState {
-    imgs: ImageDto[]
+    imgs: ExchangedImageDTO[]
 };
 const StyledTableRow = withStyles((theme) => ({
     root: {
@@ -152,19 +152,19 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
         // client.activate();
         this.nbOfColumnsInFullSize = 5;
     }
-    handleClickInfo(img: ImageDto) {
-        if (img.data != null && img._links != null && img._links.self != null && img._links._exif != null && img.data != null && this.props.thunkActionForSelectImage != null && this.props.selectImage != null) {
-            this.props.thunkActionForSelectImage(this.props.selectImage(img._links.self.href, img._links._exif.href));
+    handleClickInfo(img?: ExchangedImageDTO) {
+        if ( this.props.selectImage != null && this.props.thunkActionForSelectImage !=null) {
+           this.props.thunkActionForSelectImage(this.props.selectImage(img?._links?.self?.href, img?._links?._exif?.href));
         }
     }
-    handleClickDelete(img: ImageDto) {
-        if (img.data != null && this.props.thunkActionForDeleteImage != null && this.props.deleteImage != null) {
-            this.props.thunkActionForDeleteImage(this.props.deleteImage(img.data));
+    handleClickDelete(img?: ExchangedImageDTO) {
+        if (this.props.thunkActionForDeleteImage != null && this.props.deleteImage != null) {
+            this.props?.thunkActionForDeleteImage(this.props?.deleteImage(img?.image?.data));
         }
     }
 
-    handleClickDownload(img?: ImageDto | null) {
-        if (img != null && img.data != null && this.props.thunkActionForDownloadImage != null && this.props.downloadImage != null) {
+    handleClickDownload(img?: ExchangedImageDTO) {
+        if (this.props.thunkActionForDownloadImage != null && this.props.downloadImage != null) {
             this.props.thunkActionForDownloadImage(this.props.downloadImage(img));
         }
 
@@ -172,7 +172,7 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
 
     handler(msg: IMessage) {
         const imgs = this.state.imgs;
-        const receivedImage = toSingleImageDto(JSON.parse(msg.body));
+        const receivedImage = toSingleExchangedImageDTO(JSON.parse(msg.body));
         if (imgs.length > 25) {
             imgs.shift()
         }
@@ -186,7 +186,7 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
 
     handlerSocketEvent(msg: MessageEvent) {
         const imgs = this.state.imgs;
-        const receivedImage = toSingleImageDto(JSON.parse(msg.data));
+        const receivedImage = toSingleExchangedImageDTO(JSON.parse(msg.data));
         if (imgs.length > 25) {
             imgs.shift()
         }
@@ -199,14 +199,20 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
     };
 
 
-    getWidth(img: ImageDto, cellHeight: number): number {
-        if (img.orientation == 8) {
-            return img.thumbnailHeight * (cellHeight / img.thumbnailWidth);
+    getWidth(cellHeight: number, img?: ExchangedImageDTO): number {
+        let image = img?.image; 
+        let retValue = 0 ;
+        if ( image ) {
+        if (image?.orientation == 8) {
+            retValue = image?.thumbnailHeight * (cellHeight / image?.thumbnailWidth);
+        }else{
+            retValue =  image?.thumbnailWidth * (cellHeight / image?.thumbnailHeight);
         }
-        return img.thumbnailWidth * (cellHeight / img.thumbnailHeight);
+    }
+        return retValue;
     }
 
-    getHeight(img: ImageDto, cellHeight: number): number {
+    getHeight(cellHeight: number, img: ExchangedImageDTO ): number {
         return cellHeight;
     }
 
@@ -217,7 +223,7 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
 
     render() {
         if (this.state.imgs != null) {
-            const imageDtoes = this.state.imgs;
+            const ExchangedImageDTOes = this.state.imgs;
             const iconStyle = {
                 transform: "scale(0.5)"
             };
@@ -225,38 +231,47 @@ class RealtimeImportImages extends React.Component<RealtimeImportImagesProps, Re
 
 
             return (
-                <GridList cellHeight={200} cols={this.nbOfColumnsInFullSize} style={{ backgroundColor: '#000000' }}>
-                    {imageDtoes.filter(img => img.data != null && img.data.version == 1).map((img) => (
-                        <GridListTile cols={1} >
-                            <img src={this.getImgRef(img._links)} width={this.getWidth(img, 200)} height={this.getHeight(img, 200)} />
-                            <GridListTileBar
+                <ImageList style={{ backgroundColor: '#000000' }}>
+                    {ExchangedImageDTOes.filter(img => img != null && img.image != null &&  img.image?.data?.version == 1).map((img) => (
+                        <ImageListItem cols={1} >
+                            <img src={this.getImgRef(img?._links)} width={this.getWidth(200, img)} height={this.getHeight(200, img)} />
+                            <ImageListItemBar
                                 classes={{
                                     titleWrap: 'Mon-MuiGridListTileBar-titleWrap', // class name, e.g. `classes-nesting-root-x`
                                 }}
                                 title={
                                     <div style={{ display: 'table' }}>
-                                        <div>{img.creationDateAsString}</div>
-                                        <div>{img.imageId}</div>
+                                        <div>{img?.image?.creationDateAsString}</div>
+                                        <div>{img?.image?.imageId}</div>
                                     </div>
                                 }
                                 actionIcon={
                                     <div style={{ float: 'right', width: '100%' }}>
-                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickInfo(img)}>
+                                        <IconButton
+                                            style={{ float: 'left', margin: '0px', padding: '0px' }}
+                                            onClick={(e) => this.handleClickInfo(img)}
+                                            size="large">
                                             <InfoIcon style={iconStyle} />
                                         </IconButton>
-                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDelete(img)} >
+                                        <IconButton
+                                            style={{ float: 'left', margin: '0px', padding: '0px' }}
+                                            onClick={(e) => this.handleClickDelete(img)}
+                                            size="large">
                                             <TrashIcon style={iconStyle} />
                                         </IconButton>
-                                        <IconButton style={{ float: 'left', margin: '0px', padding: '0px' }} onClick={(e) => this.handleClickDownload(img)} >
+                                        <IconButton
+                                            style={{ float: 'left', margin: '0px', padding: '0px' }}
+                                            onClick={(e) => this.handleClickDownload(img)}
+                                            size="large">
                                             <CloudDownloadIcon style={iconStyle} />
                                         </IconButton>
                                     </div>
                                 }
                             />
-                        </GridListTile>
+                        </ImageListItem>
                     ))
                     }
-                </GridList>
+                </ImageList>
             );
         }
     }

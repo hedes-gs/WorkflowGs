@@ -1,10 +1,10 @@
 
 import React from 'react';
-import Rating from '@material-ui/lab/Rating';
+import Rating from '@mui/material/Rating';
 import { connect } from "react-redux";
-import Chip from '@material-ui/core/Chip';
-import Paper from '@material-ui/core/Paper';
-import { CSSProperties } from '@material-ui/styles';
+import Chip from '@mui/material/Chip';
+import Paper from '@mui/material/Paper';
+import { CSSProperties } from '@mui/styles';
 
 import { ClientApplicationState } from '../redux/State';
 import { Metadata } from '../model/DataModel'
@@ -18,8 +18,8 @@ import {
     dispatchLoadImagesOfMetadata,
     loadImagesOfMetadata
 } from '../redux/Actions';
-import { withStyles } from '@material-ui/core/styles';
-import { Divider } from '@material-ui/core';
+import withStyles from '@mui/styles/withStyles';
+import { Divider } from '@mui/material';
 
 
 interface MetadataCmpProp {

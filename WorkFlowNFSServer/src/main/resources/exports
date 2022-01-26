@@ -10,3 +10,4 @@
 #
 /localcache ipc?(rw,noacl,all_squash) IPC?(rw,noacl,no_root_squash)
 /usb-input-sdcard  10.0.0.0/24(rw,noacl,all_squash) 192.168.1.*(rw,noacl,no_root_squash)
+/data_hdd  10.0.0.0/24(rw,noacl,all_squash) 192.168.1.*(rw,noacl,no_root_squash)

@@ -17,13 +17,16 @@ import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
 import com.emc.ecs.nfsclient.nfs.nfs3.Nfs3;
 import com.emc.ecs.nfsclient.rpc.CredentialUnix;
 
-public class NFSURLConnection extends URLConnection {
+public class NFSURLConnection extends URLConnection implements UrlAbstractFile {
 
     protected static Logger                  LOGGER = LoggerFactory.getLogger(FileUtils.class);
 
     protected static final Map<String, Nfs3> nfs3   = new ConcurrentHashMap<>();
     // protected final Nfs3 nfs3;
     protected final AbstractRemoteFile       file;
+
+    @Override
+    public AbstractRemoteFile getFile() { return this.file; }
 
     public Stream<AbstractRemoteFile> listFiles(String... extensions) throws IOException {
         return Stream.of(this.file.listFiles((f) -> {

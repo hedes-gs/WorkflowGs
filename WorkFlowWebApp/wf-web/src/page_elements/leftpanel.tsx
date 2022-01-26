@@ -4,9 +4,9 @@ import { connect } from "react-redux";
 
 import { loadImagesInterval, ApplicationThunkDispatch,  ApplicationEvent, dispatchLastImages, loadLastImages } from '../redux/Actions';
 import React from 'react';
-import TreeView from '@material-ui/lab/TreeView';
+import TreeView from '@mui/lab/TreeView';
 
-import Drawer from '@material-ui/core/SwipeableDrawer';
+import Drawer from '@mui/material/SwipeableDrawer';
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
 import { MinMaxDatesDto } from '../model/DataModel'
 import TreeLimitDates from '../components/TreeLimitDates'
@@ -15,7 +15,7 @@ import { KeywordsComponent, PersonsComponent } from '../components/KeywordsCompo
 import { ParagraphTitle } from '../styles';
 import { DisplayInside } from 'csstype';
 import { ClientApplicationState } from '../redux/State';
-import { CSSProperties } from '@material-ui/styles';
+import { CSSProperties } from '@mui/styles';
 import MomentTimeZone, { Moment } from 'moment-timezone';
 
 

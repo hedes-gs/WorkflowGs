@@ -35,6 +35,15 @@ public class NFSFile extends AbstractRemoteFile {
     public String toString() { return "NFSFile [nfs3File=" + this.nfs3File + "]"; }
 
     @Override
+    public void delete() {
+        try {
+            this.nfs3File.delete();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean canRead() {
         try {
             return this.nfs3File.canRead();
@@ -51,6 +60,9 @@ public class NFSFile extends AbstractRemoteFile {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public URL toExternalURL() { return this.getUrl(); }
 
     @Override
     public boolean isFile() {

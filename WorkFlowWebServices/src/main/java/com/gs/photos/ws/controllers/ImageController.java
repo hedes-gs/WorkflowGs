@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 
 import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photos.ws.repositories.IImageRepository;
@@ -39,6 +40,7 @@ import com.gs.photos.ws.services.KafkaConsumerService;
 import com.gs.photos.ws.web.assembler.ImageAssembler;
 import com.gs.photos.ws.web.assembler.MinMaxDateAssembler;
 import com.gs.photos.ws.web.assembler.PageImageAssembler;
+import com.workflow.model.dtos.ExchangedImageDto;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.ImageKeyDto;
 import com.workflow.model.dtos.MinMaxDatesDto;
@@ -87,7 +89,7 @@ public class ImageController {
     }
 
     @PostMapping("/images/checkout/{salt}/{id}/{creationDate}/{version}")
-    public Mono<EntityModel<ImageDto>> checkout(
+    public Mono<EntityModel<ExchangedImageDto>> checkout(
         @PathVariable short salt,
         @PathVariable String id,
         @PathVariable OffsetDateTime creationDate,
@@ -95,17 +97,27 @@ public class ImageController {
     ) {
         Optional<ImageDto> img = this.repository.findById(salt, creationDate, id, version);
         img.ifPresent((i) -> this.kafkaConsumerService.checkout(i));
-        return this.imageAssembler.toModel(img.orElseThrow(), null);
+        return this.imageAssembler.toModel(
+            img.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow(),
+            null);
     }
 
     @PostMapping("/images/delete/{salt}/{id}/{creationDate}")
-    public Mono<Void> delete(
+    public Mono<EntityModel<ExchangedImageDto>> delete(
         @PathVariable short salt,
         @PathVariable String id,
         @PathVariable OffsetDateTime creationDate
     ) throws IOException {
-        this.repository.delete(salt, creationDate, id);
-        return Mono.empty();
+        Optional<ExchangedImageDto> img = this.repository.delete(salt, creationDate, id)
+            .map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build());
+        return this.imageAssembler.toModel(img.orElseThrow(), null);
     }
 
     @GetMapping("/images/count/all/{intervallType}")
@@ -193,7 +205,7 @@ public class ImageController {
     }
 
     @GetMapping("/image/{salt}/{id}/{creationDate}/{version}")
-    public Mono<EntityModel<ImageDto>> getImageById(
+    public Mono<EntityModel<ExchangedImageDto>> getImageById(
         @PathVariable short salt,
         @PathVariable String id,
         @PathVariable OffsetDateTime creationDate,
@@ -201,11 +213,15 @@ public class ImageController {
     ) {
         return this.imageAssembler.toReactiveEntityModel(
             this.repository.findById(salt, creationDate, id, version)
+                .map(
+                    (x) -> ExchangedImageDto.builder()
+                        .withImage(x)
+                        .build())
                 .get());
     }
 
     @GetMapping("/image/next/{salt}/{id}/{creationDate}/{version}")
-    public Mono<EntityModel<ImageDto>> getNextImageById(
+    public Mono<EntityModel<ExchangedImageDto>> getNextImageById(
         @PathVariable short salt,
         @PathVariable String id,
         @PathVariable OffsetDateTime creationDate,
@@ -213,23 +229,30 @@ public class ImageController {
     ) {
         return this.imageAssembler.toReactiveEntityModel(
             this.repository.getNextImageById(salt, creationDate, id, version)
+                .map(
+                    (x) -> ExchangedImageDto.builder()
+                        .withImage(x)
+                        .build())
                 .get());
     }
 
     @GetMapping("/image/prev/{salt}/{id}/{creationDate}/{version}")
-    public Mono<EntityModel<ImageDto>> getPreviousImageById(
+    public Mono<EntityModel<ExchangedImageDto>> getPreviousImageById(
         @PathVariable short salt,
         @PathVariable String id,
         @PathVariable OffsetDateTime creationDate,
         @PathVariable int version
     ) {
         return this.imageAssembler.toReactiveEntityModel(
-            this.repository.getPreviousImageById(salt, creationDate, id, version)
-                .get());
+            ExchangedImageDto.builder()
+                .withImage(
+                    this.repository.getPreviousImageById(salt, creationDate, id, version)
+                        .get())
+                .build());
     }
 
     @GetMapping(path = "/images", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getLastImages(@PageableDefault(size = 100, page = 1) Pageable p)
+    public Flux<EntityModel<ExchangedImageDto>> getLastImages(@PageableDefault(size = 100, page = 1) Pageable p)
         throws IOException {
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
         return this.imageAssembler.toFlux(
@@ -244,7 +267,7 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/keyword/{keyword}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getImagesByKeyword(
+    public Flux<EntityModel<ExchangedImageDto>> getImagesByKeyword(
         @PageableDefault(size = 100, page = 1) Pageable p,
         @PathVariable String keyword
     ) throws IOException {
@@ -261,7 +284,7 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/person/{person}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getImagesByPerson(
+    public Flux<EntityModel<ExchangedImageDto>> getImagesByPerson(
         @PageableDefault(size = 100, page = 1) Pageable p,
         @PathVariable String person
     ) throws IOException {
@@ -278,7 +301,7 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/albums/{album}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> getImagesByAlbum(
+    public Flux<EntityModel<ExchangedImageDto>> getImagesByAlbum(
         @PageableDefault(size = 100, page = 1) Pageable p,
         @PathVariable String album
     ) throws IOException {
@@ -295,7 +318,7 @@ public class ImageController {
     }
 
     @GetMapping(path = "/images/odt/{intervalType}/{startTime}/{stopDate}", produces = "application/stream+json")
-    public Flux<EntityModel<ImageDto>> get(
+    public Flux<EntityModel<ExchangedImageDto>> get(
         @PageableDefault(size = 100, page = 1) Pageable p,
         @PathVariable String intervalType,
         @PathVariable OffsetDateTime startTime,
@@ -303,25 +326,31 @@ public class ImageController {
     ) throws IOException {
 
         if (p.getPageSize() == 0) { throw new IllegalArgumentException("Illegal page size"); }
-
+        long totalNbOfElements = 0;
         Flux<ImageDto> retValue = Flux.empty();
         switch (intervalType) {
             case "year":
+                totalNbOfElements = this.repository.countByYear(startTime, stopDate);
                 retValue = this.repository.getThumbNailsByYear(startTime, stopDate, p, (short) 1);
                 break;
             case "month":
+                totalNbOfElements = this.repository.countByMonth(startTime, stopDate);
                 retValue = this.repository.getThumbNailsByMonth(startTime, stopDate, p, (short) 1);
                 break;
             case "day":
+                totalNbOfElements = this.repository.countByDay(startTime, stopDate);
                 retValue = this.repository.getThumbNailsByDay(startTime, stopDate, p, (short) 1);
                 break;
             case "hour":
+                totalNbOfElements = this.repository.countByHour(startTime, stopDate);
                 retValue = this.repository.getThumbNailsByHour(startTime, stopDate, p, (short) 1);
                 break;
             case "minute":
+                totalNbOfElements = this.repository.countByMinute(startTime, stopDate);
                 retValue = this.repository.getThumbNailsByMinute(startTime, stopDate, p, (short) 1);
                 break;
             case "second":
+                totalNbOfElements = this.repository.countBySecond(startTime, stopDate);
                 retValue = this.repository.getThumbNailsBySecond(startTime, stopDate, p, (short) 1);
                 break;
         }
@@ -333,7 +362,10 @@ public class ImageController {
                     .get(p, intervalType, startTime, stopDate))
                 .withRel("page")
                 .toMono(),
-            null);
+            (ServerWebExchange) null,
+            startTime.toLocalDateTime(),
+            stopDate.toLocalDateTime(),
+            totalNbOfElements);
     }
 
     @GetMapping(value = "/image-jpeg/{salt}/{id}/{creationDate}/{version}", produces = MediaType.IMAGE_JPEG_VALUE)
@@ -361,7 +393,7 @@ public class ImageController {
     }
 
     @PostMapping(path = "/update")
-    public Mono<EntityModel<ImageDto>> updateRating(@RequestBody ImageDto imageDto) {
+    public Mono<EntityModel<ExchangedImageDto>> updateRating(@RequestBody ImageDto imageDto) {
         Optional<ImageDto> retValue = this.repository.updateRating(
             imageDto.getData()
                 .getImageId(),
@@ -370,11 +402,19 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             imageDto.getRatings());
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostMapping(path = "/keywords/addToImage/{keyword}")
-    public Mono<EntityModel<ImageDto>> addKeyword(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+    public Mono<EntityModel<ExchangedImageDto>> addKeyword(
+        @RequestBody ImageDto imageDto,
+        @PathVariable String keyword
+    ) {
         Optional<ImageDto> retValue = this.repository.addKeyword(
             imageDto.getData()
                 .getImageId(),
@@ -383,11 +423,19 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostMapping(path = "/keywords/deleteInImage/{keyword}")
-    public Mono<EntityModel<ImageDto>> deleteKeyword(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+    public Mono<EntityModel<ExchangedImageDto>> deleteKeyword(
+        @RequestBody ImageDto imageDto,
+        @PathVariable String keyword
+    ) {
         Optional<ImageDto> retValue = this.repository.deleteKeyword(
             imageDto.getData()
                 .getImageId(),
@@ -396,11 +444,16 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostMapping(path = "/persons/addToImage/{person}")
-    public Mono<EntityModel<ImageDto>> addPerson(@RequestBody ImageDto imageDto, @PathVariable String person) {
+    public Mono<EntityModel<ExchangedImageDto>> addPerson(@RequestBody ImageDto imageDto, @PathVariable String person) {
         Optional<ImageDto> retValue = this.repository.addPerson(
             imageDto.getData()
                 .getImageId(),
@@ -409,11 +462,19 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             person);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
-    @PostMapping(path = "/per7sons/deleteInImage/{keyword}")
-    public Mono<EntityModel<ImageDto>> deletePerson(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+    @PostMapping(path = "/persons/deleteInImage/{keyword}")
+    public Mono<EntityModel<ExchangedImageDto>> deletePerson(
+        @RequestBody ImageDto imageDto,
+        @PathVariable String keyword
+    ) {
         Optional<ImageDto> retValue = this.repository.deletePerson(
             imageDto.getData()
                 .getImageId(),
@@ -422,11 +483,16 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostMapping(path = "/albums/addToImage/{person}")
-    public Mono<EntityModel<ImageDto>> addAlbum(@RequestBody ImageDto imageDto, @PathVariable String person) {
+    public Mono<EntityModel<ExchangedImageDto>> addAlbum(@RequestBody ImageDto imageDto, @PathVariable String person) {
         Optional<ImageDto> retValue = this.repository.addAlbum(
             imageDto.getData()
                 .getImageId(),
@@ -435,11 +501,19 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             person);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostMapping(path = "/albums/deleteInImage/{keyword}")
-    public Mono<EntityModel<ImageDto>> deleteAlbum(@RequestBody ImageDto imageDto, @PathVariable String keyword) {
+    public Mono<EntityModel<ExchangedImageDto>> deleteAlbum(
+        @RequestBody ImageDto imageDto,
+        @PathVariable String keyword
+    ) {
         Optional<ImageDto> retValue = this.repository.deleteAlbum(
             imageDto.getData()
                 .getImageId(),
@@ -448,7 +522,12 @@ public class ImageController {
             imageDto.getData()
                 .getVersion(),
             keyword);
-        return this.imageAssembler.toReactiveEntityModel(retValue.orElseThrow());
+        return this.imageAssembler.toReactiveEntityModel(
+            retValue.map(
+                (x) -> ExchangedImageDto.builder()
+                    .withImage(x)
+                    .build())
+                .orElseThrow());
     }
 
     @PostConstruct

@@ -1,9 +1,9 @@
 
 import React from 'react';
-import PhotoAlbumIcon from '@material-ui/icons/PhotoAlbum';
+import PhotoAlbumIcon from '@mui/icons-material/PhotoAlbum';
 import LimitDatesServiceImpl, { LimitDatesService } from '../services/LimitDates';
 import MomentTimeZone, { Moment } from 'moment-timezone';
-import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem';
+import TreeItem, { TreeItemProps } from '@mui/lab/TreeItem';
 import { ParagraphTitleTree } from '../styles';
 import { MinMaxDatesDto } from '../model/DataModel';
 
@@ -102,8 +102,8 @@ class TreeLimitDates extends React.Component<TreeLimitDatesProp, TreeLimitStat> 
 
         return (
             <TreeItem key={id} nodeId={id}
-                onIconClick={this.handleClickOnLabel.bind(this, min, max)}
-                onLabelClick={this.handleClickOnIconTree}
+                // onIconClick={this.handleClickOnLabel.bind(this, min, max)}
+                // onLabelClick={this.handleClickOnIconTree}
                 icon={<PhotoAlbumIcon />}
                 label={
                     <ParagraphTitleTree text={node.minDate?.format(this.dateNodeFormat) ?? ''} />

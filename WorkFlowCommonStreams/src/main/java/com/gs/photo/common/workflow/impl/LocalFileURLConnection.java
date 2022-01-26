@@ -9,9 +9,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.stream.Stream;
 
-public class LocalFileURLConnection extends URLConnection {
+public class LocalFileURLConnection extends URLConnection implements UrlAbstractFile {
 
     protected final AbstractRemoteFile file;
+
+    @Override
+    public AbstractRemoteFile getFile() { return this.file; }
 
     public Stream<AbstractRemoteFile> listFiles(String... extensions) throws IOException {
         return Stream.of(this.file.listFiles((f) -> {
@@ -33,7 +36,7 @@ public class LocalFileURLConnection extends URLConnection {
     protected LocalFileURLConnection(URL u) throws IOException {
         super(u);
         try {
-            this.file = new LocalFile(new File(new URI("file://" + u.getFile())));
+            this.file = new LocalFile(new File(new URI("file:///" + u.getFile())));
         } catch (IOException e) {
             throw e;
         } catch (URISyntaxException e) {

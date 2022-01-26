@@ -6,10 +6,9 @@
   vars:
     PWD: "{{ lookup('env', 'PWD') }}"
     ansible_become_pass: granada01
-    hbase_version: 2.2.6
+    hbase_version: 2.4.9
     user_to_create: hbase
     hbase_install_folder: /home/hbase
-    PWD: "{{ lookup('env', 'PWD') }}"
     slaves_ids:
       ipc0:
         value: "ipc0"
@@ -107,11 +106,63 @@
       ipc11:
         value: hadoop-master
       ipc12:
-        value: hadoop-master		
+        value: hadoop-master
+    list_of_mount_points:
+      ipc5:
+        value: data.mount 
+      ipc1:
+        value: data.mount data_usb.mount
+      ipc2:
+        value: data.mount data_usb.mount
+      ipc3:
+        value: data.mount data_usb.mount
+      ipc0:
+        value: data.mount data_usb.mount
+      ipc6:
+        value: data.mount
+      ipc7:
+        value: data.mount
+      ipc8:
+        value: data.mount
+      ipc9:
+        value: data.mount
+      ipc10:
+        value: data.mount
+      ipc11:
+        value: data.mount
+      ipc12:
+        value: data.mount
+    list_of_hdfs_mount_points:
+      ipc0:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,file:///data_usb"
+      ipc1:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,file:///data_usb"
+      ipc2:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,file:///data_usb"
+      ipc3:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,file:///data_usb"
+      ipc5:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"
+      ipc6:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"
+      ipc7:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,[SSD]file:///data_usd_ssd"
+      ipc8:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode,[SSD]file:///data_usd_ssd"
+      ipc9:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"
+      ipc10:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"
+      ipc11:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"
+      ipc12:
+        value: "file:///data/hadoop/hadoop_tmp/hdfs/datanode"        
     hbase_slave_host: "{{ slaves_ids[inventory_hostname].value }}"
     hbase_host: "{{ slaves_ids[inventory_hostname].value }}"
     hadoop_hosts: "{{ list_of_hadoop_hosts[inventory_hostname].value }}"
     hadoop_master_nodes: "{{ list_of_hadoop_master_nodes[inventory_hostname].value }}"
     hadoop_master_name: "{{ list_of_hadoop_master_nodes[inventory_hostname].value }}"
     hadoop_install_folder: /home/hbase
+    mount_points: "{{ list_of_mount_points[inventory_hostname].value}}"
+    hdfs_mounts: "{{ list_of_hdfs_mount_points[inventory_hostname].value}}"
       

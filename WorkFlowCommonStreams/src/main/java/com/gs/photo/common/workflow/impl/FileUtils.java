@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
@@ -231,11 +232,12 @@ public class FileUtils {
                 try {
                     nbOfRetries++;
                     FileUtils.LOGGER.info(
-                        "[EVENT][{}] readFirstBytesOfFile of {} - try : {}",
+                        "[EVENT][{}] readFirstBytesOfFile of {} - try : {} - increased size {}",
                         file.getImageId(),
                         file,
-                        nbOfRetries);
-                    retValue = this.readFirstBytesOfFile(file, 10 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                        nbOfRetries,
+                        20 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                    retValue = this.readFirstBytesOfFile(file, 20 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
                     if ((retValue == null)) {
                         FileUtils.LOGGER.warn(
                             " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
@@ -276,8 +278,9 @@ public class FileUtils {
         String remoteFolder = url.getPath();
         String localHostname = ip.getHostName();
         if (Objects.equal(remoteHostName.toLowerCase(), localHostname.toLowerCase())) {
-            final File sourceFile = new File(root + "/" + remoteFolder);
+            final File sourceFile = new File("/" + remoteFolder);
             if (sourceFile.exists()) {
+                FileUtils.LOGGER.info("[EVENT][{}] deleting local cluster file : {} ", file.getImageId(), sourceFile);
                 return sourceFile.delete();
             } else {
                 FileUtils.LOGGER.warn(
@@ -286,7 +289,22 @@ public class FileUtils {
                     sourceFile);
             }
         } else if ((file.getIsLocal() != null) && file.getIsLocal()) {
-
+            FileUtils.LOGGER.warn("[EVENT][{}] trying to delete remote cluster file : {} ", file.getImageId());
+            try {
+                URLConnection connection = url.openConnection();
+                if (connection instanceof URLConnectionWrapper urlConnectionWrapper) {
+                    URLConnection uc = urlConnectionWrapper.getUrlConnection();
+                    if (uc instanceof UrlAbstractFile uaf) {
+                        uaf.getFile()
+                            .delete();
+                        FileUtils.LOGGER.warn("[EVENT][{}] delete remote cluster file : {} ", file.getImageId(), uaf);
+                    }
+                }
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             FileUtils.LOGGER
                 .warn("[EVENT][{}] unable to delete local file : {} as it is remote ", file.getImageId(), file);
@@ -403,6 +421,7 @@ public class FileUtils {
         byte[] retValue = new byte[bufferSize];
         int offset = 0;
         int nbOfBytes = 0;
+        FileUtils.LOGGER.info(" For url file {}, getting buffer of length : {} ", url, bufferSize);
         try (
             InputStream is = url.openConnection()
                 .getInputStream()) {
@@ -414,6 +433,7 @@ public class FileUtils {
             } while ((nbOfBytes != -1) && (offset != retValue.length));
         }
         if (offset < retValue.length) {
+            FileUtils.LOGGER.warn(" For url file {}, truncating to {} ", url, offset);
             byte[] truncated = new byte[offset];
             System.arraycopy(retValue, 0, truncated, 0, offset);
             return truncated;

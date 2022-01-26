@@ -103,7 +103,10 @@ public class LocalFileSystem implements VirtualFileSystem {
             path = path.toRealPath();
             Long inodeNumber = this.pathToInode.get(path);
             if (inodeNumber == null) {
-                if (Files.isRegularFile(path)) {
+                if (Files.isDirectory(path)) {
+                    this.buildInodes(path);
+                    inodeNumber = this.pathToInode.get(path);
+                } else if (Files.isRegularFile(path)) {
                     synchronized (this) {
                         inodeNumber = this.pathToInode.get(path);
                         if (inodeNumber == null) {

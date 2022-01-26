@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 import { ServiceConfig } from './api.config'
-import { ImageDto, toJsonImageDto } from '../model/DataModel';
+import { ExchangedImageDTO, toJsonExchangedImageDTO } from '../model/DataModel';
 
 export interface AlbumsService {
-    addAlbum(Album: string, img: ImageDto): Promise<string>;
-    deleteAlbum(Album: string, img: ImageDto): Promise<string>;
+    addAlbum(Album: string, img: ExchangedImageDTO): Promise<string>;
+    deleteAlbum(Album: string, img: ExchangedImageDTO): Promise<string>;
     getAlbumsLike(Album: string): Promise<string>;
     getAll(): Promise<string>;
 }
@@ -26,10 +26,10 @@ export default class AlbumsServiceImpl implements AlbumsService {
             .then(resp => resp.data);
     }
 
-    async addAlbum(Album: string, img: ImageDto): Promise<string> {
+    async addAlbum(Album: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddAlbum = this.baseUrlForAlbums + 'addToImage/' + Album;
 
-        return this.axiosInstance.post(urlToAddAlbum, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddAlbum, toJsonExchangedImageDTO(img), {
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -37,10 +37,10 @@ export default class AlbumsServiceImpl implements AlbumsService {
             .then(resp => resp.data);
     }
 
-    async deleteAlbum(Album: string, img: ImageDto): Promise<string> {
+    async deleteAlbum(Album: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddAlbum = this.baseUrlForAlbums + 'deleteInImage/' + Album;
 
-        return this.axiosInstance.post(urlToAddAlbum, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddAlbum, toJsonExchangedImageDTO(img), {
             headers: {
                 'Content-Type': 'application/json'
             }

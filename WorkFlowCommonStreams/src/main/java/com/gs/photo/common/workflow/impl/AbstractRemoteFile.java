@@ -41,4 +41,8 @@ public abstract class AbstractRemoteFile {
 
     public abstract InputStream openInputStream() throws IOException;
 
+    public abstract URL toExternalURL();
+
+    public abstract void delete();
+
 }

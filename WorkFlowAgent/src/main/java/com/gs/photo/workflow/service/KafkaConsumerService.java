@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -22,6 +23,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -86,15 +88,19 @@ public class KafkaConsumerService implements ConsumerSeekAware {
 
     protected ReentrantLock                                lock                    = new ReentrantLock();
 
-    @KafkaListener(topics = "${topic.topicCheckout}", containerFactory = "KafkaListenerContainerFactory")
-    public void consume(@Payload(required = false) byte[] message) {
-        final HbaseImageThumbnail hbi = this.hbaseImageThumbnailDAO.get(message);
-        KafkaConsumerService.LOGGER.info("Receive, {}", hbi);
+    protected void process(HbaseImageThumbnail hbi) {
+        KafkaConsumerService.LOGGER.info(
+            "Receive, {} - {} - size {} ",
+            hbi,
+            hbi.getImportName(),
+            hbi.getImportName()
+                .size());
 
-        String importName = hbi.getImportName()
+        final Optional<String> hbiImportName = hbi.getImportName()
             .stream()
-            .findAny()
-            .orElse("DEFAULT_IMPORT");
+            .filter((x) -> !StringUtils.isEmpty(x))
+            .findAny();
+        String importName = hbiImportName.orElse("DEFAULT_IMPORT");
         String key = hbi.getImageId();
         final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
 
@@ -115,6 +121,12 @@ public class KafkaConsumerService implements ConsumerSeekAware {
         } catch (IOException e) {
             KafkaConsumerService.LOGGER.error("Unexpecterd error  {}", ExceptionUtils.getStackTrace(e));
         }
+    }
+
+    @KafkaListener(topics = "${topic.topicCheckout}", containerFactory = "KafkaListenerContainerFactory")
+    public void consume(@Payload(required = false) byte[] message) {
+        Optional.ofNullable(this.hbaseImageThumbnailDAO.get(message))
+            .ifPresent((x) -> this.process(x));
 
     }
 

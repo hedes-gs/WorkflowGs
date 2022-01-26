@@ -33,6 +33,12 @@ public class SmbResourceFile extends AbstractRemoteFile {
     public SmbResourceFile(SmbResource file) throws URISyntaxException {
         super(((SmbFile) file).getURL());
         this.smbFile = file;
+
+    }
+
+    @Override
+    public void delete() {
+
     }
 
     @Override
@@ -101,6 +107,9 @@ public class SmbResourceFile extends AbstractRemoteFile {
         }
     }
 
+    @Override
+    public URL toExternalURL() { return this.getUrl(); }
+
     public static AbstractRemoteFile of(URLConnection x) {
         try {
             return new SmbResourceFile((SmbFile) x);
@@ -166,7 +175,12 @@ public class SmbResourceFile extends AbstractRemoteFile {
 
     @Override
     public AbstractRemoteFile getParentFile() throws MalformedURLException, IOException {
-        return SmbResourceFile.of(new URL(((SmbFile) this.smbFile).getParent()).openConnection());
+        final URLConnection urlConnection = new URL(((SmbFile) this.smbFile).getParent()).openConnection();
+        if (urlConnection instanceof URLConnectionWrapper wrapper) {
+            return SmbResourceFile.of(wrapper.getUrlConnection());
+        }
+        throw new RuntimeException("Unable to get parent file !!");
+
     }
 
     @Override

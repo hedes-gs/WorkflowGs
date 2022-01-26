@@ -34,8 +34,12 @@ public class HFileServices implements IHFileServices {
         final Path folderWhereRecord = new Path(new Path(this.rootPath, importName), new Path(key));
 
         try {
+            HFileServices.LOGGER.info("Starting to delete file {}", folderWhereRecord);
             if (this.hdfsFileSystem.exists(folderWhereRecord)) {
+                HFileServices.LOGGER.info("Deleting file {}", folderWhereRecord);
                 this.hdfsFileSystem.delete(folderWhereRecord, true);
+            } else {
+                HFileServices.LOGGER.warn("Unable to delete file {}", folderWhereRecord);
             }
         } catch (Exception e) {
             KafkaConsumerService.LOGGER

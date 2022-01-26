@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,6 +33,9 @@ public class LocalFile extends AbstractRemoteFile {
     }
 
     @Override
+    public void delete() { this.localFile.delete(); }
+
+    @Override
     public boolean canRead() { return this.localFile.canRead(); }
 
     @Override
@@ -37,6 +43,27 @@ public class LocalFile extends AbstractRemoteFile {
 
     @Override
     public boolean isFile() { return this.localFile.isFile(); }
+
+    @Override
+    public String toString() { return "LocalFile [localFile=" + this.localFile.getAbsolutePath() + "]"; }
+
+    @Override
+    public URL toExternalURL() {
+        String hostname;
+        try {
+            hostname = InetAddress.getLocalHost()
+                .getHostName();
+            return new URL("nfs",
+                hostname,
+                this.getUrl()
+                    .getFile());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
 
     @Override
     public AbstractRemoteFile[] listFiles() {

@@ -8,16 +8,24 @@ import { Provider } from "react-redux";
 // import store from "./redux/store";
 import { createStore, applyMiddleware } from 'redux';
 
-import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
+import { createTheme, ThemeProvider, Theme, StyledEngineProvider, adaptV4Theme } from '@mui/material/styles';
 import CenterPanel from './page_elements/CenterPanel';
 import rootReducer from './redux/Reducers';
 import { ApplicationEvent, dispatchLastImages, loadLastImages } from './redux/Actions';
 import ApplicationState from './redux/State';
 import 'reflect-metadata';
-import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import AdapterDateFns from '@mui/lab/AdapterDateFns';
+import LocalizationProvider from '@mui/lab/LocalizationProvider';
 // pick a date util library
 import MomentUtils from '@date-io/moment';
 import Footer from './page_elements/Footer';
+
+
+declare module '@mui/styles/defaultTheme' {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface DefaultTheme extends Theme { }
+}
+
 
 const loggerMiddleWare = createLogger();
 
@@ -39,10 +47,10 @@ const store = createStore(rootReducer,
 
 function App() {
 
-    const darkTheme = createMuiTheme({
+    const darkTheme = createTheme(adaptV4Theme({
 
         palette: {
-            type: 'dark',
+            mode: 'dark',
             primary: {
                 // light: will be calculated from palette.primary.main,
                 main: '#222200',
@@ -58,12 +66,8 @@ function App() {
             // E.g., shift from Red 500 to Red 300 or Red 700.
         },
         overrides: {
-            MuiGridListTileBar: {
-                title: {
-                    fontFamily: 'arial',
-                    fontSize: '10px'
-                }
-            },
+        
+            
             MuiGrid: {
                 container: {
                     flexWrap: 'nowrap'
@@ -73,22 +77,23 @@ function App() {
         },
 
 
-    });
+    }));
 
 
     return (
-
         <Provider store={store}>
 
-            <ThemeProvider theme={darkTheme}>
-                <div className="App">
-                    <MuiPickersUtilsProvider utils={MomentUtils}>
-                        <Header min={0} max={0} intervallType={'year'} />
-                        <CenterPanel />
-                        <Footer/>
-                    </MuiPickersUtilsProvider>
-                </div>
-            </ThemeProvider>
+            <StyledEngineProvider injectFirst>
+                <ThemeProvider theme={darkTheme}>
+                    <div className="App">
+                        <LocalizationProvider dateAdapter={AdapterDateFns}>
+                            <Header intervallType={'year'} />
+                            <CenterPanel />
+                            <Footer />
+                        </LocalizationProvider>
+                    </div>
+                </ThemeProvider>
+            </StyledEngineProvider>
 
         </Provider>
     );

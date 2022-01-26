@@ -57,6 +57,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, transactionId);
         settings.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
         settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
+        settings.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, transactionTimeout);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
         settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_MULTIPLE_SERIALIZER);

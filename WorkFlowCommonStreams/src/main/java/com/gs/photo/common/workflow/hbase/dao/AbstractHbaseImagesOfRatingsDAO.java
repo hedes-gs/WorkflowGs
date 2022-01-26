@@ -47,7 +47,7 @@ public abstract class AbstractHbaseImagesOfRatingsDAO
                 .clear();
             hbi.getRatings()
                 .add(metaData);
-            this.hbaseImageThumbnailDAO.put(hbi);
+            this.hbaseImageThumbnailDAO.put(hbi, AbstractHbaseImagesOfRatingsDAO.METADATA_FAMILY_NAME);
             this.hbaseImageThumbnailDAO.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);

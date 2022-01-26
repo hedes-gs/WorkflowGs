@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 import { ServiceConfig } from './api.config'
-import { ImageDto, toJsonImageDto } from '../model/DataModel';
+import { ExchangedImageDTO, toJsonExchangedImageDTO } from '../model/DataModel';
 
 export interface PersonsService {
-    addPerson(Person: string, img: ImageDto): Promise<string>;
-    deletePerson(Person: string, img: ImageDto): Promise<string>;
+    addPerson(Person: string, img: ExchangedImageDTO): Promise<string>;
+    deletePerson(Person: string, img: ExchangedImageDTO): Promise<string>;
     getPersonsLike(Person: string): Promise<string>;
     getAll(): Promise<string>;
 }
@@ -26,10 +26,10 @@ export default class PersonsServiceImpl implements PersonsService {
             .then(resp => resp.data);
     }
 
-    async addPerson(Person: string, img: ImageDto): Promise<string> {
+    async addPerson(Person: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddPerson = this.baseUrlForPersons + 'addToImage/' + Person;
 
-        return this.axiosInstance.post(urlToAddPerson, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddPerson, toJsonExchangedImageDTO(img), {
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -37,10 +37,10 @@ export default class PersonsServiceImpl implements PersonsService {
             .then(resp => resp.data);
     }
 
-    async deletePerson(Person: string, img: ImageDto): Promise<string> {
+    async deletePerson(Person: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddPerson = this.baseUrlForPersons + 'deleteInImage/' + Person;
 
-        return this.axiosInstance.post(urlToAddPerson, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddPerson, toJsonExchangedImageDTO(img), {
             headers: {
                 'Content-Type': 'application/json'
             }

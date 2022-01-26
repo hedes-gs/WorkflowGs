@@ -1,6 +1,5 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +24,11 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.AuthorizationException;
+import org.apache.kafka.common.errors.OutOfOrderSequenceException;
+import org.apache.kafka.common.errors.ProducerFencedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -136,7 +139,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             try {
                 this.doProcessFile();
             } catch (Throwable e) {
-                BeanProcessIncomingFile.LOGGER.error("An error is raised {}", ExceptionUtils.getStackTrace(e));
+                BeanProcessIncomingFile.LOGGER.error("An error is raised ", e);
                 ready = !((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException));
             } finally {
                 try {
@@ -177,7 +180,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     }
 
     protected void doProcessFile() throws Throwable {
-        while (true) {
+        boolean end = false;
+        while (!end) {
 
             try (
                 TimeMeasurement timeMeasurement = TimeMeasurement.of(
@@ -225,18 +229,25 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                         (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
                         (r, t) -> this.merge(r, t));
 
-                BeanProcessIncomingFile.LOGGER.debug("Offset to commit {} ", offsets.toString());
                 this.producerForTransactionPublishingOnExifOrImageTopic.sendOffsetsToTransaction(offsets, this.groupId);
                 this.producerForTransactionPublishingOnExifOrImageTopic.commitTransaction();
                 this.cleanIgniteCache(new HashSet<>(eventsToSend.keySet()));
-            } catch (IOException e) {
-                BeanProcessIncomingFile.LOGGER.error("Unexpected error ", ExceptionUtils.getStackTrace(e));
+            } catch (
+                ProducerFencedException |
+                OutOfOrderSequenceException |
+                AuthorizationException e) {
+                BeanProcessIncomingFile.LOGGER.error(" Error - closing ", e);
+                this.producerForTransactionPublishingOnExifOrImageTopic.close();
+                end = true;
+            } catch (KafkaException e) {
+                // For all other exceptions, just abort the transaction and try again.
+                BeanProcessIncomingFile.LOGGER.error(" Error - aborting, trying to recover", e);
                 this.producerForTransactionPublishingOnExifOrImageTopic.abortTransaction();
-                throw new RuntimeException(e);
-            } catch (Throwable e) {
-                BeanProcessIncomingFile.LOGGER.error("Unexpected error {}", ExceptionUtils.getStackTrace(e));
-                this.producerForTransactionPublishingOnExifOrImageTopic.abortTransaction();
-                throw e;
+                end = true;
+            } catch (Exception e) {
+                BeanProcessIncomingFile.LOGGER.error("Unexpected error - closing  ", e);
+                this.producerForTransactionPublishingOnExifOrImageTopic.close();
+                end = true;
             }
         }
     }

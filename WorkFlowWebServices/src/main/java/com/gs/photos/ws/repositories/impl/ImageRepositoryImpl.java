@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -353,10 +352,10 @@ public class ImageRepositoryImpl implements IImageRepository {
     }
 
     @Override
-    public void delete(short salt, OffsetDateTime creationDate, String id) throws IOException {
+    public Optional<ImageDto> delete(short salt, OffsetDateTime creationDate, String id) throws IOException {
         final ImageDto imageToDelete = this.hbaseImageThumbnailService.findById(salt, creationDate, id, 1);
         this.ihFileServices.delete(imageToDelete);
-        this.hbaseImageThumbnailService.delete(creationDate, id);
+        return this.hbaseImageThumbnailService.delete(creationDate, id);
     }
 
     int nbOfMessages = 0;
@@ -375,7 +374,6 @@ public class ImageRepositoryImpl implements IImageRepository {
                 .filter((e) -> e != null)
                 .map((e) -> this.hbaseImageThumbnailService.toImageDTO(e))
                 .peek((e) -> ImageRepositoryImpl.LOGGER.info("[THUMBNAIL_DAO]Found image {}", e))
-                .map((e) -> this.extracted(e))
                 .forEach((e) -> this.processIncomingMessage(e));
             if (this.nbOfMessages++ > 25) {
                 try {
@@ -390,12 +388,10 @@ public class ImageRepositoryImpl implements IImageRepository {
         }
     }
 
-    protected void processIncomingMessage(EntityModel<ImageDto> e) {
+    protected void processIncomingMessage(ImageDto e) {
         this.hbaseImageThumbnailService.invalidCache();
-        this.template.convertAndSend("/topic/realtimeImportImages", e);
+        this.template.convertAndSend("/topic/realtimeImportImages", this.imageAssembler.toEntityModel(e));
     }
-
-    protected EntityModel<ImageDto> extracted(ImageDto e) { return this.imageAssembler.toEntityModel(e); }
 
     private HbaseImageThumbnail findImageByEvent(WfEvent e) {
         WfEventRecorded event = (WfEventRecorded) e;

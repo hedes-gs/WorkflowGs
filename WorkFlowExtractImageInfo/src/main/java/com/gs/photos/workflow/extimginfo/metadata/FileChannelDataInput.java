@@ -3,9 +3,8 @@ package com.gs.photos.workflow.extimginfo.metadata;
 import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -13,20 +12,11 @@ import org.slf4j.LoggerFactory;
 
 public class FileChannelDataInput implements DataInput, Closeable {
 
-    protected Logger           LOGGER             = LoggerFactory.getLogger(FileChannelDataInput.class);
-    protected ByteBuffer       mappedByteBuffer;
-    private ReadStrategy       setReadStrategy;
-    protected static final int MAPPED_MEMORY_SIZE = 4 * 1024 * 1024;
+    protected Logger     LOGGER = LoggerFactory.getLogger(FileChannelDataInput.class);
+    protected ByteBuffer mappedByteBuffer;
+    private ReadStrategy setReadStrategy;
 
     public FileChannelDataInput(byte[] content) { this.mappedByteBuffer = ByteBuffer.wrap(content); }
-
-    public void setFileChannel(FileChannel fileChannel) {
-        try {
-            this.mappedByteBuffer = fileChannel.map(MapMode.READ_ONLY, 0, FileChannelDataInput.MAPPED_MEMORY_SIZE);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void ensureOpen() throws IOException {
         if (this.mappedByteBuffer == null) { throw new IOException("mappedByteBuffer is not opened !!"); }
@@ -37,7 +27,7 @@ public class FileChannelDataInput implements DataInput, Closeable {
         this.ensureOpen();
         try {
             this.mappedByteBuffer.get(b);
-        } catch (Exception e) {
+        } catch (BufferUnderflowException e) {
             this.LOGGER.error(
                 "Error in read fully mapped buffer is {}, length is {} , error is {}",
                 this.mappedByteBuffer,

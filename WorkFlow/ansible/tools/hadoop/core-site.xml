@@ -40,10 +40,6 @@
 		<value>true</value>
 	</property>
 	<property>
-		<name>hadoop.rpc.protection</name>
-		<value>authentication</value>
-	</property>
-	<property>
 		<name>hadoop.rpc.authentication</name>
 		<value>kerberos</value>
 	</property>

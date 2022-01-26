@@ -68,6 +68,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @ConditionalOnProperty(name = "unit-test", havingValue = "false")
     public Producer<String, FileToProcess> producerForTopicWithFileToProcessValue(
         @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${transaction.timeout}") String transactionTimeout,
         @Value("${kafka.producer.maxRequestSize}") int producerRequestMaxBytes
     ) {
         Properties settings = new Properties();
@@ -77,6 +78,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(ProducerConfig.ACKS_CONFIG, "all");
         settings.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, producerRequestMaxBytes);
         settings.put(ProducerConfig.BATCH_SIZE_CONFIG, 100 * 1204);
+        settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
+        settings.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, transactionTimeout);
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
         AbstractApplicationConfig.LOGGER.info("creating producer string string with config {} ", settings.toString());

@@ -2,9 +2,15 @@ import Actions from "./ActionsType";
 import { ThunkAction, ThunkDispatch } from 'redux-thunk'
 import ApplicationState from "./State";
 import {
-    ImageDto, toImageDto, toMetadataDto,
-    ExifOfImages, toExif, toPageOfImageDto,
-    toSingleImageDto, PageOfImageDto, ImageKeyDto,
+    ExchangedImageDTO, 
+    toExchangedImageDTO, 
+    toMetadataDto,
+    ExifOfImages, 
+    toExif, 
+    toPageOfExchangedImageDTO,
+    toSingleExchangedImageDTO, 
+    PageOfExchangedImageDTO,
+    ImageKeyDto,
     toMap, Metadata, toSingleMinMaxDto, MinMaxDatesDto
 } from '../model/DataModel';
 import ImagesServiceImpl, { ImagesService } from "../services/ImagesService";
@@ -35,7 +41,7 @@ export type ApplicationThunkDispatch = ThunkDispatch<ApplicationState, undefined
 export const UnknownSelectedEventValue = "0";
 export const PayloadIntervalDatesSelectedEvent = "1";
 export const PayloadLoadedImagesEvent = '2'
-export const AddImageToDeleteEvent = '3'
+export const ImageToDeleteEvent = '3'
 export const LastImagesAreLoadedEvent = '7'
 export const SaveImageEvent = '12'
 export const AddKeywordEvent = '15'
@@ -53,6 +59,10 @@ export const DownloadImageEvent = '28'
 export const GetAllDatesOfImagesEvent = '29'
 export const AddAlbumEvent = '30' ;
 export const DeleteAlbumEvent = '31' ;
+export const ImageToDeleteImmediatelyEvent = '32';
+export const ImageToDownloadImmediatelyEvent = '32';
+
+
 
 export interface GetAllDatesOfImagesEvent {
     payloadType: typeof GetAllDatesOfImagesEvent,
@@ -68,7 +78,7 @@ export interface DownloadImageEvent {
     payloadType: typeof DownloadImageEvent,
     type: Actions,
     payload: {
-        img: ImageDto
+        img: ExchangedImageDTO
     }
 }
 
@@ -99,18 +109,36 @@ export interface PayloadLoadedImagesEvent {
     payloadType: typeof PayloadLoadedImagesEvent,
     type: Actions,
     payload: {
-        images: PageOfImageDto,
+        images: PageOfExchangedImageDTO,
         titleOfImagesList: string
     }
 }
 
-export interface AddImageToDeleteEvent {
-    payloadType: typeof AddImageToDeleteEvent,
+export interface ImageToDeleteEvent {
+    payloadType: typeof ImageToDeleteEvent,
     type: Actions,
     payload: {
-        image: ImageDto
+        img: ExchangedImageDTO
     }
 }
+
+export interface ImageToDeleteImmediatelyEvent {
+    payloadType: typeof ImageToDeleteImmediatelyEvent,
+    type: Actions,
+    payload: {
+        img: ExchangedImageDTO
+    }
+}
+
+export interface ImageToDownloadImmediatelyEvent {
+    payloadType: typeof ImageToDownloadImmediatelyEvent,
+    type: Actions,
+    payload: {
+        img: ExchangedImageDTO
+    }
+}
+
+
 
 export interface UndoImageToDeleteEvent {
     payloadType: "4",
@@ -166,7 +194,7 @@ export interface ImagesLoadedEvent {
     payloadType: "10",
     type: Actions,
     payload: {
-        img: ImageDto
+        img: ExchangedImageDTO
     }
 }
 
@@ -174,7 +202,7 @@ export interface ExifsAreLoadingEvent {
     payloadType: "11",
     type: Actions,
     payload: {
-        imageOwner: ImageDto
+        imageOwner: ExchangedImageDTO
     }
 }
 
@@ -183,7 +211,7 @@ export interface SaveImageEvent {
     type: Actions,
     payload: {
         url: string,
-        img: ImageDto
+        img: ExchangedImageDTO
     }
 }
 
@@ -205,7 +233,7 @@ export interface AddKeywordEvent {
     payloadType: typeof AddKeywordEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         keyword: string
     }
 }
@@ -214,7 +242,7 @@ export interface AddPersonEvent {
     payloadType: typeof AddPersonEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         person: string
     }
 }
@@ -223,7 +251,7 @@ export interface AddAlbumEvent {
     payloadType: typeof AddAlbumEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         album: string
     }
 }
@@ -232,7 +260,7 @@ export interface DeletePersonEvent {
     payloadType: typeof DeletePersonEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         person: string
     }
 }
@@ -241,7 +269,7 @@ export interface DeleteAlbumEvent {
     payloadType: typeof DeleteAlbumEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         album: string
     }
 }
@@ -250,7 +278,7 @@ export interface SelectedImageEvent {
     payloadType: typeof SelectedImageEvent,
     type: Actions,
     payload: {
-        img?: ImageDto | null
+        img?: ExchangedImageDTO | null
     }
 }
 
@@ -258,7 +286,7 @@ export interface DeleteKeywordEvent {
     payloadType: typeof DeleteKeywordEvent,
     type: Actions,
     payload: {
-        image: ImageDto,
+        image: ExchangedImageDTO,
         keyword: string
     }
 }
@@ -316,15 +344,9 @@ export interface DownloadSelectedImageEvent {
     payloadType: typeof DownloadSelectedImageEvent,
     type: Actions,
     payload: {
-        image: ImageDto
+        image: ExchangedImageDTO
     }
 }
-
-
-
-
-
-
 
 export type ApplicationEvent =
     ImagesLoadedEvent |
@@ -333,7 +355,7 @@ export type ApplicationEvent =
     ExifsAreLoadedEvent |
     PayloadLoadedImagesEvent |
     PayloadIntervalDatesSelectedEvent |
-    AddImageToDeleteEvent |
+    ImageToDeleteEvent |
     UndoImageToDeleteEvent |
     NextImageToLoadEvent |
     PrevImageToLoadEvent |
@@ -358,7 +380,9 @@ export type ApplicationEvent =
     DeleteAlbumEvent |
     DisplayRealTimeImagesEvent |
     DownloadImageEvent |
-    GetAllDatesOfImagesEvent;
+    GetAllDatesOfImagesEvent |
+    ImageToDeleteImmediatelyEvent |
+    ImageToDownloadImmediatelyEvent;
 
 const DefaultUnknownSelectedEvent: UnknownSelectedEvent = {
     type: Actions.UNDEFINED,
@@ -408,24 +432,19 @@ export const loadImages = (json: string, titleOfImagesList: string): Application
         payloadType: PayloadLoadedImagesEvent,
         type: Actions.IMAGES_ARE_LOADED,
         payload: {
-            images: toPageOfImageDto(json),
+            images: toPageOfExchangedImageDTO(json),
             titleOfImagesList: titleOfImagesList
         }
     }
 };
 
 export const loadImagesAsJsonD = (json: string[], titleOfImagesList: string): ApplicationEvent => {
-    const images: ImageDto[] =  json.map((j) =>toSingleImageDto(j)) ;
-    const page: PageOfImageDto = {
+    const images: ExchangedImageDTO[] =  json.map((j) =>toSingleExchangedImageDTO(j)) ;
+    const page: PageOfExchangedImageDTO = {
         _embedded: {
-            imageDtoList: images
+            ExchangedImageDTOList: images
         },
         _links: {
-            first: null,
-            last: null,
-            prev: null,
-            next: null,
-            self: null
         }
     }
     return {
@@ -452,19 +471,28 @@ export const loadDatesOfImagesAsJsonD = (json: string): ApplicationEvent => {
     }
 };
 
-
-
-
-
-export const deleteImage = (img: ImageDto): ApplicationEvent => {
+export const deleteImage = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
-        payloadType: "3",
+        payloadType: ImageToDeleteEvent,
         type: Actions.DELETE_IMAGE,
         payload: {
-            image: img
+            img: img
         }
     }
 };
+
+export const deleteImmediatelyImage = (img: ExchangedImageDTO): ApplicationEvent => {
+    return {
+        payloadType: ImageToDeleteImmediatelyEvent,
+        type: Actions.DELETE_IMAGE,
+        payload: {
+            img: img
+        }
+    }
+};
+
+
+
 
 export const selectImage = (img: ImageKeyDto, url: string): ApplicationEvent => {
     return {
@@ -504,12 +532,12 @@ export const loadImage = (json: string): ApplicationEvent => {
         payloadType: "10",
         type: Actions.IMAGE_IS_LOADED,
         payload: {
-            img: toSingleImageDto(json)
+            img: toSingleExchangedImageDTO(json)
         }
     }
 };
 
-export const updateImage = (url: string, img: ImageDto): ApplicationEvent => {
+export const updateImage = (url: string, img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: SaveImageEvent,
         type: Actions.SAVE_IMAGE,
@@ -541,7 +569,7 @@ export const loadingRatings = (): ApplicationEvent => {
     }
 };
 
-export const addKeywords = (img: ImageDto, keyword: string): ApplicationEvent => {
+export const addKeywords = (img: ExchangedImageDTO, keyword: string): ApplicationEvent => {
     return {
         payloadType: AddKeywordEvent,
         type: Actions.ADDING_KEYWORDS,
@@ -552,7 +580,7 @@ export const addKeywords = (img: ImageDto, keyword: string): ApplicationEvent =>
     }
 };
 
-export const addAlbum = (img: ImageDto, album: string): ApplicationEvent => {
+export const addAlbum = (img: ExchangedImageDTO, album: string): ApplicationEvent => {
     return {
         payloadType: AddAlbumEvent,
         type: Actions.ALBUMS,
@@ -563,7 +591,7 @@ export const addAlbum = (img: ImageDto, album: string): ApplicationEvent => {
     }
 };
 
-export const deleteAlbum = (img: ImageDto, album: string): ApplicationEvent => {
+export const deleteAlbum = (img: ExchangedImageDTO, album: string): ApplicationEvent => {
     return {
         payloadType: DeleteAlbumEvent,
         type: Actions.ALBUMS,
@@ -576,7 +604,7 @@ export const deleteAlbum = (img: ImageDto, album: string): ApplicationEvent => {
 
 
 
-export const addPerson = (img: ImageDto, person: string): ApplicationEvent => {
+export const addPerson = (img: ExchangedImageDTO, person: string): ApplicationEvent => {
     return {
         payloadType: AddPersonEvent,
         type: Actions.ADDING_PERSONS,
@@ -588,7 +616,7 @@ export const addPerson = (img: ImageDto, person: string): ApplicationEvent => {
 };
 
 
-export const selectedImageIsLoading = (img: ImageDto): ApplicationEvent => {
+export const selectedImageIsLoading = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: SelectedImageEvent,
         type: Actions.LOADING_SELECTED_IMAGE_TO_DISPLAY,
@@ -610,18 +638,18 @@ export const deselectImage = (): ApplicationEvent => {
 
 
 export const selectedImageIsLoaded = (json: string): ApplicationEvent => {
-    const imageDto = toSingleImageDto(json);
+    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
     return {
         payloadType: SelectedImageEvent,
         type: Actions.SELECTED_IMAGE_TO_DISPLAY_IS_LOADED,
         payload: {
-            img: imageDto
+            img: ExchangedImageDTO
         }
     }
 };
 
 
-export const nextImageToLoad = (img: ImageDto): ApplicationEvent => {
+export const nextImageToLoad = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: SelectedImageEvent,
         type: Actions.LOADING_SELECTED_IMAGE_TO_DISPLAY,
@@ -631,7 +659,7 @@ export const nextImageToLoad = (img: ImageDto): ApplicationEvent => {
     }
 };
 
-export const prevImageToLoad = (img: ImageDto): ApplicationEvent => {
+export const prevImageToLoad = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: SelectedImageEvent,
         type: Actions.LOADING_SELECTED_IMAGE_TO_DISPLAY,
@@ -641,7 +669,7 @@ export const prevImageToLoad = (img: ImageDto): ApplicationEvent => {
     }
 };
 
-export const deleteKeywords = (img: ImageDto, keyword: string): ApplicationEvent => {
+export const deleteKeywords = (img: ExchangedImageDTO, keyword: string): ApplicationEvent => {
     return {
         payloadType: DeleteKeywordEvent,
         type: Actions.DELETE_KEYWORDS,
@@ -652,7 +680,7 @@ export const deleteKeywords = (img: ImageDto, keyword: string): ApplicationEvent
     }
 };
 
-export const deletePerson = (img: ImageDto, person: string): ApplicationEvent => {
+export const deletePerson = (img: ExchangedImageDTO, person: string): ApplicationEvent => {
     return {
         payloadType: DeletePersonEvent,
         type: Actions.DELETE_KEYWORDS,
@@ -724,7 +752,7 @@ export const loadPagesOfImages = (url: string, titleOfImagesList: string): Appli
     }
 };
 
-export const downloadImage = (img: ImageDto): ApplicationEvent => {
+export const downloadImage = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: DownloadImageEvent,
         type: Actions.DOWNLOAD_IMAGE,
@@ -734,7 +762,20 @@ export const downloadImage = (img: ImageDto): ApplicationEvent => {
     }
 };
 
-export const downloadSelectedImage = (img: ImageDto): ApplicationEvent => {
+export const downloadImmediatelyImage = (img: ExchangedImageDTO): ApplicationEvent => {
+    return {
+        payloadType: DownloadImageEvent,
+        type: Actions.DOWNLOAD_IMAGE,
+        payload: {
+            img: img,
+        }
+    }
+};
+
+
+
+
+export const downloadSelectedImage = (img: ExchangedImageDTO): ApplicationEvent => {
     return {
         payloadType: DownloadSelectedImageEvent,
         type: Actions.IMAGES_LOADING,
@@ -789,6 +830,28 @@ export function dispatchCheckoutImage(x: ApplicationEvent): ThunkResult<Promise<
         return Promise.resolve(DefaultUnknownSelectedEvent);
     }
 }
+
+export function dispatchDeleteImage(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == ImageToDeleteEvent) {
+            dispatch(x);
+            imagesService.delete(x.payload.img)
+                .then((json) => {
+                    console.log('delete done!');
+                    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
+                    const exifUrl = ExchangedImageDTO?._links?._exif?.href;
+                    dispatch(selectedImageIsLoaded(json));
+                    return exifImagesService.getExifDataOfImage(exifUrl);
+                } )
+                .then(json => dispatch(loadExif(json)));
+                 
+        };
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    }
+}
+
+
+
 
 export function dispatchGetAllDatesOfImages(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
@@ -863,13 +926,46 @@ function getReadableStreamForImages(reader: ReadableStreamDefaultReader<any>, di
 
 export function dispatchPhotoToDelete(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
-        if (x.payloadType == AddImageToDeleteEvent) {
+        if (x.payloadType == ImageToDeleteEvent) {
             dispatch(x);
             return Promise.resolve(x);
         }
         return Promise.resolve(DefaultUnknownSelectedEvent);
     };
 }
+
+export function dispatchPhotoToDeleteImmediately(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == ImageToDeleteImmediatelyEvent) {
+            return imagesService.delete(x.payload.img)
+                .then(json => {
+                    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
+                    const exifUrl = ExchangedImageDTO?._links?._exif?.href;
+                    dispatch(selectedImageIsLoaded(json))
+                    return exifImagesService.getExifDataOfImage(exifUrl)
+                })
+                .then(json => dispatch(loadExif(json)));
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
+export function dispatchDownloadImmediatelySelectedImageEvent(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
+    return async (dispatch: ApplicationThunkDispatch, getState) => {
+        if (x.payloadType == ImageToDownloadImmediatelyEvent) {
+            return imagesService.delete(x.payload.img)
+                .then(json => {
+                    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
+                    const exifUrl = ExchangedImageDTO?._links?._exif?.href;
+                    dispatch(selectedImageIsLoaded(json))
+                    return exifImagesService.getExifDataOfImage(exifUrl)
+                })
+                .then(json => dispatch(loadExif(json)));
+        }
+        return Promise.resolve(DefaultUnknownSelectedEvent);
+    };
+}
+
 
 export function dispatchUndoPhotoToDelete(x: ApplicationEvent): ThunkResult<Promise<ApplicationEvent>> {
     return async (dispatch: ApplicationThunkDispatch, getState) => {
@@ -902,8 +998,8 @@ export function dispatchPhotoToNext(x: ApplicationEvent): ThunkResult<Promise<Ap
         if (x.payloadType == SelectedImageEvent) {
             return imagesService.getNextImage(x.payload.img?._links?._next?.href)
                 .then(json => {
-                    const imageDto = toSingleImageDto(json);
-                    const exifUrl = imageDto?._links?._exif?.href;
+                    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
+                    const exifUrl = ExchangedImageDTO?._links?._exif?.href;
                     dispatch(selectedImageIsLoaded(json))
                     return exifImagesService.getExifDataOfImage(exifUrl)
                 })
@@ -918,8 +1014,8 @@ export function dispatchPhotoToPrevious(x: ApplicationEvent): ThunkResult<Promis
         if (x.payloadType == SelectedImageEvent) {
             return imagesService.getPrevImage(x.payload.img?._links?._prev?.href)
                 .then(json => {
-                    const imageDto = toSingleImageDto(json);
-                    const exifUrl = imageDto?._links?._exif?.href;
+                    const ExchangedImageDTO = toSingleExchangedImageDTO(json);
+                    const exifUrl = ExchangedImageDTO?._links?._exif?.href;
                     dispatch(selectedImageIsLoaded(json))
                     return exifImagesService.getExifDataOfImage(exifUrl)
                 })

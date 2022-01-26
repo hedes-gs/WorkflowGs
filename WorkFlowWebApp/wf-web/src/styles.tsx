@@ -1,5 +1,6 @@
 import React from 'react';
-import { makeStyles, createStyles } from '@material-ui/core/styles';
+import makeStyles from '@mui/styles/makeStyles';
+import createStyles from '@mui/styles/createStyles';
 import { string } from 'prop-types';
 
 export type CommonProps = {

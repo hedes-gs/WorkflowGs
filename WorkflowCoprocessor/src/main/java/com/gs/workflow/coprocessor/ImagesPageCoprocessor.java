@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,33 +66,35 @@ public class ImagesPageCoprocessor extends AbstractProcessor implements RegionCo
     // | 0 - 7 | 8 -> 8 + row length |
     // | Creation date | <Row of hbase image>
 
-    protected static Logger       LOGGER                              = LoggerFactory
+    protected static Logger         LOGGER                              = LoggerFactory
         .getLogger(ImagesPageCoprocessor.class);
-    protected static final long   PAGE_SIZE                           = 1000L;
-    protected static final String TABLE_SOURCE                        = "image_thumbnail";
-    protected static final String TABLE_IMAGE_THUMBNAIL_KEY           = "image_thumbnail_key";
-    protected static final String TABLE_PAGE                          = "page_image_thumbnail";
-    protected static final byte[] TABLE_PAGE_DESC_COLUMN_FAMILY       = "max_min".getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER = "max".getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER = "min".getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TABLE_PAGE_LIST_COLUMN_FAMILY       = "list".getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TABLE_PAGE_INFOS_COLUMN_FAMILY      = "infos".getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS = "nbOfElements"
+    protected static final long     PAGE_SIZE                           = 1000L;
+    protected static final String   TABLE_SOURCE                        = "image_thumbnail";
+    protected static final String   TABLE_IMAGE_THUMBNAIL_KEY           = "image_thumbnail_key";
+    protected static final String   TABLE_PAGE                          = "page_image_thumbnail";
+    protected static final byte[]   TABLE_PAGE_DESC_COLUMN_FAMILY       = "max_min".getBytes(Charset.forName("UTF-8"));
+    protected static final byte[]   TABLE_PAGE_DESC_COLUMN_MAX_QUALIFER = "max".getBytes(Charset.forName("UTF-8"));
+    protected static final byte[]   TABLE_PAGE_DESC_COLUMN_MIN_QUALIFER = "min".getBytes(Charset.forName("UTF-8"));
+    protected static final byte[]   TABLE_PAGE_LIST_COLUMN_FAMILY       = "list".getBytes(Charset.forName("UTF-8"));
+    protected static final byte[]   TABLE_PAGE_INFOS_COLUMN_FAMILY      = "infos".getBytes(Charset.forName("UTF-8"));
+    protected static final byte[]   TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS = "nbOfElements"
         .getBytes(Charset.forName("UTF-8"));
-    protected static final String COLUMN_STAT_NAME                    = "stats";
-    protected static final String FAMILY_IMGS_NAME                    = "imgs";
-    protected static final String FAMILY_STATS_NAME                   = "fstats";
-    protected static final byte[] COLUMN_STAT_AS_BYTES                = ImagesPageCoprocessor.COLUMN_STAT_NAME
+    protected static final String   COLUMN_STAT_NAME                    = "stats";
+    protected static final String   FAMILY_IMGS_NAME                    = "imgs";
+    protected static final String   FAMILY_STATS_NAME                   = "fstats";
+    protected static final byte[]   COLUMN_STAT_AS_BYTES                = ImagesPageCoprocessor.COLUMN_STAT_NAME
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] FAMILY_IMGS_NAME_AS_BYTES           = ImagesPageCoprocessor.FAMILY_IMGS_NAME
+    protected static final byte[]   FAMILY_IMGS_NAME_AS_BYTES           = ImagesPageCoprocessor.FAMILY_IMGS_NAME
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] FAMILY_STATS_NAME_AS_BYTES          = ImagesPageCoprocessor.FAMILY_STATS_NAME
+    protected static final byte[]   FAMILY_STATS_NAME_AS_BYTES          = ImagesPageCoprocessor.FAMILY_STATS_NAME
         .getBytes(Charset.forName("UTF-8"));
-    protected static final byte[] TRUE_VALUE                          = new byte[] { 1 };
-    protected static final byte[] TABLE_SOURCE_THUMBNAIL              = "thb".getBytes(Charset.forName("UTF-8"));
-    public static final int       FIXED_WIDTH_IMAGE_ID                = 64;
-    public static final int       FIXED_WIDTH_REGION_SALT             = 2;
-    public static final int       FIXED_WIDTH_CREATION_DATE           = 8;
+    protected static final byte[]   TRUE_VALUE                          = new byte[] { 1 };
+    protected static final byte[]   TABLE_SOURCE_THUMBNAIL              = "thb".getBytes(Charset.forName("UTF-8"));
+    public static final int         FIXED_WIDTH_IMAGE_ID                = 64;
+    public static final int         FIXED_WIDTH_REGION_SALT             = 2;
+    public static final int         FIXED_WIDTH_CREATION_DATE           = 8;
+    public static final Set<String> SET_OF_METADATA_FAMILY              = Set
+        .of("albums", "keyWords", "persons", "ratings");
 
     protected Connection hbaseConnection() throws IOException {
         return ConnectionFactory.createConnection(HBaseConfiguration.create());
@@ -642,28 +645,30 @@ public class ImagesPageCoprocessor extends AbstractProcessor implements RegionCo
         if (table.endsWith(":" + this.getTableSource())) {
             List<Cell> cells = put.getFamilyCellMap()
                 .get(ImagesPageCoprocessor.TABLE_SOURCE_THUMBNAIL);
-            if ((cells != null) && (cells.size() > 0)) {
-                cells.forEach((c) -> {
-                    Integer key = Integer.parseInt(new String(CellUtil.cloneQualifier(c)));
-                    if (key == 1) {
-                        if (ImagesPageCoprocessor.LOGGER.isDebugEnabled()) {
-                            ImagesPageCoprocessor.LOGGER.debug(
-                                "[PAGINATION]Creating secundary index for table {} - namespace is {} - row is {} ",
-                                table2,
-                                table2.getNamespaceAsString(),
-                                new String(put.getRow(),
-                                    ImagesPageCoprocessor.FIXED_WIDTH_CREATION_DATE
-                                        + ImagesPageCoprocessor.FIXED_WIDTH_REGION_SALT,
-                                    64,
-                                    Charset.forName("UTF-8")));
-                        }
-                        this.createSecundaryIndexInPagedTable(table2.getNamespaceAsString(), put.getRow());
+
+            Optional.ofNullable(cells)
+                .stream()
+                .flatMap((x) -> x.stream())
+                .filter((x) -> Integer.parseInt(new String(CellUtil.cloneQualifier(x))) == 1)
+                .map((x) -> {
+                    this.createSecundaryIndexInPagedTable(table2.getNamespaceAsString(), put.getRow());
+                    return x;
+                })
+                .findAny()
+                .ifPresent((x) -> {
+
+                    if (ImagesPageCoprocessor.LOGGER.isDebugEnabled()) {
+                        ImagesPageCoprocessor.LOGGER.debug(
+                            "[PAGINATION]Creating secundary index for table {} - namespace is {} - row is {} ",
+                            table2,
+                            table2.getNamespaceAsString(),
+                            new String(put.getRow(),
+                                ImagesPageCoprocessor.FIXED_WIDTH_CREATION_DATE
+                                    + ImagesPageCoprocessor.FIXED_WIDTH_REGION_SALT,
+                                64,
+                                Charset.forName("UTF-8")));
                     }
                 });
-            } else {
-                ImagesPageCoprocessor.LOGGER
-                    .warn("Unable to find some thumbnail for {} ", this.toHexString(put.getRow()));
-            }
         }
     }
 
@@ -828,32 +833,35 @@ public class ImagesPageCoprocessor extends AbstractProcessor implements RegionCo
             .getTable();
         String table = table2.getNameAsString();
         if (table.endsWith(":" + this.getTableSource())) {
-            ImagesPageCoprocessor.LOGGER.info(
-                "[COPROC][{}] postDelete, table is {}, row put is {}",
-                this.getCoprocName(),
-                this.getTableSource(),
-                this.toHexString(delete.getRow()));
-            try (
-                Table metaDataPageTable = this.hbaseConnection.getTable(
-                    TableName.valueOf(table2.getNamespaceAsString() + ":" + this.getTablePageForMetadata()))) {
-                long lockNumber = Long.MIN_VALUE;
-                try {
-                    lockNumber = this.getLock(metaDataPageTable);
-                    this.deleteSecundaryIndex(
-                        observerContext.getEnvironment()
-                            .getRegion(),
-                        table2.getNamespaceAsString(),
-                        delete.getRow());
-                    this.decrementDateInterval(table2.getNamespaceAsString(), delete.getRow());
-                } catch (ServiceException e) {
-                    throw new RuntimeException(e);
-                } catch (Throwable e) {
-                    throw new RuntimeException(e);
-                } finally {
+            if (delete.getFamilyCellMap()
+                .size() == 0) {
+                ImagesPageCoprocessor.LOGGER.info(
+                    "[COPROC][{}] postDelete, table is {}, row put is {}",
+                    this.getCoprocName(),
+                    this.getTableSource(),
+                    this.toHexString(delete.getRow()));
+                try (
+                    Table metaDataPageTable = this.hbaseConnection.getTable(
+                        TableName.valueOf(table2.getNamespaceAsString() + ":" + this.getTablePageForMetadata()))) {
+                    long lockNumber = Long.MIN_VALUE;
                     try {
-                        this.releaseLock(metaDataPageTable, lockNumber);
+                        lockNumber = this.getLock(metaDataPageTable);
+                        this.deleteSecundaryIndex(
+                            observerContext.getEnvironment()
+                                .getRegion(),
+                            table2.getNamespaceAsString(),
+                            delete.getRow());
+                        this.decrementDateInterval(table2.getNamespaceAsString(), delete.getRow());
+                    } catch (ServiceException e) {
+                        throw new RuntimeException(e);
                     } catch (Throwable e) {
                         throw new RuntimeException(e);
+                    } finally {
+                        try {
+                            this.releaseLock(metaDataPageTable, lockNumber);
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }
@@ -1036,38 +1044,34 @@ public class ImagesPageCoprocessor extends AbstractProcessor implements RegionCo
         } else if (table.endsWith(":" + this.getTableSource())) {
             List<Cell> cells = put.getFamilyCellMap()
                 .get(ImagesPageCoprocessor.TABLE_SOURCE_THUMBNAIL);
-            if ((cells != null) && (cells.size() > 0)) {
-                cells.forEach((c) -> {
-                    Integer key = Integer.parseInt(new String(CellUtil.cloneQualifier(c)));
-                    if (key == 1) {
-                        if (ImagesPageCoprocessor.LOGGER.isDebugEnabled()) {
-                            ImagesPageCoprocessor.LOGGER.debug(
-                                "Incrementing nb of elements for table {} - namespace is {} - row is {} ",
-                                table2,
-                                table2.getNamespaceAsString(),
-                                new String(put.getRow(), 10, 64, Charset.forName("UTF-8")));
-                        }
-                        try {
+            Optional.ofNullable(cells)
+                .stream()
+                .flatMap((x) -> x.stream())
+                .filter((x) -> Integer.parseInt(new String(CellUtil.cloneQualifier(x))) == 1)
+                .findFirst()
+                .ifPresent((x) -> {
+                    try {
+                        if (!this.rowDataIsPresent(table2.getNameAsString(), put.getRow())) {
                             this.incrementDateInterval(table2.getNamespaceAsString(), put.getRow());
-                        } catch (IOException e) {
-                            ImagesPageCoprocessor.LOGGER.warn("Error ", e);
                         }
-                    } else {
-                        ImagesPageCoprocessor.LOGGER.warn(
-                            "In {}, Find {} in row key {}",
-                            ImagesPageCoprocessor.TABLE_SOURCE_THUMBNAIL,
-                            key,
-                            new String(put.getRow(), 10, 64, Charset.forName("UTF-8")));
+                    } catch (IOException e) {
+                        ImagesPageCoprocessor.LOGGER.warn("Error ", e);
                     }
                 });
-
-            } else {
-                ImagesPageCoprocessor.LOGGER.warn(
-                    "Unable to find {} in row key {}",
-                    ImagesPageCoprocessor.TABLE_SOURCE_THUMBNAIL,
-                    new String(put.getRow(), 10, 64, Charset.forName("UTF-8")));
-            }
+        } else {
+            ImagesPageCoprocessor.LOGGER.warn("Unable to process table {} ", table);
         }
+    }
+
+    private boolean rowDataIsPresent(String namespace, byte[] row) {
+        try (
+            Table table = this.hbaseConnection.getTable(TableName.valueOf(namespace + ':' + this.getTableSource()))) {
+            Get get = new Get(row);
+            return table.exists(get);
+        } catch (IOException e) {
+            ImagesPageCoprocessor.LOGGER.error(" Unexpected error in hbase ", e);
+        }
+        return true;
     }
 
     protected String getTablePageForMetadata() { return ImagesPageCoprocessor.TABLE_PAGE; }

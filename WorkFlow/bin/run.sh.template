@@ -17,9 +17,15 @@ do
 done
 unset HADOOP_HOME
 
+ 
 
 export JAR_FILE={{ jar_name }}
 cd /home/{{ user_to_create }}
+if [ -f ./config/.env ] 
+then
+   source ./config/.env
+fi
+ 
 # options for JAVA 16 : --add-exports java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens java.base/java.lang.invoke=ALL-UNNAMED
 /usr/lib/jvm/jdk-17/bin/java --enable-preview -XX:+UnlockExperimentalVMOptions -XX:+UseZGC \
 --add-exports java.security.jgss/sun.security.krb5=ALL-UNNAMED \
@@ -29,4 +35,4 @@ cd /home/{{ user_to_create }}
 --add-opens java.base/java.lang=ALL-UNNAMED \
 -javaagent:/home/{{ user_to_create }}/lib/jmx_prometheus_javaagent-0.12.0.jar={{promotheus_port}}://home/{{ user_to_create }}/config/config_prometheus.yml  \
 -Xlog:gc*,gc+phases*,gc+region*=debug:file=/home/{{ user_to_create }}/logs/{{ user_to_create }}_log.gc:time:filecount=10 \
--Xmx{{application_xmx | default('512m')  }} -Xms{{application_xms | default('512m')  }} -Djava.net.preferIPv4Stack=true -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/{{ user_to_create }}/logs/heap.hprof -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -Dloader.path=/home/{{ user_to_create }}/config -jar lib/${JAR_FILE} --spring.config.location=optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/
+-Xmx{{application_xmx | default('512m')  }} -Xms{{application_xms | default('512m')  }} -Dsmb.password=${SMB_PASSWORD} -Dsmb.user=${SMB_USER} -Djava.net.preferIPv4Stack=true -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/home/{{ user_to_create }}/logs/heap.hprof -Dlog4j.configuration=config/log4j.xml -Djava.security.auth.login.config=/home/{{ user_to_create }}/config/client_jaas.conf -Dloader.path=/home/{{ user_to_create }}/config -jar lib/${JAR_FILE} --spring.config.location=optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/

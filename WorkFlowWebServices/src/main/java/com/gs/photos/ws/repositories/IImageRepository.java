@@ -15,7 +15,7 @@ public interface IImageRepository {
 
     Optional<ImageDto> findById(short salt, OffsetDateTime creationDate, String id, int version);
 
-    void delete(short salt, OffsetDateTime creationDate, String id) throws IOException;
+    Optional<ImageDto> delete(short salt, OffsetDateTime creationDate, String id) throws IOException;
 
     Optional<ImageDto> getNextImageById(short salt, OffsetDateTime creationDate, String id, int version);
 

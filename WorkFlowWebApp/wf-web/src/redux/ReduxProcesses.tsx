@@ -9,7 +9,7 @@ import {
     LastImagesAreLoadedEvent,
     LoadPagesOfImagesEvent,
     SelectedImageEvent,
-    AddImageToDeleteEvent,
+    ImageToDeleteEvent,
     GetAllDatesOfImagesEvent,
     DeleteKeywordEvent,
     DeleteAlbumEvent,
@@ -21,7 +21,7 @@ import {
 import ApplicationSate from './State'
 
 import Actions from "./ActionsType";
-import { ImageDto, ImageKeyDto, MinMaxDatesDto } from '../model/DataModel';
+import { ExchangedImageDTO, ImageKeyDto, MinMaxDatesDto } from '../model/DataModel';
 
 const initialState: ApplicationSate = {
     lastIntervallRequested: {
@@ -72,20 +72,20 @@ const initialState: ApplicationSate = {
 export function reducerDisplayedExif(state: ApplicationSate, action: ApplicationEvent): ApplicationSate {
     switch (action.type) {
         case Actions.SELECTED_IMAGE_TO_DISPLAY_IS_LOADED: {
-            const imageDto = action.payloadType == SelectedImageEvent ? action.payload.img : null;
+            const ExchangedImageDTO = action.payloadType == SelectedImageEvent ? action.payload.img : null;
             const currentExifs = state.displayedExif.exifs;
             const exifs = currentExifs != null &&
-                imageDto != null &&
+                ExchangedImageDTO != null &&
                 currentExifs._embedded != null &&
                 currentExifs._embedded.exifDTOList[0].imageOwner != null &&
-                imageDto.data != null &&
-                currentExifs._embedded.exifDTOList[0].imageOwner.imageId == imageDto.data.imageId ? currentExifs : null;
+                ExchangedImageDTO.image?.data != null &&
+                currentExifs._embedded.exifDTOList[0].imageOwner.imageId == ExchangedImageDTO.image?.data.imageId ? currentExifs : null;
             const returnedTarget = Object.assign(
                 {},
                 state,
                 {
                     displayedExif: {
-                        imageOwner: imageDto,
+                        imageOwner: ExchangedImageDTO,
                         exifs: exifs
                     },
 
@@ -250,7 +250,7 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                     imagesLoaded: {
                         state: 'LOADED',
                         images: null,
-                        pageNumber: 1,
+                        pageNumber: state.imagesAreStreamed.pageNumber,
                         urlNext: null,
                         urlPrev: null,
                         titleOfImagesList: null
@@ -270,7 +270,7 @@ export function reducerImagesList(state: ApplicationSate, action: ApplicationEve
                             imagesLoaded: {
                                 state: 'LOADED',
                                 images: null,
-                                pageNumber: 1,
+                                pageNumber: state.imagesAreStreamed.pageNumber,
                                 urlNext: null,
                                 urlPrev: null,
                                 titleOfImagesList: null
@@ -381,11 +381,11 @@ export function reducerImagesAreStreamed(state: ApplicationSate, action: Applica
         case Actions.IMAGES_ARE_STREAMED: {
             switch (action.payloadType) {
                 case PayloadLoadedImagesEvent: {
-                    var currentImages: ImageDto[] | undefined = state.imagesAreStreamed.images?._embedded?.imageDtoList;
+                    var currentImages: ExchangedImageDTO[] | undefined = state.imagesAreStreamed.images?._embedded?.ExchangedImageDTOList;
 
                     if (action.payload.images._embedded != null) {
-                        currentImages = currentImages != null ? currentImages?.concat(action.payload.images._embedded.imageDtoList) :
-                            action.payload.images._embedded.imageDtoList;
+                        currentImages = currentImages != null ? currentImages?.concat(action.payload.images._embedded.ExchangedImageDTOList) :
+                            action.payload.images._embedded.ExchangedImageDTOList;
                     }
                     const returnedTarget = Object.assign(
                         {},
@@ -396,7 +396,7 @@ export function reducerImagesAreStreamed(state: ApplicationSate, action: Applica
                                 images: {
                                     page: state.imagesAreStreamed.images?.page,
                                     _embedded: {
-                                        imageDtoList: currentImages
+                                        ExchangedImageDTOList: currentImages
                                     },
                                     _links: state.imagesAreStreamed.images?._links
                                 },
@@ -423,9 +423,9 @@ export function reducerImagesToDelete(state: ApplicationSate, action: Applicatio
     switch (action.type) {
         case Actions.DELETE_IMAGE: {
             switch (action.payloadType) {
-                case AddImageToDeleteEvent: {
-                    var imageToDelete: Set<ImageDto> = state.imagesToDelete.images != null ? state.imagesToDelete.images : new Set();
-                    imageToDelete.add(action.payload.image);
+                case ImageToDeleteEvent: {
+                    var imageToDelete: Set<ExchangedImageDTO> = state.imagesToDelete.images != null ? state.imagesToDelete.images : new Set();
+                    imageToDelete.add(action.payload.img);
                     const returnedTarget = Object.assign(
                         {},
                         state,
@@ -450,7 +450,7 @@ export function reducerImagesToDownload(state: ApplicationSate, action: Applicat
 
     switch (action.payloadType) {
         case DownloadSelectedImageEvent: {
-            var imageTodownload: Set<ImageDto> = state.imagesToDownload.images != null ? state.imagesToDownload.images : new Set();
+            var imageTodownload: Set<ExchangedImageDTO> = state.imagesToDownload.images != null ? state.imagesToDownload.images : new Set();
             imageTodownload.add(action.payload.image);
             const returnedTarget = Object.assign(
                 {},

@@ -234,7 +234,8 @@ public class BeanScan implements IScan {
                 .unlock();
         }
         try {
-            BeanScan.LOGGER.info("[EVENT][{}] processFoundFile {} ", f.getName(), f.getUrl());
+            BeanScan.LOGGER
+                .info("[EVENT][{}] processFoundFile {} - external url is ", f.getName(), f.getUrl(), f.toExternalURL());
             final String currentFileName = f.getName();
             String extension = FilenameUtils.getExtension(currentFileName);
             switch (extension.toUpperCase()) {
@@ -286,12 +287,13 @@ public class BeanScan implements IScan {
         return FileToProcess.builder()
             .withName(file.getName())
             .withUrl(
-                file.getUrl()
+                file.toExternalURL()
                     .toString())
             .withDataId(file.getName())
             .withImageId("<UNSET>")
             .withCompressedFile(isCompressed)
             .withImportEvent(importEvent)
+            .withIsLocal(false)
             .build();
     }
 
@@ -306,6 +308,7 @@ public class BeanScan implements IScan {
             .withDataId(file.getName())
             .withImportDate(System.currentTimeMillis())
             .withImportEvent(importEvent)
+            .withIsLocal(false)
             .withUrl(
                 file.getUrl()
                     .toString())

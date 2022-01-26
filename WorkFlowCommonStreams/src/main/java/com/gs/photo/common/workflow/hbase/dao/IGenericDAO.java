@@ -39,4 +39,6 @@ public interface IGenericDAO<T extends HbaseData> {
 
     public TableName getTableName();
 
+    void put(T hbaseData, String... familiesToInclude);
+
 }

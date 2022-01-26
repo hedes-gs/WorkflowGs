@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 import { ServiceConfig } from './api.config'
-import { ImageDto, toJsonImageDto } from '../model/DataModel';
+import { ExchangedImageDTO, toJsonExchangedImageDTO,toJsonImageDTO } from '../model/DataModel';
 
 export interface KeywordsService {
-    addKeyword(keyword: string, img: ImageDto): Promise<string>;
-    deleteKeyword(keyword: string, img: ImageDto): Promise<string>;
+    addKeyword(keyword: string, img: ExchangedImageDTO): Promise<string>;
+    deleteKeyword(keyword: string, img: ExchangedImageDTO): Promise<string>;
     getKeywordsLike(keyword: string): Promise<string>;
     getAll(): Promise<string>;
 }
@@ -26,10 +26,10 @@ export default class KeywordsServiceImpl implements KeywordsService {
             .then(resp => resp.data);
     }
 
-    async addKeyword(keyword: string, img: ImageDto): Promise<string> {
+    async addKeyword(keyword: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddKeyword = this.baseUrlForKeywords + 'addToImage/' + keyword;
 
-        return this.axiosInstance.post(urlToAddKeyword, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddKeyword, toJsonImageDTO(img.image), {
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -37,10 +37,10 @@ export default class KeywordsServiceImpl implements KeywordsService {
             .then(resp => resp.data);
     }
 
-    async deleteKeyword(keyword: string, img: ImageDto): Promise<string> {
+    async deleteKeyword(keyword: string, img: ExchangedImageDTO): Promise<string> {
         const urlToAddKeyword = this.baseUrlForKeywords + 'deleteInImage/' + keyword;
 
-        return this.axiosInstance.post(urlToAddKeyword, toJsonImageDto(img), {
+        return this.axiosInstance.post(urlToAddKeyword, toJsonImageDTO(img.image), {
             headers: {
                 'Content-Type': 'application/json'
             }

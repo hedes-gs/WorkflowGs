@@ -3,7 +3,7 @@ import MomentTimezone from 'moment-timezone';
 import { ServiceConfig } from './api.config'
 import { Moment } from 'moment-timezone';
 import { ApplicationEvent } from '../redux/Actions';
-import { ImageKeyDto, ImageDto, toJsonImageDto } from '../model/DataModel';
+import { ImageKeyDto, ExchangedImageDTO, toJsonExchangedImageDTO } from '../model/DataModel';
 import { Console } from 'console';
 import { Observable } from 'rxjs';
 var NDJsonRxJS = require('ndjson-rxjs');
@@ -14,8 +14,9 @@ export interface ImagesService {
     getNextImage(url: string | undefined): Promise<string>;
     getPrevImage(url: string | undefined): Promise<string>;
     getImage(url: string | undefined): Promise<string>;
-    saveImage(url: string, img: ImageDto): Promise<string>;
-    checkout(img: ImageDto): Promise<string>;
+    saveImage(url: string, img: ExchangedImageDTO): Promise<string>;
+    checkout(img: ExchangedImageDTO): Promise<string>;
+    delete(img: ExchangedImageDTO): Promise<string>;
     getLastImages(pageNumber: number): Promise<ReadableStream>;
 
     getPageOfImages(url?: string): Promise<ReadableStream>;
@@ -101,8 +102,20 @@ export default class ImagesServiceImpl implements ImagesService {
         this.urlToGetLastImages = '/api/gs/images';
     }
 
-    async checkout(img: ImageDto): Promise<string> {
+    async checkout(img: ExchangedImageDTO): Promise<string> {
         const url = img._links?._checkout?.href;
+        if (url != null) {
+            return this.axiosInstance.post(url, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(resp => resp.data);
+        }
+        return '';
+    }
+
+    async delete(img: ExchangedImageDTO): Promise<string> {
+        const url = img._links?._del?.href;
         if (url != null) {
             return this.axiosInstance.post(url, {
                 headers: {
@@ -117,8 +130,8 @@ export default class ImagesServiceImpl implements ImagesService {
         return r != null ? r : ''
     }
 
-    async saveImage(url: string, img: ImageDto): Promise<string> {
-        return this.axiosInstance.post(url, toJsonImageDto(img), {
+    async saveImage(url: string, img: ExchangedImageDTO): Promise<string> {
+        return this.axiosInstance.post(url, toJsonExchangedImageDTO(img), {
             headers: {
                 'Content-Type': 'application/json'
             }

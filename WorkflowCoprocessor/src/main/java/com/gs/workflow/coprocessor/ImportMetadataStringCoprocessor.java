@@ -103,10 +103,8 @@ public class ImportMetadataStringCoprocessor extends AbstractMetadataStringCopro
 
     @Override
     protected boolean shouldFamilyInsourceBeRecordedInMetadata(byte[] familySource) {
-        for (byte[] b : AbstractPageProcessor.SOURCE_FAMILIES_TO_EXCLUDE) {
-            if (Objects.deepEquals(b, familySource)) { return false; }
-        }
-        return true;
+        return (Objects.deepEquals(ImportMetadataStringCoprocessor.SOURCE_FAMILY, familySource));
+
     }
 
     @Override

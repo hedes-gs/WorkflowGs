@@ -47,7 +47,7 @@ public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
 
     void invalidCache();
 
-    PageDescription<HbaseImageThumbnail> loadPageInTablePage(long pageNumberInTablePage, int pageSize);
+    PageDescription<ImageKeyDto> loadPageInTablePage(long pageNumberInTablePage, int pageSize);
 
     Flux<HbaseImageThumbnail> getNextThumbNailsOf(HbaseImageThumbnail initialKey, boolean includeRow);
 
@@ -55,10 +55,14 @@ public interface IHbaseImageThumbnailDAO extends IImageThumbnailDAO {
 
     Flux<ImageDto> getSimpleList(final Scan scan);
 
+    Flux<ImageKeyDto> getImageKeyDtoList(final Scan scan);
+
     ImageDto getImageDto(ImageKeyDto imageKeyDto, OffsetDateTime creationDate, String id, int version);
 
     Optional<ImageVersionDto> getImageVersionDto(OffsetDateTime creationDate, String id, int version);
 
     void delete(HbaseImageThumbnail hbaseData) throws IOException;
+
+    ImageDto getImageDto(ImageKeyDto imageKeyDto);
 
 }

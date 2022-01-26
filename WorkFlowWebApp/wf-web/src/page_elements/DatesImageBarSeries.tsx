@@ -2,13 +2,13 @@ import React from 'react';
 import { connect } from "react-redux";
 import { ClientApplicationState } from '../redux/State';
 import { ApplicationThunkDispatch, dispatchGetAllDatesOfImages, ApplicationEvent, getAllDatesOfImages } from '../redux/Actions';
-import { withStyles } from '@material-ui/core/styles';
+import withStyles from '@mui/styles/withStyles';
 import { FloatProperty, DisplayInside, TableLayoutProperty } from 'csstype';
-import Grid from '@material-ui/core/Grid';
-import RefreshIcon from '@material-ui/icons/Refresh';
-import DeleteIcon from '@material-ui/icons/Delete';
-import CloseIcon from '@material-ui/icons/Close';
-import IconButton from '@material-ui/core/IconButton';
+import Grid from '@mui/material/Grid';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import IconButton from '@mui/material/IconButton';
 
 import {
     FlexibleWidthXYPlot,
@@ -21,7 +21,7 @@ import {
     HorizontalGridLines
 } from 'react-vis';
 import { MinMaxDatesDto, MomentType } from '../model/DataModel';
-import { GridList, GridListTile, Button } from '@material-ui/core';
+import { ImageList, ImageListItem, Button } from '@mui/material';
 
 
 export interface DatesImageBarSeriesProps {
@@ -67,6 +67,7 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
         this.handleClickOnPreviousDate = this.handleClickOnPreviousDate.bind(this);
         this.handleClickOnReset = this.handleClickOnReset.bind(this);
         this.handleDeleteselectedDate = this.handleDeleteselectedDate.bind(this);
+        this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
     }
 
     componentDidMount() {
@@ -106,7 +107,8 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
                 return v === c.minDate?.format('YYYY-MM-DD') ?? 'unset'
             }
             default: {
-                return v === c.minDate?.format('HH:mm:ss') ?? 'unset'
+                console.log('  ' + c.minDate?.format('HH:mm')  + ', ' + v);
+                return v === c.minDate?.format('HH:mm') ?? 'unset'
             }
         }
 
@@ -199,7 +201,7 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
                 }
                 default: {
                     retValue = {
-                        x: c.minDate?.format('YYYY-MM-DD HH:mm:ss +01') ?? 'unset',
+                        x: c.minDate?.format('HH:mm') ?? 'unset',
                         y: c.countNumber
                     }
                 }
@@ -234,12 +236,14 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
 
 
         return (
-
             <Grid container  >
                 <Grid item xs={3} style={{ backgroundColor: '#606060', borderTop: 'inset', color: 'black' }}>
                     <div style={{ flexGrow: 1, width: '100%' }}>
                         <Grid container style={{ flexWrap: 'wrap' }} >
-                            <IconButton onClick={() => { this.handleClickOnReset() }} style={{ width: 5, height: 10 }}  >
+                            <IconButton
+                                onClick={() => { this.handleClickOnReset() }}
+                                style={{ width: 5, height: 10 }}
+                                size="large">
                                 <RefreshIcon fontSize="small" htmlColor="#202020" style={{ width: 20, height: 20 }} />
                             </IconButton>
                             {
@@ -250,7 +254,10 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
                                             style={{ paddingLeft: 6,paddingRight: 2, minWidth: 0 }}>
                                             {this.toString(e)}
                                         </Button>
-                                        <IconButton onClick={() => { this.handleDeleteselectedDate(e) }} style={{ paddingLeft: 4, paddingRight: 6, width: 2, height: 2, fontSize: '12px' }}    >
+                                        <IconButton
+                                            onClick={() => { this.handleDeleteselectedDate(e) }}
+                                            style={{ paddingLeft: 4, paddingRight: 6, width: 2, height: 2, fontSize: '12px' }}
+                                            size="large">
                                             <CloseIcon fontSize="inherit" />
                                         </IconButton>
                                     </div>
@@ -283,9 +290,7 @@ class DatesImageBarSeries extends React.Component<DatesImageBarSeriesProps, Date
                     </FlexibleWidthXYPlot>
                 </Grid>
             </Grid >
-
-
-        )
+        );
     }
 
 }

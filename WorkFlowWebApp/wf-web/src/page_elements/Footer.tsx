@@ -1,9 +1,9 @@
 import React from 'react';
-import Paper from '@material-ui/core/Paper';
-import Tabs from '@material-ui/core/Tabs';
-import Tab from '@material-ui/core/Tab';
+import Paper from '@mui/material/Paper';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import DatesImageBarSeries from './DatesImageBarSeries';
-import { withStyles } from '@material-ui/core/styles';
+import withStyles from '@mui/styles/withStyles';
 import { ParagraphTitle } from '../styles';
 import { MinMaxDatesDto } from '../model/DataModel';
 
@@ -76,8 +76,7 @@ class Footer extends React.Component<FooterProps, FooterState> {
                             indicatorColor="primary"
                             textColor="primary"
                         >
-                            <Tab label="Dates" >
-                            </Tab>
+                            <Tab label="Dates" />
                             <Tab label="Albums" />
                             <Tab label="Personnes" />
                             <Tab label="Ratings" />

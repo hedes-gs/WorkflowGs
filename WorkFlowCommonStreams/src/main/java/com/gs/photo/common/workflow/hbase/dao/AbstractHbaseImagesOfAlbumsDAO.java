@@ -46,7 +46,7 @@ public abstract class AbstractHbaseImagesOfAlbumsDAO
                 .clear();
             hbi.getAlbums()
                 .add(metaData);
-            this.hbaseImageThumbnailDAO.put(hbi);
+            this.hbaseImageThumbnailDAO.put(hbi, AbstractHbaseImagesOfAlbumsDAO.METADATA_FAMILY_NAME);
             this.hbaseImageThumbnailDAO.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
