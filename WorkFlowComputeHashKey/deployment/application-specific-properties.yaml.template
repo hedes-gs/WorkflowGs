@@ -1,0 +1,54 @@
+kafka-consumers:
+  file-to-process:
+    consumer-type: on_the_fly_consumer_type
+    group-id: group-for-{{application_id}}
+    instance-group-id: group-for-{{application_id}}
+    
+ignite:
+  caches:
+    defaultCache: start-raw-files
+    cachesPerclasses:
+      com.workflow.model.HbaseImageThumbnail: hbase-data-pojo
+  igniteInstanceName: properties-instance-name
+  communicationSpi:
+    messageQueueLimit: 128
+    ackSendThreshold: 4
+    socketWriteTimeout: 60000
+  discoverySpi:
+    ackTimeout: 30000
+    ipFinder:
+      addresses: ipc10:47500..47510,ipc9:47500..47510,ipc7:47500..47510,ipc8:47500..47510
+  dataStorageConfiguration:
+    defaultDataRegionConfiguration:
+      initialSize: 10485760
+    dataRegionConfigurations:
+      - name: 1GB_Region
+        initialSize: 1048576000
+  cacheConfiguration:
+    - name: start-raw-files
+      cacheMode: PARTITIONED
+      atomicityMode: ATOMIC
+      backups: 1
+      readFromBackup: false
+      copyOnRead: true
+      partitionLossPolicy: READ_ONLY_SAFE
+      writeSynchronizationMode: PRIMARY_SYNC
+      dataRegionName: 1GB_Region
+      onheapCacheEnabled: true
+      evictionPolicyFactory: |
+        type: LRU
+        maxSize:  2000      
+    - name: hbase-data-pojo
+      cacheMode: PARTITIONED
+      atomicityMode: ATOMIC
+      backups: 1
+      readFromBackup: false
+      copyOnRead: true
+      partitionLossPolicy: READ_ONLY_SAFE
+      writeSynchronizationMode: PRIMARY_SYNC
+      dataRegionName: 1GB_Region
+      onheapCacheEnabled: true
+      evictionPolicyFactory: |
+        type: LRU
+        maxSize:  2000
+    

@@ -2,6 +2,8 @@ package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hbase.client.Connection;
+
 import com.workflow.model.HbaseAlbum;
 
 public abstract class AbstractHbaseAlbumDAO extends AbstractMetaDataDAO<HbaseAlbum, String> implements IAlbumDAO {
@@ -25,5 +27,11 @@ public abstract class AbstractHbaseAlbumDAO extends AbstractMetaDataDAO<HbaseAlb
             .buildKey(hbaseAlbum);
         return keyValue;
     }
+
+    public AbstractHbaseAlbumDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

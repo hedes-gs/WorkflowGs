@@ -8,5 +8,5 @@ import com.workflow.model.files.FileToProcess;
 
 public interface IFileMetadataExtractor {
 
-    Optional<Collection<IFD>> readIFDs(FileToProcess fileToProcess);
+    Optional<Collection<IFD>> readIFDs(Optional<byte[]> image, FileToProcess fileToProcess);
 }

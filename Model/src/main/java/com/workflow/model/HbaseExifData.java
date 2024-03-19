@@ -23,22 +23,22 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
     // Data
 
     @Nullable
-    @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "img", rowKeyNumber = 100)
     protected byte[]             exifValueAsByte;
     @Nullable
-    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 101)
+    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 101)
     protected int[]              exifValueAsInt;
     @Nullable
-    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 102)
+    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "img", rowKeyNumber = 102)
     protected short[]            exifValueAsShort;
     @Nullable
-    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 103)
+    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 103)
     protected String             thumbName        = "";
-    @Column(hbaseName = "creation_date", toByte = ToByteLong.class, columnFamily = "imd", rowKeyNumber = 104)
+    @Column(hbaseName = "creation_date", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 104)
     protected long               creationDate;
-    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 105)
+    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 105)
     protected long               width;
-    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
+    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 106)
     protected long               height;
     @Nullable
     @Column(hbaseName = "thumbnail", toByte = ToByteObject.class, columnFamily = "thb", rowKeyNumber = 107)
@@ -155,7 +155,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
     /**
      * Creates builder to build {@link HbaseExifData}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -183,7 +183,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -195,7 +195,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -207,7 +207,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for regionSalt parameter.
-         * 
+         *
          * @param regionSalt
          *            field to set
          * @return builder
@@ -219,7 +219,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifTag parameter.
-         * 
+         *
          * @param exifTag
          *            field to set
          * @return builder
@@ -231,7 +231,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifPath parameter.
-         * 
+         *
          * @param exifPath
          *            field to set
          * @return builder
@@ -243,7 +243,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for imageId parameter.
-         * 
+         *
          * @param imageId
          *            field to set
          * @return builder
@@ -255,7 +255,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsByte parameter.
-         * 
+         *
          * @param exifValueAsByte
          *            field to set
          * @return builder
@@ -267,7 +267,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsInt parameter.
-         * 
+         *
          * @param exifValueAsInt
          *            field to set
          * @return builder
@@ -279,7 +279,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for exifValueAsShort parameter.
-         * 
+         *
          * @param exifValueAsShort
          *            field to set
          * @return builder
@@ -291,7 +291,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for thumbName parameter.
-         * 
+         *
          * @param thumbName
          *            field to set
          * @return builder
@@ -303,7 +303,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for creationDate parameter.
-         * 
+         *
          * @param creationDate
          *            field to set
          * @return builder
@@ -315,7 +315,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for width parameter.
-         * 
+         *
          * @param width
          *            field to set
          * @return builder
@@ -327,7 +327,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for height parameter.
-         * 
+         *
          * @param height
          *            field to set
          * @return builder
@@ -339,7 +339,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method for thumbnail parameter.
-         * 
+         *
          * @param thumbnail
          *            field to set
          * @return builder
@@ -351,7 +351,7 @@ public class HbaseExifData extends HbaseData implements Serializable, Cloneable 
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public HbaseExifData build() { return new HbaseExifData(this); }

@@ -1,25 +1,32 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
-import javax.annotation.Generated;
+import com.workflow.model.HbaseData;
+import com.workflow.model.ImageAsByteArray;
 
-public class ThumbImageToSend {
-    protected short   tag = (short) 0x9003;
-    protected String  imageKey;
-    protected byte[]  jpegImage;
-    protected short[] path;
-    protected int     currentNb;
+public class ThumbImageToSend extends HbaseData {
+    /**
+     *
+     */
+    private static final long  serialVersionUID = 1L;
+    protected short            tag              = (short) 0x9003;
+    protected String           imageKey;
+    protected ImageAsByteArray jpegImage;
+    protected short[]          path;
+    protected int              currentNb;
 
-    @Generated("SparkTools")
     private ThumbImageToSend(Builder builder) {
+        this.tag = builder.tag;
         this.imageKey = builder.imageKey;
         this.jpegImage = builder.jpegImage;
         this.path = builder.path;
         this.currentNb = builder.currentNb;
     }
 
+    public ThumbImageToSend() {}
+
     public String getImageKey() { return this.imageKey; }
 
-    public byte[] getJpegImage() { return this.jpegImage; }
+    public ImageAsByteArray getJpegImage() { return this.jpegImage; }
 
     public short[] getPath() { return this.path; }
 
@@ -27,25 +34,28 @@ public class ThumbImageToSend {
 
     public int getCurrentNb() { return this.currentNb; }
 
-    /**
-     * Creates builder to build {@link ThumbImageToSend}.
-     *
-     * @return created builder
-     */
-    @Generated("SparkTools")
     public static Builder builder() { return new Builder(); }
 
-    /**
-     * Builder to build {@link ThumbImageToSend}.
-     */
-    @Generated("SparkTools")
     public static final class Builder {
-        private String  imageKey;
-        private byte[]  jpegImage;
-        private short[] path;
-        private int     currentNb;
+        private short            tag = (short) 0x9003;
+        private String           imageKey;
+        private ImageAsByteArray jpegImage;
+        private short[]          path;
+        private int              currentNb;
 
         private Builder() {}
+
+        /**
+         * Builder method for tag parameter.
+         *
+         * @param tag
+         *            field to set
+         * @return builder
+         */
+        public Builder withTag(short tag) {
+            this.tag = tag;
+            return this;
+        }
 
         /**
          * Builder method for imageKey parameter.
@@ -66,7 +76,7 @@ public class ThumbImageToSend {
          *            field to set
          * @return builder
          */
-        public Builder withJpegImage(byte[] jpegImage) {
+        public Builder withJpegImage(ImageAsByteArray jpegImage) {
             this.jpegImage = jpegImage;
             return this;
         }

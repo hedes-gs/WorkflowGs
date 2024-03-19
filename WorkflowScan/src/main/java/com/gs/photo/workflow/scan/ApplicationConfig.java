@@ -2,27 +2,22 @@ package com.gs.photo.workflow.scan;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Properties;
+import java.util.function.Supplier;
 
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
-import com.gs.photos.serializers.ComponentEventSerializer;
-import com.gs.photos.serializers.ImportEventDeserializer;
-import com.workflow.model.events.ComponentEvent;
+import com.gs.photo.common.workflow.IKafkaConsumerFactory;
+import com.gs.photo.common.workflow.IKafkaProducerFactory;
+import com.gs.photo.common.workflow.IKafkaProperties;
+import com.gs.photo.workflow.scan.config.SpecificApplicationProperties;
 import com.workflow.model.events.ComponentEvent.ComponentType;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.files.FileToProcess;
@@ -37,21 +32,56 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public final static String              FILE_TO_PROCESS_SERIALIZER = com.gs.photos.serializers.FileToProcessSerializer.class
         .getName();
 
+    @Override
     @Bean
-    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    public Producer<String, FileToProcess> producerForPublishingOnFileTopic(
-        @Value("${bootstrap.servers}") String bootstrapServers
-    ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
-        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ApplicationConfig.FILE_TO_PROCESS_SERIALIZER);
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put("sasl.kerberos.service.name", "kafka");
-        ApplicationConfig.LOGGER.info("creating producer string string with config {} ", settings.toString());
-        Producer<String, FileToProcess> producer = new KafkaProducer<>(settings);
-        return producer;
+    public <K, V> IKafkaProducerFactory<K, V> kafkaProducerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaProducerFactory(kafkaProperties);
     }
+
+    @Override
+    @Bean
+    public <K, V> IKafkaConsumerFactory<K, V> kafkaConsumerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaConsumerFactory(kafkaProperties);
+    }
+
+    @Bean(name = "threadPoolTaskExecutor")
+    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
+        final ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+
+        // threadPoolTaskExecutor.setDaemon(false);
+        threadPoolTaskExecutor.setCorePoolSize(6);
+        threadPoolTaskExecutor.setMaxPoolSize(64);
+        threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+
+    @Bean
+    public Supplier<Consumer<String, ImportEvent>> kafkaConsumerFactoryForImportEvent(
+        String createScanName,
+        IKafkaConsumerFactory<String, ImportEvent> defaultKafkaConsumerFactory
+    ) {
+        return () -> defaultKafkaConsumerFactory.get(
+            AbstractApplicationConfig.ON_THE_FLY_CONSUMER_TYPE,
+            createScanName,
+            createScanName,
+            AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
+            AbstractApplicationConfig.KAFKA_IMPORT_EVENT_DESERIALIZER);
+    }
+
+    @Bean
+    public Supplier<Producer<String, FileToProcess>> producerSupplierForTransactionPublishingOnExifTopic(
+        IKafkaProducerFactory<String, FileToProcess> defaultKafkaProducerFactory
+    ) {
+        return () -> defaultKafkaProducerFactory.get(
+            AbstractApplicationConfig.ON_THE_FLY_PRODUCER_TYPE,
+            AbstractApplicationConfig.KAFKA_STRING_SERIALIZER,
+            AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_SERIALIZER);
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "application-specific", ignoreUnknownFields = false)
+    public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
 
     @Bean
     public String createScanName() {
@@ -64,45 +94,6 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             throw new RuntimeException(e);
         }
 
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    public Producer<String, ComponentEvent> producerToPublishSomeComponentEvent(
-        @Value("${bootstrap.servers}") String bootstrapServers
-    ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
-        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ComponentEventSerializer.class.getName());
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put("sasl.kerberos.service.name", "kafka");
-        ApplicationConfig.LOGGER.info("creating producer string string with config {} ", settings.toString());
-        Producer<String, ComponentEvent> producer = new KafkaProducer<>(settings);
-        return producer;
-    }
-
-    @Bean
-    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    public Consumer<String, ImportEvent> consumerForImportEvent(
-        @Value("${group.id}") String groupId,
-        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
-        @Value("${bootstrap.servers}") String bootstrapServers
-    ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER);
-        settings.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ImportEventDeserializer.class.getName());
-        settings.put(ConsumerConfig.CLIENT_ID_CONFIG, this.applicationId);
-        settings.put(ConsumerConfig.GROUP_ID_CONFIG, groupId + "-" + this.createScanName());
-        settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 5);
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put("sasl.kerberos.service.name", "kafka");
-        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
-
-        Consumer<String, ImportEvent> producer = new KafkaConsumer<>(settings);
-        return producer;
     }
 
 }

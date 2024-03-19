@@ -11,8 +11,8 @@ config:
     - com.workflow.model.storm.ImageAndHistogram
     - com.workflow.model.storm.ImageAndLut
     - com.workflow.model.storm.NormalizedImage
-    - [I
-    - [B
+    - "[I"
+    - "[B"
 
 components:
   - id: "keyValueTranslator"

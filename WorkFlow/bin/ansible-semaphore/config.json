@@ -1,0 +1,58 @@
+{
+ 	"mysql": {
+ 		"host": "",
+ 		"user": "",
+ 		"pass": "",
+ 		"name": "",
+ 		"options": null
+ 	},
+ 	"bolt": {
+ 		"host": "/mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkFlow/bin/ansible-semaphore/database.boltdb",
+ 		"user": "",
+ 		"pass": "",
+ 		"name": "",
+ 		"options": null
+ 	},
+ 	"postgres": {
+ 		"host": "",
+ 		"user": "",
+ 		"pass": "",
+ 		"name": "",
+ 		"options": null
+ 	},
+ 	"dialect": "bolt",
+ 	"port": "",
+ 	"interface": "",
+ 	"tmp_path": "/mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkFlow/ansible",
+ 	"cookie_hash": "Hn35W0dtPgyrSb7u6RNzfE37dSvhUtTHcFIktjpJTuw=",
+ 	"cookie_encryption": "zTeldpVbiR+s1B/JYRuyL3ZU76enUjlfCXpk1usH/IA=",
+ 	"access_key_encryption": "IlwtTe0llWqY+kZx3KbMxhnMVGB2idc4EyNQ1Ywz9SI=",
+ 	"email_sender": "",
+ 	"email_host": "",
+ 	"email_port": "",
+ 	"email_username": "",
+ 	"email_password": "",
+ 	"web_host": "",
+ 	"ldap_binddn": "",
+ 	"ldap_bindpassword": "",
+ 	"ldap_server": "",
+ 	"ldap_searchdn": "",
+ 	"ldap_searchfilter": "",
+ 	"ldap_mappings": {
+ 		"dn": "",
+ 		"mail": "",
+ 		"uid": "",
+ 		"cn": ""
+ 	},
+ 	"telegram_chat": "",
+ 	"telegram_token": "",
+ 	"concurrency_mode": "",
+ 	"max_parallel_tasks": 0,
+ 	"email_alert": false,
+ 	"email_secure": false,
+ 	"telegram_alert": false,
+ 	"ldap_enable": false,
+ 	"ldap_needtls": false,
+ 	"ssh_config_path": "",
+ 	"demo_mode": false
+ }

@@ -27,7 +27,6 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.JoinWindows;
-import org.apache.kafka.streams.kstream.Joined;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.StreamJoined;
@@ -144,7 +143,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             Serdes.String()
                 .getClass());
         config.put(StreamsConfig.STATE_DIR_CONFIG, kafkaStreamDir);
-        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
+        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
         config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, commitIntervalIms);
         config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, metaDataAgeIms);
         config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 5 * 1024 * 1024);
@@ -161,6 +160,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         // config.put(CommonClientConfigs.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
         // config.put(CommonClientConfigs.RECONNECT_BACKOFF_MS_CONFIG,
         // reconnectBackoffMs);
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "zstd");
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 4 * 1024 * 1024);
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 1000);
+
         config.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, heartbeatIntervalMs);
         config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
 
@@ -209,7 +212,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             .filter((key, exif) -> this.isARecordedField(key, exif))
             .transform(() -> transfomer, "store-for-collection-of-tiffdata");
 
-        final Joined<String, FileToProcess, CollectionOfExchangedTiffData> joined = Joined
+        final StreamJoined<String, FileToProcess, CollectionOfExchangedTiffData> joined = StreamJoined
             .with(Serdes.String(), new FileToProcessSerDe(), new CollectionOfExchangedDataSerDe());
 
         KStream<String, HbaseImageThumbnail> HbaseImageThumbnailBuiltStream = pathOfImageKStream
@@ -224,7 +227,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                 return buildHbaseImageThumbnail;
             },
                 JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-                Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
+                StreamJoined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
 
         this.publishImageDataInRecordTopic(HbaseImageThumbnailBuiltStream, topicImageDataToPersist);
 
@@ -720,7 +723,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             thumbImages,
             joiner2,
             JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-            Joined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
+            StreamJoined.with(Serdes.String(), new HbaseImageThumbnailSerDe(), new FinalImageSerDe()));
         finalStream.peek(
             (key, hbi) -> ApplicationConfig.LOGGER
                 .info(" [EVENT][{}] was created with the thumb {} ", key, hbi.getThumbnail()));
@@ -896,7 +899,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
                     builder.withCamera(exifService.toString(FieldType.ASCII, etd.getDataAsByte()));
                 } else if ((etd.getTag() == ApplicationConfig.SONY_EXIF_LENS)
                     && (Objects.deepEquals(etd.getPath(), ApplicationConfig.SONY_EXIF_LENS_PATH))) {
-                    if (lens == null) {
+                    if (lens != null) {
                         if (lens.getValue() == null) {
                             lens.setValue(exifService.getSonyLens(etd.getDataAsInt()));
                         }

@@ -1,0 +1,206 @@
+
+PLAY [all] **********************************************************************************************************************************************************************************************************************
+
+TASK [debug] ********************************************************************************************************************************************************************************************************************
+ok: [ipc2] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc3] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc1] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc6] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc7] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc5] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+ok: [ipc8] => {
+    "msg": "demarrage /mnt/g/eclipse-workspace-gsworkflow/eclipse-workspace/WorkflowProcessAndPublishExifData/deployment"
+}
+
+TASK [current_working_directory] ************************************************************************************************************************************************************************************************
+changed: [ipc7]
+changed: [ipc3]
+changed: [ipc1]
+changed: [ipc6]
+changed: [ipc2]
+changed: [ipc5]
+changed: [ipc8]
+
+TASK [load] *********************************************************************************************************************************************************************************************************************
+ok: [ipc2]
+ok: [ipc3]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Kill running processes] ***************************************************************************************************************************************************************************************************
+changed: [ipc6]
+changed: [ipc7]
+changed: [ipc1]
+changed: [ipc3]
+changed: [ipc2]
+changed: [ipc8]
+changed: [ipc5]
+
+TASK [clean '${logPath}' if exists] *********************************************************************************************************************************************************************************************
+changed: [ipc7]
+changed: [ipc6]
+changed: [ipc3]
+changed: [ipc1]
+changed: [ipc2]
+changed: [ipc5]
+changed: [ipc8]
+
+TASK [clean log] ****************************************************************************************************************************************************************************************************************
+changed: [ipc7]
+changed: [ipc6]
+changed: [ipc2]
+changed: [ipc3]
+changed: [ipc1]
+changed: [ipc5]
+changed: [ipc8]
+
+TASK [build config file from template] ******************************************************************************************************************************************************************************************
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc6]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [copy prometheus template] *************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc6]
+ok: [ipc2]
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [build config prometheus file from template] *******************************************************************************************************************************************************************************
+ok: [ipc2]
+ok: [ipc3]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [build run.sh file from template] ******************************************************************************************************************************************************************************************
+ok: [ipc2]
+ok: [ipc6]
+ok: [ipc3]
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc8]
+ok: [ipc5]
+
+TASK [build stop.sh file from template] *****************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [build debug.sh from template] *********************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [build log4j from template] ************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Deploy env file] **********************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Deploy jaas file] *********************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc1]
+ok: [ipc2]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Deploy key tab file] ******************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc1]
+ok: [ipc2]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Deploy cluster-client.xml] ************************************************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc7]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [Deploy wf_proc_and_publish_exif_data_appli.service  file] *****************************************************************************************************************************************************************
+ok: [ipc3]
+ok: [ipc2]
+ok: [ipc7]
+ok: [ipc1]
+ok: [ipc6]
+ok: [ipc5]
+ok: [ipc8]
+
+TASK [reload daemon] ************************************************************************************************************************************************************************************************************
+changed: [ipc3]
+changed: [ipc2]
+changed: [ipc7]
+changed: [ipc1]
+changed: [ipc6]
+changed: [ipc5]
+changed: [ipc8]
+
+TASK [Copy jars] ****************************************************************************************************************************************************************************************************************
+changed: [ipc7]
+changed: [ipc5]
+changed: [ipc2]
+changed: [ipc1]
+changed: [ipc3]
+changed: [ipc6]
+changed: [ipc8]
+
+PLAY RECAP **********************************************************************************************************************************************************************************************************************
+ipc1                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc2                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc3                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc5                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc6                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc7                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+ipc8                       : ok=20   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

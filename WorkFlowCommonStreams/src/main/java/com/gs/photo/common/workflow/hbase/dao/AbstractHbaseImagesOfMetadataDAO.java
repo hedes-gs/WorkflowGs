@@ -17,6 +17,7 @@ import java.util.stream.StreamSupport;
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -49,6 +50,7 @@ import reactor.core.scheduler.Schedulers;
 
 public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMetadata, T2> extends GenericDAO<T>
     implements IHbaseImagesOfMetadataDAO<HbaseImageThumbnail, T2> {
+
     private static Logger                        LOGGER                             = LoggerFactory
         .getLogger(AbstractHbaseImagesOfMetadataDAO.class);
     private static final Scheduler               THREAD_POOL_FOR_SCAN_PREV_PARALLEL = Schedulers
@@ -579,5 +581,13 @@ public abstract class AbstractHbaseImagesOfMetadataDAO<T extends HbaseImagesOfMe
     protected abstract T build(Integer salt, T2 meta, HbaseImageThumbnail t);
 
     protected abstract byte[] toHbaseKey(T him);
+
+    protected AbstractHbaseImagesOfMetadataDAO(
+        Connection connection,
+        String nameSpace
+    ) {
+        super(connection,
+            nameSpace);
+    }
 
 }

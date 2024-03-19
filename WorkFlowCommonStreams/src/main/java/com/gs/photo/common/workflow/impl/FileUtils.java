@@ -33,8 +33,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.stereotype.Service;
 
 import com.emc.ecs.nfsclient.nfs.io.Nfs3File;
 import com.emc.ecs.nfsclient.nfs.io.NfsFileInputStream;
@@ -53,8 +51,6 @@ import jcifs.context.BaseContext;
 import jcifs.smb.NtlmPasswordAuthenticator;
 import jcifs.smb.SmbFile;
 
-@Service
-@ConditionalOnClass(value = com.emc.ecs.nfsclient.nfs.io.Nfs3File.class)
 public class FileUtils {
 
     protected static Logger LOGGER                               = LoggerFactory.getLogger(FileUtils.class);
@@ -197,6 +193,11 @@ public class FileUtils {
                             file,
                             retValue == null ? "<null>" : retValue.length);
                         throw new IOException("unable to read file " + file);
+                    } else if (retValue.length == 0) {
+                        FileUtils.LOGGER.warn(
+                            " Error when readFirstBytesOfFile of {} : returned byte array as the length {}",
+                            file,
+                            retValue.length);
                     }
                 } catch (Exception e) {
                     if (nbOfRetries < 5) {
@@ -417,6 +418,11 @@ public class FileUtils {
             .flatMap((x) -> this.findChildrenIfDirectoryFound(x, extensions));
     }
 
+    public Stream<AbstractRemoteFile> toStream(URL url, final List<String> extensionsList) throws IOException {
+        final String[] extensions = extensionsList.toArray(new String[0]);
+        return this.toStream(url, extensions);
+    }
+
     public byte[] readFirstBytesOfFile(URL url, int bufferSize) throws IOException {
         byte[] retValue = new byte[bufferSize];
         int offset = 0;
@@ -450,12 +456,16 @@ public class FileUtils {
                 .getInputStream();
             ZipInputStream zis = new ZipInputStream(is)) {
             ZipEntry entry = zis.getNextEntry();
-            do {
-                if (FilenameUtils.isExtension(entry.getName(), "ARW")) {
-                    zis.read(retValue);
-                    break;
-                }
-            } while ((entry = zis.getNextEntry()) != null);
+            if (entry != null) {
+                do {
+                    if (FilenameUtils.isExtension(entry.getName(), "ARW")) {
+                        zis.read(retValue);
+                        break;
+                    }
+                } while ((entry = zis.getNextEntry()) != null);
+            } else {
+                retValue = new byte[0];
+            }
         }
         return retValue;
     }

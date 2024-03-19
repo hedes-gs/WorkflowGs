@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.exif.IExifService;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
@@ -35,84 +34,64 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
     private static Logger   LOGGER      = LoggerFactory.getLogger(BeanFileMetadataExtractor.class);
 
     @Autowired
-    protected IIgniteDAO    iIgniteDAO;
-
-    @Autowired
     protected IExifService  exifService;
 
     @Autowired
     protected FileUtils     fileUtils;
 
     @Override
-    public Optional<Collection<IFD>> readIFDs(FileToProcess fileToProcess) {
-        Optional<Collection<IFD>> values = this.iIgniteDAO.get(fileToProcess.getImageId())
-            .or(() -> {
-                BeanFileMetadataExtractor.LOGGER.warn(
-                    "[EVENT][{}]Unable to get key Ignite - get direct value from source {}",
-                    fileToProcess.getImageId(),
-                    fileToProcess);
+    public Optional<Collection<IFD>> readIFDs(Optional<byte[]> image, FileToProcess fileToProcess) {
+        Optional<Collection<IFD>> values = image.map((b) -> {
+            Collection<IFD> retValue = Collections.EMPTY_SET;
+            boolean end = false;
+            byte[] localbuffer = b;
+            int nbOfTries = 1;
+            boolean bufferAlreadyIncreased = false;
+            do {
                 try {
-                    return Optional.ofNullable(this.fileUtils.readFirstBytesOfFileRetry(fileToProcess));
-                } catch (Exception e) {
-                    BeanFileMetadataExtractor.LOGGER.warn(
-                        "[EVENT][{}]Unable to get key Ignite for {},  unexpected error {}",
+                    BeanFileMetadataExtractor.LOGGER.info(
+                        "[EVENT][{}]Retries are {} -  Buffer size is {} ",
                         fileToProcess.getImageId(),
                         fileToProcess,
-                        ExceptionUtils.getStackTrace(e));
-                    throw new RuntimeException(e);
-                }
-            })
-            .map((b) -> {
-                Collection<IFD> retValue = Collections.EMPTY_SET;
-                boolean end = false;
-                byte[] localbuffer = b;
-                int nbOfTries = 1;
-                boolean bufferAlreadyIncreased = false;
-                do {
-                    try {
-                        BeanFileMetadataExtractor.LOGGER.info(
-                            "[EVENT][{}]Retries are {} -  Buffer size is {} ",
-                            fileToProcess.getImageId(),
-                            fileToProcess,
-                            nbOfTries,
-                            localbuffer.length);
-                        retValue = this.processFile(localbuffer, fileToProcess.getImageId());
-                        end = true;
-                    } catch (BufferUnderflowException e) {
-                        if (bufferAlreadyIncreased) {
-                            BeanFileMetadataExtractor.LOGGER.error(
-                                "[EVENT][{}]Unable to process even after increasing it - ignoring ",
-                                fileToProcess.getImageId());
-
-                            end = true;
-                        } else {
-                            BeanFileMetadataExtractor.LOGGER
-                                .warn("[EVENT][{}]Buffer too small, increasing it", fileToProcess.getImageId());
-                            localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
-                            bufferAlreadyIncreased = true;
-                        }
-                    } catch (Exception e) {
+                        nbOfTries,
+                        localbuffer.length);
+                    retValue = this.processFile(localbuffer, fileToProcess.getImageId());
+                    end = true;
+                } catch (BufferUnderflowException e) {
+                    if (bufferAlreadyIncreased) {
                         BeanFileMetadataExtractor.LOGGER.error(
-                            "[EVENT][{}]Unexpected Error when processing file {}, retries are {}, exception is {} ",
+                            "[EVENT][{}]Unable to process even after increasing it - ignoring ",
+                            fileToProcess.getImageId());
+
+                        end = true;
+                    } else {
+                        BeanFileMetadataExtractor.LOGGER
+                            .warn("[EVENT][{}]Buffer too small, increasing it", fileToProcess.getImageId());
+                        localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
+                        bufferAlreadyIncreased = true;
+                    }
+                } catch (Exception e) {
+                    BeanFileMetadataExtractor.LOGGER.error(
+                        "[EVENT][{}]Unexpected Error when processing file {}, retries are {}, exception is {} ",
+                        fileToProcess.getImageId(),
+                        fileToProcess,
+                        nbOfTries,
+                        e.getMessage());
+
+                    nbOfTries++;
+                    if (nbOfTries > 2) {
+                        BeanFileMetadataExtractor.LOGGER.error(
+                            "[EVENT][{}]Unexpected Error when processing file {}: {} - nb of tries are {} ",
                             fileToProcess.getImageId(),
                             fileToProcess,
-                            nbOfTries,
-                            e.getMessage());
-
-                        nbOfTries++;
-                        if (nbOfTries > 2) {
-                            BeanFileMetadataExtractor.LOGGER.error(
-                                "[EVENT][{}]Unexpected Error when processing file {}: {} - nb of tries are {} ",
-                                fileToProcess.getImageId(),
-                                fileToProcess,
-                                ExceptionUtils.getStackTrace(e),
-                                nbOfTries);
-                            throw new RuntimeException(e);
-                        }
+                            ExceptionUtils.getStackTrace(e),
+                            nbOfTries);
+                        throw new RuntimeException(e);
                     }
-                } while (!end);
-                return retValue;
-            });
+                }
+            } while (!end);
+            return retValue;
+        });
         return values;
     }
 

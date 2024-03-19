@@ -2,7 +2,7 @@ package com.workflow.model.dtos;
 
 import java.time.OffsetDateTime;
 
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlType
 public class ImageVersionDto {

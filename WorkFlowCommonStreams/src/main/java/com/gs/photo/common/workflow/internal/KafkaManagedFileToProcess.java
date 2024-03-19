@@ -16,7 +16,7 @@ import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.files.FileToProcess;
 
-public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<Optional<FileToProcess>> {
+public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToProcess> {
 
     protected static Logger LOGGER = LoggerFactory.getLogger(KafkaManagedFileToProcess.class);
     protected byte[]        rawFile;

@@ -1,0 +1,257 @@
+spring:
+  config:
+    import: optional:file:./../config/application-specific-properties.yaml 
+
+topic:
+  inputImageNameTopic: topic-image-name
+  pathNameTopic: topic-path-image
+  scan-output-child-parent: topic-scan-output-file-child-with-parent
+  scan-output: topic-file-found-in-scan
+  topicCopyOtherFile: topic-copy-other-file
+  topicLocalFileCopy: topic-local-file-copy
+  topicCountOfImagesPerDate: topic-count-of-images-per-date
+  topicDupFilteredFile: topic-dup-filtered-file
+  topicDuplicateKeyImageFound: topic-duplicate-key-image-found
+  topicEvent: topic-event
+  topicExif: topic-exif
+  topicExifImageDataToPersist: topic-exif-image-data-to-persist
+  topicFileHashKey: topic-file-hash-key
+  topicImageDataToPersist: topic-image-data-to-persist
+  topicImageDate: topic-topic-image-date
+  topicProcessedFile: topic-processed-file
+  topicScannedFiles: topic-scanned-files
+  topicScannedFilesChild: topic-scanned-files-child
+  topicThumb: topic-thumb
+  topicTransformedThumb: topic-transformed-thumb
+  topicExifSizeOfImageStream: topic-exif-size-of-image-stream
+  topicComponentStatus: topic-component-status
+  topicImportEvent: topic-import-event
+  topicFullyProcessedImage: topic-fully-processed-image
+  finalTopic: topic-fully-processed-images
+  
+logging:
+  config: config/log4j.xml
+
+
+kafka:
+  bootstrap-servers: IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092,IPC7:9092,IPC8:9092
+  security-kerberos-name: kafka
+  application-id: my_application
+  meta-data-max-age-in-ms: 60000
+  consumers-type:
+   batch_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes: 4194304
+     fetch-max-wait-ms: 10000
+     max-poll-records: 500
+     max-poll-intervall-ms: 1200000
+     retryBackoffMsmaxRequestSize: 250
+     reconnectBackoffMs: 100
+     heartbeat-intervall-ms: 30000
+     sessionTimeoutMs: 180000
+   on_the_fly_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes: 524288 
+     fetch-max-wait-ms:  250 
+     max-poll-records:  500 
+     max-poll-intervall-ms:  1200000 
+     retryBackoffMsmaxRequestSize:  250 
+     reconnectBackoffMs:  100 
+     heartbeat-intervall-ms:  30000 
+     sessionTimeoutMs:  180000 
+   medium_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes:  524288 
+     fetch-max-wait-ms:  1000 
+     max-poll-records:  500 
+     max-poll-intervall-ms:  1200000 
+     retryBackoffMsmaxRequestSize:  250 
+     reconnectBackoffMs:  100 
+     heartbeat-intervall-ms:  30000 
+     sessionTimeoutMs:  180000
+  producers-type:
+    batch_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  10000 
+      maxBatchSize:  4194304 
+      transaction-id: '{{ batch_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+      transaction-timeout:  180000 
+    on_the_fly_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  250 
+      maxBatchSize:  512000 
+      transaction-id:  '{{ on_the_fly_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+      transaction-timeout:  180000 
+    medium_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  1000 
+      maxBatchSize:  1024000 
+      transaction-id:  '{{ medium_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+      transaction-timeout:  180000
+
+
+
+kafka:
+  bootstrap:
+    servers: {{ kafka_bootstrap_servers |   default('IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092,IPC7:9092,IPC8:9092') }}
+  security:
+    protocol: SASL_PLAINTEXT
+    sasl:
+      kerberos:
+        service:
+          name: '"kafka"'
+  application:
+    id: '{{ application_id | default(''unset'') }}_{{ host_id | default(''unset'') }}'
+  metadata:
+    age:
+      ms: '{{ kafka_stream_metadata_age_ms | default(''60000'') }}'
+  
+  consumers:
+      batch_consumer_type:
+        batchSizeForParallelProcessingIncomingRecords: {{ kafka_batch_consumer_batchSizeForParallelProcessingIncomingRecords |  default('15') }}
+        consumerFetchMaxBytes: '{{ kafka_batch_consumer_consumerFetchMaxBytes | default(''4194304'') }}'
+        consumerFetchMaxWaitMs: '{{ kafka_batch_consumer_consumerFetchMaxWaitMs | default(''10000'') }}'
+        batchRecords: '{{ kafka_batch_consumer_batchRecords | default(''500'') }}'
+        maxPollIntervalMsConfig: '{{ kafka_batch_consumer_maxPollIntervalMsConfig | default(''1200000'') }}'
+        retryBackoffMsmaxRequestSize: '{{ kafka_batch_consumer_retryBackoffMsmaxRequestSize | default(''250'') }}'
+        reconnectBackoffMs: '{{kafka_batch_consumer_reconnectBackoffMs  | default(''100'') }}'
+        heartbeatIntervalMs: '{{kafka_batch_consumerr_heartbeatIntervalMs | default(''30000'') }}'
+        sessionTimeoutMs: '{{kafka_batch_consumer_sessionTimeoutMs | default(''180000'') }}'
+      on_the_fly_consumer_type:
+        batchSizeForParallelProcessingIncomingRecords: {{ kafka_on_the_fly_consumer_batchSizeForParallelProcessingIncomingRecords |  default('15') }}
+        consumerFetchMaxBytes: '{{ kafka_on_the_fly_consumer_consumerFetchMaxBytes | default(''524288'') }}'
+        consumerFetchMaxWaitMs: '{{ kafka_batch_consumer_consumerFetchMaxWaitMs | default(''250'') }}'
+        batchRecords: '{{ kafka_on_the_fly_consumer_batchRecords | default(''500'') }}'
+        maxPollIntervalMsConfig: '{{ kafka_on_the_fly_consumer_maxPollIntervalMsConfig | default(''1200000'') }}'
+        retryBackoffMsmaxRequestSize: '{{ kafka_on_the_fly_consumerr_retryBackoffMsmaxRequestSize | default(''250'') }}'
+        reconnectBackoffMs: '{{kafka_on_the_fly_consumer_reconnectBackoffMs  | default(''100'') }}'
+        heartbeatIntervalMs: '{{kafka_on_the_fly_consumer_heartbeatIntervalMs | default(''30000'') }}'
+        sessionTimeoutMs: '{{kafka_on_the_fly_consumer_sessionTimeoutMs | default(''180000'') }}'
+      medium_consumer_type:
+        batchSizeForParallelProcessingIncomingRecords: {{ kafka_medium_consumer_batchSizeForParallelProcessingIncomingRecords |  default('15') }}
+        consumerFetchMaxBytes: '{{ kafka_medium_consumer_consumerFetchMaxBytes | default(''524288'') }}'
+        consumerFetchMaxWaitMs: '{{ kafka_batch_consumer_consumerFetchMaxWaitMs | default(''1000'') }}'
+        batchRecords: '{{ kafka_medium_consumer_batchRecords | default(''500'') }}'
+        maxPollIntervalMsConfig: '{{ kafka_medium_consumer_maxPollIntervalMsConfig | default(''1200000'') }}'
+        retryBackoffMsmaxRequestSize: '{{ kafka_medium_consumer_retryBackoffMsmaxRequestSize | default(''250'') }}'
+        reconnectBackoffMs: '{{kafka_medium_consumer_reconnectBackoffMs  | default(''100'') }}'
+        heartbeatIntervalMs: '{{kafka_medium_consumer_heartbeatIntervalMs | default(''30000'') }}'
+        sessionTimeoutMs: '{{kafka_medium_consumer_sessionTimeoutMs | default(''180000'') }}'
+  producers:
+    batch_producer_type:
+      maxBlockMsConfig: '{{ kafka_producer_maxBlockMsConfig| default(''180000'') }}'
+      maxRequestSize: '{{ kafka_batch_producer_type_maxRequestSize | default(''4194304'') }}'
+      lingerInMillis: '{{ kafka_batch_producer_type_lingerInMillis | default(''10000'') }}'
+      maxBatchSize: '{{ kafka_batch_producer_type_maxBatchSize | default(''4194304'') }}'
+      transaction:
+        id: '{{ kafka_batch_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+        timeout: '{{ kafka_batch_producer_type_transaction_timeout | default(''180000'') }}'
+    on_the_fly_producer_type:
+      maxBlockMsConfig: '{{ kafka_producer_maxBlockMsConfig| default(''180000'') }}'
+      maxRequestSize: '{{ kafka_batch_producer_type_maxRequestSize | default(''4194304'') }}'
+      lingerInMillis: '{{ kafka_batch_producer_type_lingerInMillis | default(''250'') }}'
+      maxBatchSize: '{{ kafka_batch_producer_type_maxBatchSize | default(''512000'') }}'
+      transaction:
+        id: '{{ on_the_fly_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+        timeout: '{{ on_the_fly_producer_type_transaction_timeout | default(''180000'') }}'
+    medium_producer_type:
+      maxBlockMsConfig: '{{ kafka_producer_maxBlockMsConfig| default(''180000'') }}'
+      maxRequestSize: '{{ kafka_batch_producer_type_maxRequestSize | default(''4194304'') }}'
+      lingerInMillis: '{{ kafka_batch_producer_type_lingerInMillis | default(''1000'') }}'
+      maxBatchSize: '{{ kafka_batch_producer_type_maxBatchSize | default(''1024000'') }}'
+      transaction:
+        id: '{{ medium_producer_type_transaction_id | default(''unset'') }}_{{ host_id | default(''unset'')}}'
+        timeout: '{{ medium_producer_type_transaction_timeout | default(''180000'') }}'
+  stream:
+    commit:
+      interval:
+        ms: '{{ kafka_stream_commit_interval_ms | default(''UNSET'') }}'
+    nb:
+      of:
+        threads: '{{ kafka_stream_nb_of_threads | default(''UNSET'') }}'
+  pollTimeInMillisecondes: '{{ kafka_poll_time_in_millisecondes| default(''300000'') }}'
+  
+      
+duplicate:
+  storeName: image-key-store
+copy:
+  group:
+    id: copy-group-transactional
+  repository: '{{ copy_repository | default(''unset'')}}'
+  maxNumberOfFilesInAFolder: '{{ max_number_of_files_in_a_folder | default(''unset'') }}'
+zookeeper:
+  hosts: '{{zookeeper_hosts | default(''IPC0,IPC1,IPC2, IPC7,IPC8'') }}'
+  port: '{{zookeeper_port | default(''2181'')}}'
+hbase:
+  master: '{{hbase_master | default(''IPC0'') }}'
+  namespace: prod
+  table:
+    stats:
+      name: '{{ hbase_table_stats_name | default(''<not used>'') }}'
+
+kafkaStreamDir:
+  dir: '{{ kafka_stream_dir | default(''unset'')}}'
+  kafkastreams:
+    id: '{{ application_id | default(''unset'')}}'
+  gs:
+    principal: '{{ application_gs_principal }}'
+    keytab: '{{ application_gs_keytab }}'
+scan:
+  folder: '{{ application_scannedFolder | default(''unset'')  }}'
+  heartBeatTimeInSeconds: '{{scan_heartBeatTimeInSeconds| default(''not used'') }}'
+  
+deduplication:
+  cleanup: true
+
+exifservice:
+  is:
+    used: true
+exif:
+  files: 'sony-exif.csv,standard-exif.csv'
+
+wf:
+  spring:
+    datasource:
+      driver-class-name: org.postgresql.Driver
+      url: 'jdbc:postgresql://192.168.1.205/postgres'
+      username: '{{ wf_spring_datasource_username | default(''unset'') }}'
+      password: '{{ wf_spring_datasource_password | default(''unset'') }}'
+    hibernate:
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+  hdfs:
+    rootPath: '{{ wf_hdfs_rootPath | default(''unset'')  }}'
+unit-test: false
+kafkastreams:
+  windowsOfEventsInMs: '{{ kafkastreams_windows_of_events_in_ms| default(''20'') }}'
+events:
+  collectorEventsBufferSize: '{{ events_collector_events_buffer_size| default(''unset'') }}'
+  collectorEventsTimeWindow: '{{ events_collector_events_timewindow| default(''unset'') }}'
+cache:
+  images:
+    size: '{{ cache_images_size | default(''unset'')  }}'
+    expireinseconds: '{{ cache_images_expireinseconds | default(''unset'')  }}'
+    name: '{{ cache_images_name | default(''unset'')  }}'
+  jpegimages:
+    size: '{{ cache_jpegimages_size | default(''unset'')  }}'
+    expireinseconds: '{{ cache_jpegimages_expireinseconds | default(''unset'')  }}'
+    name: '{{ cache_jpegimages_name | default(''unset'')  }}'
+    version:
+      name: '{{ cache_jpegimages_version_name | default(''unset'')  }}'
+  exif:
+    size: '{{ cache_exif_size | default(''unset'')  }}'
+    name: '{{ cache_exi_.name | default(''unset'')  }}'
+    expireinseconds: '{{ cache_exif_expireinseconds | default(''unset'')  }}'
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  mvc:
+    date-format: '{{ spring_mvc_date_format | default(''unset'')  }}'
+  jackson:
+    date-format: '{{ spring_jackson_date_format | default(''unset'')  }}'
+monitor:
+  store:
+    retentionPeriodInMs: '{{ monitor_store_retentionPeriodInMs | default(''unset'')  }}'
+    windowSizeInMs: '{{ monitor_store_windowSizeInMs | default(''unset'')  }}'

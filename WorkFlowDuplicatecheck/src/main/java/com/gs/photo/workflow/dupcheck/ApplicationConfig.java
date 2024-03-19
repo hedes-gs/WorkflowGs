@@ -49,7 +49,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             Serdes.String()
                 .getClass());
         config.put(StreamsConfig.STATE_DIR_CONFIG, kafkaStreamDir);
-        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
+        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
         config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, commitIntervalIms);
         config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, metaDataAgeIms);
         config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 5 * 1024 * 1024);

@@ -1,104 +1,160 @@
 package com.gs.photo.workflow.cmphashkey;
 
-import java.util.Properties;
+import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
-import org.apache.ignite.IgniteCache;
+import javax.cache.configuration.Factory;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.kafka.clients.CommonClientConfigs;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.springframework.boot.autoconfigure.IgniteAutoConfiguration;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
-import org.springframework.context.annotation.Scope;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.yaml.snakeyaml.Yaml;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
-import com.gs.photo.common.workflow.IgniteWrapper;
-import com.gs.photo.common.workflow.iginite.IgniteSpringBean;
-import com.gs.photos.serializers.FileToProcessDeserializer;
-import com.gs.photos.serializers.FileToProcessSerializer;
+import com.gs.photo.common.workflow.AbstractApplicationKafkaProperties;
+import com.gs.photo.common.workflow.IIgniteCacheFactory;
+import com.gs.photo.common.workflow.IIgniteDAO;
+import com.gs.photo.common.workflow.IIgniteProperties;
+import com.gs.photo.common.workflow.IKafkaConsumerFactory;
+import com.gs.photo.common.workflow.IKafkaProducerFactory;
+import com.gs.photo.common.workflow.IKafkaProperties;
+import com.gs.photo.common.workflow.IgniteCacheFactory;
+import com.gs.photo.common.workflow.IgniteDAO;
+import com.gs.photo.common.workflow.impl.FileUtils;
 import com.workflow.model.files.FileToProcess;
 
 @Configuration
-@ImportResource("file:${user.home}/config/cluster-client.xml")
-@ComponentScan(basePackages = "com.gs.photo")
+@EnableAutoConfiguration
+@AutoConfigureBefore(IgniteAutoConfiguration.class)
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    private static final String KAFAK_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
-    private static final String KAFKA_FILE_TO_PROCESS_SERIALIZER   = FileToProcessSerializer.class.getName();
+    @Override
+    @Bean
+    public <K, V> IKafkaProducerFactory<K, V> kafkaProducerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaProducerFactory(kafkaProperties);
+    }
 
-    @Bean(name = "consumerForTopicWithFileToProcessValue")
-    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    @Scope("prototype")
-    public Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue(
-        @Value("${group.id}") String groupId,
-        @Value("${kafka.consumer.consumerFetchMaxBytes}") int consumerFetchMaxBytes,
-        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
-        @Value("${bootstrap.servers}") String bootstrapServers
+    @Override
+    @Bean
+    public <K, V> IKafkaConsumerFactory<K, V> kafkaConsumerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaConsumerFactory(kafkaProperties);
+    }
+
+    @Autowired
+    protected ApplicationContext applicationContext;
+
+    @Bean
+    public FileUtils fileUtils() { return new FileUtils(); }
+
+    @Bean
+    public Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue(
+        IKafkaConsumerFactory<String, FileToProcess> defaultKafkaConsumerFactory,
+        Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER);
-        settings
-            .put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ApplicationConfig.KAFAK_FILE_TO_PROCESS_DESERIALIZER);
-        settings.put(ConsumerConfig.CLIENT_ID_CONFIG, this.applicationId);
-        settings.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 15);
-        settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        settings.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, consumerFetchMaxBytes);
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
-        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
-        settings.put("sasl.kerberos.service.name", "kafka");
-        Consumer<String, FileToProcess> producer = new KafkaConsumer<>(settings);
-        return producer;
+        return () -> defaultKafkaConsumerFactory.get(
+            kafkaClientConsumers.get("file-to-process")
+                .consumerType(),
+            kafkaClientConsumers.get("file-to-process")
+                .groupId(),
+            kafkaClientConsumers.get("file-to-process")
+                .instanceGroupId(),
+            AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
+            AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
     }
 
     @Bean
-    @ConditionalOnProperty(name = "unit-test", havingValue = "false")
-    public Producer<String, FileToProcess> producerForTopicWithFileToProcessValue(
-        @Value("${bootstrap.servers}") String bootstrapServers,
-        @Value("${transaction.timeout}") String transactionTimeout,
-        @Value("${kafka.producer.maxRequestSize}") int producerRequestMaxBytes
+    public Supplier<Producer<String, FileToProcess>> producerSupplierForTransactionPublishingOnExifTopic(
+        IKafkaProducerFactory<String, FileToProcess> defaultKafkaProducerFactory
     ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_SERIALIZER);
-        settings.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ApplicationConfig.KAFKA_FILE_TO_PROCESS_SERIALIZER);
-        settings.put(ProducerConfig.ACKS_CONFIG, "all");
-        settings.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, producerRequestMaxBytes);
-        settings.put(ProducerConfig.BATCH_SIZE_CONFIG, 100 * 1204);
-        settings.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
-        settings.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, transactionTimeout);
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put("sasl.kerberos.service.name", "kafka");
-        AbstractApplicationConfig.LOGGER.info("creating producer string string with config {} ", settings.toString());
-        Producer<String, FileToProcess> producer = new KafkaProducer<>(settings);
-        return producer;
+        return () -> defaultKafkaProducerFactory.get(
+            AbstractApplicationConfig.MEDIUM_PRODUCER_TYPE,
+            AbstractApplicationConfig.KAFKA_STRING_SERIALIZER,
+            AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_SERIALIZER);
+    }
+
+    @Bean(name = "threadPoolTaskExecutor")
+    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
+        final ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+
+        // threadPoolTaskExecutor.setDaemon(false);
+        threadPoolTaskExecutor.setCorePoolSize(6);
+        threadPoolTaskExecutor.setMaxPoolSize(64);
+        threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
     }
 
     @Bean
-    @ConditionalOnClass(value = { IgniteSpringBean.class, IgniteSpringBean.class, IgniteConfiguration.class })
-    public IgniteSpringBean igniteSpringBean(IgniteConfiguration igniteConfiguration) {
-        final IgniteSpringBean igniteSpringBean = new IgniteSpringBean();
-        igniteSpringBean.setConfiguration(igniteConfiguration);
-        return igniteSpringBean;
+    public IIgniteDAO igniteDAO(IIgniteCacheFactory igniteCacheFactory, IgniteConfiguration igniteConfiguration) {
+        return new IgniteDAO(igniteCacheFactory);
     }
 
     @Bean
-    @ConditionalOnClass(value = { IgniteCache.class, IgniteSpringBean.class })
-    public IgniteCache<String, byte[]> clientCache(IgniteSpringBean beanIgnite) {
-        return new IgniteWrapper(beanIgnite);
+    public IIgniteCacheFactory igniteCacheFactory(Ignite beanIgnite, IIgniteProperties igniteProperties) {
+        return new IgniteCacheFactory(beanIgnite, igniteProperties);
     }
+
+    @Bean
+    public Ignite ignite(IgniteConfiguration cfg) { return Ignition.start(cfg); }
+
+    @Bean
+    @ConfigurationProperties(prefix = IgniteAutoConfiguration.IGNITE_PROPS_PREFIX)
+    public IgniteConfiguration igniteConfiguration() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        final TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder());
+        cfg.setDiscoverySpi(discoSpi);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi());
+        return cfg;
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "kafka-consumers", ignoreUnknownFields = false)
+    public Map<String, KafkaClientConsumer> kafkaClientConsumers() { return new HashMap<>(); }
+
+    @Bean
+    @ConfigurationProperties(prefix = "kafka", ignoreUnknownFields = false)
+    public IKafkaProperties kafkaProperties() { return new AbstractApplicationKafkaProperties() {}; }
+
+    public class StringToFactoryConverter implements Converter<String, Factory<?>> {
+
+        @Override
+        public Factory<EvictionPolicy<?, ?>> convert(String from) {
+            switch (from) {
+                case "LRU":
+                    return () -> new LruEvictionPolicy<>();
+                default: {
+                    Yaml yaml = new Yaml();
+                    Map<String, Object> data = yaml.load(IOUtils.toInputStream(from, Charset.forName("UTF-8")));
+                    return () -> new LruEvictionPolicy<>().setMaxSize((Integer) data.get("maxSize"));
+                }
+            }
+        }
+    }
+
+    @Bean
+    @ConfigurationPropertiesBinding
+    public StringToFactoryConverter converter() { return new StringToFactoryConverter(); }
 
 }

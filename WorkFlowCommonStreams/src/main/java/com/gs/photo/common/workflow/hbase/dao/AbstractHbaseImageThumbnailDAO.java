@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -302,5 +303,11 @@ public abstract class AbstractHbaseImageThumbnailDAO extends GenericDAO<HbaseIma
         }
 
     }
+
+    protected AbstractHbaseImageThumbnailDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

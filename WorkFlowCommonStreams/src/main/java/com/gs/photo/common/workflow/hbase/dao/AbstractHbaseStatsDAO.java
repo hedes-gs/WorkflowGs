@@ -24,7 +24,6 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
 import com.workflow.model.HbaseImageThumbnailKey;
@@ -115,9 +114,6 @@ public abstract class AbstractHbaseStatsDAO<T extends HbaseImageThumbnailKey> ex
 
                                                                           }
                                                                       };
-
-    @Autowired
-    protected Connection                            connection;
 
     public void truncate() throws IOException {
         TableName tableName = this.getHbaseDataInformation()
@@ -312,4 +308,11 @@ public abstract class AbstractHbaseStatsDAO<T extends HbaseImageThumbnailKey> ex
     public static final String getRegexForIntervall(KeyEnumType type) {
         return AbstractHbaseStatsDAO.TO_REGEXP.get(type);
     }
+
+    public AbstractHbaseStatsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
+
 }

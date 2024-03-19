@@ -1,0 +1,9 @@
+kafka-consumers:
+  file-to-process:
+    consumer-type: on_the_fly_consumer_type
+    group-id: group-for-{{application_id}}
+    instance-group-id: group-for-{{application_id}}
+    
+scan:
+  folder: {{ application_scannedFolder }}
+  heartBeatTimeInSeconds: '{{scan_heartBeatTimeInSeconds| default(''not used'') }}'

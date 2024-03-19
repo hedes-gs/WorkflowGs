@@ -106,7 +106,8 @@ public class HbaseApplicationConfig extends AbstractApplicationConfig {
         @Value("${kafka.consumer.consumerFetchMaxBytes}") int consumerFetchMaxBytes,
         @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${kafka.producer.maxRequestSize}") int producerRequestMaxBytes,
-        @Value("${kafka.consumer.batchRecords}") int batchRecords
+        @Value("${kafka.consumer.batchRecords}") int batchRecords,
+        @Value("${kafka.consumer.maxPollIntervalMsConfig}") int maxPollIntervalMsConfig
 
     ) throws UnknownHostException {
         InetAddress ip = InetAddress.getLocalHost();
@@ -133,6 +134,7 @@ public class HbaseApplicationConfig extends AbstractApplicationConfig {
         settings.put(
             ConsumerConfig.GROUP_INSTANCE_ID_CONFIG,
             groupId + "-" + HbaseApplicationConfig.CONSUMER_EXIF + "-" + hostname);
+        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMsConfig);
 
         Consumer<String, HbaseData> consumer = new KafkaConsumer<>(settings);
         return consumer;
@@ -187,7 +189,8 @@ public class HbaseApplicationConfig extends AbstractApplicationConfig {
         @Value("${application.id}") String applicationId,
         @Value("${bootstrap.servers}") String bootstrapServers,
         @Value("${group.id}") String groupId,
-        @Value("${kafka.consumer.consumerFetchMaxBytes}") int consumerFetchMaxBytes
+        @Value("${kafka.consumer.consumerFetchMaxBytes}") int consumerFetchMaxBytes,
+        @Value("${kafka.consumer.maxPollIntervalMsConfig}") int maxPollIntervalMsConfig
     ) throws UnknownHostException {
         InetAddress ip = InetAddress.getLocalHost();
         String hostname = ip.getHostName();
@@ -210,6 +213,7 @@ public class HbaseApplicationConfig extends AbstractApplicationConfig {
 
         settings
             .put(ConsumerConfig.CLIENT_ID_CONFIG, "tr-" + applicationId + "-" + HbaseApplicationConfig.CONSUMER_IMAGE);
+        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMsConfig);
         settings.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, consumerFetchMaxBytes);
         Consumer<String, HbaseImageThumbnail> consumer = new KafkaConsumer<>(settings);
         return consumer;

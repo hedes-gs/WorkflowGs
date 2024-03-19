@@ -1,6 +1,6 @@
 package com.workflow.model.dtos;
 
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlType
 public class ExifDTO {

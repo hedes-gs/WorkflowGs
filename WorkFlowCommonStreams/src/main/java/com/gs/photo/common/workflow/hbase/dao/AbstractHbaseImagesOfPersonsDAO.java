@@ -6,13 +6,13 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -27,10 +27,7 @@ public abstract class AbstractHbaseImagesOfPersonsDAO
     protected static Logger       LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfPersonsDAO.class);
     protected static final String METADATA_FAMILY_NAME = "persons";
 
-    @Autowired
     protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
-
-    @Autowired
     protected IPersonsDAO         hbasePersonDAO;
 
     @Override
@@ -84,7 +81,9 @@ public abstract class AbstractHbaseImagesOfPersonsDAO
                 pageNumber,
                 pageTable,
                 thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
-                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnCancel(() -> {
+                        this.closeTables(pageTable, thumbTable);
+                    })
                     .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -176,6 +175,18 @@ public abstract class AbstractHbaseImagesOfPersonsDAO
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public AbstractHbaseImagesOfPersonsDAO(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO,
+        IPersonsDAO hbasePersonDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+        this.hbasePersonDAO = hbasePersonDAO;
     }
 
 }

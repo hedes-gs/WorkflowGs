@@ -21,22 +21,22 @@ public class HbaseExifDataOfImages extends HbaseData implements Serializable, Cl
     protected short[]         exifPath;
     // Data
     @Nullable
-    @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "exv", rowKeyNumber = 100)
+    @Column(hbaseName = "exv_bytes", toByte = ToByteIdempotent.class, columnFamily = "img", rowKeyNumber = 100)
     protected byte[]          exifValueAsByte;
     @Nullable
-    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "exv", rowKeyNumber = 101)
+    @Column(hbaseName = "exv_ints", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 101)
     protected int[]           exifValueAsInt;
     @Nullable
-    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "exv", rowKeyNumber = 102)
+    @Column(hbaseName = "exv_shorts", toByte = ToByteShortArray.class, columnFamily = "img", rowKeyNumber = 102)
     protected short[]         exifValueAsShort;
     @Nullable
-    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 103)
+    @Column(hbaseName = "thumb_name", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 103)
     protected String          thumbName        = "";
-    @Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "imd", rowKeyNumber = 104)
+    @Column(hbaseName = "creation_date", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 104)
     protected String          creationDate     = "";
-    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 105)
+    @Column(hbaseName = "width", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 105)
     protected long            width;
-    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "sz", rowKeyNumber = 106)
+    @Column(hbaseName = "height", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 106)
     protected long            height;
 
     private HbaseExifDataOfImages(Builder builder) {

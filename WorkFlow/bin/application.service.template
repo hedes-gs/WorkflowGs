@@ -1,7 +1,7 @@
 [Unit]
 Description=High-available, distributed message broker
 After=network.target data.mount hadoop_dn.service
-Requires=network.target data.mount hadoop_dn.service
+Requires=network.target data.mount
 
 [Service]
 User={{ user_to_create }}

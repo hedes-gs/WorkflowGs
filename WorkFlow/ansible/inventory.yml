@@ -3,90 +3,106 @@ all:
     ipc0:
     ipc1:
     ipc2:
-    ipc3:
     ipc5:
     ipc6:
     ipc7:
     ipc8:
+    ipc9:
+    ipc10:
+    ipc11:
+    ipc12:
   children:
     ignite:
       hosts:
-        ipc5:
-        ipc6:
+        ipc9:
+        ipc10:
         ipc7:
         ipc8:
     wf_hbase:
       hosts:
-        ipc2:
-        ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_archive:
       hosts:
         ipc0:
         ipc1:
         ipc2:
-        ipc3:
         ipc5:
         ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_copy_files:
       hosts:
         ipc0:
         ipc1:
         ipc2:
-        ipc3:
         ipc5:
         ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_cmp_hashkey:
       hosts:
-        ipc0:
-        ipc2:
-        ipc5:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_dupcheck:
       hosts:
         ipc7:
         ipc8:
     wf_ext_img_infos:
       hosts:
-        ipc0:
-        ipc1:
-        ipc2:
-        ipc3:
-        ipc5:
         ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_proc_and_publish_photo:
       hosts:
-        ipc1:
-        ipc3:
-        ipc6:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_proc_and_publish_exif_data:
       hosts:
-        ipc1:
-        ipc2:
-        ipc3:
         ipc5:
         ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_scan:
       hosts:
         ipc0:
         ipc1:
         ipc2:
-        ipc3:
         ipc5:
         ipc6:
         ipc7:
         ipc8:
+        ipc9:
+        ipc10:
+        ipc11:
+        ipc12:
     wf_storm:
       hosts:
         ipc0:

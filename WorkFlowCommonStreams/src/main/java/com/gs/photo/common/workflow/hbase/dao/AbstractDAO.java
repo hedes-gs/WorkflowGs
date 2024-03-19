@@ -14,6 +14,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.BufferedMutatorParams;
+import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptorBuilder;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
@@ -23,8 +24,6 @@ import org.apache.hadoop.hbase.client.TableDescriptorBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
 import com.workflow.model.HbaseData;
@@ -32,9 +31,6 @@ import com.workflow.model.HbaseData;
 public abstract class AbstractDAO<T extends HbaseData> {
 
     protected static Logger           LOGGER                               = LoggerFactory.getLogger(AbstractDAO.class);
-
-    // Common name when stats are needed (nb of elements for a collection for
-    // instance)
 
     public static final byte[]        TABLE_PAGE_DESC_COLUMN_FAMILY        = "max_min".getBytes();
     public static final byte[]        TABLE_PAGE_LIST_COLUMN_FAMILY        = "list".getBytes();
@@ -54,10 +50,8 @@ public abstract class AbstractDAO<T extends HbaseData> {
         .getBytes(Charset.forName("UTF-8"));
     protected static final byte[]     TRUE_VALUE                           = new byte[] { 1 };
 
-    @Autowired
     protected Connection              connection;
 
-    @Value("${hbase.namespace}")
     protected String                  nameSpace;
 
     protected HbaseDataInformation<T> hbaseDataInformation;
@@ -125,9 +119,10 @@ public abstract class AbstractDAO<T extends HbaseData> {
             AbstractDAO.LOGGER.info("Do Create table {} - no split keys", tableName);
 
             TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
-            builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_DESC_COLUMN_FAMILY))
-                .setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_LIST_COLUMN_FAMILY))
-                .setColumnFamily(ColumnFamilyDescriptorBuilder.of(AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY));
+
+            builder.setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(AbstractDAO.TABLE_PAGE_DESC_COLUMN_FAMILY))
+                .setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(AbstractDAO.TABLE_PAGE_LIST_COLUMN_FAMILY))
+                .setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(AbstractDAO.TABLE_PAGE_INFOS_COLUMN_FAMILY));
             try {
                 admin.createTable(builder.build());
                 try (
@@ -187,7 +182,7 @@ public abstract class AbstractDAO<T extends HbaseData> {
 
             TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
 
-            values.forEach((cfName) -> { builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(cfName)); });
+            values.forEach((cfName) -> { builder.setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(cfName)); });
             try {
                 admin.createTable(builder.build(), firstRow, lastRow, nbOfRegions);
             } catch (TableExistsException e) {
@@ -212,7 +207,7 @@ public abstract class AbstractDAO<T extends HbaseData> {
             AbstractDAO.LOGGER
                 .info("Do Create table {} - split keys are {} ", tableName, Arrays.deepToString(splitKeys));
             TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
-            values.forEach((cfName) -> { builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(cfName)); });
+            values.forEach((cfName) -> { builder.setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(cfName)); });
             try {
                 admin.createTable(builder.build(), splitKeys);
             } catch (TableExistsException e) {
@@ -236,7 +231,7 @@ public abstract class AbstractDAO<T extends HbaseData> {
             TableDescriptorBuilder builder = TableDescriptorBuilder.newBuilder(hbaseTable);
             builder.setRegionReplication(1);
             values.forEach((cfName) -> {
-                builder.setColumnFamily(ColumnFamilyDescriptorBuilder.of(cfName));
+                builder.setColumnFamily(AbstractDAO.buildColumnFamilyDescriptor(cfName));
 
             });
             try {
@@ -253,6 +248,16 @@ public abstract class AbstractDAO<T extends HbaseData> {
             }
         }
         return hbaseTable;
+    }
+
+    private static ColumnFamilyDescriptor buildColumnFamilyDescriptor(String cfName) {
+        return AbstractDAO.buildColumnFamilyDescriptor(Bytes.toBytes(cfName));
+    }
+
+    private static ColumnFamilyDescriptor buildColumnFamilyDescriptor(byte[] cfName) {
+        return ColumnFamilyDescriptorBuilder.newBuilder(cfName)
+            .setMobEnabled(true)
+            .build();
     }
 
     protected static void createNameSpaceIFNeeded(final Admin admin, String nameSpace) throws IOException {
@@ -312,5 +317,13 @@ public abstract class AbstractDAO<T extends HbaseData> {
 
     protected static byte[] toBytes(String imageId) { return imageId.getBytes(Charset.forName("UTF-8")); }
 
-    public AbstractDAO() { super(); }
+    protected AbstractDAO(
+        Connection connection,
+        String nameSpace
+    ) {
+        super();
+        this.connection = connection;
+        this.nameSpace = nameSpace;
+    }
+
 }

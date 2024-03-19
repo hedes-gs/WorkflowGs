@@ -44,7 +44,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
         @Value("${group.id}") String groupId,
         @Value("${kafka.consumer.batchRecords}") int consumerBatch,
-        @Value("${kafka.pollTimeInMillisecondes}") int pollTimeInMillisecondes
+        @Value("${kafka.pollTimeInMillisecondes}") int pollTimeInMillisecondes,
+        @Value("${kafka.consumer.maxPollIntervalMsConfig}") int maxPollIntervalMsConfig
 
     ) {
         Properties settings = new Properties();
@@ -62,7 +63,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
         settings.put("sasl.kerberos.service.name", "kafka");
         settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
-
+        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMsConfig);
         Consumer<String, FileToProcess> consumer = new KafkaConsumer<>(settings);
         return consumer;
     }

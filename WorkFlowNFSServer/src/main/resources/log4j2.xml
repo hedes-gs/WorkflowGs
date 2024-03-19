@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+
+	<Appenders>
+		<!-- http://logging.apache.org/log4j/2.x/manual/layouts.html#PatternLayout -->
+		<DefaultRolloverStrategy max="20" />
+		<JsonLayout compact="true" locationInfo="true"
+			complete="false" includeStacktrace="true" stacktraceAsString="true"
+			eventEol="true">
+			<KeyValuePair key="application"
+				value="WorkFlowNFSServer" />
+		</JsonLayout>
+
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout
+				pattern="%d{YYYY-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %msg%n" />
+		</Console>
+
+		<RollingFile name="RollingFile"
+			filename = "logs/wf_nfs.log"
+			filepattern="logs/%d{YYYYMMddHHmmss}-WorkFlowNFSServer.log">
+			<param name="append" value="false" />
+			<PatternLayout
+				pattern="%d{YYYY-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %msg%n" />
+			<Policies>
+				<SizeBasedTriggeringPolicy size="100 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="20" />
+		</RollingFile>
+		<RollingFile name="RollingFileJson"
+			filename = "logs/json_wf_nfs.log"
+			filepattern="logs/%d{YYYYMMddHHmmss}-json-WorkFlowNFSServer.log">
+			<param name="append" value="false" />
+			<JsonLayout compact="true" locationInfo="true"
+				complete="false" includeStacktrace="true" stacktraceAsString="true"
+				eventEol="true">
+				<KeyValuePair key="application"
+					value="WorkFlowNFSServer" />
+			</JsonLayout>
+			<Policies>
+				<SizeBasedTriggeringPolicy size="100 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="20" />
+		</RollingFile>
+	</Appenders>
+	<Loggers>
+		<Root level="info">
+			<AppenderRef ref="RollingFile" />
+			<AppenderRef ref="RollingFileJson" />
+		</Root>
+	</Loggers>
+</Configuration>

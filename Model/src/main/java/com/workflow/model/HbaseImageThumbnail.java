@@ -52,13 +52,13 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
     protected String                               thumbName                         = "";
     @Column(hbaseName = "path", rowKeyNumber = 103, toByte = ToByteString.class, columnFamily = "img")
     protected String                               path                              = "";
-    @Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "img")
     protected long                                 width;
-    @Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "img")
     protected long                                 height;
-    @Column(hbaseName = "originalWidth", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "originalWidth", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "img")
     protected long                                 originalWidth;
-    @Column(hbaseName = "originalHeight", rowKeyNumber = 107, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "originalHeight", rowKeyNumber = 107, toByte = ToByteLong.class, columnFamily = "img")
     protected long                                 originalHeight;
     @Column(hbaseName = "importDate", rowKeyNumber = 108, toByte = ToByteLong.class, columnFamily = "img")
     protected long                                 importDate;
@@ -69,29 +69,29 @@ public class HbaseImageThumbnail extends HbaseData implements Comparable<HbaseIm
     protected HashMap<Integer, SizeAndJpegContent> thumbnail                         = new HashMap<>();
 
     @Nullable
-    @Column(hbaseName = "lens", toByte = ToByteIdempotent.class, columnFamily = "tech", rowKeyNumber = 110)
+    @Column(hbaseName = "lens", toByte = ToByteIdempotent.class, columnFamily = "img", rowKeyNumber = 110)
     protected byte[]                               lens;
     @Nullable
-    @Column(hbaseName = "focalLens", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 111)
+    @Column(hbaseName = "focalLens", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 111)
     protected int[]                                focalLens;
     @Nullable
-    @Column(hbaseName = "speed", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 112)
+    @Column(hbaseName = "speed", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 112)
     protected int[]                                speed;
     @Nullable
-    @Column(hbaseName = "aperture", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 113)
+    @Column(hbaseName = "aperture", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 113)
     protected int[]                                aperture;
-    @Column(hbaseName = "isoSpeed", toByte = ToByteShort.class, columnFamily = "tech", rowKeyNumber = 114)
+    @Column(hbaseName = "isoSpeed", toByte = ToByteShort.class, columnFamily = "img", rowKeyNumber = 114)
     protected short                                isoSpeed;
     @Nullable
-    @Column(hbaseName = "camera", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 115)
+    @Column(hbaseName = "camera", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 115)
     protected String                               camera;
-    @Column(hbaseName = "shiftExpo", toByte = ToByteIntArray.class, columnFamily = "tech", rowKeyNumber = 116)
+    @Column(hbaseName = "shiftExpo", toByte = ToByteIntArray.class, columnFamily = "img", rowKeyNumber = 116)
     @Nullable
     protected int[]                                shiftExpo;
-    @Column(hbaseName = "copyright", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 117)
+    @Column(hbaseName = "copyright", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 117)
     @Nullable
     protected String                               copyright;
-    @Column(hbaseName = "artist", toByte = ToByteString.class, columnFamily = "tech", rowKeyNumber = 118)
+    @Column(hbaseName = "artist", toByte = ToByteString.class, columnFamily = "img", rowKeyNumber = 118)
     @Nullable
     protected String                               artist;
 

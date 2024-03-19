@@ -15,20 +15,13 @@
       shell: systemctl stop {{user_to_create}}_appli.service
       async: 5
       poll: 0
-    - name: clean stream-dir if exists
+    - name: clean '${logPath}' if exists
       file:
         path: ~{{ user_to_create }}/'${logPath}'
         state: absent
       ignore_errors: yes
       async: 5
       poll: 0      
-    - name: clean stream-dir if exists
-      file:
-        path: ~{{ user_to_create }}/'${logPath}'
-        state: absent
-      ignore_errors: yes
-      async: 5
-      poll: 0
     - name: clean log
       archive:
         path: ~{{ user_to_create }}/logs/*.log
@@ -37,12 +30,20 @@
       ignore_errors: yes
       async: 5
       poll: 0
-    - name: build config file from template
+    - name: build common config file from template
       vars:
           host_id: "{{ ids[inventory_hostname].value }}"
       template:
-        src: ../src/main/resources/application.properties.template
-        dest: ~{{ user_to_create }}/config/application.properties
+        src: ../src/main/resources/application.yaml.template
+        dest: ~{{ user_to_create }}/config/application.yml
+        owner: "{{ user_to_create }}"
+        mode: 0666
+    - name: build specific config file from template
+      vars:
+          host_id: "{{ ids[inventory_hostname].value }}"
+      template:
+        src: {{ PWD }}/../src/main/resources/application-specific.yml.template
+        dest: ~{{ user_to_create }}/config/application-specific.yml
         owner: "{{ user_to_create }}"
         mode: 0666
     - name: copy prometheus template

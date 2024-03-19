@@ -16,6 +16,7 @@ public class HbaseDataFieldInformation implements Comparable<HbaseDataFieldInfor
     protected boolean                         partOfRowKey;
     protected int                             fixedWidth;
     protected int                             rowKeyNumber;
+    protected int                             mobThreshold;
     protected String                          columnFamily;
     protected String                          hbaseName;
     public int                                offset;
@@ -49,6 +50,7 @@ public class HbaseDataFieldInformation implements Comparable<HbaseDataFieldInfor
         this.fixedWidth = this.column.fixedWidth();
         this.rowKeyNumber = column.rowKeyNumber();
         this.columnFamily = column.columnFamily();
+        this.mobThreshold = column.mobThresholdInByte();
         this.hbaseName = column.hbaseName();
         this.transformInstance = ((ToByte<Object>) Proxy.newProxyInstance(
             Thread.currentThread()

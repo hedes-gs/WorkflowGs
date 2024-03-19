@@ -19,9 +19,9 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.JoinWindows;
-import org.apache.kafka.streams.kstream.Joined;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.StreamJoined;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.kstream.ValueJoiner;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -103,7 +103,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             Serdes.String()
                 .getClass());
         config.put(StreamsConfig.STATE_DIR_CONFIG, kafkaStreamDir);
-        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
+        config.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
         config.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, commitIntervalIms);
         config.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, metaDataAgeIms);
         config.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 5 * 1024 * 1024);
@@ -121,7 +121,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         config.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, heartbeatIntervalMs);
         config.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         config.put(ProducerConfig.TRANSACTION_TIMEOUT_CONFIG, transactionTimeout);
-
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "zstd");
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 4 * 1024 * 1024);
+        config.put(ProducerConfig.LINGER_MS_CONFIG, 1000);
         return config;
     }
 
@@ -171,7 +173,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         KStream<String, CollectionOfExchangedTiffData> aggregatedUsefulsExif = kstreamToGetExifValue
             .filter((key, exif) -> this.isARecordedField(key, exif))
             .transform(() -> transfomer, "store-for-collection-of-tiffdata");
-        final Joined<String, CollectionOfExchangedTiffData, HbaseExifData> joined = Joined
+        final StreamJoined<String, CollectionOfExchangedTiffData, HbaseExifData> joined = StreamJoined
             .with(Serdes.String(), new CollectionOfExchangedDataSerDe(), new HbaseExifDataSerDe());
         /*
          * Stream of HbaseExifData from topicExif : [ key-EXIF-tiffId, ExchnaedTiffData
@@ -189,7 +191,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             (v_HbaseExifData, v_HbaseImageThumbnail) -> this
                 .updateHbaseExifData(v_HbaseExifData, v_HbaseImageThumbnail),
             JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-            Joined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
+            StreamJoined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
 
         this.publishImageDataInRecordTopic(hbaseExifUpdate, topicExifImageDataToPersist);
         KStream<String, WfEvent> eventStream = streamOfHbaseExifData.mapValues(
@@ -293,7 +295,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
          * Streams to retrieve {height, width, creation date} of image
          */
 
-        Joined<String, HbaseExifData, Long> join = Joined
+        StreamJoined<String, HbaseExifData, Long> join = StreamJoined
             .with(Serdes.String(), new HbaseExifDataSerDe(), Serdes.Long());
         ValueJoiner<HbaseExifData, Long, HbaseExifData> joinerWidth = (value1, width) -> {
             try {
@@ -350,7 +352,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             (v_HbaseExifData, v_HbaseImageThumbnail) -> this
                 .updateHbaseExifData(v_HbaseExifData, v_HbaseImageThumbnail),
             JoinWindows.of(Duration.ofSeconds(ApplicationConfig.JOIN_WINDOW_TIME)),
-            Joined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
+            StreamJoined.with(Serdes.String(), new HbaseExifDataSerDe(), new HbaseImageThumbnailSerDe()));
 
         // KStream<String, HbaseData> finalStreamOfHbaseExifData = hbaseExifUpdate
         // .flatMapValues((key, value) -> Arrays.asList(value,

@@ -11,51 +11,47 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.gs.photo.common.workflow.IBeanTaskExecutor;
+
 @Component
 public class BeanPollFolder {
 
-	protected static final Logger LOGGER = Logger.getLogger(BeanPollFolder.class);
-	@Value("${polledFolders}")
-	protected String polledFolders;
+    protected static final Logger LOGGER = Logger.getLogger(BeanPollFolder.class);
+    @Value("${polledFolders}")
+    protected String              polledFolders;
 
-	@Autowired
-	protected IBeanProcessImage beanProcessImage;
-	@Autowired
-	protected IBeanTaskExecutor beanTaskExecutor;
+    @Autowired
+    protected IBeanProcessImage   beanProcessImage;
+    @Autowired
+    protected IBeanTaskExecutor   beanTaskExecutor;
 
-	@PostConstruct
-	public void init() {
-		beanTaskExecutor.execute(() -> {
-			poll();
-		});
-	}
+    @PostConstruct
+    public void init() { this.beanTaskExecutor.execute(() -> { this.poll(); }); }
 
-	public void poll() {
-		try {
-			LOGGER.info("Starting to poll " + this.polledFolders);
+    public void poll() {
+        try {
+            BeanPollFolder.LOGGER.info("Starting to poll " + this.polledFolders);
 
-			File dirFile = new File(polledFolders);
-			Set<String> setOfProcessedFiles = new HashSet<>();
-			for (;;) {
-				String[] listDir = dirFile.list();
-				for (int k = 0; k < listDir.length; k++) {
-					String fileToProcess = this.polledFolders + "/" + listDir[k];
-					if (!setOfProcessedFiles.contains(fileToProcess)) {
-						process(fileToProcess);
-						setOfProcessedFiles.add(fileToProcess);
-					}
-				}
-				Thread.sleep(250);
-			}
-		} catch (InterruptedException e) {
-			LOGGER.warn("Warning", e);
-		}
+            File dirFile = new File(this.polledFolders);
+            Set<String> setOfProcessedFiles = new HashSet<>();
+            for (;;) {
+                String[] listDir = dirFile.list();
+                for (String element : listDir) {
+                    String fileToProcess = this.polledFolders + "/" + element;
+                    if (!setOfProcessedFiles.contains(fileToProcess)) {
+                        this.process(fileToProcess);
+                        setOfProcessedFiles.add(fileToProcess);
+                    }
+                }
+                Thread.sleep(250);
+            }
+        } catch (InterruptedException e) {
+            BeanPollFolder.LOGGER.warn("Warning", e);
+        }
 
-	}
+    }
 
-	private void process(final String child) {
-		beanTaskExecutor.execute(() -> {
-			beanProcessImage.process(child);
-		});
-	}
+    private void process(final String child) {
+        this.beanTaskExecutor.execute(() -> { this.beanProcessImage.process(child); });
+    }
 }

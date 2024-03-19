@@ -39,7 +39,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         @Value("${kafka.consumer.batchRecords}") int batchOfReadFiles,
         @Value("${group.id}") String groupId,
         @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
-        @Value("${bootstrap.servers}") String bootstrapServers
+        @Value("${bootstrap.servers}") String bootstrapServers,
+        @Value("${kafka.consumer.maxPollIntervalMsConfig}") int maxPollIntervalMsConfig
     ) {
         Properties settings = new Properties();
         settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -55,6 +56,8 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         settings.put("sasl.kerberos.service.name", "kafka");
         settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
+        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMsConfig);
+
         Consumer<String, FileToProcess> producer = new KafkaConsumer<>(settings);
         return producer;
     }

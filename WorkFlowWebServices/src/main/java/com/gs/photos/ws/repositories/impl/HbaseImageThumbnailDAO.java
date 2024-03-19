@@ -526,7 +526,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
     @Override
     public Flux<ImageKeyDto> getImageKeyDtoList(final Scan scan) {
         try {
-            HbaseImageThumbnailDAO.LOGGER.info("[{}] Starting", Thread.currentThread());
+            HbaseImageThumbnailDAO.LOGGER.info("[{}] Starting scan {} ", Thread.currentThread());
             Table table = this.connection.getTable(
                 this.getHbaseDataInformation()
                     .getTable());
@@ -686,9 +686,7 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
     protected Scan createScanToGetAllColumns() {
         Scan scan = new Scan();
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
         scan.addColumn(IImageThumbnailDAO.FAMILY_THB_BYTES, "1".getBytes(Charset.forName("UTF-8")));
-        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);
@@ -699,8 +697,6 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
     protected Scan createScanToGetAllColumnsWithoutImages() {
         Scan scan = new Scan();
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);

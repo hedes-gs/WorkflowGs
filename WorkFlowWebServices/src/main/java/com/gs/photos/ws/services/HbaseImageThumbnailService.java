@@ -476,11 +476,11 @@ public class HbaseImageThumbnailService implements IHbaseImageThumbnailService {
                         .withStopRow(midOneKeyToRetrieve, true);
                     scans.add(scan);
                     scan = this.createScanToGetAllColumnsWithoutImages()
-                        .withStartRow(midOneKeyToRetrieve)
+                        .withStartRow(midOneKeyToRetrieve, false)
                         .withStopRow(midTwoKeyToRetrieve, true);
                     scans.add(scan);
                     scan = this.createScanToGetAllColumnsWithoutImages()
-                        .withStartRow(midTwoKeyToRetrieve)
+                        .withStartRow(midTwoKeyToRetrieve, false)
                         .withStopRow(lastKeyToRetrieve, true);
 
                     scans.add(scan);
@@ -506,9 +506,7 @@ public class HbaseImageThumbnailService implements IHbaseImageThumbnailService {
     protected Scan createScanToGetAllColumns() {
         Scan scan = new Scan();
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
         scan.addColumn(IImageThumbnailDAO.FAMILY_THB_BYTES, "1".getBytes(Charset.forName("UTF-8")));
-        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);
@@ -519,8 +517,6 @@ public class HbaseImageThumbnailService implements IHbaseImageThumbnailService {
     protected Scan createScanToGetAllColumnsWithoutImages() {
         Scan scan = new Scan();
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMG_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_SZ_BYTES);
-        scan.addFamily(IImageThumbnailDAO.FAMILY_TECH_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_ALBUMS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_KEYWORDS_BYTES);
         scan.addFamily(IImageThumbnailDAO.FAMILY_IMPORT_BYTES);

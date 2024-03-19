@@ -2,6 +2,8 @@ package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hbase.client.Connection;
+
 import com.workflow.model.HbaseRatings;
 
 public abstract class AbstractHbaseRatingsDAO extends AbstractMetaDataDAO<HbaseRatings, Long> implements IRatingsDAO {
@@ -25,5 +27,11 @@ public abstract class AbstractHbaseRatingsDAO extends AbstractMetaDataDAO<HbaseR
     public long countAll(HbaseRatings metaData) throws IOException, Throwable {
         return super.countAll(metaData.getRatings());
     }
+
+    protected AbstractHbaseRatingsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

@@ -1,14 +1,17 @@
 package com.gs.photo.common.workflow.internal;
 
+import java.util.Optional;
+
+import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEvent;
 
-public class GenericKafkaManagedObject<T> extends KafkaManagedObject {
-    protected T      value;
-    protected String topic;
-    protected String imageKey;
-    protected String objectKey;
+public class GenericKafkaManagedObject<T extends HbaseData> extends KafkaManagedObject {
+    protected Optional<T> value;
+    protected String      topic;
+    protected String      imageKey;
+    protected String      objectKey;
 
-    public T getValue() { return this.value; }
+    public Optional<T> getValue() { return this.value; }
 
     public String getTopic() { return this.topic; }
 
@@ -16,7 +19,7 @@ public class GenericKafkaManagedObject<T> extends KafkaManagedObject {
 
     public String getObjectKey() { return this.objectKey; }
 
-    public Object getObjectToSend() { return this.getValue(); }
+    public Optional<T> getObjectToSend() { return this.getValue(); }
 
     public WfEvent createWfEvent() { return null; }
 

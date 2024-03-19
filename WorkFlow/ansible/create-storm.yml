@@ -22,7 +22,7 @@
   ignore_errors: yes
 - name: Download storm {{ storm_version }}
   get_url:
-    url: http://mirrors.standaloneinstaller.com/apache/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz
+    url: http://dlcdn.apache.org/storm/apache-storm-{{ storm_version }}/apache-storm-{{ storm_version }}.tar.gz
     owner: "{{ user_to_create }}"
     dest: "{{ storm_install_folder }}/storm-{{ storm_version }}.tgz"
     mode: 0644

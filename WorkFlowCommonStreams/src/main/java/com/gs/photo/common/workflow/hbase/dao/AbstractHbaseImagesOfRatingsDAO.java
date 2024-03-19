@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -23,12 +23,10 @@ import reactor.core.publisher.Flux;
 public abstract class AbstractHbaseImagesOfRatingsDAO
     extends AbstractHbaseImagesOfMetadataDAO<HbaseImagesOfRatings, Long> implements IImagesOfRatingsDAO {
 
-    protected Logger              LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfRatingsDAO.class);
+    protected static Logger       LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfRatingsDAO.class);
     protected static final String METADATA_FAMILY_NAME = "ratings";
 
-    @Autowired
     protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
-    @Autowired
     protected IRatingsDAO         hbaseRatingsDAO;
 
     @Override
@@ -82,7 +80,9 @@ public abstract class AbstractHbaseImagesOfRatingsDAO
                 pageNumber,
                 pageTable,
                 thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
-                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnCancel(() -> {
+                        this.closeTables(pageTable, thumbTable);
+                    })
                     .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -184,6 +184,18 @@ public abstract class AbstractHbaseImagesOfRatingsDAO
 
     public long countAll(HbaseRatings metaData) throws IOException, Throwable {
         return super.countAll(metaData.getRatings());
+    }
+
+    public AbstractHbaseImagesOfRatingsDAO(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO,
+        IRatingsDAO hbaseRatingsDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+        this.hbaseRatingsDAO = hbaseRatingsDAO;
     }
 
 }

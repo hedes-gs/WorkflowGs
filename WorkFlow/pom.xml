@@ -8,24 +8,26 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.2</version>
+		<version>3.2.3</version>
 	</parent>
 
 	<properties>
-		<maven.compiler.source>17</maven.compiler.source>
-		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
 		<protobuf.version>2.5.0</protobuf.version>
-		<java.version>17</java.version>
-		<ignite.version>2.10.0</ignite.version>
+		<apache.comon-io.version>2.8.0</apache.comon-io.version>
+		<java.version>21</java.version>
+		<ignite.version>2.16.0</ignite.version>
 		<hbase.version>2.4.9</hbase.version>
 		<h2.version>1.4.197</h2.version>
 		<log4j.version>2.11.2</log4j.version>
 		<guava.version>28.0-jre</guava.version>
 		<javax.annotation.version>1.3.2</javax.annotation.version>
 		<hadoop.version>3.2.1</hadoop.version>
-		<kafka.version>2.8.0</kafka.version>
+		<kafka.version>3.2.0</kafka.version>
 		<!-- <JAVA_8_HOME>D:/jdk-8.0.252.09-hotspot</JAVA_8_HOME> -->
-		<JAVA_8_HOME>G:/eclipse-workspace-gsworkflow/java/adopt-jdk-8.0.252.09-hotspot</JAVA_8_HOME>
+		<JAVA_8_HOME>
+			G:/eclipse-workspace-gsworkflow/java/adopt-jdk-8.0.252.09-hotspot</JAVA_8_HOME>
 		<com.nurkiewicz.typeof>0.0.1</com.nurkiewicz.typeof>
 		<avro.version>1.9.1</avro.version>
 		<jcifs.version>2.1.5</jcifs.version>
@@ -38,6 +40,7 @@
 		<module>../HbaseFilters</module>
 		<module>../comparators</module>
 		<module>../serializers</module>
+		<module>../WorkFlowKafkaStreamsCommon</module>
 		<module>../WorkFlowCommonStreams</module>
 		<module>../WorkFlowCoprocessor</module>
 		<module>../WorkFlowComputeHashKey</module>
@@ -62,13 +65,15 @@
 				<artifactId>commons-lang3</artifactId>
 				<version>3.11</version>
 			</dependency>
-			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
+			<!--
+			https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
 			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-io</artifactId>
 				<version>1.3.2</version>
 			</dependency>
-			<!-- https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient -->
+			<!--
+			https://mvnrepository.com/artifact/commons-httpclient/commons-httpclient -->
 			<dependency>
 				<groupId>commons-httpclient</groupId>
 				<artifactId>commons-httpclient</artifactId>
@@ -120,6 +125,12 @@
 				<version>${ignite.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>org.apache.ignite</groupId>
+				<artifactId>ignite-spring-boot-autoconfigure-ext</artifactId>
+				<version>1.0.0</version>
+			</dependency>
+
+			<dependency>
 				<groupId>org.apache.hbase</groupId>
 				<artifactId>hbase-client</artifactId>
 				<version>${hbase.version}</version>
@@ -129,7 +140,8 @@
 				<artifactId>hbase-common</artifactId>
 				<version>${hbase.version}</version>
 			</dependency>
-			<!-- <dependency> <groupId>com.gs.photos</groupId> <artifactId>hbaseClientShaded</artifactId> 
+			<!-- <dependency> <groupId>com.gs.photos</groupId>
+			<artifactId>hbaseClientShaded</artifactId> 
 				<version>${project.version}</version> </dependency> -->
 			<dependency>
 				<groupId>org.apache.avro</groupId>
@@ -191,7 +203,13 @@
 				<artifactId>javax.annotation-api</artifactId>
 				<version>${javax.annotation.version}</version>
 			</dependency>
-			<!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
+			<dependency>
+				<groupId>commons-io</groupId>
+				<artifactId>commons-io</artifactId>
+				<version>${apache.comon-io.version}</version>
+			</dependency>
+			<!--
+			https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
 			<dependency>
 				<groupId>org.apache.zookeeper</groupId>
 				<artifactId>zookeeper</artifactId>
@@ -231,12 +249,12 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.5.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<configuration>
-						<source>17</source>
-						<target>17</target>
-					</configuration>
-
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>

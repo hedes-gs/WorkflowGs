@@ -59,6 +59,7 @@ producer.string.string={{ producer_string_string | default('false') }}
 kafka.consumer.batchSizeForParallelProcessingIncomingRecords={{ kafka_consumer_batchSizeForParallelProcessingIncomingRecords | default('15') }} 
 kafka.consumer.consumerFetchMaxBytes={{ kafka_consumer_consumerFetchMaxBytes | default('4194304') }}
 kafka.consumer.batchRecords={{ kafka_consumer_batchRecords | default('500') }}
+kafka.consumer.maxPollIntervalMsConfig={{ kafka_consumer_maxPollIntervalMsConfig | default('1200000') }}
 kafka.producer.maxBlockMsConfig={{ kafka_producer_maxBlockMsConfig| default('180000') }}
 kafka.producer.maxRequestSize={{ kafka_producer_maxRequestSize | default('4194304') }}
 kafka.stream.commit.interval.ms={{ kafka_stream_commit_interval_ms | default('UNSET') }}

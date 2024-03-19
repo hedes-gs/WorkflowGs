@@ -1,0 +1,27 @@
+127.0.0.1	localhost
+
+
+10.0.0.1        IPC0 hbase-slave-0 IPC0 hadoop-slave-0 hbase-master
+10.0.0.2        IPC1 hbase-slave-1 IPC1 hadoop-slave-1
+10.0.0.3        IPC2 hbase-slave-2 IPC2 hadoop-slave-2
+10.0.0.4        IPC3 hbase-slave-3 IPC3 hadoop-slave-3
+
+10.0.0.5        IPC5 hadoop-slave-4  hbase-slave-4 hadoop-master
+10.0.0.6        IPC6 hadoop-slave-5  hbase-slave-5
+10.0.0.7        IPC7 hadoop-slave-6  hbase-slave-6
+10.0.0.8        IPC8 hadoop-slave-7  hbase-slave-7
+
+10.0.0.9        IPC9 hadoop-slave-8  hbase-slave-8
+10.0.0.10       IPC10 hadoop-slave-9  hbase-slave-9
+10.0.0.11       IPC11 hadoop-slave-10  hbase-slave-10
+10.0.0.12       IPC12 hadoop-slave-11  hbase-slave-11
+
+
+
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters

@@ -7,7 +7,7 @@
 - user: name="{{ user_to_create }}" group=hadoop shell=/bin/bash
 - name: Download hadoop {{ hadoop_version }}
   get_url: 
-    url: http://apache.mirrors.tds.net/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz
+    url: http://dlcdn.apache.org/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz
     owner: "{{ user_to_create }}"
     dest: "{{ hadoop_install_folder }}/hadoop-{{ hadoop_version }}.tgz"
     mode: 0644

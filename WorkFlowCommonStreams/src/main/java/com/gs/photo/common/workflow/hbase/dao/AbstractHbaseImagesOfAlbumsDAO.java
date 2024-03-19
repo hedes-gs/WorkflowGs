@@ -6,13 +6,13 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -30,10 +30,7 @@ public abstract class AbstractHbaseImagesOfAlbumsDAO
     protected static final byte[] TABLE_PAGE_INFOS_COLUMN_NB_OF_ELEMS = "nbOfElements"
         .getBytes(Charset.forName("UTF-8"));
     protected static final String METADATA_FAMILY_NAME                = "albums";
-    @Autowired
     protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
-
-    @Autowired
     protected IAlbumDAO           hbaseAlbumDAO;
 
     @Override
@@ -81,7 +78,9 @@ public abstract class AbstractHbaseImagesOfAlbumsDAO
                 pageNumber,
                 pageTable,
                 thumbTable).map((x) -> this.getFromHbaseImageThumbNail(x))
-                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnCancel(() -> {
+                        this.closeTables(pageTable, thumbTable);
+                    })
                     .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -182,6 +181,18 @@ public abstract class AbstractHbaseImagesOfAlbumsDAO
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public AbstractHbaseImagesOfAlbumsDAO(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO,
+        IAlbumDAO hbaseAlbumDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+        this.hbaseAlbumDAO = hbaseAlbumDAO;
     }
 
 }

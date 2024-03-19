@@ -1,0 +1,12 @@
+- hosts: all
+  become: true
+  tasks:
+  - name: deploy hosts file
+    template:
+      src: ./tools/hosts/hosts
+      dest: /etc/hosts
+      owner: root
+      mode: 0644
+  vars:
+    PWD: "{{ lookup('env', 'PWD') }}"
+    ansible_become_pass: granada01

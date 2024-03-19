@@ -43,9 +43,7 @@ import com.workflow.model.dtos.ImageKeyDto;
 public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
 
     protected static final Logger LOGGER            = LoggerFactory.getLogger(HbaseExifDataDAO.class);
-    private static final byte[]   FAMILY_EXV_BYTES  = "exv".getBytes();
-    private static final byte[]   FAMILY_IMD_BYTES  = "imd".getBytes();
-    private static final byte[]   FAMILY_SZ_BYTES   = "sz".getBytes();
+    private static final byte[]   FAMILY_IMG_BYTES  = "img".getBytes();
 
     private static final byte[]   COLUMN_EXV_BYTES  = "exv_bytes".getBytes();
     private static final byte[]   COLUMN_EXV_INTS   = "exv_ints".getBytes();
@@ -68,7 +66,7 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
                 this.getHbaseDataInformation()
                     .getTable())) {
             Scan scan = this.createExifScan(salt, imageId);
-            scan.addFamily(HbaseExifDataDAO.FAMILY_EXV_BYTES);
+            scan.addFamily(HbaseExifDataDAO.FAMILY_IMG_BYTES);
 
             try (
                 ResultScanner rs = table.getScanner(scan)) {

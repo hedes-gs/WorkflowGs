@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -16,7 +17,6 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -32,9 +32,7 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO
         .getLogger(AbstractHbaseImagesOfKeywordsDAO.class);
     protected static final String METADATA_FAMILY_NAME = "keywords";
 
-    @Autowired
     protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
-    @Autowired
     protected IKeywordsDAO        hbaseKeywordsDAO;
 
     @Override
@@ -102,7 +100,9 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO
                 pageNumber,
                 pageTable,
                 thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
-                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnCancel(() -> {
+                        this.closeTables(pageTable, thumbTable);
+                    })
                     .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -194,6 +194,18 @@ public abstract class AbstractHbaseImagesOfKeywordsDAO
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public AbstractHbaseImagesOfKeywordsDAO(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO,
+        IKeywordsDAO hbaseKeywordsDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+        this.hbaseKeywordsDAO = hbaseKeywordsDAO;
     }
 
 }

@@ -13,7 +13,7 @@
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<storm.version>2.3.0</storm.version>
+		<storm.version>2.6.1</storm.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -75,8 +75,6 @@
 
 				<configuration combine.self="override">
 					<verbose>true</verbose>
-					<fork>true</fork>
-					<executable>${JAVA_8_HOME}/bin/javac</executable>
 					<source>1.8</source>
 					<target>1.8</target>
 					<compilerArgs>
@@ -92,6 +90,7 @@
 				</configuration>
 				<executions>
 					<execution>
+						 <id>shade-jar-with-dependencies</id>
 						<phase>package</phase>
 						<goals>
 							<goal>shade</goal>

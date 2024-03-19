@@ -3,7 +3,7 @@ package com.workflow.model.dtos;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlType
 public class MinMaxDatesDto implements Serializable {
@@ -44,7 +44,7 @@ public class MinMaxDatesDto implements Serializable {
 
     /**
      * Creates builder to build {@link MinMaxDatesDto}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -62,7 +62,7 @@ public class MinMaxDatesDto implements Serializable {
 
         /**
          * Builder method for countNumber parameter.
-         * 
+         *
          * @param countNumber
          *            field to set
          * @return builder
@@ -74,7 +74,7 @@ public class MinMaxDatesDto implements Serializable {
 
         /**
          * Builder method for intervallType parameter.
-         * 
+         *
          * @param intervallType
          *            field to set
          * @return builder
@@ -86,7 +86,7 @@ public class MinMaxDatesDto implements Serializable {
 
         /**
          * Builder method for minDate parameter.
-         * 
+         *
          * @param minDate
          *            field to set
          * @return builder
@@ -98,7 +98,7 @@ public class MinMaxDatesDto implements Serializable {
 
         /**
          * Builder method for maxDate parameter.
-         * 
+         *
          * @param maxDate
          *            field to set
          * @return builder
@@ -110,7 +110,7 @@ public class MinMaxDatesDto implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public MinMaxDatesDto build() { return new MinMaxDatesDto(this); }

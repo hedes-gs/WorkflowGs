@@ -21,6 +21,8 @@ public @interface Column {
 
     public int fixedWidth() default Integer.MAX_VALUE;
 
+    public int mobThresholdInByte() default 0;
+
     public String mapOnlyOneElement() default "";
 
     public Class<?> mapKeyClass() default void.class;

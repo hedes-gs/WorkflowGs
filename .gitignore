@@ -9,6 +9,7 @@
 /tutorial/
 /jHipsterUi/
 /Workflowinput/
+/hbase-shaded-parent
 test
 jee-2020-06
 eclipse
@@ -21,6 +22,7 @@ Kafdrop-master
 *.log
 *.zip
 *.gz
+*.tmp
 
 
 prod.properties

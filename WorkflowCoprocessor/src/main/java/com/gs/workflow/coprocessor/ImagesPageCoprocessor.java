@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1051,27 +1052,37 @@ public class ImagesPageCoprocessor extends AbstractProcessor implements RegionCo
                 .findFirst()
                 .ifPresent((x) -> {
                     try {
-                        if (!this.rowDataIsPresent(table2.getNameAsString(), put.getRow())) {
+                        // if (this.rowDataIsPresent(table2.getNamespaceAsString(), put.getRow()))
+                        {
                             this.incrementDateInterval(table2.getNamespaceAsString(), put.getRow());
                         }
                     } catch (IOException e) {
                         ImagesPageCoprocessor.LOGGER.warn("Error ", e);
                     }
                 });
-        } else {
-            ImagesPageCoprocessor.LOGGER.warn("Unable to process table {} ", table);
         }
     }
 
     private boolean rowDataIsPresent(String namespace, byte[] row) {
-        try (
-            Table table = this.hbaseConnection.getTable(TableName.valueOf(namespace + ':' + this.getTableSource()))) {
-            Get get = new Get(row);
-            return table.exists(get);
-        } catch (IOException e) {
+        try {
+            if (!Objects.equals(namespace, "prod")) {
+                ImagesPageCoprocessor.LOGGER.info("PRocessing an unexpected namespace : {} ", namespace);
+            }
+            final TableName tableName = TableName.valueOf(namespace + ':' + this.getTableSource());
+            try (
+                Table table = this.hbaseConnection.getTable(tableName)) {
+                Get get = new Get(row);
+                return table.get(get)
+                    .getColumnCells(row, row)
+                    .size() == 1;
+            } catch (IOException e) {
+                ImagesPageCoprocessor.LOGGER.error(" Unexpected error in hbase ", e);
+            }
+            return true;
+        } catch (Exception e) {
             ImagesPageCoprocessor.LOGGER.error(" Unexpected error in hbase ", e);
+            throw new RuntimeException(e);
         }
-        return true;
     }
 
     protected String getTablePageForMetadata() { return ImagesPageCoprocessor.TABLE_PAGE; }

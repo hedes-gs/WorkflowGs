@@ -94,6 +94,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.ignite</groupId>
+			<artifactId>ignite-spring-boot-autoconfigure-ext</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.ignite</groupId>
 			<artifactId>ignite-core</artifactId>
 		</dependency>
 		<dependency>
@@ -119,6 +123,10 @@
 			<groupId>com.emc.ecs</groupId>
 			<artifactId>nfs-client</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+ 		</dependency>
 
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>

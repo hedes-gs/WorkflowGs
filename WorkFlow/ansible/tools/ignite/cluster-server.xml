@@ -21,8 +21,8 @@
 						class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
 						<property name="addresses">
 							<list>
-								<value>ipc5:47500..47510</value>
-								<value>ipc6:47500..47510</value>
+								<value>ipc9:47500..47510</value>
+								<value>ipc10:47500..47510</value>
 								<value>ipc7:47500..47510</value>
 								<value>ipc8:47500..47510</value>
 							</list>

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -86,5 +87,11 @@ public abstract class AbstractMetaDataDAO<T extends HbaseData, T2> extends Gener
         }
         return retValue;
     }
+
+    public AbstractMetaDataDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

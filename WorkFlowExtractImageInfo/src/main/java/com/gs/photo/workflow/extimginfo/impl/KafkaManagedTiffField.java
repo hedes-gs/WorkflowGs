@@ -1,5 +1,7 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
+import java.util.Optional;
+
 import javax.annotation.Generated;
 
 import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
@@ -30,12 +32,12 @@ public class KafkaManagedTiffField extends GenericKafkaManagedObject<TiffFieldAn
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private int              partition;
-        private long             kafkaOffset;
-        private TiffFieldAndPath value;
-        private String           topic;
-        private String           imageKey;
-        private String           objectKey;
+        private int                        partition;
+        private long                       kafkaOffset;
+        private Optional<TiffFieldAndPath> value;
+        private String                     topic;
+        private String                     imageKey;
+        private String                     objectKey;
 
         private Builder() {}
 
@@ -71,7 +73,7 @@ public class KafkaManagedTiffField extends GenericKafkaManagedObject<TiffFieldAn
          * @return builder
          */
         public Builder withValue(TiffFieldAndPath value) {
-            this.value = value;
+            this.value = Optional.ofNullable(value);
             return this;
         }
 

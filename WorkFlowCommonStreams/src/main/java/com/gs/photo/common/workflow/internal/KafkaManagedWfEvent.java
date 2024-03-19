@@ -1,5 +1,7 @@
 package com.gs.photo.common.workflow.internal;
 
+import java.util.Optional;
+
 import javax.annotation.Generated;
 
 import com.workflow.model.events.WfEvent;
@@ -29,12 +31,12 @@ public class KafkaManagedWfEvent extends GenericKafkaManagedObject<WfEvent> {
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private int     partition;
-        private long    kafkaOffset;
-        private WfEvent value;
-        private String  topic;
-        private String  imageKey;
-        private String  objectKey;
+        private int               partition;
+        private long              kafkaOffset;
+        private Optional<WfEvent> value;
+        private String            topic;
+        private String            imageKey;
+        private String            objectKey;
 
         private Builder() {}
 
@@ -70,7 +72,7 @@ public class KafkaManagedWfEvent extends GenericKafkaManagedObject<WfEvent> {
          * @return builder
          */
         public Builder withValue(WfEvent value) {
-            this.value = value;
+            this.value = Optional.ofNullable(value);
             return this;
         }
 

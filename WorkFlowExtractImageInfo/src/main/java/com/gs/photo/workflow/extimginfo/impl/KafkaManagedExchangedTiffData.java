@@ -1,5 +1,7 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
+import java.util.Optional;
+
 import javax.annotation.Generated;
 
 import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
@@ -17,8 +19,12 @@ public class KafkaManagedExchangedTiffData extends GenericKafkaManagedObject<Exc
             .withImgId(this.imageKey)
             .withParentDataId(
                 this.getValue()
+                    .get()
                     .getImageId())
-            .withDataId(KeysBuilder.ExchangedTiffDataKeyBuilder.build(this.getValue()))
+            .withDataId(
+                KeysBuilder.ExchangedTiffDataKeyBuilder.build(
+                    this.getValue()
+                        .get()))
             .withStep(
                 WfEventStep.builder()
                     .withStep(WfEventStep.CREATED_FROM_STEP_IMAGE_FILE_READ)
@@ -30,7 +36,7 @@ public class KafkaManagedExchangedTiffData extends GenericKafkaManagedObject<Exc
     private KafkaManagedExchangedTiffData(Builder builder) {
         this.partition = builder.partition;
         this.kafkaOffset = builder.kafkaOffset;
-        this.value = builder.value;
+        this.value = Optional.ofNullable(builder.value);
         this.topic = builder.topic;
         this.imageKey = builder.imageKey;
         this.objectKey = builder.objectKey;

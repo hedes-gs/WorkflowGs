@@ -4,11 +4,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.gs.photos.workflow.extimginfo.metadata.tiff.TiffField;
+import com.workflow.model.HbaseData;
 
-public class TiffFieldAndPath {
-    protected TiffField<?> tiffField;
-    protected short[]      path;
-    protected int          tiffNumber;
+public class TiffFieldAndPath extends HbaseData {
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+    protected TiffField<?>    tiffField;
+    protected short[]         path;
+    protected int             tiffNumber;
 
     @Override
     public String toString() {

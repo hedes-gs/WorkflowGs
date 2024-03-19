@@ -2,6 +2,7 @@ package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hbase.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,5 +33,11 @@ public abstract class AbstractHbasePersonsDAO extends AbstractMetaDataDAO<HbaseP
     public long countAll(HbasePersons metaData) throws IOException, Throwable {
         return super.countAll(metaData.getPerson());
     }
+
+    public AbstractHbasePersonsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

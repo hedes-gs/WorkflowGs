@@ -8,17 +8,11 @@ import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnClass(value = IgniteCache.class)
 public class IgniteDAO implements IIgniteDAO {
 
     protected final Logger        LOGGER = LoggerFactory.getLogger(IgniteDAO.class);
 
-    @Autowired
     protected IIgniteCacheFactory igniteCacheFactory;
 
     @Override
@@ -69,5 +63,10 @@ public class IgniteDAO implements IIgniteDAO {
 
     @Override
     public boolean isReady() { return this.igniteCacheFactory.isReady(); }
+
+    public IgniteDAO(IIgniteCacheFactory igniteCacheFactory) {
+        super();
+        this.igniteCacheFactory = igniteCacheFactory;
+    }
 
 }

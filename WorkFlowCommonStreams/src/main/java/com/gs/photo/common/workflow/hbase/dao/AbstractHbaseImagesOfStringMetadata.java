@@ -1,8 +1,8 @@
 package com.gs.photo.common.workflow.hbase.dao;
 
+import org.apache.hadoop.hbase.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -13,7 +13,16 @@ public abstract class AbstractHbaseImagesOfStringMetadata<T extends HbaseImagesO
 
     protected static Logger      LOGGER = LoggerFactory.getLogger(AbstractHbaseImagesOfStringMetadata.class);
 
-    @Autowired
     protected IImageThumbnailDAO hbaseImageThumbnailDAO;
+
+    public AbstractHbaseImagesOfStringMetadata(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+    }
 
 }

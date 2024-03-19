@@ -90,7 +90,7 @@
 	</property>
 	<property>
 		<name>hbase.client.ipc.pool.size</name>
-		<value>5</value>
+		<value>20</value>
 	</property>
 	<!-- https://docs.cloudera.com/documentation/enterprise/latest/topics/admin_hbase_scanner_heartbeat.html -->
 	<property>
@@ -101,7 +101,7 @@
 		<name>hbase.cells.scanned.per.heartbeat.check</name>
 		<value>20000</value>
 	</property>
-	 
+
 	<property>
 		<name>zookeeper.session.timeout</name>
 		<value>60000</value>
@@ -112,7 +112,7 @@
 	</property>
 	<property>
 		<name>hbase.zookeeper.property.maxClientCnxns</name>
-		<value>1000</value>
+		<value>10</value>
 	</property>
 	<property>
 		<name>hbase.client.scanner.caching</name>
@@ -128,11 +128,11 @@
 	</property>
 	<property>
 		<name>hbase.hregion.memstore.flush.size</name>
-		<value>134217728</value>
+		<value>67108864</value>
 	</property>
 	<property>
 		<name>hbase.hregion.memstore.block.multiplier</name>
-		<value>4</value>
+		<value>6</value>
 	</property>
 	<property>
 		<name>hbase.hstore.blockingStoreFiles</name>
@@ -146,6 +146,11 @@
 		<name>hbase.regionserver.compaction.enabled</name>
 		<value>false</value>
 	</property>
+	<property>
+		<name>hbase.hstore.flusher.count</name>
+		<value>4</value>
+	</property>
+
 
 
 	<property>
@@ -211,6 +216,12 @@
 		<value>/home/hbase/latest/conf/hbase_all.keytab</value>
 	</property>
 
-
-
+	<property>
+		<name>hbase.regionserver.executor.openregion.threads</name>
+		<value>20</value>
+	</property>
+	<property>
+		<name>hbase.hregion.open.and.init.threads.max</name>
+		<value>10</value>
+	</property>
 </configuration>

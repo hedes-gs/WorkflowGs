@@ -6,13 +6,13 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.photo.common.workflow.dao.IImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -27,10 +27,8 @@ public abstract class AbstractHbaseImagesOfImportDAO
     protected static Logger       LOGGER               = LoggerFactory.getLogger(AbstractHbaseImagesOfImportDAO.class);
     protected static final String METADATA_FAMILY_NAME = "import";
 
-    @Autowired
     protected IImageThumbnailDAO  hbaseImageThumbnailDAO;
 
-    @Autowired
     protected IImportDAO          hbaseImportDAO;
 
     @Override
@@ -84,7 +82,9 @@ public abstract class AbstractHbaseImagesOfImportDAO
                 pageNumber,
                 pageTable,
                 thumbTable).map((x) -> this.hbaseImageThumbnailDAO.get(x))
-                    .doOnCancel(() -> { this.closeTables(pageTable, thumbTable); })
+                    .doOnCancel(() -> {
+                        this.closeTables(pageTable, thumbTable);
+                    })
                     .doOnComplete(() -> { this.closeTables(pageTable, thumbTable); });
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -173,6 +173,18 @@ public abstract class AbstractHbaseImagesOfImportDAO
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public AbstractHbaseImagesOfImportDAO(
+        Connection connection,
+        String nameSpace,
+        IImageThumbnailDAO hbaseImageThumbnailDAO,
+        IImportDAO hbaseImportDAO
+    ) {
+        super(connection,
+            nameSpace);
+        this.hbaseImageThumbnailDAO = hbaseImageThumbnailDAO;
+        this.hbaseImportDAO = hbaseImportDAO;
     }
 
 }

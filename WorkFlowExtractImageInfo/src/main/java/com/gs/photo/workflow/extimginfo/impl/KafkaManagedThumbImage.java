@@ -1,6 +1,7 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
 import java.nio.charset.Charset;
+import java.util.Optional;
 
 import javax.annotation.Generated;
 
@@ -14,22 +15,21 @@ import com.workflow.model.events.WfEventStep;
 public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImageToSend> {
 
     @Override
-    public Object getObjectToSend() { return this.getValue()
-        .getJpegImage(); }
-
-    @Override
     public WfEvent createWfEvent() {
         HashFunction hf = Hashing.goodFastHash(256);
         String hbedoiHashCode = hf.newHasher()
             .putString(
                 this.getValue()
+                    .get()
                     .getImageKey(),
                 Charset.forName("UTf-8"))
             .putLong(
                 this.getValue()
+                    .get()
                     .getTag())
             .putObject(
                 this.getValue()
+                    .get()
                     .getPath(),
                 (path, sink) -> {
                     for (short t : path) {
@@ -41,9 +41,11 @@ public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImage
 
         return this.buildEvent(
             this.getValue()
+                .get()
                 .getImageKey(),
             hbedoiHashCode,
             this.getValue()
+                .get()
                 .getCurrentNb());
     }
 
@@ -82,12 +84,12 @@ public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImage
      */
     @Generated("SparkTools")
     public static final class Builder {
-        private int              partition;
-        private long             kafkaOffset;
-        private ThumbImageToSend value;
-        private String           topic;
-        private String           imageKey;
-        private String           objectKey;
+        private int                        partition;
+        private long                       kafkaOffset;
+        private Optional<ThumbImageToSend> value;
+        private String                     topic;
+        private String                     imageKey;
+        private String                     objectKey;
 
         private Builder() {}
 
@@ -123,7 +125,7 @@ public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImage
          * @return builder
          */
         public Builder withValue(ThumbImageToSend value) {
-            this.value = value;
+            this.value = Optional.ofNullable(value);
             return this;
         }
 

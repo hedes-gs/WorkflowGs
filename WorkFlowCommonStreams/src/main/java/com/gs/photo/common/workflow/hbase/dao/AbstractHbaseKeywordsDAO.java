@@ -2,6 +2,8 @@ package com.gs.photo.common.workflow.hbase.dao;
 
 import java.io.IOException;
 
+import org.apache.hadoop.hbase.client.Connection;
+
 import com.workflow.model.HbaseKeywords;
 
 public abstract class AbstractHbaseKeywordsDAO extends AbstractMetaDataDAO<HbaseKeywords, String>
@@ -26,5 +28,11 @@ public abstract class AbstractHbaseKeywordsDAO extends AbstractMetaDataDAO<Hbase
     public long countAll(HbaseKeywords metaData) throws IOException, Throwable {
         return super.countAll(metaData.getKeyword());
     }
+
+    protected AbstractHbaseKeywordsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }
