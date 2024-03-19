@@ -28,6 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.exif.ExifServiceImpl;
+import com.gs.photo.common.workflow.exif.IExifService;
 import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.extimginfo.ApplicationConfig;
@@ -70,7 +71,7 @@ public class TestDefaultTagTemplate {
     protected IIgniteDAO                      iIgniteDAO;
 
     @Autowired
-    protected ExifServiceImpl                 exifService;
+    protected IExifService                    exifService;
 
     @Autowired
     protected IFileMetadataExtractor          beanFileMetadataExtractor;
