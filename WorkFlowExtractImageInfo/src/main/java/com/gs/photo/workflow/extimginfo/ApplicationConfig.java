@@ -40,6 +40,10 @@ import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.IgniteCacheFactory;
 import com.gs.photo.common.workflow.IgniteDAO;
+import com.gs.photo.common.workflow.exif.ExifServiceImpl;
+import com.gs.photo.common.workflow.exif.IExifService;
+import com.gs.photo.workflow.extimginfo.config.SpecificApplicationProperties;
+import com.gs.photo.workflow.extimginfo.impl.AccessDirectlyFile;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
@@ -139,5 +143,17 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @Bean
     @ConfigurationPropertiesBinding
     public StringToFactoryConverter converter() { return new StringToFactoryConverter(); }
+
+    @Bean
+    public IAccessDirectlyFile accessDirectlyFile() { return new AccessDirectlyFile(); }
+
+    @Bean
+    @ConfigurationProperties(prefix = "application-specific")
+    public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
+
+    @Bean
+    public IExifService exifService(SpecificApplicationProperties properties) {
+        return new ExifServiceImpl(properties.getExifFiles());
+    }
 
 }

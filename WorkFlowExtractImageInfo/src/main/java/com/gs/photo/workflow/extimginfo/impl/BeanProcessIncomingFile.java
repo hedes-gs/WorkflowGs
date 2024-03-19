@@ -34,8 +34,6 @@ import org.apache.kafka.common.errors.ProducerFencedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
@@ -43,13 +41,14 @@ import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.exif.IExifService;
-import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
 import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.common.workflow.internal.KafkaManagedWfEvent;
+import com.gs.photo.workflow.extimginfo.IAccessDirectlyFile;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photo.workflow.extimginfo.IProcessIncomingFiles;
+import com.gs.photo.workflow.extimginfo.config.SpecificApplicationProperties;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
 import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
 import com.workflow.model.ExchangedTiffData;
@@ -101,22 +100,21 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     @Autowired
     protected IFileMetadataExtractor                    beanFileMetadataExtractor;
 
-    @Qualifier("consumerForTopicWithFileToProcessValue")
     @Autowired
     protected Supplier<Consumer<String, FileToProcess>> kafkaConsumerSupplierForFileToProcessValue;
 
     @Autowired
-    @Qualifier("producerForTransactionPublishingExifTopic")
     protected Supplier<Producer<String, HbaseData>>     producerSupplierForTransactionPublishingOnExifTopic;
 
-    @Value("${kafka.consumer.batchSizeForParallelProcessingIncomingRecords}")
     protected int                                       batchSizeForParallelProcessingIncomingRecords;
+    @Autowired
+    protected SpecificApplicationProperties             specificApplicationProperties;
 
     @Autowired
     protected IIgniteDAO                                iIgniteDAO;
 
     @Autowired
-    protected FileUtils                                 fileUtils;
+    protected IAccessDirectlyFile                       accessDirectlyFile;
 
     @Override
     public void init() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
@@ -189,12 +187,12 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .toStreamV2(
                         200,
                         consumerForTopicWithFileToProcessValue,
-                        this.batchSizeForParallelProcessingIncomingRecords,
+                        this.specificApplicationProperties.getBatchSizeForParallelProcessingIncomingRecords(),
                         true,
                         (i) -> this.startTransactionForRecords(i),
                         timeMeasurement)
                     .map((rec) -> this.toKafkaManagedObject(rec))
-                    .map((kmo) -> this.send(kmo, producerForTransactionPublishingOnExifOrImageTopic))
+                    .map((kmo) -> this.sendFoundTiffObjects(kmo, producerForTransactionPublishingOnExifOrImageTopic))
                     .flatMap(
                         t -> t.join()
                             .stream())
@@ -217,7 +215,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                             t.getValue()))
                     .map(
                         t -> new EventsAndGenericKafkaManagedObject(
-                            this.send(t.wfEvents(), producerForTransactionPublishingOnExifOrImageTopic)
+                            this.sendEvents(t.wfEvents(), producerForTransactionPublishingOnExifOrImageTopic)
                                 .join(),
                             t.wfEvents(),
                             t.genericKafkaManagedObject()))
@@ -270,7 +268,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         }
     }
 
-    private CompletableFuture<RecordMetadata> send(
+    private CompletableFuture<RecordMetadata> sendEvents(
         WfEvents wfe,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
@@ -308,8 +306,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(kmo.getTopic(),
                     kmo.getObjectKey(),
                     objectToSend);
+                BeanProcessIncomingFile.LOGGER
+                    .info("Kafka Sending object with class {} , id = {}", objectToSend.getClass(), kmo.getObjectKey());
                 producerForTransactionPublishingOnExifOrImageTopic
-                    .send(pr, (r, e) -> this.process(kmo.getObjectKey(), r, e));
+                    .send(pr, (r, e) -> this.processErrorWhileSending(kmo.getObjectKey(), r, e));
 
                 return KafkaManagedWfEvent.builder()
                     .withKafkaOffset(kmo.getKafkaOffset())
@@ -324,7 +324,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             .collect(Collectors.toList());
     }
 
-    private CompletableFuture<Collection<GenericKafkaManagedObject<? extends WfEvent>>> send(
+    private CompletableFuture<Collection<GenericKafkaManagedObject<? extends WfEvent>>> sendFoundTiffObjects(
         CompletableFuture<Collection<GenericKafkaManagedObject<?>>> kmoFuture,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
@@ -332,7 +332,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             kmoStream -> this.processKmoStream(kmoStream, producerForTransactionPublishingOnExifOrImageTopic));
     }
 
-    private void process(String imgId, RecordMetadata r, Exception e) {
+    private void processErrorWhileSending(String imgId, RecordMetadata r, Exception e) {
         if (e == null) {
             BeanProcessIncomingFile.LOGGER.info("[EVENT][{}] send object to {} ", imgId, r.toString());
         } else {
@@ -369,7 +369,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             fileToProcess.getImageId(),
             fileToProcess);
         try {
-            return Optional.ofNullable(this.fileUtils.readFirstBytesOfFileRetry(fileToProcess));
+            Optional<byte[]> retValue = this.accessDirectlyFile.readFirstBytesOfFileRetry(fileToProcess);
+            BeanProcessIncomingFile.LOGGER.info("... retValue {} ", retValue.isPresent());
+            return retValue;
+
         } catch (Exception e) {
             BeanProcessIncomingFile.LOGGER.warn(
                 "[EVENT][{}]Unable to get key Ignite for {},  unexpected error {}",
@@ -377,6 +380,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 fileToProcess,
                 ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
+        } finally {
+            BeanProcessIncomingFile.LOGGER.info("Retrieved directly {}", fileToProcess.getImageId());
         }
     }
 

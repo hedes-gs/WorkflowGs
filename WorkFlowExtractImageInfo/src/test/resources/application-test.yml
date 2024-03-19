@@ -1,0 +1,138 @@
+application-specific:
+   batch-size-for-parallel-processing-incoming-records: 1
+   exif-files:
+     - sony-exif.csv
+     - standard-exif.csv
+ignite:
+  caches:
+    defaultCache: start-raw-files
+    cachesPerclasses:
+      com.workflow.model.HbaseImageThumbnail: hbase-data-pojo
+  igniteInstanceName: properties-instance-name
+  communicationSpi:
+    messageQueueLimit: 128
+    ackSendThreshold: 4
+    socketWriteTimeout: 60000
+  discoverySpi:
+    ackTimeout: 30000
+    ipFinder:
+      addresses: ipc10:47500..47510,ipc9:47500..47510,ipc7:47500..47510,ipc8:47500..47510
+  dataStorageConfiguration:
+    defaultDataRegionConfiguration:
+      initialSize: 10485760 #10MB
+    dataRegionConfigurations:
+      - name: 1GB_Region
+        initialSize: 1048576000 #100MB
+  cacheConfiguration:
+    - name: start-raw-files
+      cacheMode: PARTITIONED
+      atomicityMode: ATOMIC
+      backups: 1
+      readFromBackup: false
+      copyOnRead: true
+      partitionLossPolicy: READ_ONLY_SAFE
+      writeSynchronizationMode: PRIMARY_SYNC
+      dataRegionName: 1GB_Region
+      onheapCacheEnabled: true
+      evictionPolicyFactory: |
+        type: LRU
+        maxSize:  2000      
+    - name: hbase-data-pojo
+      cacheMode: PARTITIONED
+      atomicityMode: ATOMIC
+      backups: 1
+      readFromBackup: false
+      copyOnRead: true
+      partitionLossPolicy: READ_ONLY_SAFE
+      writeSynchronizationMode: PRIMARY_SYNC
+      dataRegionName: 1GB_Region
+      onheapCacheEnabled: true
+      evictionPolicyFactory: |
+        type: LRU
+        maxSize:  2000
+
+kafka:
+  bootstrap-servers: IPC0:9092,IPC1:9092,IPC2:9092,IPC3:9092,IPC5:9092,IPC6:9092,IPC7:9092,IPC8:9092
+  security-kerberos-name: kafka
+  application-id: my_application
+  meta-data-max-age-in-ms: 60000
+  topics:
+    inputImageNameTopic: topic-image-name
+    pathNameTopic: topic-path-image
+    scan-output-child-parent: topic-scan-output-file-child-with-parent
+    scan-output: topic-file-found-in-scan
+    topicCopyOtherFile: topic-copy-other-file
+    topicLocalFileCopy: topic-local-file-copy
+    topicCountOfImagesPerDate: topic-count-of-images-per-date
+    topicDupFilteredFile: topic-dup-filtered-file
+    topicDuplicateKeyImageFound: topic-duplicate-key-image-found
+    topicEvent: topic-event
+    topicExif: topic-exif
+    topicExifImageDataToPersist: topic-exif-image-data-to-persist
+    topicFileHashKey: topic-file-hash-key
+    topicImageDataToPersist: topic-image-data-to-persist
+    topicImageDate: topic-topic-image-date
+    topicProcessedFile: topic-processed-file
+    topicScannedFiles: topic-scanned-files
+    topicScannedFilesChild: topic-scanned-files-child
+    topicThumb: topic-thumb
+    topicTransformedThumb: topic-transformed-thumb
+    topicExifSizeOfImageStream: topic-exif-size-of-image-stream
+    topicComponentStatus: topic-component-status
+    topicImportEvent: topic-import-event
+    topicFullyProcessedImage: topic-fully-processed-image
+    finalTopic: topic-fully-processed-images
+  consumers-type:
+   batch_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes: 4194304
+     fetch-max-wait-ms: 10000
+     max-poll-records: 500
+     max-poll-intervall-ms: 1200000
+     retryBackoffMsmaxRequestSize: 250
+     reconnectBackoffMs: 100
+     heartbeat-intervall-ms: 30000
+     sessionTimeoutMs: 180000
+   on_the_fly_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes: 524288 
+     fetch-max-wait-ms:  250 
+     max-poll-records:  500 
+     max-poll-intervall-ms:  1200000 
+     retryBackoffMsmaxRequestSize:  250 
+     reconnectBackoffMs:  100 
+     heartbeat-intervall-ms:  30000 
+     sessionTimeoutMs:  180000 
+   medium_consumer_type:
+     batchSizeForParallelProcessingIncomingRecords: 15
+     fetch-max-bytes:  524288 
+     fetch-max-wait-ms:  1000 
+     max-poll-records:  500 
+     max-poll-intervall-ms:  1200000 
+     retryBackoffMsmaxRequestSize:  250 
+     reconnectBackoffMs:  100 
+     heartbeat-intervall-ms:  30000 
+     sessionTimeoutMs:  180000 
+  producers-type:
+    batch_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  10000 
+      maxBatchSize:  4194304 
+      transaction-id: transacTionId
+      transaction-timeout:  180000 
+    on_the_fly_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  250 
+      maxBatchSize:  512000 
+      transaction-id:  transacTionId
+      transaction-timeout:  180000 
+    medium_producer_type:
+      maxBlockMsConfig:  180000 
+      maxRequestSize:  4194304 
+      lingerInMillis:  1000 
+      maxBatchSize:  1024000 
+      transaction-id:  transacTionId
+      transaction-timeout:  180000
+      

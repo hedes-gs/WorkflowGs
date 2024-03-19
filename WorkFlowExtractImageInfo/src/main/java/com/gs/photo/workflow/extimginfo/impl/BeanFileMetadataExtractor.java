@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.gs.photo.common.workflow.exif.IExifService;
-import com.gs.photo.common.workflow.impl.FileUtils;
+import com.gs.photo.workflow.extimginfo.IAccessDirectlyFile;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photos.workflow.extimginfo.metadata.AbstractTemplateTag;
 import com.gs.photos.workflow.extimginfo.metadata.FileChannelDataInput;
@@ -29,15 +29,15 @@ import com.workflow.model.files.FileToProcess;
 @Service
 public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
 
-    public static final int STREAM_HEAD = 0x00;
+    public static final int       STREAM_HEAD = 0x00;
 
-    private static Logger   LOGGER      = LoggerFactory.getLogger(BeanFileMetadataExtractor.class);
-
-    @Autowired
-    protected IExifService  exifService;
+    private static Logger         LOGGER      = LoggerFactory.getLogger(BeanFileMetadataExtractor.class);
 
     @Autowired
-    protected FileUtils     fileUtils;
+    protected IExifService        exifService;
+
+    @Autowired
+    protected IAccessDirectlyFile accessDirectlyFile;
 
     @Override
     public Optional<Collection<IFD>> readIFDs(Optional<byte[]> image, FileToProcess fileToProcess) {
@@ -67,7 +67,9 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
                     } else {
                         BeanFileMetadataExtractor.LOGGER
                             .warn("[EVENT][{}]Buffer too small, increasing it", fileToProcess.getImageId());
-                        localbuffer = this.fileUtils.readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess);
+                        localbuffer = this.accessDirectlyFile
+                            .readFirstBytesOfFileRetryWithbufferIncreased(fileToProcess)
+                            .get();
                         bufferAlreadyIncreased = true;
                     }
                 } catch (Exception e) {
