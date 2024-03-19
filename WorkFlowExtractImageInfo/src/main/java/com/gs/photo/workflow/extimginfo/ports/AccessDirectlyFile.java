@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.extimginfo.impl;
+package com.gs.photo.workflow.extimginfo.ports;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.gs.photo.common.workflow.impl.FileUtils;
-import com.gs.photo.workflow.extimginfo.IAccessDirectlyFile;
 import com.workflow.model.files.FileToProcess;
 
 public class AccessDirectlyFile implements IAccessDirectlyFile {

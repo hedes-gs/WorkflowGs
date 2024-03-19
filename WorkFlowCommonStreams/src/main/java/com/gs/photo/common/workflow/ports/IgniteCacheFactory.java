@@ -1,9 +1,11 @@
-package com.gs.photo.common.workflow;
+package com.gs.photo.common.workflow.ports;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.gs.photo.common.workflow.IIgniteProperties;
 
 public class IgniteCacheFactory implements IIgniteCacheFactory {
 

@@ -32,18 +32,18 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photo.common.workflow.AbstractApplicationKafkaProperties;
-import com.gs.photo.common.workflow.IIgniteCacheFactory;
-import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.IIgniteProperties;
 import com.gs.photo.common.workflow.IKafkaConsumerFactory;
 import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
-import com.gs.photo.common.workflow.IgniteCacheFactory;
-import com.gs.photo.common.workflow.IgniteDAO;
 import com.gs.photo.common.workflow.exif.ExifServiceImpl;
 import com.gs.photo.common.workflow.exif.IExifService;
+import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
+import com.gs.photo.common.workflow.ports.IgniteDAO;
 import com.gs.photo.workflow.extimginfo.config.SpecificApplicationProperties;
-import com.gs.photo.workflow.extimginfo.impl.AccessDirectlyFile;
+import com.gs.photo.workflow.extimginfo.ports.AccessDirectlyFile;
+import com.gs.photo.workflow.extimginfo.ports.IAccessDirectlyFile;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
@@ -107,7 +107,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
     @Bean
     public IIgniteCacheFactory igniteCacheFactory(Ignite beanIgnite, IIgniteProperties igniteProperties) {
-        return new IgniteCacheFactory(beanIgnite, igniteProperties);
+        return new com.gs.photo.common.workflow.ports.IgniteCacheFactory(beanIgnite, igniteProperties);
     }
 
     @Bean

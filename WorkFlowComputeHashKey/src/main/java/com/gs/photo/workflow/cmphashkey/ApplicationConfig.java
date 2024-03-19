@@ -33,15 +33,15 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photo.common.workflow.AbstractApplicationKafkaProperties;
-import com.gs.photo.common.workflow.IIgniteCacheFactory;
-import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.IIgniteProperties;
 import com.gs.photo.common.workflow.IKafkaConsumerFactory;
 import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
-import com.gs.photo.common.workflow.IgniteCacheFactory;
-import com.gs.photo.common.workflow.IgniteDAO;
 import com.gs.photo.common.workflow.impl.FileUtils;
+import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
+import com.gs.photo.common.workflow.ports.IgniteCacheFactory;
+import com.gs.photo.common.workflow.ports.IgniteDAO;
 import com.workflow.model.files.FileToProcess;
 
 @Configuration

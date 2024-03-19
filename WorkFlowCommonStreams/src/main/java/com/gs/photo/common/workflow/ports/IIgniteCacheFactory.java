@@ -1,4 +1,4 @@
-package com.gs.photo.common.workflow;
+package com.gs.photo.common.workflow.ports;
 
 import org.apache.ignite.IgniteCache;
 

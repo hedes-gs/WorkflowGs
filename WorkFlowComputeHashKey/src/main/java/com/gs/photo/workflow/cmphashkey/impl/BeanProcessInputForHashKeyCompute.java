@@ -24,11 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.cmphashkey.IBeanImageFileHelper;
 import com.gs.photo.workflow.cmphashkey.IProcessInputForHashKeyCompute;
 import com.gs.photo.workflow.cmphashkey.config.IApplicationProperties;

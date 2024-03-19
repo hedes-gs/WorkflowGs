@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.extimginfo;
+package com.gs.photo.workflow.extimginfo.ports;
 
 import java.util.Optional;
 

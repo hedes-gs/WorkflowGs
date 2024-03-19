@@ -47,10 +47,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
-import com.gs.photo.common.workflow.IIgniteDAO;
-import com.gs.photo.workflow.extimginfo.IAccessDirectlyFile;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photo.workflow.extimginfo.WorkflowExtractImageInfo;
+import com.gs.photo.workflow.extimginfo.ports.IAccessDirectlyFile;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
 import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
 import com.workflow.model.ExchangedTiffData;

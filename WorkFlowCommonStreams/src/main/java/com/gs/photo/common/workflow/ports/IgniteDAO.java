@@ -1,4 +1,4 @@
-package com.gs.photo.common.workflow;
+package com.gs.photo.common.workflow.ports;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -8,6 +8,8 @@ import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
 
 public class IgniteDAO implements IIgniteDAO {
 

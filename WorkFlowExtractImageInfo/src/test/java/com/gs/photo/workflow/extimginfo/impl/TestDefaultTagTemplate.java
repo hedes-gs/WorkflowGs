@@ -27,10 +27,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
-import com.gs.photo.common.workflow.IIgniteDAO;
-import com.gs.photo.common.workflow.IgniteCacheFactory;
 import com.gs.photo.common.workflow.exif.ExifServiceImpl;
-import com.gs.photo.common.workflow.iginite.IgniteSpringBean;
+import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.extimginfo.ApplicationConfig;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photos.workflow.extimginfo.metadata.FileChannelDataInput;
@@ -64,10 +63,7 @@ public class TestDefaultTagTemplate {
     protected Producer<String, Object>        producerForTransactionPublishingOnExifOrImageTopic;
 
     @MockBean
-    protected IgniteCacheFactory              igniteCacheFactory;
-
-    @MockBean
-    protected IgniteSpringBean                igniteSpringBean;
+    protected IIgniteCacheFactory             igniteCacheFactory;
 
     @Autowired
     @MockBean
@@ -97,7 +93,7 @@ public class TestDefaultTagTemplate {
 
     @Test
     public void testCreateSimpleTiffFields() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(this.iIgniteDAO.get("1"), null)
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .forEach((tif) -> {

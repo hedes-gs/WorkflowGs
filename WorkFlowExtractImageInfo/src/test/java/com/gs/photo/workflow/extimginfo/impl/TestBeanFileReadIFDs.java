@@ -28,8 +28,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.gs.photo.common.workflow.IIgniteDAO;
 import com.gs.photo.common.workflow.exif.ExifServiceImpl;
+import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.extimginfo.ApplicationConfig;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
@@ -99,10 +99,12 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet115TiffFieldWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
-            FileToProcess.builder()
-                .withImageId("1")
-                .build())
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor
+            .readIFDs(
+                this.iIgniteDAO.get("1"),
+                FileToProcess.builder()
+                    .withImageId("1")
+                    .build())
             .get();
         Assert.assertEquals(
             115,
@@ -113,10 +115,12 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldPrint90TiffFieldWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
-            FileToProcess.builder()
-                .withImageId("1")
-                .build())
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor
+            .readIFDs(
+                this.iIgniteDAO.get("1"),
+                FileToProcess.builder()
+                    .withImageId("1")
+                    .build())
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .forEach((tif) -> this.LOGGER.info(tif));
@@ -124,10 +128,12 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldFilter13TiffFieldsWhenSonyARWIsAnA7IIInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(
-            FileToProcess.builder()
-                .withImageId("1")
-                .build())
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor
+            .readIFDs(
+                this.iIgniteDAO.get("1"),
+                FileToProcess.builder()
+                    .withImageId("1")
+                    .build())
             .get();
         IFD.tiffFieldsAsStream(allIfds.stream())
             .filter((t) -> this.isARecordedField(t))
@@ -183,7 +189,7 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet2JpgFilesWhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(this.iIgniteDAO.get("1"), null)
             .get();
         Assert.assertEquals(
             2,
@@ -209,7 +215,7 @@ public class TestBeanFileReadIFDs {
 
     @Test
     public void shouldGet2DateTimeExifAtPath0x2A_0x8769‬_WhenSonyARWIsAnInputFile() {
-        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(null)
+        Collection<IFD> allIfds = this.beanFileMetadataExtractor.readIFDs(this.iIgniteDAO.get("1"), null)
             .get();
 
         long count = IFD.tiffFieldsAsStream(allIfds.stream())

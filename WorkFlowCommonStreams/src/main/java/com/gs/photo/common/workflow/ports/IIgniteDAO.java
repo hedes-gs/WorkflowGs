@@ -1,4 +1,4 @@
-package com.gs.photo.common.workflow;
+package com.gs.photo.common.workflow.ports;
 
 import java.io.Serializable;
 import java.util.Map;

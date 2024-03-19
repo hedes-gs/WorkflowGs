@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.gs.photo.common.workflow.exif.IExifService;
-import com.gs.photo.workflow.extimginfo.IAccessDirectlyFile;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
+import com.gs.photo.workflow.extimginfo.ports.IAccessDirectlyFile;
 import com.gs.photos.workflow.extimginfo.metadata.AbstractTemplateTag;
 import com.gs.photos.workflow.extimginfo.metadata.FileChannelDataInput;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
