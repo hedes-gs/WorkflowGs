@@ -16,7 +16,23 @@ public interface IKafkaProperties {
         String topicScannedFilesChild,
         String topicHashKeyOutput,
         String topicTransformedThumb,
-        String pathNameTopic
+        String pathNameTopic,
+        String finalTopic,
+        String inputImageNameTopic,
+        String scanOutput,
+        String scanOutputChildParent,
+        String topicCopyOtherfile,
+        String topicCountOfImagesPerDate,
+        String topicDuplicateKeyImageFound,
+        String topicExifImageDataToPersist,
+        String topicExifSizeOfImageStream,
+        String topicFileHashkey,
+        String topicFullyProcessedImage,
+        String topicImageDataToPersist,
+        String topicImageDate,
+        String topicLocalFileCopy,
+        String topicProcessedFile,
+        String topicScannedFiles
     ) {}
 
     public int getMetaDataMaxAgeInMs();
