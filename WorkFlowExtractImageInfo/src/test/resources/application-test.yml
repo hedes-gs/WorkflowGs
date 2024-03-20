@@ -19,7 +19,7 @@ ignite:
       addresses: ipc10:47500..47510,ipc9:47500..47510,ipc7:47500..47510,ipc8:47500..47510
   dataStorageConfiguration:
     defaultDataRegionConfiguration:
-      initialSize: 10485760 #10MB
+      initialSize: 10485760
     dataRegionConfigurations:
       - name: 1GB_Region
         initialSize: 1048576000 #100MB

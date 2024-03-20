@@ -29,6 +29,7 @@ prod.properties
 target
 .project
 .classpath
+my_application
 
 *.icc
 /WorkFlow/ansible/tmp.txt

@@ -76,6 +76,11 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     protected static final short[] SONY_EXIF_LENS_PATH = { (short) 0, (short) 0x8769, (short) 0x927c };
     protected static final short[] EXIF_LENS_PATH      = { (short) 0, (short) 0x8769 };
 
+    record FileToProcessInformation(
+        Optional<byte[]> image,
+        FileToProcess fileToProcess
+    ) {}
+
     static {
         try {
 
@@ -388,32 +393,31 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     protected CompletableFuture<Collection<GenericKafkaManagedObject<?>>> toKafkaManagedObject(
         ConsumerRecord<String, FileToProcess> rec
     ) {
-        record FileToProcessInformation(
-            Optional<byte[]> image,
-            FileToProcess fileToProcess
-        ) {}
+
         BeanProcessIncomingFile.LOGGER.info(
             "[EVENT][{}] Reading IFDs for file = {}, at offset = {}, topic = {} ",
             rec.key(),
             rec.value(),
             rec.offset(),
             rec.topic());
+        final String imageId = rec.value()
+            .getImageId();
+        final FileToProcess value = rec.value();
         CompletableFuture<Collection<GenericKafkaManagedObject<?>>> future = CompletableFuture
-            .supplyAsync(
-                () -> new FileToProcessInformation(this.iIgniteDAO.get(
-                    rec.value()
-                        .getImageId()),
-                    rec.value()))
-            .thenApply(
-                v -> v.image()
-                    .isPresent() ? v
-                        : new FileToProcessInformation(this.retrieveDirectly(v.fileToProcess()), v.fileToProcess()))
+            .supplyAsync(() -> new FileToProcessInformation(this.iIgniteDAO.get(imageId), value))
+            .thenApply(v -> this.ensureImageIsPresent(v))
             .thenApplyAsync(v -> this.beanFileMetadataExtractor.readIFDs(v.image(), v.fileToProcess()))
             .thenApply(
-                v -> v.map(t -> this.toStreamOfKMO(t, rec))
-                    .map(t -> t.collect(Collectors.toList()))
-                    .orElse(Collections.EMPTY_LIST));
+                v -> v.stream()
+                    .flatMap(t -> this.toStreamOfKMO(t, rec))
+                    .collect(Collectors.toList()));
         return future;
+    }
+
+    private FileToProcessInformation ensureImageIsPresent(FileToProcessInformation v) {
+        return v.image()
+            .isPresent() ? v
+                : new FileToProcessInformation(this.retrieveDirectly(v.fileToProcess()), v.fileToProcess());
     }
 
     protected Stream<GenericKafkaManagedObject<?>> toStreamOfKMO(
@@ -426,25 +430,25 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         Stream<GenericKafkaManagedObject<?>> streamOfDefaultOptionalParameters = Stream.empty();
         if (optionalParameters.size() < 4) {
             List<GenericKafkaManagedObject<?>> optionalParametersList = new ArrayList<>(optionalParameters.size());
-            this.updateListOfOptionalParameter(
+            this.updateListOfMandatoryParameter(
                 rec,
                 optionalParameters,
                 optionalParametersList,
                 BeanProcessIncomingFile.EXIF_COPYRIGHT,
                 BeanProcessIncomingFile.EXIF_COPYRIGHT_PATH);
-            this.updateListOfOptionalParameter(
+            this.updateListOfMandatoryParameter(
                 rec,
                 optionalParameters,
                 optionalParametersList,
                 BeanProcessIncomingFile.EXIF_ARTIST,
                 BeanProcessIncomingFile.EXIF_ARTIST_PATH);
-            this.updateListOfOptionalParameter(
+            this.updateListOfMandatoryParameter(
                 rec,
                 optionalParameters,
                 optionalParametersList,
                 BeanProcessIncomingFile.EXIF_LENS,
                 BeanProcessIncomingFile.EXIF_LENS_PATH);
-            this.updateListOfOptionalParameter(
+            this.updateListOfMandatoryParameter(
                 rec,
                 optionalParameters,
                 optionalParametersList,
@@ -527,7 +531,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         return foundImages;
     }
 
-    protected void updateListOfOptionalParameter(
+    protected void updateListOfMandatoryParameter(
         ConsumerRecord<String, FileToProcess> rec,
         List<TiffFieldAndPath> optionalParameters,
         List<GenericKafkaManagedObject<?>> optionalParametersList,
@@ -561,7 +565,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         }
     }
 
-    protected void updateListOfOptionalParameter(
+    protected void updateListOfMandatoryParameter(
         ConsumerRecord<String, FileToProcess> rec,
         List<TiffFieldAndPath> optionalParameters,
         List<GenericKafkaManagedObject<?>> optionalParametersList,

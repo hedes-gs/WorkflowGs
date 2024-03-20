@@ -1,78 +1,90 @@
 package com.gs.photo.workflow.streams;
 
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.UUID;
 
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.InvalidGroupIdException;
-import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.TestInputTopic;
+import org.apache.kafka.streams.TestOutputTopic;
+import org.apache.kafka.streams.TopologyTestDriver;
+import org.apache.kafka.streams.test.TestRecord;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.workflow.dupcheck.ApplicationConfig;
 import com.gs.photo.workflow.dupcheck.IDuplicateCheck;
+import com.gs.photo.workflow.dupcheck.config.IKafkaStreamProperties;
+import com.gs.photos.serializers.FileToProcessDeserializer;
+import com.gs.photos.serializers.FileToProcessSerializer;
+import com.workflow.model.events.ImportEvent;
+import com.workflow.model.files.FileToProcess;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = ApplicationConfig.class)
+@ActiveProfiles("test")
 public class BeanDuplicateCheckTest {
 
-    @Value("${topic.pathNameTopic}")
-    protected String                   pathNameTopic;
-    @Value("${bootstrap.servers}")
-    protected String                   bootstrapServers;
-    @Value("${topic.topicDuplicateKeyImageFound}")
-    protected String                   duplicateImageFoundTopic;
-    @Value("${topic.uniqueImageFoundTopic}")
-    protected String                   uniqueImageFoundTopic;
+    @Autowired
+    protected IKafkaStreamProperties applicationSpecificProperties;
 
     @Autowired
-    protected Consumer<String, String> consumerForTopicWithStringKey;
+    @MockBean
+    public Void                      duplicateCheckInit;
 
     @Autowired
-    protected Producer<String, String> producerForPublishingOnImageTopic;
+    @Qualifier("kafkaStreamTopologyProperties")
+    protected Properties             kafkaStreamTopologyProperties;
 
     @Autowired
-    protected IDuplicateCheck          beanDuplicateCheck;
+    protected IDuplicateCheck        beanDuplicateCheck;
 
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {}
+    protected TopologyTestDriver     testDriver;
 
-    @Before
-    public void setUp() throws Exception {}
+    @BeforeEach
+    public void setUp() throws Exception {
+        this.testDriver = new TopologyTestDriver(this.beanDuplicateCheck.buildKafkaStreamsTopology(),
+            this.kafkaStreamTopologyProperties);
+    }
 
     @Test
-    @Ignore
     public void shouldReceiveOnlyOneMessageOnFilteredTopicWhenOneMessageIsSent() {
         try {
-            KafkaStreams kafkaStreams = this.beanDuplicateCheck.buildKafkaStreamsTopology();
-            kafkaStreams.start();
             String id = UUID.randomUUID()
                 .toString();
-            this.producerForPublishingOnImageTopic
-                .send(new ProducerRecord<String, String>(this.pathNameTopic, id, "3"));
-            this.producerForPublishingOnImageTopic.flush();
 
-            this.consumerForTopicWithStringKey
-                .subscribe(Arrays.asList(this.duplicateImageFoundTopic, this.uniqueImageFoundTopic));
-            ConsumerRecords<String, String> records = this.consumerForTopicWithStringKey.poll(10000);
-            Assert.assertNotNull(records);
-            Assert.assertEquals(1, records.count());
-            String key = null;
-            for (ConsumerRecord<String, String> cr : records.records(this.uniqueImageFoundTopic)) {
-                key = cr.key();
-            }
-            Assert.assertEquals(id, key);
+            TestInputTopic<String, FileToProcess> inputTopic = this.testDriver.createInputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicFileHashkey(),
+                new StringSerializer(),
+                new FileToProcessSerializer());
+            TestOutputTopic<String, FileToProcess> outputTopicDeduplicated = this.testDriver.createOutputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicDupFilteredFile(),
+                new StringDeserializer(),
+                new FileToProcessDeserializer());
+            TestOutputTopic<String, FileToProcess> outputTopicDuplicateFound = this.testDriver.createOutputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicDuplicateKeyImageFound(),
+                new StringDeserializer(),
+                new FileToProcessDeserializer());
+
+            inputTopic.pipeInput(new TestRecord<String, FileToProcess>(id, this.buildFileToProcess(id)));
+            Assert.assertEquals(false, outputTopicDeduplicated.isEmpty());
+            KeyValue<String, FileToProcess> outPut = outputTopicDeduplicated.readKeyValue();
+            Assert.assertEquals(id, outPut.key);
+            Assert.assertEquals(true, outputTopicDuplicateFound.isEmpty());
 
         } catch (InvalidGroupIdException e) {
             e.printStackTrace();
@@ -82,78 +94,60 @@ public class BeanDuplicateCheckTest {
     }
 
     @Test
-    @Ignore
-
-    public void shouldReceiveOnlyOneMessageOnDuplicateTopicWhen2MessagesAreSent() {
-        KafkaStreams kafkaStreams = this.beanDuplicateCheck.buildKafkaStreamsTopology();
-        kafkaStreams.start();
-        String id = UUID.randomUUID()
-            .toString();
-        this.producerForPublishingOnImageTopic.send(new ProducerRecord<String, String>(this.pathNameTopic, id, "3"));
-        this.producerForPublishingOnImageTopic.send(new ProducerRecord<String, String>(this.pathNameTopic, id, "4"));
-        this.producerForPublishingOnImageTopic.flush();
-
-        this.consumerForTopicWithStringKey
-            .subscribe(Arrays.asList(this.duplicateImageFoundTopic, this.uniqueImageFoundTopic));
-        int nbOfFoundUniqueKey = 0;
-        int nbOfFoundDuplicateKey = 0;
-        while (true) {
-            ConsumerRecords<String, String> records = this.consumerForTopicWithStringKey.poll(10000);
-
-            if ((records != null) && (records.count() > 0)) {
-                for (ConsumerRecord<String, String> cr : records.records(this.uniqueImageFoundTopic)) {
-                    if (id.equals(cr.key())) {
-                        nbOfFoundUniqueKey++;
-                    }
-                }
-                for (ConsumerRecord<String, String> cr : records.records(this.duplicateImageFoundTopic)) {
-                    if (("DUP-" + id).equals(cr.key())) {
-                        nbOfFoundDuplicateKey++;
-                    }
-                }
-                this.consumerForTopicWithStringKey.commitSync();
-
-            } else {
-                break;
-            }
-
-        }
-        Assert.assertEquals(1, nbOfFoundDuplicateKey);
-        Assert.assertEquals(1, nbOfFoundUniqueKey);
-    }
-
-    @Test
-    @Ignore
-
     public void shouldReceiveOnlyOneMessageOnFilteredTopicWhen2MessagesWithSameKeyAreSent() {
         try {
-            KafkaStreams kafkaStreams = this.beanDuplicateCheck.buildKafkaStreamsTopology();
-            kafkaStreams.start();
             String id = UUID.randomUUID()
                 .toString();
-            this.producerForPublishingOnImageTopic
-                .send(new ProducerRecord<String, String>(this.pathNameTopic, id, "3"));
-            this.producerForPublishingOnImageTopic
-                .send(new ProducerRecord<String, String>(this.pathNameTopic, id, "4"));
-            this.producerForPublishingOnImageTopic.flush();
 
-            this.consumerForTopicWithStringKey
-                .subscribe(Arrays.asList(this.duplicateImageFoundTopic, this.uniqueImageFoundTopic));
-            do {
-                ConsumerRecords<String, String> record = this.consumerForTopicWithStringKey.poll(10000);
-                if ((record != null) && (record.count() > 0)) {
-                    record.forEach((c) -> System.err.println("Receive " + c.key() + " on topic " + c.topic()));
-                    this.consumerForTopicWithStringKey.commitSync();
+            TestInputTopic<String, FileToProcess> inputTopic = this.testDriver.createInputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicFileHashkey(),
+                new StringSerializer(),
+                new FileToProcessSerializer());
+            TestOutputTopic<String, FileToProcess> outputTopicDeduplicated = this.testDriver.createOutputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicDupFilteredFile(),
+                new StringDeserializer(),
+                new FileToProcessDeserializer());
+            TestOutputTopic<String, FileToProcess> outputTopicDuplicateFound = this.testDriver.createOutputTopic(
+                this.applicationSpecificProperties.getTopics()
+                    .topicDuplicateKeyImageFound(),
+                new StringDeserializer(),
+                new FileToProcessDeserializer());
 
-                } else {
-                    break;
-                }
-            } while (true);
+            inputTopic.pipeInput(new TestRecord<String, FileToProcess>(id, this.buildFileToProcess(id)));
+            inputTopic.pipeInput(new TestRecord<String, FileToProcess>(id, this.buildFileToProcess(id)));
+            Assert.assertEquals(false, outputTopicDeduplicated.isEmpty());
+            KeyValue<String, FileToProcess> outPut = outputTopicDeduplicated.readKeyValue();
+            Assert.assertEquals(true, outputTopicDeduplicated.isEmpty());
+            Assert.assertEquals(id, outPut.key);
+            Assert.assertEquals(false, outputTopicDuplicateFound.isEmpty());
+            KeyValue<String, FileToProcess> outPutDuplicateFound = outputTopicDuplicateFound.readKeyValue();
+            Assert.assertEquals("DUP-" + id, outPutDuplicateFound.key);
+
         } catch (InvalidGroupIdException e) {
             e.printStackTrace();
             throw e;
         }
 
+    }
+
+    private FileToProcess buildFileToProcess(String id) {
+        return FileToProcess.builder()
+            .withDataId("dataId")
+            .withImageId(id)
+            .withName("dataId")
+            .withUrl("monurl")
+            .withCompressedFile(false)
+            .withIsLocal(false)
+            .withImportEvent(
+                ImportEvent.builder()
+                    .withAlbum("MyAlbum")
+                    .withImportName("Mon import")
+                    .withKeyWords(Arrays.asList("kw1", "kw2"))
+                    .withScanFolder("Scan folder")
+                    .build())
+            .build();
     }
 
 }

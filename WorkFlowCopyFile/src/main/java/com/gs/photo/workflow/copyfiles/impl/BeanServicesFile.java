@@ -1,7 +1,9 @@
 package com.gs.photo.workflow.copyfiles.impl;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,22 +12,40 @@ import java.text.DecimalFormat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.copyfiles.IServicesFile;
+import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
+import com.workflow.model.files.FileToProcess;
 
 @Service
 public class BeanServicesFile implements IServicesFile {
 
-    private static final String          FOLDER    = "FOLDER_";
+    private static final String             FOLDER    = "FOLDER_";
 
-    protected static Logger              LOGGER    = LoggerFactory.getLogger(IServicesFile.class);
+    protected static Logger                 LOGGER    = LoggerFactory.getLogger(IServicesFile.class);
 
-    protected static final DecimalFormat FORMATTER = new DecimalFormat("00000000");
+    protected static final DecimalFormat    FORMATTER = new DecimalFormat("00000000");
 
-    @Value("${copy.maxNumberOfFilesInAFolder}")
-    protected int                        maxNumberOfFilesInAFolder;
+    @Autowired
+    protected SpecificApplicationProperties specificApplicationProperties;
+
+    protected FileUtils                     fileUtils = new FileUtils();
+
+    @Override
+    public void copyRemoteToLocal(FileToProcess file, File destFile) throws IOException {
+
+        try (
+            OutputStream os = new FileOutputStream(destFile)) {
+            this.fileUtils.copyRemoteToLocal(file, os);
+            destFile.setWritable(true, false);
+            destFile.setReadable(true, false);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /*
      * (non-Javadoc)
@@ -41,7 +61,8 @@ public class BeanServicesFile implements IServicesFile {
             if (Files.isSymbolicLink(currentLink)) {
                 File[] nbOfFiles = currentLink.toFile()
                     .listFiles();
-                if ((nbOfFiles == null) || (nbOfFiles.length < this.maxNumberOfFilesInAFolder)) {
+                if ((nbOfFiles == null)
+                    || (nbOfFiles.length < this.specificApplicationProperties.getMaxNumberOfFilesInAFolder())) {
                     return currentLink.toAbsolutePath();
                 }
                 try {

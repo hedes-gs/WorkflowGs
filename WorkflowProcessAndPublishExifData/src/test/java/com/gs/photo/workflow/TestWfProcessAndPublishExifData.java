@@ -152,7 +152,6 @@ public class TestWfProcessAndPublishExifData {
         this.props.put(StreamsConfig.STATE_DIR_CONFIG, "./tmp/test-kafkastreams");
         this.props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
         this.props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234");
-        MockitoAnnotations.initMocks(this);
         this.testDriver = new TopologyTestDriver(this.kafkaStreamsTopology, this.props) {
 
             @Override

@@ -224,7 +224,7 @@ public abstract class AbstractApplicationConfig {
                     valueDeserializer))
             .map(t -> t.build())
             .map(t -> t.getSettings())
-            .orElseThrow(() -> new RuntimeException("µUnavble to find " + consumerName));
+            .orElseThrow(() -> new RuntimeException("Unable to find " + consumerName));
 
         Consumer<K, V> consumer = new KafkaConsumer<>(settings);
         return consumer;
