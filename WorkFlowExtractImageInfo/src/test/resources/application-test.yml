@@ -89,8 +89,8 @@ kafka:
      fetch-max-wait-ms: 10000
      max-poll-records: 500
      max-poll-intervall-ms: 1200000
-     retryBackoffMsmaxRequestSize: 250
-     reconnectBackoffMs: 100
+     retry-back-off-max-request-size: 250
+     reconnect-back-off-ms: 100
      heartbeat-intervall-ms: 30000
      sessionTimeoutMs: 180000
    on_the_fly_consumer_type:
@@ -99,7 +99,8 @@ kafka:
      fetch-max-wait-ms:  250 
      max-poll-records:  500 
      max-poll-intervall-ms:  1200000 
-     retryBackoffMsmaxRequestSize:  250 
+     retry-back-off-max-request-size: 250
+     reconnect-back-off-ms: 100 
      reconnectBackoffMs:  100 
      heartbeat-intervall-ms:  30000 
      sessionTimeoutMs:  180000 
@@ -109,8 +110,8 @@ kafka:
      fetch-max-wait-ms:  1000 
      max-poll-records:  500 
      max-poll-intervall-ms:  1200000 
-     retryBackoffMsmaxRequestSize:  250 
-     reconnectBackoffMs:  100 
+     retry-back-off-max-request-size: 250
+     reconnect-back-off-ms: 100
      heartbeat-intervall-ms:  30000 
      sessionTimeoutMs:  180000 
   producers-type:

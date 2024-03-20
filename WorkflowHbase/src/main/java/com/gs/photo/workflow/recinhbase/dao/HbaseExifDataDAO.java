@@ -8,6 +8,7 @@ import java.util.Collection;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
@@ -18,6 +19,12 @@ import com.workflow.model.HbaseExifData;
 
 @Component
 public class HbaseExifDataDAO extends GenericDAO<HbaseExifData> {
+
+    public HbaseExifDataDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
     protected HbaseDataInformation<HbaseExifData> hbaseDataInformation;
 

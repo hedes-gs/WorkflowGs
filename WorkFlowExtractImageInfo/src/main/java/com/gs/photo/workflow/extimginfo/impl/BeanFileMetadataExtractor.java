@@ -50,8 +50,9 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
             do {
                 try {
                     BeanFileMetadataExtractor.LOGGER.info(
-                        "[EVENT][{}]Retries are {} -  Buffer size is {} ",
+                        "[EVENT][{}][{}]Retries are {} -  Buffer size is {} ",
                         fileToProcess.getImageId(),
+                        Thread.currentThread(),
                         fileToProcess,
                         nbOfTries,
                         localbuffer.length);

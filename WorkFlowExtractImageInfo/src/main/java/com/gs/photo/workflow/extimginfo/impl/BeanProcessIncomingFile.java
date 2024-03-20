@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -198,9 +199,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                         timeMeasurement)
                     .map((rec) -> this.toKafkaManagedObject(rec))
                     .map((kmo) -> this.sendFoundTiffObjects(kmo, producerForTransactionPublishingOnExifOrImageTopic))
-                    .flatMap(
-                        t -> t.join()
-                            .stream())
+                    .map(CompletableFuture::join)
+                    .flatMap(t -> t.stream())
                     .collect(Collectors.groupingByConcurrent(GenericKafkaManagedObject::getImageKey));
 
                 Map<TopicPartition, OffsetAndMetadata> offsets = mapOfManagedObjects.entrySet()
@@ -250,7 +250,10 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 end = true;
                 recover = true;
             } catch (Exception e) {
-                BeanProcessIncomingFile.LOGGER.error("Unexpected error - closing  ", e);
+                if (!(e.getCause() instanceof InterruptedException)) {
+                    BeanProcessIncomingFile.LOGGER.error("Unexpected error - closing  ", e);
+                }
+
                 end = true;
                 recover = false;
             }
@@ -291,13 +294,15 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, Executors.newVirtualThreadPerTaskExecutor());
     }
 
     private Collection<GenericKafkaManagedObject<? extends WfEvent>> processKmoStream(
         Collection<GenericKafkaManagedObject<?>> kmoStream,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
+        BeanProcessIncomingFile.LOGGER
+            .info("Kafka Sending {} objects on htread {}", kmoStream.size(), Thread.currentThread());
         return kmoStream.stream()
             .map(kmo -> {
                 HbaseData objectToSend = switch (kmo) {
@@ -311,8 +316,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(kmo.getTopic(),
                     kmo.getObjectKey(),
                     objectToSend);
-                BeanProcessIncomingFile.LOGGER
-                    .info("Kafka Sending object with class {} , id = {}", objectToSend.getClass(), kmo.getObjectKey());
+
                 producerForTransactionPublishingOnExifOrImageTopic
                     .send(pr, (r, e) -> this.processErrorWhileSending(kmo.getObjectKey(), r, e));
 
@@ -327,6 +331,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     .build();
             })
             .collect(Collectors.toList());
+
     }
 
     private CompletableFuture<Collection<GenericKafkaManagedObject<? extends WfEvent>>> sendFoundTiffObjects(
@@ -334,7 +339,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
         return kmoFuture.thenApplyAsync(
-            kmoStream -> this.processKmoStream(kmoStream, producerForTransactionPublishingOnExifOrImageTopic));
+            kmoStream -> this.processKmoStream(kmoStream, producerForTransactionPublishingOnExifOrImageTopic),
+            Executors.newVirtualThreadPerTaskExecutor());
     }
 
     private void processErrorWhileSending(String imgId, RecordMetadata r, Exception e) {
@@ -375,7 +381,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             fileToProcess);
         try {
             Optional<byte[]> retValue = this.accessDirectlyFile.readFirstBytesOfFileRetry(fileToProcess);
-            BeanProcessIncomingFile.LOGGER.info("... retValue {} ", retValue.isPresent());
             return retValue;
 
         } catch (Exception e) {
@@ -386,7 +391,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 ExceptionUtils.getStackTrace(e));
             throw new RuntimeException(e);
         } finally {
-            BeanProcessIncomingFile.LOGGER.info("Retrieved directly {}", fileToProcess.getImageId());
+            BeanProcessIncomingFile.LOGGER
+                .info("Retrieved directly {} - on thread {} ", fileToProcess.getImageId(), Thread.currentThread());
         }
     }
 
@@ -395,7 +401,8 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     ) {
 
         BeanProcessIncomingFile.LOGGER.info(
-            "[EVENT][{}] Reading IFDs for file = {}, at offset = {}, topic = {} ",
+            "[EVENT][{}][{}] Reading IFDs for file = {}, at offset = {}, topic = {} ",
+            Thread.currentThread(),
             rec.key(),
             rec.value(),
             rec.offset(),
@@ -404,9 +411,13 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             .getImageId();
         final FileToProcess value = rec.value();
         CompletableFuture<Collection<GenericKafkaManagedObject<?>>> future = CompletableFuture
-            .supplyAsync(() -> new FileToProcessInformation(this.iIgniteDAO.get(imageId), value))
-            .thenApply(v -> this.ensureImageIsPresent(v))
-            .thenApplyAsync(v -> this.beanFileMetadataExtractor.readIFDs(v.image(), v.fileToProcess()))
+            .supplyAsync(
+                () -> new FileToProcessInformation(this.iIgniteDAO.get(imageId), value),
+                Executors.newVirtualThreadPerTaskExecutor())
+            .thenApplyAsync(v -> this.ensureImageIsPresent(v), Executors.newVirtualThreadPerTaskExecutor())
+            .thenApplyAsync(
+                v -> this.beanFileMetadataExtractor.readIFDs(v.image(), v.fileToProcess()),
+                Executors.newVirtualThreadPerTaskExecutor())
             .thenApply(
                 v -> v.stream()
                     .flatMap(t -> this.toStreamOfKMO(t, rec))

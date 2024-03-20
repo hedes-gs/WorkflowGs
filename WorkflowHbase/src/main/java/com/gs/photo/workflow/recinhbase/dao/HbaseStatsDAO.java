@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.recinhbase.dao;
 
+import org.apache.hadoop.hbase.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -9,6 +10,12 @@ import com.workflow.model.HbaseImageThumbnailKey;
 
 @Component
 public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey> implements IHbaseStatsDAO {
+    public HbaseStatsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
+
     protected static final Logger LOGGER = LoggerFactory.getLogger(HbaseStatsDAO.class);
 
     @Override

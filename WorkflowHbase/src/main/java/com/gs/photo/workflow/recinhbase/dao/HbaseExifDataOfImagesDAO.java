@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.stereotype.Component;
 
 import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
@@ -16,6 +17,12 @@ import com.workflow.model.HbaseExifDataOfImages;
 
 @Component
 public class HbaseExifDataOfImagesDAO extends GenericDAO<HbaseExifDataOfImages> {
+
+    public HbaseExifDataOfImagesDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
     protected byte[][] buildSplitKey(HbaseDataInformation<HbaseExifDataOfImages> hdi) {
         byte[][] splitKeys = new byte[32][];

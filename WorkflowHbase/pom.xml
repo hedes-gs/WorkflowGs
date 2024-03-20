@@ -186,18 +186,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<release>13</release>
-				</configuration>
-				<executions>
-					<execution>
-						<id>default-compile</id>
-						<configuration>
-							<release>13</release>
-						</configuration>
-					</execution>
-				</executions>
-
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
