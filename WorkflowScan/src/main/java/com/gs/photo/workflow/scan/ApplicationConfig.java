@@ -96,4 +96,10 @@ public class ApplicationConfig extends AbstractApplicationConfig {
 
     }
 
+    @Bean
+    public Void startConsumers(IScan bean) {
+        bean.start();
+        return null;
+    }
+
 }

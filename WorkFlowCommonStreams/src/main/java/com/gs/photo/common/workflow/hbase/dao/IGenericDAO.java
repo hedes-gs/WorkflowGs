@@ -41,4 +41,8 @@ public interface IGenericDAO<T extends HbaseData> {
 
     void put(T hbaseData, String... familiesToInclude);
 
+    void append(Collection<T> hbaseData) throws IOException;
+
+    void append(Collection<T> hbaseData, String... familiesToInclude);
+
 }

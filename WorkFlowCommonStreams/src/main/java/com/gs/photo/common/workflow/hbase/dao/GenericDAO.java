@@ -86,8 +86,7 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
                     }
                     return app;
                 })
-                .collect(Collectors.toList());
-            appends.clear();
+                .toList();
         } catch (Throwable e) {
             GenericDAO.LOGGER.warn(
                 "Unable to record some data in {}, error is {}",
@@ -126,6 +125,34 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     }
 
     @Override
+    public void append(Collection<T> hbaseDatas, String... familiesToInclude) {
+        this.checkForClass(this.hbaseDataInformation.getHbaseDataClass());
+        try (
+            Table table = AbstractDAO.getTable(this.connection, this.hbaseDataInformation.getTable())) {
+            hbaseDatas.forEach(t -> {
+                try {
+                    Append append = this.createHbaseAppend(
+                        GenericDAO.getKey(t, this.hbaseDataInformation),
+                        this.getCfList(t, this.hbaseDataInformation, false, familiesToInclude));
+                    table.append(append);
+                } catch (IOException e) {
+                    GenericDAO.LOGGER.warn(
+                        "Unable to record some data in {}, error is {}",
+                        this.hbaseDataInformation.getTable(),
+                        ExceptionUtils.getStackTrace(e));
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            GenericDAO.LOGGER.warn(
+                "Unable to record some data in {}, error is {}",
+                this.hbaseDataInformation.getTable(),
+                ExceptionUtils.getStackTrace(e));
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void put(T hbaseData, String... familiesToInclude) {
         this.checkForClass(this.hbaseDataInformation.getHbaseDataClass());
         try (
@@ -146,6 +173,11 @@ public abstract class GenericDAO<T extends HbaseData> extends AbstractDAO<T> imp
     @Override
     public void append(T hbaseData) throws IOException {
         this.append(Collections.singleton(hbaseData), this.getHbaseDataInformation());
+    }
+
+    @Override
+    public void append(Collection<T> hbaseData) throws IOException {
+        this.append(hbaseData, this.getHbaseDataInformation());
     }
 
     @Override

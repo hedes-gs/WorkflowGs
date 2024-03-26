@@ -31,6 +31,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
@@ -1107,6 +1108,24 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
             HbaseImageThumbnailDAO.LOGGER.warn("Error ", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public HbaseImageThumbnailDAO(
+        Connection connection,
+        String nameSpace,
+        String cacheMainJpegImagesName,
+        String cacheImagesName,
+        String cacheJpegImagesVersionName,
+        CacheManager cacheManager,
+        IExifService exifService
+    ) {
+        super(connection,
+            nameSpace);
+        this.cacheMainJpegImagesName = cacheMainJpegImagesName;
+        this.cacheImagesName = cacheImagesName;
+        this.cacheJpegImagesVersionName = cacheJpegImagesVersionName;
+        this.cacheManager = cacheManager;
+        this.exifService = exifService;
     }
 
 }

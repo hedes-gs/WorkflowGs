@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -32,5 +33,11 @@ public class HbaseRatingsDAO extends AbstractHbaseRatingsDAO implements IHbaseRa
     @Override
     public void delete(HbaseRatings hbaseData, String family, String column) { // TODO Auto-generated method stub
     }
+
+    public HbaseRatingsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

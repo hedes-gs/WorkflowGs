@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
@@ -181,4 +182,11 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifDataOfImages> {
                 imageId);
         }
     }
+
+    protected HbaseExifDataDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
+
 }

@@ -2,12 +2,14 @@ package com.gs.photo.common.workflow.impl;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Spliterator;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -25,102 +27,112 @@ public class KafkaUtils {
 
     protected static Logger LOGGER = LoggerFactory.getLogger(KafkaUtils.class);
 
-    public static <K, V> Stream<ConsumerRecord<K, V>> toStream(Consumer<K, V> consumer) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils.getIteratorFromConsumer(consumer);
-        return StreamSupport.stream(iterable.spliterator(), false);
+    public static interface PreCommitAction extends java.util.function.Consumer<Integer> {}
+
+    public static interface BeforeProcessBatchAction<T> extends java.util.function.BiConsumer<Integer, T> {}
+
+    static public interface GetPartition<T> extends Function<T, Integer> {}
+
+    static public interface GetTopic<T> extends Function<T, String> {}
+
+    static public interface GetKafkaOffset<T> extends Function<T, Long> {}
+
+    public static class ConsumerRecordsSpliteratorPerTopicData<K, V> {
+        private List<ConsumerRecord<K, V>> consumerRecordList;
+        private int                        index;
+        private int                        first;
+        private int                        last;
+        private long                       size;
+        private int                        characteristics;
+        private int                        batchSize;
+        private TopicPartition             currentTopicPartition;
+
+        public ConsumerRecordsSpliteratorPerTopicData() {}
+
+        public List<ConsumerRecord<K, V>> getConsumerRecordList() { return this.consumerRecordList; }
+
+        public void setConsumerRecordList(List<ConsumerRecord<K, V>> consumerRecordList) {
+            this.consumerRecordList = consumerRecordList;
+        }
+
+        public int getIndex() { return this.index; }
+
+        public void setIndex(int index) { this.index = index; }
+
+        public int getFirst() { return this.first; }
+
+        public void setFirst(int first) { this.first = first; }
+
+        public int getLast() { return this.last; }
+
+        public void setLast(int last) { this.last = last; }
+
+        public long getSize() { return this.size; }
+
+        public void setSize(long size) { this.size = size; }
+
+        public int getCharacteristics() { return this.characteristics; }
+
+        public void setCharacteristics(int characteristics) { this.characteristics = characteristics; }
+
+        public int getBatchSize() { return this.batchSize; }
+
+        public void setBatchSize(int batchSize) { this.batchSize = batchSize; }
+
+        public TopicPartition getCurrentTopicPartition() { return this.currentTopicPartition; }
+
+        public void setCurrentTopicPartition(TopicPartition currentTopicPartition) {
+            this.currentTopicPartition = currentTopicPartition;
+        }
     }
-
-    private static <K, V> Iterator<ConsumerRecord<K, V>> getIteratorFromConsumer(Consumer<K, V> consumer) {
-        return new Iterator<>() {
-            Iterator<ConsumerRecord<K, V>> records;
-
-            @Override
-            public boolean hasNext() {
-                if ((this.records == null) || !this.records.hasNext()) {
-                    ConsumerRecords<K, V> nextRecords;
-                    if (this.records != null) {
-                        consumer.commitSync();
-                    }
-                    do {
-                        nextRecords = consumer.poll(Duration.ofMillis(250));
-                        if (nextRecords == null) {
-                            break;
-                        }
-                    } while (nextRecords.isEmpty());
-                    this.records = nextRecords != null ? nextRecords.iterator() : null;
-                }
-                return this.records != null;
-            }
-
-            @Override
-            public ConsumerRecord<K, V> next() { return this.records.next(); }
-        };
-    }
-
-    public static interface PreCommitAction { void apply(int nbOfRecord); }
-
-    public static interface BeforeProcessAction { void apply(int nbOfRecord); }
 
     protected static class ConsumerRecordsSpliteratorPerTopic<K, V> implements Spliterator<ConsumerRecord<K, V>> {
-
-        protected static final int                 BATCH_SIZE = 15;
-        final protected List<ConsumerRecord<K, V>> consumerRecordList;
-        protected int                              index;
-        protected int                              first;
-        protected int                              last;
-        final long                                 size;
-        private final int                          characteristics;
-        private final int                          batchSize;
-        private TopicPartition                     currentTopicPartition;
+        protected ConsumerRecordsSpliteratorPerTopicData<K, V> data = new ConsumerRecordsSpliteratorPerTopicData<>();
 
         @Override
         public String toString() {
-            return "ConsumerRecordsSpliteratorPerTopic [index=" + this.index + ", first=" + this.first + ", last="
-                + this.last + "]";
+            return "ConsumerRecordsSpliteratorPerTopic [index=" + this.data.getIndex() + ", first="
+                + this.data.getFirst() + ", last=" + this.data.getLast() + "]";
         }
 
         @Override
         public boolean tryAdvance(java.util.function.Consumer<? super ConsumerRecord<K, V>> action) {
-            if (action == null) { throw new NullPointerException(); }
-            if ((this.index >= this.first) && (this.index < this.last)) {
-                final ConsumerRecord<K, V> currentRecord = this.consumerRecordList.get(this.index);
-                KafkaUtils.LOGGER.debug(
-                    "tryAdvance - process index {} partition is {} , offset is {}, first is {}, last is {} ",
-                    this.index,
-                    currentRecord.partition(),
-                    currentRecord.offset(),
-                    this.first,
-                    this.last);
-                action.accept(currentRecord);
-                this.index++;
-                return true;
-            }
-            return false;
+            return Optional.ofNullable(action)
+                .map(a -> {
+                    if ((this.data.getIndex() >= this.data.getFirst())
+                        && (this.data.getIndex() < this.data.getLast())) {
+                        final ConsumerRecord<K, V> currentRecord = this.data.getConsumerRecordList()
+                            .get(this.data.getIndex());
+                        action.accept(currentRecord);
+                        this.data.setIndex(this.data.getIndex() + 1);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                })
+                .orElseThrow();
         }
 
         @Override
         public Spliterator<ConsumerRecord<K, V>> trySplit() {
             synchronized (this) {
 
-                if ((this.size == Long.MAX_VALUE) && (this.last < this.consumerRecordList.size())) {
+                if ((this.data.getSize() == Long.MAX_VALUE) && (this.data.getLast() < this.data.getConsumerRecordList()
+                    .size())) {
                     final ConsumerRecordsSpliteratorPerTopic<K, V> consumerRecordsSpliteratorPerTopic = new ConsumerRecordsSpliteratorPerTopic<>(
-                        this.consumerRecordList,
-                        this.first,
-                        this.batchSize,
-                        this.batchSize,
-                        this.currentTopicPartition);
+                        this.data.getConsumerRecordList(),
+                        this.data.getFirst(),
+                        this.data.getBatchSize(),
+                        this.data.getBatchSize(),
+                        this.data.getCurrentTopicPartition());
 
-                    this.first = this.first + this.batchSize;
-                    this.last = Math.min(this.first + this.batchSize, this.consumerRecordList.size());
-                    this.index = this.first;
-                    KafkaUtils.LOGGER.debug(
-                        "trySplit  - topic is {} partition is {}  new first is {}, new last is {}, size is {}",
-                        this.currentTopicPartition.topic(),
-                        this.currentTopicPartition.partition(),
-                        this.first,
-                        this.last,
-                        this.consumerRecordList.size());
-
+                    this.data.setFirst(this.data.getFirst() + this.data.getBatchSize());
+                    this.data.setLast(
+                        Math.min(
+                            this.data.getFirst() + this.data.getBatchSize(),
+                            this.data.getConsumerRecordList()
+                                .size()));
+                    this.data.setIndex(this.data.getFirst());
                     return consumerRecordsSpliteratorPerTopic;
                 }
                 return null;
@@ -130,25 +142,19 @@ public class KafkaUtils {
         @Override
         public void forEachRemaining(java.util.function.Consumer<? super ConsumerRecord<K, V>> action) {
             if (action == null) { throw new NullPointerException(); }
-            while (this.index < this.last) {
-                final ConsumerRecord<K, V> currentRecord = this.consumerRecordList.get(this.index);
-                KafkaUtils.LOGGER.debug(
-                    "forEachRemaining - process index {} partition is {} , offset is {}, first is {}, last is {} ",
-                    this.index,
-                    currentRecord.partition(),
-                    currentRecord.offset(),
-                    this.first,
-                    this.last);
+            while (this.data.getIndex() < this.data.getLast()) {
+                final ConsumerRecord<K, V> currentRecord = this.data.getConsumerRecordList()
+                    .get(this.data.getIndex());
                 action.accept(currentRecord);
-                this.index++;
+                this.data.setIndex(this.data.getIndex() + 1);
             }
         }
 
         @Override
-        public long estimateSize() { return this.size; }
+        public long estimateSize() { return this.data.getSize(); }
 
         @Override
-        public int characteristics() { return this.characteristics; }
+        public int characteristics() { return this.data.getCharacteristics(); }
 
         public ConsumerRecordsSpliteratorPerTopic(
             List<ConsumerRecord<K, V>> consumerRecordList,
@@ -158,22 +164,21 @@ public class KafkaUtils {
             TopicPartition currentTopicPartition
         ) {
             super();
-            this.consumerRecordList = consumerRecordList;
-            this.index = first;
-            this.first = first;
-            this.last = Math.min(first + batchSize, consumerRecordList.size());
-            this.characteristics = Spliterator.SIZED;
-            this.size = size;
-            this.batchSize = batchSize;
-            this.currentTopicPartition = currentTopicPartition;
+            this.data.setConsumerRecordList(consumerRecordList);
+            this.data.setIndex(first);
+            this.data.setFirst(first);
+            this.data.setLast(Math.min(first + batchSize, consumerRecordList.size()));
+            this.data.setCharacteristics(Spliterator.SIZED);
+            this.data.setSize(size);
+            this.data.setBatchSize(batchSize);
+            this.data.setCurrentTopicPartition(currentTopicPartition);
         }
-
     }
 
     protected static class ConsumerAllRecordsSpliterator<K, V> implements Spliterator<ConsumerRecord<K, V>> {
-        final protected ConsumerRecords<K, V> nextRecords;
-        final List<TopicPartition>            topics;
-        int                                   currentTopicPartition;
+        protected final ConsumerRecords<K, V> nextRecords;
+        protected final List<TopicPartition>  topics;
+        protected int                         currentTopicPartition;
         private final int                     characteristics;
         private final int                     batchSize;
 
@@ -214,57 +219,104 @@ public class KafkaUtils {
 
     }
 
-    protected static class ConsumerRecordsSpliterator<K, V> implements Spliterator<ConsumerRecord<K, V>> {
+    protected static class ConsumerRecordsSpliteratorPerBatch<K, V>
+        implements Spliterator<Collection<ConsumerRecord<K, V>>> {
+        static Object                                          mutex = new Object();
 
-        protected final Consumer<K, V>      consumer;
-        protected final int                 pollDurationInMs;
-        private final int                   characteristics;
-        private final int                   batchSize;
-        private boolean                     firstSplit = true;
-        final protected BeforeProcessAction beforeProcessAction;
-        protected TimeMeasurement           timeMeasurement;
+        protected ConsumerRecordsSpliteratorPerTopicData<K, V> data  = new ConsumerRecordsSpliteratorPerTopicData<>();
 
         @Override
-        public Spliterator<ConsumerRecord<K, V>> trySplit() {
-            ConsumerRecords<K, V> nextRecords = null;
-            if (this.firstSplit) {
-                do {
-                    nextRecords = this.consumer.poll(Duration.ofMillis(this.pollDurationInMs));
+        public String toString() {
+            return super.toString() + " [index=" + this.data.getIndex() + ", first=" + this.data.getFirst() + ", last="
+                + this.data.getLast() + ", batchSize=" + this.data.getBatchSize() + "]";
+        }
 
-                    if (nextRecords == null) {
-                        break;
+        @Override
+        public boolean tryAdvance(java.util.function.Consumer<? super Collection<ConsumerRecord<K, V>>> action) {
+            return Optional.ofNullable(action)
+                .map(a -> {
+                    if (this.data.getIndex() < this.data.getConsumerRecordList()
+                        .size()) {
+                        System.out.println(
+                            this + " size is " + this.data.getConsumerRecordList()
+                                .size());
+                        final Collection<ConsumerRecord<K, V>> currentRecords = this.data.getConsumerRecordList()
+                            .subList(
+                                this.data.getIndex(),
+                                Math.min(this.data.getIndex() + this.data.getBatchSize(), this.data.getLast()));
+                        action.accept(currentRecords);
+                        this.data.setIndex(this.data.getIndex() + this.data.getBatchSize());
+                        System.out.println(this + " tryAdvance - index is " + this.data.getIndex());
+                        return true;
+
+                    } else {
+                        return false;
                     }
-                    final ConsumerRecords<K, V> records = nextRecords;
-                    nextRecords.partitions()
-                        .forEach((p) -> {
-                            KafkaUtils.LOGGER.info(
-                                "pollDurationInMs is {}, batchSize is {} , fetched nbOfRecords {} -  Partition {} has max offset {}, min offset {} ",
-                                this.pollDurationInMs,
-                                this.batchSize,
-                                records.count(),
-                                p,
-                                records.records(p)
-                                    .stream()
-                                    .mapToLong((r) -> r.offset())
-                                    .max()
-                                    .orElse(Long.MIN_VALUE),
-                                records.records(p)
-                                    .stream()
-                                    .mapToLong((r) -> r.offset())
-                                    .min()
-                                    .orElse(Long.MIN_VALUE));
-                        });
-                } while (nextRecords.isEmpty());
-                if (nextRecords != null) {
-                    if (this.timeMeasurement != null) {
-                        this.timeMeasurement.addStep("Start of processing records " + nextRecords.count());
-                    }
-                    this.firstSplit = false;
-                    this.beforeProcessAction.apply(nextRecords.count());
-                }
+                })
+                .orElseThrow();
+        }
+
+        @Override
+        public Spliterator<Collection<ConsumerRecord<K, V>>> trySplit() { return null; }
+
+        @Override
+        public void forEachRemaining(java.util.function.Consumer<? super Collection<ConsumerRecord<K, V>>> action) {
+            if (action == null) { throw new NullPointerException(); }
+            while (this.data.getFirst() < this.data.getLast()) {
+                final Collection<ConsumerRecord<K, V>> currentRecords = this.data.getConsumerRecordList()
+                    .subList(
+                        this.data.getFirst(),
+                        Math.min(this.data.getFirst() + this.data.getBatchSize(), this.data.getLast()));
+                action.accept(currentRecords);
+                this.data.setFirst(this.data.getFirst() + this.data.getBatchSize());
             }
+        }
 
-            return nextRecords == null ? null : new ConsumerAllRecordsSpliterator<>(nextRecords, this.batchSize);
+        @Override
+        public long estimateSize() { return Long.MAX_VALUE; }
+
+        @Override
+        public int characteristics() { return this.data.getCharacteristics(); }
+
+        public ConsumerRecordsSpliteratorPerBatch(
+            List<ConsumerRecord<K, V>> consumerRecordList,
+            int first,
+            int batchSize
+        ) {
+            super();
+            this.data.setConsumerRecordList(consumerRecordList);
+            this.data.setFirst(first);
+            this.data.setLast(Math.min(first + batchSize, consumerRecordList.size()));
+            this.data.setCharacteristics(Spliterator.SIZED);
+            this.data.setBatchSize(batchSize);
+        }
+    }
+
+    protected static class ConsumerAllRecordsByBatchSpliterator<K, V>
+        implements Spliterator<Collection<ConsumerRecord<K, V>>> {
+        protected final ConsumerRecords<K, V>      nextRecords;
+        protected final List<ConsumerRecord<K, V>> actualList;
+        private final int                          characteristics;
+        private final int                          batchSize;
+        private int                                currentIndex;
+
+        @Override
+        public boolean tryAdvance(java.util.function.Consumer<? super Collection<ConsumerRecord<K, V>>> action) {
+            return false;
+        }
+
+        @Override
+        public Spliterator<Collection<ConsumerRecord<K, V>>> trySplit() {
+            synchronized (this) {
+                if (this.currentIndex < this.actualList.size()) {
+                    var returnValue = new ConsumerRecordsSpliteratorPerBatch<>(this.actualList,
+                        this.currentIndex,
+                        this.batchSize);
+                    this.currentIndex = this.currentIndex + this.batchSize;
+                    return returnValue;
+                }
+                return null;
+            }
         }
 
         @Override
@@ -273,37 +325,162 @@ public class KafkaUtils {
         @Override
         public int characteristics() { return this.characteristics; }
 
+        public ConsumerAllRecordsByBatchSpliterator(
+            ConsumerRecords<K, V> nextRecords,
+            int batchSize
+        ) {
+            super();
+            this.nextRecords = nextRecords;
+            this.characteristics = Spliterator.IMMUTABLE;
+            this.batchSize = batchSize;
+            this.actualList = StreamSupport.stream(this.nextRecords.spliterator(), false)
+                .collect(Collectors.toList());
+        }
+
+    }
+
+    protected static class ConsumerRecordsSpliterator<K, V, T> implements Spliterator<ConsumerRecord<K, V>> {
+
+        protected final Consumer<K, V>              consumer;
+        protected final T                           context;
+        protected final int                         pollDurationInMs;
+        private final int                           characteristics;
+        private final int                           batchSize;
+        private boolean                             firstSplit = true;
+        private int                                 nbOfProcessedRecords;
+        final protected BeforeProcessBatchAction<T> beforeProcessAction;
+        protected Optional<TimeMeasurement>         timeMeasurement;
+
+        @Override
+        public Spliterator<ConsumerRecord<K, V>> trySplit() {
+            Optional<ConsumerRecords<K, V>> nextRecords = Optional.empty();
+            if (this.firstSplit) {
+                do {
+                    nextRecords = Optional.ofNullable(this.consumer.poll(Duration.ofMillis(this.pollDurationInMs)));
+                    if (nextRecords.isEmpty()) {
+                        break;
+                    }
+                } while (!nextRecords.isEmpty() && nextRecords.get()
+                    .isEmpty());
+                nextRecords.map(t -> t.count())
+                    .ifPresent(t -> {
+                        this.firstSplit = false;
+                        this.beforeProcessAction.accept(t, this.context);
+                        this.nbOfProcessedRecords = t;
+                        this.timeMeasurement.ifPresent(tm -> tm.addStep("Start of processing records " + t));
+                    });
+            }
+            return nextRecords.map(t -> new ConsumerAllRecordsSpliterator<>(t, this.batchSize))
+                .orElseGet(() -> null);
+        }
+
+        @Override
+        public long estimateSize() { return Long.MAX_VALUE; }
+
+        @Override
+        public int characteristics() { return this.characteristics; }
+
+        @Override
+        public boolean tryAdvance(java.util.function.Consumer<? super ConsumerRecord<K, V>> action) { return false; }
+
         public ConsumerRecordsSpliterator(
-            int pollDurationInMs,
+            T context,
             Consumer<K, V> consumer,
+            int pollDurationInMs,
             int batchSize,
-            BeforeProcessAction beforeProcessAction,
+            BeforeProcessBatchAction<T> beforeProcessAction,
             TimeMeasurement timeMeasurement
         ) {
+            this.context = context;
             this.pollDurationInMs = pollDurationInMs;
             this.consumer = consumer;
             this.characteristics = Spliterator.IMMUTABLE;
             this.batchSize = batchSize;
             this.beforeProcessAction = beforeProcessAction;
-            this.timeMeasurement = timeMeasurement;
+            this.timeMeasurement = Optional.ofNullable(timeMeasurement);
         }
-
-        @Override
-        public boolean tryAdvance(java.util.function.Consumer<? super ConsumerRecord<K, V>> action) { return false; }
 
     }
 
-    public static <K, V> Stream<ConsumerRecord<K, V>> toStreamV2(
-        int pollDurationInMs,
+    protected static class ConsumerBatchRecordsSpliterator<K, V, T>
+        implements Spliterator<Collection<ConsumerRecord<K, V>>> {
+
+        protected final Consumer<K, V>              consumer;
+        protected final T                           context;
+        protected final int                         pollDurationInMs;
+        private final int                           characteristics;
+        private final int                           batchSize;
+        private boolean                             firstSplit = true;
+        private int                                 nbOfProcessedRecords;
+        final protected BeforeProcessBatchAction<T> beforeProcessAction;
+        protected Optional<TimeMeasurement>         timeMeasurement;
+
+        @Override
+        public Spliterator<Collection<ConsumerRecord<K, V>>> trySplit() {
+            Optional<ConsumerRecords<K, V>> nextRecords = Optional.empty();
+            if (this.firstSplit) {
+                do {
+                    nextRecords = Optional.ofNullable(this.consumer.poll(Duration.ofMillis(this.pollDurationInMs)));
+                    if (nextRecords.isEmpty()) {
+                        break;
+                    }
+                } while (!nextRecords.isEmpty() && nextRecords.get()
+                    .isEmpty());
+                nextRecords.map(t -> t.count())
+                    .ifPresent(t -> {
+                        this.firstSplit = false;
+                        this.beforeProcessAction.accept(t, this.context);
+                        this.nbOfProcessedRecords = t;
+                        this.timeMeasurement.ifPresent(tm -> tm.addStep("Start of processing records " + t));
+                    });
+            }
+            return nextRecords.map(t -> new ConsumerAllRecordsByBatchSpliterator<>(t, this.batchSize))
+                .orElseGet(() -> null);
+        }
+
+        @Override
+        public long estimateSize() { return Long.MAX_VALUE; }
+
+        @Override
+        public int characteristics() { return this.characteristics; }
+
+        @Override
+        public boolean tryAdvance(java.util.function.Consumer<? super Collection<ConsumerRecord<K, V>>> action) {
+            return false;
+        }
+
+        public ConsumerBatchRecordsSpliterator(
+            T context,
+            Consumer<K, V> consumer,
+            int pollDurationInMs,
+            int batchSize,
+            BeforeProcessBatchAction<T> beforeProcessAction,
+            TimeMeasurement timeMeasurement
+        ) {
+            this.context = context;
+            this.pollDurationInMs = pollDurationInMs;
+            this.consumer = consumer;
+            this.characteristics = Spliterator.IMMUTABLE;
+            this.batchSize = batchSize;
+            this.beforeProcessAction = beforeProcessAction;
+            this.timeMeasurement = Optional.ofNullable(timeMeasurement);
+        }
+
+    }
+
+    public static <K, V, T> Stream<ConsumerRecord<K, V>> buildParallelKafkaBatchStreamPerTopicAndPartition(
+        T context,
         Consumer<K, V> consumer,
+        int pollDurationInMs,
         int batchSize,
         boolean parallelStream,
-        BeforeProcessAction beforeProcessAction,
+        BeforeProcessBatchAction<T> beforeProcessAction,
         TimeMeasurement timeMeasurement
     ) {
         return StreamSupport.stream(
-            new ConsumerRecordsSpliterator<>(pollDurationInMs,
+            new ConsumerRecordsSpliterator<>(context,
                 consumer,
+                pollDurationInMs,
                 batchSize,
                 beforeProcessAction,
                 timeMeasurement),
@@ -311,154 +488,25 @@ public class KafkaUtils {
 
     }
 
-    public static <K, V, K1, V1> Stream<ConsumerRecord<K, V>> toStream(
+    public static <K, V, T> Stream<Collection<ConsumerRecord<K, V>>> buildParallelKafkaBatchStream(
+        T context,
+        Consumer<K, V> consumer,
         int pollDurationInMs,
-        Consumer<K, V> consumer,
-        PreCommitAction preCommitAction,
-        BeforeProcessAction beforeProcessAction,
-        boolean parallelStream
-    ) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils
-            .getIteratorForConsumer(consumer, preCommitAction, beforeProcessAction, parallelStream, pollDurationInMs);
-        return StreamSupport.stream(iterable.spliterator(), parallelStream);
-    }
-
-    private static <V, K> Iterator<ConsumerRecord<K, V>> getIteratorForConsumer(
-        Consumer<K, V> consumer,
-        PreCommitAction preCommitAction,
-        BeforeProcessAction beforeProcessAction,
+        int batchSize,
         boolean parallelStream,
-        int pollDurationInMs
+        BeforeProcessBatchAction<T> beforeProcessAction,
+        TimeMeasurement timeMeasurement
     ) {
-        return new Iterator<ConsumerRecord<K, V>>() {
-            ReentrantLock                     lock      = new ReentrantLock();
-            boolean                           first     = true;
-            Iterator<ConsumerRecord<K, V>>    records;
-            int                               currentNbOfRecords;
-            ThreadLocal<ConsumerRecord<K, V>> nextValue = new ThreadLocal<>();
+        return StreamSupport.stream(
+            new ConsumerBatchRecordsSpliterator<>(context,
+                consumer,
+                pollDurationInMs,
+                batchSize,
+                beforeProcessAction,
+                timeMeasurement),
+            parallelStream);
 
-            @Override
-            public boolean hasNext() {
-                if (parallelStream) {
-                    this.lock.lock();
-                    try {
-                        if (this.first) {
-                            this.first = false;
-                            ConsumerRecords<K, V> nextRecords;
-                            do {
-                                nextRecords = consumer.poll(Duration.ofMillis(pollDurationInMs));
-                                if (nextRecords == null) {
-                                    break;
-                                }
-                            } while (nextRecords.isEmpty());
-                            if (nextRecords != null) {
-                                this.records = nextRecords.iterator();
-                                this.currentNbOfRecords = nextRecords.count();
-                                beforeProcessAction.apply(this.currentNbOfRecords);
-                            } else {
-                                this.records = null;
-                            }
-                        }
-                    } finally {
-                        this.lock.unlock();
-                    }
-                    this.lock.lock();
-                    try {
-                        if (this.records.hasNext()) {
-                            this.nextValue.set(this.records.next());
-                            return true;
-                        }
-                        return false;
-                    } finally {
-                        this.lock.unlock();
-                    }
-                } else {
-                    if ((this.records == null) || !this.records.hasNext()) {
-                        ConsumerRecords<K, V> nextRecords;
-                        if (this.records != null) {
-                            preCommitAction.apply(this.currentNbOfRecords);
-                            if (!parallelStream) {
-                                consumer.commitSync();
-                            }
-                        }
-                        do {
-                            nextRecords = consumer.poll(Duration.ofMillis(pollDurationInMs));
-                            if (nextRecords == null) {
-                                break;
-                            }
-                        } while (nextRecords.isEmpty());
-                        if (nextRecords != null) {
-                            this.records = nextRecords.iterator();
-                            this.currentNbOfRecords = nextRecords.count();
-                            beforeProcessAction.apply(this.currentNbOfRecords);
-                        } else {
-                            this.records = null;
-                        }
-                    }
-                }
-                return this.records != null;
-            }
-
-            @Override
-            public ConsumerRecord<K, V> next() { return this.nextValue.get(); }
-        };
     }
-
-    public static <K, V, K1, V1> Stream<ConsumerRecord<K, V>> toTransactionalStream(
-        int pollDurationInMs,
-        Consumer<K, V> consumer,
-        PreCommitAction preCommitAction,
-        BeforeProcessAction beforeProcessAction
-    ) {
-        Iterable<ConsumerRecord<K, V>> iterable = () -> KafkaUtils
-            .getIteratorForConsumer(consumer, preCommitAction, beforeProcessAction, pollDurationInMs);
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    private static <K, V> Iterator<ConsumerRecord<K, V>> getIteratorForConsumer(
-        Consumer<K, V> consumer,
-        PreCommitAction preCommitAction,
-        BeforeProcessAction beforeProcessAction,
-        int pollDurationInMs
-    ) {
-        return new Iterator<ConsumerRecord<K, V>>() {
-            Iterator<ConsumerRecord<K, V>> records;
-            int                            currentNbOfRecords;
-
-            @Override
-            public boolean hasNext() {
-                if ((this.records == null) || !this.records.hasNext()) {
-                    ConsumerRecords<K, V> nextRecords;
-                    if (this.records != null) {
-                        preCommitAction.apply(this.currentNbOfRecords);
-                    }
-                    do {
-                        nextRecords = consumer.poll(Duration.ofMillis(pollDurationInMs));
-                        if (nextRecords == null) {
-                            break;
-                        }
-                    } while (nextRecords.isEmpty());
-                    if (nextRecords != null) {
-                        this.records = nextRecords.iterator();
-                        this.currentNbOfRecords = nextRecords.count();
-                        beforeProcessAction.apply(this.currentNbOfRecords);
-                    } else {
-                        this.records = null;
-                    }
-                }
-                return this.records != null;
-            }
-
-            @Override
-            public ConsumerRecord<K, V> next() { return this.records.next(); }
-        };
-    }
-
-    static public interface GetPartition<T> { int get(T t); }
-
-    static public interface GetTopic<T> { String get(T t); }
-
-    static public interface GetKafkaOffset<T> { long get(T t); }
 
     static public <T> OffsetAndMetadata updateMapOfOffset(
         Map<TopicPartition, OffsetAndMetadata> mapOfOffset,
@@ -467,11 +515,11 @@ public class KafkaUtils {
         GetTopic<T> getTopic,
         GetKafkaOffset<T> getKafkaOffset
     ) {
-        final TopicPartition key = new TopicPartition(getTopic.get(dataToRead), getPartition.get(dataToRead));
+        final TopicPartition key = new TopicPartition(getTopic.apply(dataToRead), getPartition.apply(dataToRead));
         OffsetAndMetadata retValue = mapOfOffset.compute(
             key,
-            (k, v) -> v == null ? new OffsetAndMetadata(getKafkaOffset.get(dataToRead) + 1)
-                : new OffsetAndMetadata(Math.max(getKafkaOffset.get(dataToRead) + 1, v.offset())));
+            (k, v) -> v == null ? new OffsetAndMetadata(getKafkaOffset.apply(dataToRead) + 1)
+                : new OffsetAndMetadata(Math.max(getKafkaOffset.apply(dataToRead) + 1, v.offset())));
         return retValue;
     }
 

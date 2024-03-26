@@ -32,7 +32,7 @@ import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
@@ -44,7 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
@@ -60,7 +60,7 @@ import com.workflow.model.files.FileToProcess;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
 @SpringBootTest(classes = { WorkflowExtractImageInfo.class })
 class BeanProcessIncomingFileTest {
@@ -247,15 +247,14 @@ class BeanProcessIncomingFileTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
-        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
-        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
-        fc.read(bb);
+        ByteBuffer bb = this.readBufferOfImage();
         Mockito.when(this.iIgniteDAO.isReady())
             .thenReturn(true);
         Mockito.when(this.iIgniteDAO.get("1"))
             .thenReturn(Optional.of(bb.array()));
         Mockito.when(this.iIgniteDAO.get("2"))
+            .thenReturn(Optional.ofNullable(null));
+        Mockito.when(this.iIgniteDAO.get("3"))
             .thenReturn(Optional.ofNullable(null));
         Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
             .thenReturn(new LocalFuture<>());
@@ -268,10 +267,7 @@ class BeanProcessIncomingFileTest {
 
     @Test
     public void test001_shouldRetrieveNoCopyrightAndArtist() throws IOException {
-        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
-        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
-        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
-        fc.read(bb);
+        ByteBuffer bb = this.readBufferOfImage();
         final Collection<IFD> IFDs = this.beanFileMetadataExtractor
             .readIFDs(
                 Optional.of(bb.array()),
@@ -287,16 +283,13 @@ class BeanProcessIncomingFileTest {
 
     @Test
     public void test001_1_shouldRetrieveDirectlyImageByte() throws IOException {
-        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
-        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
-        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
-        fc.read(bb);
+        ByteBuffer bb = this.readBufferOfImage();
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic",
                 1,
                 0,
-                "2",
+                "1",
                 FileToProcess.builder()
                     .withImageId("2")
                     .build()),
@@ -310,6 +303,7 @@ class BeanProcessIncomingFileTest {
         mapOfRecords.put(new TopicPartition("topic", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
         Mockito.when(this.accessDirectlyFile.readFirstBytesOfFileRetry(ArgumentMatchers.any()))
+            .thenReturn(Optional.of(bb.array()))
             .thenReturn(Optional.of(bb.array()));
         Mockito.doAnswer(invocation -> {
             Runnable arg = (Runnable) invocation.getArgument(0);
@@ -324,7 +318,7 @@ class BeanProcessIncomingFileTest {
         Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
             .thenReturn(new LocalFuture<>());
         try {
-            this.beanProcessIncomingFile.init();
+            this.beanProcessIncomingFile.start();
         } catch (ExceptionEndOfTest e) {
         }
 
@@ -340,9 +334,22 @@ class BeanProcessIncomingFileTest {
             .send(this.valueCaptor.capture(), ArgumentMatchers.any());
     }
 
+    private ByteBuffer readBufferOfImage() throws IOException {
+        Path filePath = new File("src/test/resources/_HDE0394.ARW").toPath();
+        FileChannel fc = FileChannel.open(filePath, StandardOpenOption.READ);
+        ByteBuffer bb = ByteBuffer.allocate(4 * 1024 * 1024);
+        fc.read(bb);
+        return bb;
+    }
+
     @Test
     public void test001_shouldRetrieveDefaultCopyrightAndArtist() throws IOException {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
+        ByteBuffer bb = this.readBufferOfImage();
+
+        Mockito.when(this.accessDirectlyFile.readFirstBytesOfFileRetry(ArgumentMatchers.any()))
+            .thenReturn(Optional.of(bb.array()))
+            .thenReturn(Optional.of(bb.array()));
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic",
                 1,
@@ -354,9 +361,9 @@ class BeanProcessIncomingFileTest {
             new ConsumerRecord<>("topic",
                 1,
                 0,
-                "1",
+                "2",
                 FileToProcess.builder()
-                    .withImageId("1")
+                    .withImageId("2")
                     .build()));
         mapOfRecords.put(new TopicPartition("topic", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
@@ -374,7 +381,7 @@ class BeanProcessIncomingFileTest {
         Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
             .thenReturn(new LocalFuture<>());
         try {
-            this.beanProcessIncomingFile.init();
+            this.beanProcessIncomingFile.start();
         } catch (ExceptionEndOfTest e) {
         }
 
@@ -384,7 +391,7 @@ class BeanProcessIncomingFileTest {
             Thread.currentThread()
                 .interrupt();
         }
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(1))
+        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(2))
             .send(this.valueCaptor.capture());
         Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221 * 2))
             .send(this.valueCaptor.capture(), ArgumentMatchers.any());
@@ -441,7 +448,7 @@ class BeanProcessIncomingFileTest {
             .thenReturn(records)
             .thenThrow(new ExceptionEndOfTest());
         try {
-            this.beanProcessIncomingFile.init();
+            this.beanProcessIncomingFile.start();
         } catch (ExceptionEndOfTest e) {
         }
 
@@ -472,16 +479,16 @@ class BeanProcessIncomingFileTest {
             new ConsumerRecord<>("topic-dup-filtered-file",
                 1,
                 6,
-                "1",
+                "2",
                 FileToProcess.builder()
-                    .withImageId("1")
+                    .withImageId("2")
                     .build()),
             new ConsumerRecord<>("topic-dup-filtered-file",
                 1,
                 8,
-                "1",
+                "3",
                 FileToProcess.builder()
-                    .withImageId("1")
+                    .withImageId("3")
                     .build()));
         mapOfRecords.put(new TopicPartition("topic-dup-filtered-file", 1), asList);
         ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
@@ -497,7 +504,7 @@ class BeanProcessIncomingFileTest {
             .thenReturn(records)
             .thenThrow(new ExceptionEndOfTest());
         try {
-            this.beanProcessIncomingFile.init();
+            this.beanProcessIncomingFile.start();
         } catch (ExceptionEndOfTest e) {
         }
 

@@ -52,7 +52,8 @@ import com.workflow.model.files.FileToProcess;
 @AutoConfigureBefore(IgniteAutoConfiguration.class)
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    protected static Logger LOGGER = LoggerFactory.getLogger(ApplicationConfig.class);
+    private static final String CONSUMER_NAME = "file-to-process";
+    protected static Logger     LOGGER        = LoggerFactory.getLogger(ApplicationConfig.class);
 
     @Override
     @Bean
@@ -72,11 +73,11 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
         return () -> defaultKafkaConsumerFactory.get(
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .consumerType(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .groupId(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .instanceGroupId(),
             AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
             AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
@@ -154,6 +155,12 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @Bean
     public IExifService exifService(SpecificApplicationProperties properties) {
         return new ExifServiceImpl(properties.getExifFiles());
+    }
+
+    @Bean
+    public Void startConsumers(IProcessIncomingFiles bean) {
+        bean.start();
+        return null;
     }
 
 }

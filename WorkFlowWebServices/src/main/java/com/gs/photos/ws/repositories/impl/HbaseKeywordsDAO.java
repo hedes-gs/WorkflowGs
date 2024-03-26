@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -78,5 +79,11 @@ public class HbaseKeywordsDAO extends AbstractHbaseKeywordsDAO implements IHbase
     @Override
     public void delete(HbaseKeywords hbaseData, String family, String column) { // TODO Auto-generated method stub
     }
+
+    protected HbaseKeywordsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

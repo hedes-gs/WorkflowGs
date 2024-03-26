@@ -3,8 +3,6 @@ package com.gs.photo.common.workflow.internal;
 import java.util.Optional;
 import java.util.StringJoiner;
 
-import javax.annotation.Generated;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +19,21 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
     protected static Logger LOGGER = LoggerFactory.getLogger(KafkaManagedFileToProcess.class);
     protected byte[]        rawFile;
     protected String        hashKey;
+    protected WfEventStep   step;
+
+    private KafkaManagedFileToProcess(Builder builder) {
+        this.partition = builder.partition;
+        this.kafkaOffset = builder.kafkaOffset;
+        this.value = builder.value;
+        this.topic = builder.topic;
+        this.imageKey = builder.imageKey;
+        this.objectKey = builder.objectKey;
+        this.rawFile = builder.rawFile;
+        this.hashKey = builder.hashKey;
+        this.step = builder.step;
+    }
+
+    public KafkaManagedFileToProcess() {}
 
     @Override
     public WfEvent createWfEvent() {
@@ -36,22 +49,8 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
                 .get()
                 .getImageId(),
             hbedoiHashCode,
-            WfEventStep.WF_STEP_CREATED_FROM_STEP_LOCAL_COPY,
+            this.step,
             WfEventCopy.class);
-    }
-
-    public WfEvent createWfEvent(String parentDataId, WfEventStep step) {
-        String hbedoiHashCode = TopicCopyKeyBuilder.build(
-            this.getValue()
-                .get());
-        return this.buildEvent(
-            this.getValue()
-                .get()
-                .getImageId(),
-            parentDataId,
-            hbedoiHashCode,
-            step,
-            WfEventRecorded.class);
     }
 
     private WfEvent buildEvent(
@@ -83,46 +82,30 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
             .build();
     }
 
-    @Generated("SparkTools")
-    private KafkaManagedFileToProcess(Builder builder) {
-        this.partition = builder.partition;
-        this.kafkaOffset = builder.kafkaOffset;
-        this.rawFile = builder.rawFile;
-        this.hashKey = builder.hashKey;
-        this.value = builder.value;
-    }
-
     public byte[] getRawFile() { return this.rawFile; }
+
+    public void setRawFile(byte[] rawFile) { this.rawFile = rawFile; }
 
     public String getHashKey() { return this.hashKey; }
 
-    public static String toString(KafkaManagedFileToProcess r) {
-        StringJoiner strJoiner = new StringJoiner("-");
-        r.getValue()
-            .ifPresent((o) -> strJoiner.add(o.getUrl()));
-        return strJoiner.toString();
-    }
+    public void setHashKey(String hashKey) { this.hashKey = hashKey; }
 
-    public void setRawFile(Object object) { this.rawFile = null; }
+    public WfEventStep getStep() { return this.step; }
 
-    /**
-     * Creates builder to build {@link KafkaManagedFileToProcess}.
-     *
-     * @return created builder
-     */
-    @Generated("SparkTools")
+    public void setStep(WfEventStep step) { this.step = step; }
+
     public static Builder builder() { return new Builder(); }
 
-    /**
-     * Builder to build {@link KafkaManagedFileToProcess}.
-     */
-    @Generated("SparkTools")
     public static final class Builder {
         private int                     partition;
         private long                    kafkaOffset;
+        private Optional<FileToProcess> value = Optional.empty();
+        private String                  topic;
+        private String                  imageKey;
+        private String                  objectKey;
         private byte[]                  rawFile;
         private String                  hashKey;
-        private Optional<FileToProcess> value = Optional.empty();
+        private WfEventStep             step;
 
         private Builder() {}
 
@@ -151,6 +134,54 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
         }
 
         /**
+         * Builder method for value parameter.
+         *
+         * @param value
+         *            field to set
+         * @return builder
+         */
+        public Builder withValue(Optional<FileToProcess> value) {
+            this.value = value;
+            return this;
+        }
+
+        /**
+         * Builder method for topic parameter.
+         *
+         * @param topic
+         *            field to set
+         * @return builder
+         */
+        public Builder withTopic(String topic) {
+            this.topic = topic;
+            return this;
+        }
+
+        /**
+         * Builder method for imageKey parameter.
+         *
+         * @param imageKey
+         *            field to set
+         * @return builder
+         */
+        public Builder withImageKey(String imageKey) {
+            this.imageKey = imageKey;
+            return this;
+        }
+
+        /**
+         * Builder method for objectKey parameter.
+         *
+         * @param objectKey
+         *            field to set
+         * @return builder
+         */
+        public Builder withObjectKey(String objectKey) {
+            this.objectKey = objectKey;
+            return this;
+        }
+
+        /**
          * Builder method for rawFile parameter.
          *
          * @param rawFile
@@ -175,14 +206,14 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
         }
 
         /**
-         * Builder method for origin parameter.
+         * Builder method for step parameter.
          *
-         * @param origin
+         * @param step
          *            field to set
          * @return builder
          */
-        public Builder withValue(Optional<FileToProcess> origin) {
-            this.value = origin;
+        public Builder withStep(WfEventStep step) {
+            this.step = step;
             return this;
         }
 
@@ -192,6 +223,13 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
          * @return built class
          */
         public KafkaManagedFileToProcess build() { return new KafkaManagedFileToProcess(this); }
+    }
+
+    public static String toString(KafkaManagedFileToProcess r) {
+        StringJoiner strJoiner = new StringJoiner("-");
+        r.getValue()
+            .ifPresent((o) -> strJoiner.add(o.getUrl()));
+        return strJoiner.toString();
     }
 
 }

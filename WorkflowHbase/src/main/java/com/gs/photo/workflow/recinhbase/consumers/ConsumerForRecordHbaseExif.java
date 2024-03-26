@@ -18,10 +18,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
 import com.gs.photo.common.workflow.DateTimeHelper;
-import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
+import com.gs.photo.workflow.recinhbase.ApplicationConfig;
 import com.gs.photo.workflow.recinhbase.dao.HbaseExifDataDAO;
 import com.gs.photo.workflow.recinhbase.dao.HbaseExifDataOfImagesDAO;
 import com.workflow.model.HbaseData;
@@ -33,7 +32,7 @@ import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
-@Component
+// @Component
 @ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<HbaseData>
     implements IConsumerForRecordHbaseExif {
@@ -71,7 +70,7 @@ public class ConsumerForRecordHbaseExif extends AbstractConsumerForRecordHbase<H
                 this.processMessagesFromTopic(
                     this.consumerToRecordExifDataOfImages,
                     "EXIF",
-                    this.groupId + "-" + HbaseApplicationConfig.CONSUMER_EXIF);
+                    this.groupId + "-" + ApplicationConfig.CONSUMER_EXIF);
             } catch (Throwable e) {
                 ConsumerForRecordHbaseExif.LOGGER
                     .warn("[CONSUMER][{}] Error {}", this.getConsumer(), ExceptionUtils.getStackTrace(e));

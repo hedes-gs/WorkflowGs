@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
+import com.gs.photo.workflow.recinhbase.ApplicationConfig;
 import com.gs.photo.workflow.recinhbase.dao.HbaseAlbumDAO;
 import com.gs.photo.workflow.recinhbase.dao.HbaseImageThumbnailDAO;
 import com.gs.photo.workflow.recinhbase.dao.HbaseImagesOfAlbumDAO;
@@ -43,7 +43,7 @@ import com.workflow.model.SizeAndJpegContent;
 
 @SpringBootTest(classes = {
         HbaseAlbumDAO.class, HbaseKeywordsDAO.class, HbaseImagesOfAlbumDAO.class, HbaseImagesOfKeywordsDAO.class,
-        HbaseApplicationConfig.class, HbaseImagesOfRatingsDAO.class, HbaseRatingsDAO.class,
+        ApplicationConfig.class, HbaseImagesOfRatingsDAO.class, HbaseRatingsDAO.class,
         HbaseImagesOfPersonsDAO.class, HbasePersonsDAO.class, HbaseImageThumbnailDAO.class, HbaseStatsDAO.class })
 public class TestKeywordsAndAlbum {
     protected static Logger             LOGGER = LoggerFactory.getLogger(TestKeywordsAndAlbum.class);

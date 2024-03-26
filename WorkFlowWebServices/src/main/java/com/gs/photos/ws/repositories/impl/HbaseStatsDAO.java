@@ -17,6 +17,7 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -420,4 +421,11 @@ public class HbaseStatsDAO extends AbstractHbaseStatsDAO<HbaseImageThumbnailKey>
     public void delete(HbaseImageThumbnailKey hbaseData, String family, String column) { // TODO Auto-generated method
                                                                                          // stub
     }
+
+    public HbaseStatsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
+
 }

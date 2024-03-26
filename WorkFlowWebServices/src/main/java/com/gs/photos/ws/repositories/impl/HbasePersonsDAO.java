@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 import org.apache.hadoop.hbase.CompareOperator;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -65,5 +66,11 @@ public class HbasePersonsDAO extends AbstractHbasePersonsDAO implements IHbasePe
     @Override
     public void delete(HbasePersons hbaseData, String family, String column) { // TODO Auto-generated method stub
     }
+
+    protected HbasePersonsDAO(
+        Connection connection,
+        String nameSpace
+    ) { super(connection,
+        nameSpace); }
 
 }

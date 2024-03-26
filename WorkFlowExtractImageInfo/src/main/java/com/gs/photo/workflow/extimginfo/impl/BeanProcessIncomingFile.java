@@ -2,6 +2,7 @@ package com.gs.photo.workflow.extimginfo.impl;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -66,16 +68,24 @@ import com.workflow.model.files.FileToProcess;
 
 @Component
 public class BeanProcessIncomingFile implements IProcessIncomingFiles {
-    protected static final byte[]  NOT_FOUND_FOR_OPTIONAL_PARAMETER;
-    protected static final int[]   DEFAULT_SONY_LENS_NOT_FOUND_FOR_OPTIONAL_PARAMETER;
-    protected static final short   EXIF_COPYRIGHT      = (short) 0x8298;
-    protected static final short   EXIF_ARTIST         = (short) 0x13B;
-    protected static final short[] EXIF_COPYRIGHT_PATH = { (short) 0 };
-    protected static final short[] EXIF_ARTIST_PATH    = { (short) 0 };
-    protected static final short   SONY_EXIF_LENS      = (short) 0xB027;
-    protected static final short   EXIF_LENS           = (short) 0xA434;
-    protected static final short[] SONY_EXIF_LENS_PATH = { (short) 0, (short) 0x8769, (short) 0x927c };
-    protected static final short[] EXIF_LENS_PATH      = { (short) 0, (short) 0x8769 };
+    private static final ExecutorService NEW_VIRTUAL_THREAD_PER_TASK_EXECUTOR = Executors
+        .newVirtualThreadPerTaskExecutor();
+    protected static final byte[]        NOT_FOUND_FOR_OPTIONAL_PARAMETER;
+    protected static final int[]         DEFAULT_SONY_LENS_NOT_FOUND_FOR_OPTIONAL_PARAMETER;
+    protected static final short         EXIF_COPYRIGHT                       = (short) 0x8298;
+    protected static final short         EXIF_ARTIST                          = (short) 0x13B;
+    protected static final short[]       EXIF_COPYRIGHT_PATH                  = { (short) 0 };
+    protected static final short[]       EXIF_ARTIST_PATH                     = { (short) 0 };
+    protected static final short         SONY_EXIF_LENS                       = (short) 0xB027;
+    protected static final short         EXIF_LENS                            = (short) 0xA434;
+    protected static final short[]       SONY_EXIF_LENS_PATH                  = {
+            (short) 0, (short) 0x8769, (short) 0x927c };
+    protected static final short[]       EXIF_LENS_PATH                       = { (short) 0, (short) 0x8769 };
+
+    record EventsAndGenericKafkaManagedObject(
+        WfEvents wfEvents,
+        Collection<GenericKafkaManagedObject<? extends WfEvent>> genericKafkaManagedObject
+    ) {}
 
     record FileToProcessInformation(
         Optional<byte[]> image,
@@ -123,12 +133,12 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     protected IAccessDirectlyFile                       accessDirectlyFile;
 
     @Override
-    public void init() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
+    public void start() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
 
     protected void processInputFile() {
         boolean ready = true;
-        ready = this.waitForIgnite();
         BeanProcessIncomingFile.LOGGER.info("Waiting for ignite...");
+        ready = this.waitForIgnite();
         while (ready) {
             try (
                 Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue = this.kafkaConsumerSupplierForFileToProcessValue
@@ -175,11 +185,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) throws Throwable {
-        record EventsAndGenericKafkaManagedObject(
-            RecordMetadata future,
-            WfEvents wfEvents,
-            Collection<GenericKafkaManagedObject<? extends WfEvent>> genericKafkaManagedObject
-        ) {}
+
         boolean end = false;
         boolean recover = true;
         while (!end) {
@@ -189,41 +195,29 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                     "BATCH_PROCESS_FILES",
                     (d) -> BeanProcessIncomingFile.LOGGER.debug(" Perf. metrics {}", d),
                     System.currentTimeMillis())) {
-                Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>> mapOfManagedObjects = KafkaUtils
-                    .toStreamV2(
-                        200,
+
+                Map<TopicPartition, OffsetAndMetadata> offsets = KafkaUtils
+                    .buildParallelKafkaBatchStreamPerTopicAndPartition(
+                        producerForTransactionPublishingOnExifOrImageTopic,
                         consumerForTopicWithFileToProcessValue,
+                        this.specificApplicationProperties.getKafkaPollTimeInMillisecondes(),
                         this.specificApplicationProperties.getBatchSizeForParallelProcessingIncomingRecords(),
                         true,
-                        (i) -> this.startTransactionForRecords(i),
+                        (i, p) -> this.startRecordsProcessing(i, p),
                         timeMeasurement)
-                    .map((rec) -> this.toKafkaManagedObject(rec))
-                    .map((kmo) -> this.sendFoundTiffObjects(kmo, producerForTransactionPublishingOnExifOrImageTopic))
+                    .map((rec) -> this.asyncExtractMetaDataFromImage(rec))
+                    .map(
+                        (kmo) -> this
+                            .asyncSendFoundTiffObjects(kmo, producerForTransactionPublishingOnExifOrImageTopic))
                     .map(CompletableFuture::join)
                     .flatMap(t -> t.stream())
-                    .collect(Collectors.groupingByConcurrent(GenericKafkaManagedObject::getImageKey));
-
-                Map<TopicPartition, OffsetAndMetadata> offsets = mapOfManagedObjects.entrySet()
+                    .collect(Collectors.groupingByConcurrent(GenericKafkaManagedObject::getImageKey))
+                    .entrySet()
                     .stream()
-                    .map(
-                        t -> new EventsAndGenericKafkaManagedObject(null,
-                            WfEvents.builder()
-                                .withDataId(t.getKey())
-                                .withProducer("PRODUCER_IMG_METADATA")
-                                .withEvents(
-                                    t.getValue()
-                                        .stream()
-                                        .map(GenericKafkaManagedObject::getValue)
-                                        .map(x -> x.get())
-                                        .collect(Collectors.toList()))
-                                .build(),
-                            t.getValue()))
-                    .map(
-                        t -> new EventsAndGenericKafkaManagedObject(
-                            this.sendEvents(t.wfEvents(), producerForTransactionPublishingOnExifOrImageTopic)
-                                .join(),
-                            t.wfEvents(),
-                            t.genericKafkaManagedObject()))
+                    .map(e -> this.toEventsAndGenericKafkaManagedObject(e.getKey(), e.getValue()))
+                    .map(e -> this.asyncSendEvents(e, producerForTransactionPublishingOnExifOrImageTopic))
+                    .map(e -> this.asyncCleanIgniteCache(e))
+                    .map(CompletableFuture::join)
                     .flatMap(
                         t -> t.genericKafkaManagedObject()
                             .stream())
@@ -235,7 +229,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 producerForTransactionPublishingOnExifOrImageTopic
                     .sendOffsetsToTransaction(offsets, consumerForTopicWithFileToProcessValue.groupMetadata());
                 producerForTransactionPublishingOnExifOrImageTopic.commitTransaction();
-                this.cleanIgniteCache(new HashSet<>(mapOfManagedObjects.keySet()));
             } catch (
                 ProducerFencedException |
                 OutOfOrderSequenceException |
@@ -261,9 +254,41 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         return recover;
     }
 
-    private void cleanIgniteCache(Set<String> img) {
-        BeanProcessIncomingFile.LOGGER.debug("Deleting in cache {}", img);
-        this.iIgniteDAO.delete(img);
+    private EventsAndGenericKafkaManagedObject toEventsAndGenericKafkaManagedObject(
+        String key,
+        List<GenericKafkaManagedObject<? extends WfEvent>> objectsList
+    ) {
+        return new EventsAndGenericKafkaManagedObject(WfEvents.builder()
+            .withDataId(key)
+            .withProducer("PRODUCER_IMG_METADATA")
+            .withEvents(
+                objectsList.stream()
+                    .map(GenericKafkaManagedObject::getValue)
+                    .map(x -> x.get())
+                    .collect(Collectors.toList()))
+            .build(), objectsList);
+    }
+
+    private CompletableFuture<EventsAndGenericKafkaManagedObject> asyncCleanIgniteCache(
+        CompletableFuture<EventsAndGenericKafkaManagedObject> cf
+    ) {
+        return cf.thenApply((kmo) -> this.cleanIgniteCache(kmo));
+    }
+
+    private EventsAndGenericKafkaManagedObject cleanIgniteCache(EventsAndGenericKafkaManagedObject kmo) {
+        this.cleanIgniteCache(
+            kmo.genericKafkaManagedObject()
+                .stream()
+                .map(t -> t.getImageKey())
+                .toArray(String[]::new));
+
+        return kmo;
+    }
+
+    private void cleanIgniteCache(String[] img) {
+        final Set<String> keys = new HashSet<>(Arrays.asList(img));
+        BeanProcessIncomingFile.LOGGER.info("[EVENT][{}][{}]Deleting in cache ", keys, Thread.currentThread());
+        this.iIgniteDAO.delete(keys);
     }
 
     protected RecordMetadata getRecordMetaData(Future<RecordMetadata> t) {
@@ -276,34 +301,47 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         }
     }
 
-    private CompletableFuture<RecordMetadata> sendEvents(
-        WfEvents wfe,
+    private CompletableFuture<EventsAndGenericKafkaManagedObject> asyncSendEvents(
+        EventsAndGenericKafkaManagedObject wfe,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
-        ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(this.kafkaProperties.getTopics()
-            .topicEvent(), wfe.getDataId(), wfe);
-        BeanProcessIncomingFile.LOGGER.info(
-            "EVENT[{}] nb of events sent {}",
-            wfe.getDataId(),
-            wfe.getEvents()
-                .size());
+
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return producerForTransactionPublishingOnExifOrImageTopic.send(pr)
-                    .get();
+                ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(this.kafkaProperties.getTopics()
+                    .topicEvent(),
+                    wfe.wfEvents()
+                        .getDataId(),
+                    wfe.wfEvents());
+                BeanProcessIncomingFile.LOGGER.info(
+                    "EVENT[{}][{}] nb of events sent {}",
+                    wfe.wfEvents()
+                        .getDataId(),
+                    Thread.currentThread(),
+                    wfe.wfEvents()
+                        .getEvents()
+                        .size());
+                producerForTransactionPublishingOnExifOrImageTopic.send(pr);
+                return wfe;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }, Executors.newVirtualThreadPerTaskExecutor());
+        }, BeanProcessIncomingFile.NEW_VIRTUAL_THREAD_PER_TASK_EXECUTOR);
     }
 
     private Collection<GenericKafkaManagedObject<? extends WfEvent>> processKmoStream(
         Collection<GenericKafkaManagedObject<?>> kmoStream,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
-        BeanProcessIncomingFile.LOGGER
-            .info("Kafka Sending {} objects on htread {}", kmoStream.size(), Thread.currentThread());
-        return kmoStream.stream()
+        BeanProcessIncomingFile.LOGGER.info(
+            "[EVENT][{}][{}] Kafka Sending {} objects on htread {}",
+            kmoStream.stream()
+                .map(t -> t.getImageKey())
+                .collect(Collectors.groupingBy(t -> t))
+                .keySet(),
+            Thread.currentThread(),
+            kmoStream.size());
+        Collection<GenericKafkaManagedObject<? extends WfEvent>> returnValue = kmoStream.stream()
             .map(kmo -> {
                 HbaseData objectToSend = switch (kmo) {
                     case KafkaManagedThumbImage kti -> kti.getObjectToSend()
@@ -316,31 +354,32 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(kmo.getTopic(),
                     kmo.getObjectKey(),
                     objectToSend);
-
                 producerForTransactionPublishingOnExifOrImageTopic
                     .send(pr, (r, e) -> this.processErrorWhileSending(kmo.getObjectKey(), r, e));
-
-                return KafkaManagedWfEvent.builder()
-                    .withKafkaOffset(kmo.getKafkaOffset())
-                    .withImageKey(kmo.getImageKey())
-                    .withPartition(kmo.getPartition())
-                    .withValue(kmo.createWfEvent())
-                    .withTopic(
-                        this.kafkaProperties.getTopics()
-                            .topicEvent())
-                    .build();
+                return this.buildEvent(kmo);
             })
             .collect(Collectors.toList());
-
+        return returnValue;
     }
 
-    private CompletableFuture<Collection<GenericKafkaManagedObject<? extends WfEvent>>> sendFoundTiffObjects(
+    private GenericKafkaManagedObject<? extends WfEvent> buildEvent(GenericKafkaManagedObject<?> kmo) {
+        return KafkaManagedWfEvent.builder()
+            .withKafkaOffset(kmo.getKafkaOffset())
+            .withImageKey(kmo.getImageKey())
+            .withPartition(kmo.getPartition())
+            .withValue(kmo.createWfEvent())
+            .withTopic(
+                this.kafkaProperties.getTopics()
+                    .topicEvent())
+            .build();
+    }
+
+    private CompletableFuture<Collection<GenericKafkaManagedObject<? extends WfEvent>>> asyncSendFoundTiffObjects(
         CompletableFuture<Collection<GenericKafkaManagedObject<?>>> kmoFuture,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
-        return kmoFuture.thenApplyAsync(
-            kmoStream -> this.processKmoStream(kmoStream, producerForTransactionPublishingOnExifOrImageTopic),
-            Executors.newVirtualThreadPerTaskExecutor());
+        return kmoFuture.thenApply(
+            (kmoStream) -> this.processKmoStream(kmoStream, producerForTransactionPublishingOnExifOrImageTopic));
     }
 
     private void processErrorWhileSending(String imgId, RecordMetadata r, Exception e) {
@@ -369,15 +408,24 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             (f) -> f.getKafkaOffset());
     }
 
-    private void startTransactionForRecords(int i) {
-        BeanProcessIncomingFile.LOGGER.debug("Start processing {} file records ", i);
+    private void startRecordsProcessing(
+        int i,
+        Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
+    ) {
+        producerForTransactionPublishingOnExifOrImageTopic.beginTransaction();
+        BeanProcessIncomingFile.LOGGER.info("Start processing {} file records ", i);
+    }
+
+    private void endRecordsProcessing(int i) {
+        BeanProcessIncomingFile.LOGGER.info("End processing {} file records ", i);
     }
 
     protected Optional<byte[]> retrieveDirectly(FileToProcess fileToProcess) {
 
         BeanProcessIncomingFile.LOGGER.warn(
-            "[EVENT][{}]Unable to get key Ignite - get direct value from source {}",
+            "[EVENT][{}][{}]Unable to get key Ignite - get direct value from source {}",
             fileToProcess.getImageId(),
+            Thread.currentThread(),
             fileToProcess);
         try {
             Optional<byte[]> retValue = this.accessDirectlyFile.readFirstBytesOfFileRetry(fileToProcess);
@@ -392,11 +440,11 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             throw new RuntimeException(e);
         } finally {
             BeanProcessIncomingFile.LOGGER
-                .info("Retrieved directly {} - on thread {} ", fileToProcess.getImageId(), Thread.currentThread());
+                .info("[EVENT][{}][{}]Retrieved directly {}  ", fileToProcess.getImageId(), Thread.currentThread());
         }
     }
 
-    protected CompletableFuture<Collection<GenericKafkaManagedObject<?>>> toKafkaManagedObject(
+    protected CompletableFuture<Collection<GenericKafkaManagedObject<?>>> asyncExtractMetaDataFromImage(
         ConsumerRecord<String, FileToProcess> rec
     ) {
 
@@ -413,11 +461,9 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         CompletableFuture<Collection<GenericKafkaManagedObject<?>>> future = CompletableFuture
             .supplyAsync(
                 () -> new FileToProcessInformation(this.iIgniteDAO.get(imageId), value),
-                Executors.newVirtualThreadPerTaskExecutor())
-            .thenApplyAsync(v -> this.ensureImageIsPresent(v), Executors.newVirtualThreadPerTaskExecutor())
-            .thenApplyAsync(
-                v -> this.beanFileMetadataExtractor.readIFDs(v.image(), v.fileToProcess()),
-                Executors.newVirtualThreadPerTaskExecutor())
+                BeanProcessIncomingFile.NEW_VIRTUAL_THREAD_PER_TASK_EXECUTOR)
+            .thenApply(v -> this.ensureImageIsPresent(v))
+            .thenApply(v -> this.beanFileMetadataExtractor.readIFDs(v.image(), v.fileToProcess()))
             .thenApply(
                 v -> v.stream()
                     .flatMap(t -> this.toStreamOfKMO(t, rec))
@@ -475,8 +521,9 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         Stream<GenericKafkaManagedObject<ThumbImageToSend>> imagesToSend = foundImages.stream()
             .peek(
                 (i) -> BeanProcessIncomingFile.LOGGER.info(
-                    "[EVENT][{}] While extracting info, found JPEG IMAGE : {} - length is {} ",
+                    "[EVENT][{}][{}] While extracting info, found JPEG IMAGE : {} - length is {} ",
                     rec.key(),
+                    Thread.currentThread(),
                     i.getCurrentImageNumber(),
                     i.getJpegImage().length))
             .map(

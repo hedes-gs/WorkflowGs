@@ -19,12 +19,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springframework.boot.autoconfigure.IgniteAutoConfiguration;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -42,12 +40,15 @@ import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.common.workflow.ports.IgniteCacheFactory;
 import com.gs.photo.common.workflow.ports.IgniteDAO;
+import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
 @Configuration
 @EnableAutoConfiguration
 @AutoConfigureBefore(IgniteAutoConfiguration.class)
 public class ApplicationConfig extends AbstractApplicationConfig {
+
+    public static final String CONSUMER_NAME = "file-to-process";
 
     @Override
     @Bean
@@ -61,9 +62,6 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         return super.kafkaConsumerFactory(kafkaProperties);
     }
 
-    @Autowired
-    protected ApplicationContext applicationContext;
-
     @Bean
     public FileUtils fileUtils() { return new FileUtils(); }
 
@@ -73,24 +71,24 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
         return () -> defaultKafkaConsumerFactory.get(
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .consumerType(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .groupId(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .instanceGroupId(),
             AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
             AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
     }
 
     @Bean
-    public Supplier<Producer<String, FileToProcess>> producerSupplierForTransactionPublishingOnExifTopic(
-        IKafkaProducerFactory<String, FileToProcess> defaultKafkaProducerFactory
+    public Supplier<Producer<String, HbaseData>> producerSupplierForTransactionPublishingOnExifTopic(
+        IKafkaProducerFactory<String, HbaseData> defaultKafkaProducerFactory
     ) {
         return () -> defaultKafkaProducerFactory.get(
             AbstractApplicationConfig.MEDIUM_PRODUCER_TYPE,
             AbstractApplicationConfig.KAFKA_STRING_SERIALIZER,
-            AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_SERIALIZER);
+            AbstractApplicationConfig.KAFKA_MULTIPLE_SERIALIZER);
     }
 
     @Bean(name = "threadPoolTaskExecutor")
@@ -157,4 +155,9 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     @ConfigurationPropertiesBinding
     public StringToFactoryConverter converter() { return new StringToFactoryConverter(); }
 
+    @Bean
+    public Void startConsumers(IProcessInputForHashKeyCompute bean) {
+        bean.start();
+        return null;
+    }
 }

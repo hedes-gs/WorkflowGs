@@ -5,6 +5,7 @@ import java.util.List;
 public class SpecificApplicationProperties {
     protected List<String> exifFiles;
     protected int          batchSizeForParallelProcessingIncomingRecords;
+    protected int          kafkaPollTimeInMillisecondes;
 
     public List<String> getExifFiles() { return this.exifFiles; }
 
@@ -16,6 +17,12 @@ public class SpecificApplicationProperties {
 
     public void setBatchSizeForParallelProcessingIncomingRecords(int batchSizeForParallelProcessingIncomingRecords) {
         this.batchSizeForParallelProcessingIncomingRecords = batchSizeForParallelProcessingIncomingRecords;
+    }
+
+    public int getKafkaPollTimeInMillisecondes() { return this.kafkaPollTimeInMillisecondes; }
+
+    public void setKafkaPollTimeInMillisecondes(int kafkaPollTimeInMillisecondes) {
+        this.kafkaPollTimeInMillisecondes = kafkaPollTimeInMillisecondes;
     }
 
 }

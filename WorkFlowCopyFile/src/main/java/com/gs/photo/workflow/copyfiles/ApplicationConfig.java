@@ -15,6 +15,7 @@ import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photo.common.workflow.IKafkaConsumerFactory;
 import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
+import com.gs.photo.workflow.copyfiles.config.ISpecificApplicationProperties;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
@@ -23,7 +24,8 @@ import com.workflow.model.files.FileToProcess;
 @ComponentScan(basePackages = "com.gs.photo")
 public class ApplicationConfig extends AbstractApplicationConfig {
 
-    protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ApplicationConfig.class);
+    public static final String              CONSUMER_NAME = "file-to-process";
+    protected static final org.slf4j.Logger LOGGER        = LoggerFactory.getLogger(ApplicationConfig.class);
 
     @Override
     @Bean
@@ -43,11 +45,11 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
         return () -> defaultKafkaConsumerFactory.get(
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .consumerType(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .groupId(),
-            kafkaClientConsumers.get("file-to-process")
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
                 .instanceGroupId(),
             AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
             AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
@@ -64,7 +66,15 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     }
 
     @Bean
-    @ConfigurationProperties(prefix = "application-specific")
-    public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
+    @ConfigurationProperties(prefix = ApplicationConfig.CONFIG_PREIFX_APPLICATION_SPECIFIC)
+    public ISpecificApplicationProperties specificApplicationProperties() {
+        return new SpecificApplicationProperties();
+    }
+
+    @Bean
+    public Void startConsumers(ICopyFile bean) {
+        bean.start();
+        return null;
+    }
 
 }

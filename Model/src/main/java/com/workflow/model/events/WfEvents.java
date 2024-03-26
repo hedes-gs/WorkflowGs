@@ -143,15 +143,15 @@ public class WfEvents extends HbaseData implements Serializable {
      * Builder to build {@link WfEvents}.
      */
     public static final class Builder {
-        private long                        dataCreationDate;
-        private String                      dataId;
-        private String                      producer;
-        private Collection<WfEventInitial>  initialEvents  = Collections.emptyList();
-        private Collection<WfEventCopy>     copyEvents     = Collections.emptyList();
-        private Collection<WfEventProduced> producedEvents = Collections.emptyList();
-        private Collection<WfEventFinal>    finalEvents    = Collections.emptyList();
-        private Collection<WfEventRecorded> recordedEvents = Collections.emptyList();
-        private Collection<WfEvent>         events         = Collections.emptyList();
+        private long                                  dataCreationDate;
+        private String                                dataId;
+        private String                                producer;
+        private Collection<WfEventInitial>            initialEvents  = Collections.emptyList();
+        private Collection<WfEventCopy>               copyEvents     = Collections.emptyList();
+        private Collection<WfEventProduced>           producedEvents = Collections.emptyList();
+        private Collection<WfEventFinal>              finalEvents    = Collections.emptyList();
+        private Collection<? extends WfEventRecorded> recordedEvents = Collections.emptyList();
+        private Collection<WfEvent>                   events         = Collections.emptyList();
 
         private Builder() {}
 
@@ -246,7 +246,7 @@ public class WfEvents extends HbaseData implements Serializable {
          *            field to set
          * @return builder
          */
-        public Builder withRecordedEvents(Collection<WfEventRecorded> recordedEvents) {
+        public Builder withRecordedEvents(Collection<? extends WfEventRecorded> recordedEvents) {
             this.recordedEvents = recordedEvents;
             return this;
         }

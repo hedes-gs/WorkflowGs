@@ -1,6 +1,6 @@
 package com.gs.photo.workflow.copyfiles.config;
 
-public class SpecificApplicationProperties {
+public class SpecificApplicationProperties implements ISpecificApplicationProperties {
     protected String repository;
     protected int    maxNumberOfFilesInAFolder;
 

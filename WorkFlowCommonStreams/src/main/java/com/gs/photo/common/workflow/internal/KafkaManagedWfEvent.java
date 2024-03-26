@@ -6,10 +6,10 @@ import javax.annotation.Generated;
 
 import com.workflow.model.events.WfEvent;
 
-public class KafkaManagedWfEvent extends GenericKafkaManagedObject<WfEvent> {
+public class KafkaManagedWfEvent<T extends WfEvent> extends GenericKafkaManagedObject<T> {
 
     @Generated("SparkTools")
-    private KafkaManagedWfEvent(Builder builder) {
+    private KafkaManagedWfEvent(Builder<T> builder) {
         this.partition = builder.partition;
         this.kafkaOffset = builder.kafkaOffset;
         this.value = builder.value;
@@ -24,19 +24,19 @@ public class KafkaManagedWfEvent extends GenericKafkaManagedObject<WfEvent> {
      * @return created builder
      */
     @Generated("SparkTools")
-    public static Builder builder() { return new Builder(); }
+    static public <T extends WfEvent> Builder<T> builder() { return new Builder<>(); }
 
     /**
      * Builder to build {@link KafkaManagedWfEvent}.
      */
     @Generated("SparkTools")
-    public static final class Builder {
-        private int               partition;
-        private long              kafkaOffset;
-        private Optional<WfEvent> value;
-        private String            topic;
-        private String            imageKey;
-        private String            objectKey;
+    public static final class Builder<T extends WfEvent> {
+        private int         partition;
+        private long        kafkaOffset;
+        private Optional<T> value;
+        private String      topic;
+        private String      imageKey;
+        private String      objectKey;
 
         private Builder() {}
 
@@ -71,7 +71,7 @@ public class KafkaManagedWfEvent extends GenericKafkaManagedObject<WfEvent> {
          *            field to set
          * @return builder
          */
-        public Builder withValue(WfEvent value) {
+        public Builder withValue(T value) {
             this.value = Optional.ofNullable(value);
             return this;
         }

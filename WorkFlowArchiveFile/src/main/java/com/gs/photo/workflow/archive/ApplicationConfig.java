@@ -1,111 +1,182 @@
 package com.gs.photo.workflow.archive;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.security.PrivilegedAction;
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.security.auth.SecurityProtocol;
+import org.apache.kafka.clients.producer.Producer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
+import com.gs.photo.common.workflow.AbstractApplicationKafkaProperties;
+import com.gs.photo.common.workflow.IKafkaConsumerFactory;
+import com.gs.photo.common.workflow.IKafkaProducerFactory;
+import com.gs.photo.common.workflow.IKafkaProperties;
+import com.gs.photo.common.workflow.impl.FileUtils;
+import com.gs.photo.workflow.archive.config.SpecificApplicationProperties;
+import com.gs.photo.workflow.archive.ports.IFileSystem;
 import com.gs.photos.serializers.FileToProcessDeserializer;
+import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
 @org.springframework.context.annotation.Configuration
 @ComponentScan(basePackages = "com.gs.photo")
 public class ApplicationConfig extends AbstractApplicationConfig {
+    private static final String CONSUMER_NAME                      = "file-to-process";
 
-    private static Logger      LOGGER                             = LoggerFactory.getLogger(ApplicationConfig.class);
+    private static Logger       LOGGER                             = LoggerFactory.getLogger(ApplicationConfig.class);
 
-    public final static String KAFKA_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
+    public final static String  KAFKA_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
 
-    @Value("${application.gs.principal}")
-    String                     principal;
-    @Value("${application.gs.keytab}")
-    String                     keyTab;
+    @Override
+    @Bean
+    public <K, V> IKafkaProducerFactory<K, V> kafkaProducerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaProducerFactory(kafkaProperties);
+    }
 
-    @Bean(name = "consumerForTransactionalReadOfFileToProcess")
-    @Scope("prototype")
-    public Consumer<String, FileToProcess> consumerForTransactionalReadOfFileToProcess(
-        @Value("${bootstrap.servers}") String bootstrapServers,
-        @Value("${kafka.consumer.sessionTimeoutMs}") int sessionTimeoutMs,
-        @Value("${group.id}") String groupId,
-        @Value("${kafka.consumer.batchRecords}") int consumerBatch,
-        @Value("${kafka.pollTimeInMillisecondes}") int pollTimeInMillisecondes,
-        @Value("${kafka.consumer.maxPollIntervalMsConfig}") int maxPollIntervalMsConfig
+    @Override
+    @Bean
+    public <K, V> IKafkaConsumerFactory<K, V> kafkaConsumerFactory(IKafkaProperties kafkaProperties) {
+        return super.kafkaConsumerFactory(kafkaProperties);
+    }
 
+    @Bean
+    public FileUtils fileUtils() { return new FileUtils(); }
+
+    @Bean
+    public Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue(
+        IKafkaConsumerFactory<String, FileToProcess> defaultKafkaConsumerFactory,
+        Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
-        Properties settings = new Properties();
-        settings.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        settings.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER);
-        settings
-            .put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
-        settings.put(ConsumerConfig.CLIENT_ID_CONFIG, "tr-" + this.applicationId);
-        settings.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        settings.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        settings.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        settings.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, "read_committed");
-        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, pollTimeInMillisecondes);
-        settings.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, consumerBatch);
-        settings.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.name);
-        settings.put("sasl.kerberos.service.name", "kafka");
-        settings.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
-        settings.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMsConfig);
-        Consumer<String, FileToProcess> consumer = new KafkaConsumer<>(settings);
-        return consumer;
+        return () -> defaultKafkaConsumerFactory.get(
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+                .consumerType(),
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+                .groupId(),
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+                .instanceGroupId(),
+            AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
+            AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);
+    }
+
+    @Bean
+    public Supplier<Producer<String, HbaseData>> producerSupplierForTransactionPublishingOnExifTopic(
+        IKafkaProducerFactory<String, HbaseData> defaultKafkaProducerFactory
+    ) {
+        return () -> defaultKafkaProducerFactory.get(
+            AbstractApplicationConfig.MEDIUM_PRODUCER_TYPE,
+            AbstractApplicationConfig.KAFKA_STRING_SERIALIZER,
+            AbstractApplicationConfig.KAFKA_MULTIPLE_SERIALIZER);
     }
 
     @Bean(name = "hdfsFileSystem")
-    @Scope("prototype")
-    public FileSystem hdfsFileSystem(
-
+    public Supplier<IFileSystem> supplierForHdfsFileSystem(
+        SpecificApplicationProperties specificApplicationProperties
     ) {
-        Configuration configuration = new Configuration();
-        ApplicationConfig.LOGGER.info("Hadoop FileSystem configuration {}", configuration);
-        UserGroupInformation.setConfiguration(configuration);
-        try {
-            UserGroupInformation.loginUserFromKeytab(this.principal, this.keyTab);
-            ApplicationConfig.LOGGER.info("Kerberos Login from login {} and keytab {}", this.principal, this.keyTab);
-        } catch (IOException e1) {
-            ApplicationConfig.LOGGER
-                .warn("Error when login {},{} : {}", this.principal, this.keyTab, ExceptionUtils.getStackTrace(e1));
-            throw new RuntimeException(e1);
-        }
-        PrivilegedAction<FileSystem> action = () -> {
-            FileSystem retValue = null;
+        return () -> {
+            Configuration configuration = new Configuration();
+            ApplicationConfig.LOGGER.info("Hadoop FileSystem configuration {}", configuration);
+            UserGroupInformation.setConfiguration(configuration);
             try {
-                retValue = FileSystem.get(configuration);
+                UserGroupInformation.loginUserFromKeytab(
+                    specificApplicationProperties.getHadoopPrincipal(),
+                    specificApplicationProperties.getHadoopKeyTab());
+                ApplicationConfig.LOGGER.info(
+                    "Kerberos Login from login {} and keytab {}",
+                    specificApplicationProperties.getHadoopPrincipal(),
+                    specificApplicationProperties.getHadoopKeyTab());
+            } catch (IOException e1) {
+                ApplicationConfig.LOGGER.warn(
+                    "Error when login {},{} : {}",
+                    specificApplicationProperties.getHadoopPrincipal(),
+                    specificApplicationProperties.getHadoopKeyTab(),
+                    ExceptionUtils.getStackTrace(e1));
+                throw new RuntimeException(e1);
+            }
+            PrivilegedAction<FileSystem> action = () -> {
+                FileSystem retValue = null;
+                try {
+                    retValue = FileSystem.get(configuration);
+                } catch (IOException e) {
+                    ApplicationConfig.LOGGER.warn(
+                        "Error when Getting FileSystem {},{} : {}",
+                        specificApplicationProperties.getHadoopPrincipal(),
+                        specificApplicationProperties.getHadoopKeyTab(),
+                        ExceptionUtils.getStackTrace(e));
+                    throw new RuntimeException(e);
+                }
+                return retValue;
+            };
+            try {
+                FileSystem returnValue = UserGroupInformation.getLoginUser()
+                    .doAs(action);
+                return new IFileSystem() {
+
+                    @Override
+                    public void close() throws IOException { returnValue.close(); }
+
+                    @Override
+                    public boolean mkdirs(Path folderWhereRecord) throws IOException {
+                        PrivilegedAction<Boolean> action = () -> {
+                            try {
+                                return returnValue.mkdirs(folderWhereRecord);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        };
+                        return UserGroupInformation.getLoginUser()
+                            .doAs(action);
+                    }
+
+                    @Override
+                    public boolean exists(Path hdfsFilePath) throws IOException {
+                        PrivilegedAction<Boolean> action = () -> {
+                            try {
+                                return returnValue.exists(hdfsFilePath);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        };
+                        return UserGroupInformation.getLoginUser()
+                            .doAs(action);
+                    }
+
+                    @Override
+                    public OutputStream create(Path hdfsFilePath, boolean b) throws IOException {
+                        PrivilegedAction<OutputStream> action = () -> {
+                            try {
+                                return returnValue.create(hdfsFilePath, b);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        };
+                        return UserGroupInformation.getLoginUser()
+                            .doAs(action);
+                    }
+                };
             } catch (IOException e) {
                 ApplicationConfig.LOGGER.warn(
-                    "Error when Getting FileSystem {},{} : {}",
-                    this.principal,
-                    this.keyTab,
+                    "Error when login {},{} : {}",
+                    specificApplicationProperties.getHadoopPrincipal(),
+                    specificApplicationProperties.getHadoopKeyTab(),
                     ExceptionUtils.getStackTrace(e));
                 throw new RuntimeException(e);
             }
-            return retValue;
         };
-        try {
-            return UserGroupInformation.getLoginUser()
-                .doAs(action);
-        } catch (IOException e) {
-            ApplicationConfig.LOGGER
-                .warn("Error when login {},{} : {}", this.principal, this.keyTab, ExceptionUtils.getStackTrace(e));
-            throw new RuntimeException(e);
-        }
     }
 
     @Bean(name = "userGroupInformationAction")
@@ -124,4 +195,39 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             }
         };
     }
+
+    @Bean(name = "threadPoolTaskExecutor")
+    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
+        final ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+        threadPoolTaskExecutor.setDaemon(true);
+        threadPoolTaskExecutor.setCorePoolSize(6);
+        threadPoolTaskExecutor.setMaxPoolSize(64);
+        threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
+    }
+
+    @Bean
+    public Void startConsumers(IBeanFileConsumer bean) {
+        bean.start();
+        return null;
+    }
+
+    @Bean
+    @ConfigurationProperties(prefix = "kafka", ignoreUnknownFields = false)
+    public IKafkaProperties kafkaProperties() { return new AbstractApplicationKafkaProperties() {}; }
+
+    @Bean
+    @ConfigurationProperties(prefix = "kafka-consumers", ignoreUnknownFields = false)
+    public Map<String, KafkaClientConsumer> kafkaClientConsumers() { return new HashMap<>(); }
+
+    @Bean
+    @ConfigurationProperties(prefix = "application-specific", ignoreUnknownFields = false)
+    public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
+
+    @Bean
+    String nameSpace(SpecificApplicationProperties specificApplicationProperties) {
+        return specificApplicationProperties.getNameSpace();
+    }
+
 }

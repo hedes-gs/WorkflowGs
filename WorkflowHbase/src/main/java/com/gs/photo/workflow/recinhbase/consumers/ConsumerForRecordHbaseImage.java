@@ -22,10 +22,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
-import org.springframework.stereotype.Component;
 
 import com.gs.photo.common.workflow.DateTimeHelper;
-import com.gs.photo.workflow.recinhbase.HbaseApplicationConfig;
+import com.gs.photo.workflow.recinhbase.ApplicationConfig;
 import com.gs.photo.workflow.recinhbase.dao.HbaseImageThumbnailDAO;
 import com.gs.photo.workflow.recinhbase.dao.IHbaseImagesOfAlbumDAO;
 import com.gs.photo.workflow.recinhbase.dao.IHbaseImagesOfKeyWordsDAO;
@@ -37,7 +36,7 @@ import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
-@Component
+// @Component
 @ConditionalOnProperty(name = "unit-test", havingValue = "false")
 public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<HbaseImageThumbnail>
     implements IConsumerForRecordHbaseImage {
@@ -79,7 +78,7 @@ public class ConsumerForRecordHbaseImage extends AbstractConsumerForRecordHbase<
                 this.processMessagesFromTopic(
                     this.consumerForRecordingImageFromTopic,
                     "IMG",
-                    this.groupId + "-" + HbaseApplicationConfig.CONSUMER_IMAGE);
+                    this.groupId + "-" + ApplicationConfig.CONSUMER_IMAGES);
             } catch (Throwable e) {
                 ConsumerForRecordHbaseImage.LOGGER
                     .warn("[CONSUMER][{}] Error {}", this.getConsumer(), ExceptionUtils.getStackTrace(e));

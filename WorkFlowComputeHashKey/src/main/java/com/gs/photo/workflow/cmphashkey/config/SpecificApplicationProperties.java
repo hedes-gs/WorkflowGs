@@ -1,22 +1,23 @@
 package com.gs.photo.workflow.cmphashkey.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-@EnableConfigurationProperties
-@ConfigurationProperties(prefix = "application")
-public class SpecificApplicationProperties implements IApplicationProperties {
+public class SpecificApplicationProperties implements ISpecificApplicationProperties {
+    protected int batchSizeForParallelProcessingIncomingRecords;
+    protected int kafkaPollTimeInMillisecondes;
 
     @Override
-    public int batchSizeForParallelProcessingIncomingRecords() { // TODO Auto-generated method stub
-        return 0;
+    public int getBatchSizeForParallelProcessingIncomingRecords() {
+        return this.batchSizeForParallelProcessingIncomingRecords;
+    }
+
+    public void setBatchSizeForParallelProcessingIncomingRecords(int batchSizeForParallelProcessingIncomingRecords) {
+        this.batchSizeForParallelProcessingIncomingRecords = batchSizeForParallelProcessingIncomingRecords;
     }
 
     @Override
-    public int kafkaPollTimeInMillisecondes() { // TODO Auto-generated method stub
-        return 0;
+    public int getKafkaPollTimeInMillisecondes() { return this.kafkaPollTimeInMillisecondes; }
+
+    public void setKafkaPollTimeInMillisecondes(int kafkaPollTimeInMillisecondes) {
+        this.kafkaPollTimeInMillisecondes = kafkaPollTimeInMillisecondes;
     }
 
 }

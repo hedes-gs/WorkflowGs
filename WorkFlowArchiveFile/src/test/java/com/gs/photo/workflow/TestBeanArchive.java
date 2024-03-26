@@ -34,16 +34,16 @@ import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.workflow.archive.ApplicationConfig;
-import com.gs.photo.workflow.archive.IBeanArchive;
+import com.gs.photo.workflow.archive.IBeanFileConsumer;
 import com.gs.photo.workflow.archive.IUserGroupInformationAction;
-import com.gs.photo.workflow.archive.impl.BeanArchive;
+import com.gs.photo.workflow.archive.impl.BeanFileConsumer;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 
 @RunWith(SpringRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@SpringBootTest(classes = { ApplicationConfig.class, BeanArchive.class })
+@SpringBootTest(classes = { ApplicationConfig.class, BeanFileConsumer.class })
 public class TestBeanArchive {
 
     @MockBean
@@ -54,7 +54,7 @@ public class TestBeanArchive {
     protected IBeanTaskExecutor               beanTaskExecutor;
 
     @Autowired
-    protected IBeanArchive                    beanArchive;
+    protected IBeanFileConsumer                    beanArchive;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {}
@@ -125,7 +125,7 @@ public class TestBeanArchive {
             .thenReturn(true);
 
         try {
-            this.beanArchive.init();
+            this.beanArchive.start();
         } catch (ExceptionToStop e) {
         }
         Mockito.verify(this.producerForPublishingWfEvents, Mockito.times(1))
@@ -159,7 +159,7 @@ public class TestBeanArchive {
             .thenReturn(true);
 
         try {
-            this.beanArchive.init();
+            this.beanArchive.start();
         } catch (ExceptionToStop e) {
         }
         Mockito.verify(this.hdfsFileSystem, Mockito.times(1))
@@ -193,7 +193,7 @@ public class TestBeanArchive {
             .thenReturn(true);
 
         try {
-            this.beanArchive.init();
+            this.beanArchive.start();
         } catch (ExceptionToStop e) {
         }
         Mockito.verify(this.fileUtils, Mockito.times(1))

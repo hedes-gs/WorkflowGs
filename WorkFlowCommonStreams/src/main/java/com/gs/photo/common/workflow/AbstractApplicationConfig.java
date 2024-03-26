@@ -21,63 +21,64 @@ import org.slf4j.LoggerFactory;
 import com.gs.photos.serializers.ExchangedDataSerializer;
 import com.gs.photos.serializers.FileToProcessDeserializer;
 import com.gs.photos.serializers.FileToProcessSerializer;
+import com.gs.photos.serializers.HbaseDataDeserializer;
+import com.gs.photos.serializers.HbaseImageThumbnailDeserializer;
 import com.gs.photos.serializers.ImportEventDeserializer;
 import com.gs.photos.serializers.MultipleSerializers;
 import com.gs.photos.serializers.WfEventsSerializer;
 import com.workflow.model.HbaseData;
+import com.workflow.model.HbaseExifData;
+import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.events.ImportEvent;
+import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 
 public abstract class AbstractApplicationConfig {
 
-    private static final String                                      IGNITE_SPRING_BEAN                           = "ignite-spring-bean";
+    private static final String                                            IGNITE_SPRING_BEAN                           = "ignite-spring-bean";
+    protected static final String                                          CONFIG_PREIFX_APPLICATION_SPECIFIC           = "application-specific";
 
-    private static final String                                      CONFIG_CLUSTER_CLIENT_XML                    = "config/cluster-client.xml";
+    private static final String                                            CONFIG_CLUSTER_CLIENT_XML                    = "config/cluster-client.xml";
 
-    protected static final org.slf4j.Logger                          LOGGER                                       = LoggerFactory
+    protected static final org.slf4j.Logger                                LOGGER                                       = LoggerFactory
         .getLogger(AbstractApplicationConfig.class);
 
-    private static final String                                      KAFKA_EXCHANGED_DATA_SERIALIZER              = ExchangedDataSerializer.class
+    private static final String                                            KAFKA_EXCHANGED_DATA_SERIALIZER              = ExchangedDataSerializer.class
         .getName();
-    public final static Class<? extends Deserializer<String>>        KAFKA_STRING_DESERIALIZER                    = org.apache.kafka.common.serialization.StringDeserializer.class;
-    public final static Class<? extends Serializer<String>>          KAFKA_STRING_SERIALIZER                      = org.apache.kafka.common.serialization.StringSerializer.class;
-    public static final Class<? extends Serializer<HbaseData>>       KAFKA_MULTIPLE_SERIALIZER                    = MultipleSerializers.class;
-    public static final Class<? extends Deserializer<ImportEvent>>   KAFKA_IMPORT_EVENT_DESERIALIZER              = ImportEventDeserializer.class;
-    public static final Class<? extends Deserializer<FileToProcess>> KAFKA_FILE_TO_PROCESS_DESERIALIZER           = FileToProcessDeserializer.class;
-    public static final Class<? extends Serializer<FileToProcess>>   KAFKA_FILE_TO_PROCESS_SERIALIZER             = FileToProcessSerializer.class;
+    public final static Class<? extends Serializer<String>>                KAFKA_STRING_SERIALIZER                      = org.apache.kafka.common.serialization.StringSerializer.class;
+    public static final Class<? extends Serializer<HbaseData>>             KAFKA_MULTIPLE_SERIALIZER                    = MultipleSerializers.class;
+    public static final Class<? extends Serializer<FileToProcess>>         KAFKA_FILE_TO_PROCESS_SERIALIZER             = FileToProcessSerializer.class;
+    public final static Class<? extends Serializer<WfEvents>>              KAFKA_WFEVENTS_SERIALIZER                    = WfEventsSerializer.class;
+    public final static Class<? extends Deserializer<String>>              KAFKA_STRING_DESERIALIZER                    = org.apache.kafka.common.serialization.StringDeserializer.class;
+    public static final Class<? extends Deserializer<ImportEvent>>         KAFKA_IMPORT_EVENT_DESERIALIZER              = ImportEventDeserializer.class;
+    public static final Class<? extends Deserializer<FileToProcess>>       KAFKA_FILE_TO_PROCESS_DESERIALIZER           = FileToProcessDeserializer.class;
+    public final static Class<? extends Deserializer<HbaseImageThumbnail>> HBASE_IMAGE_THUMBNAIL_DESERIALIZER           = HbaseImageThumbnailDeserializer.class;
+    public final static Class<? extends Deserializer<HbaseData>>           HBASE_DATA_DESERIALIZER                      = HbaseDataDeserializer.class;
+    public final static Class<? extends Deserializer<HbaseExifData>>       HBASE_IMAGE_EXIF_DATA_DESERIALIZER           = com.gs.photos.serializers.HbaseExifDataDeserializer.class;
+    public final static String                                             KAFKA_LONG_SERIALIZER                        = org.apache.kafka.common.serialization.LongSerializer.class
+        .getName();
+    public final static String                                             KAFKA_BYTES_DESERIALIZER                     = org.apache.kafka.common.serialization.ByteArrayDeserializer.class
+        .getName();
+    public final static String                                             KAFKA_BYTE_SERIALIZER                        = org.apache.kafka.common.serialization.ByteArraySerializer.class
+        .getName();
+    public final static String                                             HBASE_IMAGE_THUMBNAIL_SERIALIZER             = com.gs.photos.serializers.HbaseImageThumbnailSerializer.class
+        .getName();
 
-    public final static String                                       KAFKA_WFEVENTS_SERIALIZER                    = WfEventsSerializer.class
+    public final static String                                             HBASE_IMAGE_THUMBNAIL_KEY_DESERIALIZER       = com.gs.photos.serializers.HbaseImageThumbnailKeyDeserializer.class
         .getName();
-    public final static String                                       KAFKA_LONG_SERIALIZER                        = org.apache.kafka.common.serialization.LongSerializer.class
+    public final static String                                             HBASE_IMAGE_EXIF_DATA_SERIALIZER             = com.gs.photos.serializers.HbaseExifDataSerializer.class
         .getName();
-    public final static String                                       KAFKA_BYTES_DESERIALIZER                     = org.apache.kafka.common.serialization.ByteArrayDeserializer.class
+    public final static String                                             HBASE_IMAGE_EXIF_DATA_OF_IMAGES_DESERIALIZER = com.gs.photos.serializers.HbaseExifDataOfImagesDeserializer.class
         .getName();
-    public final static String                                       KAFKA_BYTE_SERIALIZER                        = org.apache.kafka.common.serialization.ByteArraySerializer.class
+    public final static String                                             HBASE_IMAGE_EXIF_DATA_OF_IMAGES_SERIALIZER   = com.gs.photos.serializers.HbaseExifDataOfImagesSerializer.class
         .getName();
-    public final static String                                       HBASE_IMAGE_THUMBNAIL_SERIALIZER             = com.gs.photos.serializers.HbaseImageThumbnailSerializer.class
+    public final static String                                             HBASE_DATA_SERIALIZER                        = com.gs.photos.serializers.HbaseDataSerializer.class
         .getName();
-    public final static String                                       HBASE_IMAGE_THUMBNAIL_DESERIALIZER           = com.gs.photos.serializers.HbaseImageThumbnailDeserializer.class
-        .getName();
+    public final static String                                             CACHE_NAME                                   = "start-raw-files";
 
-    public final static String                                       HBASE_IMAGE_THUMBNAIL_KEY_DESERIALIZER       = com.gs.photos.serializers.HbaseImageThumbnailKeyDeserializer.class
-        .getName();
-    public final static String                                       HBASE_IMAGE_EXIF_DATA_DESERIALIZER           = com.gs.photos.serializers.HbaseExifDataDeserializer.class
-        .getName();
-    public final static String                                       HBASE_IMAGE_EXIF_DATA_SERIALIZER             = com.gs.photos.serializers.HbaseExifDataSerializer.class
-        .getName();
-    public final static String                                       HBASE_IMAGE_EXIF_DATA_OF_IMAGES_DESERIALIZER = com.gs.photos.serializers.HbaseExifDataOfImagesDeserializer.class
-        .getName();
-    public final static String                                       HBASE_IMAGE_EXIF_DATA_OF_IMAGES_SERIALIZER   = com.gs.photos.serializers.HbaseExifDataOfImagesSerializer.class
-        .getName();
-    public final static String                                       HBASE_DATA_DESERIALIZER                      = com.gs.photos.serializers.HbaseDataDeserializer.class
-        .getName();
-    public final static String                                       HBASE_DATA_SERIALIZER                        = com.gs.photos.serializers.HbaseDataSerializer.class
-        .getName();
-    public final static String                                       CACHE_NAME                                   = "start-raw-files";
-
-    protected static final String                                    ON_THE_FLY_CONSUMER_TYPE                     = "on_the_fly_consumer_type";
-    protected static final String                                    ON_THE_FLY_PRODUCER_TYPE                     = "on_the_fly_producer_type";
-    protected static final String                                    MEDIUM_PRODUCER_TYPE                         = "medium_producer_type";
+    protected static final String                                          ON_THE_FLY_CONSUMER_TYPE                     = "on_the_fly_consumer_type";
+    protected static final String                                          ON_THE_FLY_PRODUCER_TYPE                     = "on_the_fly_producer_type";
+    protected static final String                                          MEDIUM_PRODUCER_TYPE                         = "medium_producer_type";
 
     public static record KafkaClientConsumer(
         String consumerType,

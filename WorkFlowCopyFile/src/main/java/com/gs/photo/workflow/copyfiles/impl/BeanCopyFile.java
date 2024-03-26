@@ -5,16 +5,17 @@ import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import javax.annotation.PostConstruct;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -41,6 +42,7 @@ import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
+import com.gs.photo.workflow.copyfiles.ApplicationConfig;
 import com.gs.photo.workflow.copyfiles.ICopyFile;
 import com.gs.photo.workflow.copyfiles.IServicesFile;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
@@ -72,10 +74,10 @@ public class BeanCopyFile implements ICopyFile {
     @Autowired
     protected IServicesFile                             beanServicesFile;
 
-    @PostConstruct
-    public void init() { this.beanTaskExecutor.execute(() -> this.processInputFile("file-to-process")); }
+    @Override
+    public void start() { this.beanTaskExecutor.execute(() -> this.processInputFile(ApplicationConfig.CONSUMER_NAME)); }
 
-    private void processInputFile(String consumerType) {
+    protected void processInputFile(String consumerType) {
         BeanCopyFile.LOGGER.info(
             "Starting to process input messages from {} to {}",
             this.kafkaProperties.getTopics()
@@ -103,21 +105,28 @@ public class BeanCopyFile implements ICopyFile {
                             System.currentTimeMillis())) {
                         producerForTopicWithFileToProcessOrEventValue.beginTransaction();
 
-                        Stream<ConsumerRecord<String, FileToProcess>> filesToCopyStream = KafkaUtils.toStreamV2(
-                            this.kafkaProperties.getConsumersType()
-                                .get("file-to-process")
-                                .maxPollIntervallMs(),
-                            consumerForTopicWithFileToProcessValue,
-                            this.kafkaProperties.getConsumersType()
-                                .get(consumerType)
-                                .batchSizeForParallelProcessingIncomingRecords(),
-                            true,
-                            (i) -> this.startTransactionForRecords(i),
-                            timeMeasurement);
-                        Map<TopicPartition, OffsetAndMetadata> offsets = filesToCopyStream
+                        Map<TopicPartition, OffsetAndMetadata> offsets = KafkaUtils
+                            .buildParallelKafkaBatchStreamPerTopicAndPartition(
+                                producerForTopicWithFileToProcessOrEventValue,
+                                consumerForTopicWithFileToProcessValue,
+                                this.kafkaProperties.getConsumersType()
+                                    .get(consumerType)
+                                    .maxPollIntervallMs(),
+                                this.kafkaProperties.getConsumersType()
+                                    .get(consumerType)
+                                    .batchSizeForParallelProcessingIncomingRecords(),
+                                true,
+                                (i, p) -> this.startTransactionForRecords(i, p),
+                                timeMeasurement)
                             .map((r) -> this.copyToLocal(r))
+                            .map(CompletableFuture::join)
+                            .collect(Collectors.groupingByConcurrent(k -> k.getObjectKey()))
+                            .values()
+                            .stream()
                             .map((r) -> this.sendToNext(r, producerForTopicWithFileToProcessOrEventValue))
                             .map((r) -> this.sendEvent(r, producerForTopicWithFileToProcessOrEventValue))
+                            .map(CompletableFuture::join)
+                            .flatMap(t -> t.stream())
                             .collect(
                                 () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
                                 (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
@@ -171,160 +180,179 @@ public class BeanCopyFile implements ICopyFile {
             (f) -> f.getKafkaOffset());
     }
 
-    private void startTransactionForRecords(int i) { BeanCopyFile.LOGGER.info("Start processing {} file records ", i); }
-
-    private KafkaManagedFileToProcess sendEvent(
-        KafkaManagedFileToProcess f,
+    private void startTransactionForRecords(
+        int i,
         Producer<String, HbaseData> producerForTopicWithFileToProcessOrEventValue
     ) {
-        f.getValue()
-            .ifPresentOrElse((origin) -> {
-                Future<RecordMetadata> result = producerForTopicWithFileToProcessOrEventValue.send(
-                    new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
-                        .topicEvent(),
-                        f.getHashKey(),
-                        WfEvents.builder()
-                            .withDataId(f.getImageKey())
-                            .withProducer("LOCAL_COPY")
-                            .withEvents(Collections.singleton(f.createWfEvent()))
-                            .build()));
-                RecordMetadata data;
-                try {
-                    data = result.get();
-                    BeanCopyFile.LOGGER.info(
-                        "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
-                        origin.getDataId(),
-                        f,
-                        data.partition(),
-                        data.offset(),
-                        data.topic(),
-                        data.timestamp());
-                } catch (
-                    InterruptedException |
-                    ExecutionException e) {
-                    BeanCopyFile.LOGGER.error(" Interrupted... stopping process", e);
-                    throw new RuntimeException(e);
-                }
-            },
-                () -> BeanCopyFile.LOGGER.error(
-                    " Unable to process offset {} of partition {} of topic {} ",
-                    f.getKafkaOffset(),
-                    f.getPartition(),
-                    this.kafkaProperties.getTopics()
-                        .topicDupFilteredFile()));
-        return f;
+        producerForTopicWithFileToProcessOrEventValue.beginTransaction();
+        BeanCopyFile.LOGGER.info("Start processing {} file records ", i);
     }
 
-    private KafkaManagedFileToProcess sendToNext(
-        KafkaManagedFileToProcess f,
+    private void endTransactionForRecords(Integer i) { BeanCopyFile.LOGGER.info("End processing {} file records ", i); }
+
+    private CompletableFuture<Collection<KafkaManagedFileToProcess>> sendEvent(
+        CompletableFuture<Collection<KafkaManagedFileToProcess>> cf,
         Producer<String, HbaseData> producerForTopicWithFileToProcessOrEventValue
     ) {
-        f.getValue()
-            .ifPresentOrElse((origin) -> {
-                Future<RecordMetadata> result = producerForTopicWithFileToProcessOrEventValue.send(
-                    new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
-                        .topicLocalFileCopy(), f.getHashKey(), origin));
-                RecordMetadata data;
-                try {
-                    data = result.get();
-                    BeanCopyFile.LOGGER.info(
-                        "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
-                        origin.getDataId(),
-                        f,
-                        data.partition(),
-                        data.offset(),
-                        data.topic(),
-                        data.timestamp());
-                } catch (
-                    InterruptedException |
-                    ExecutionException e) {
-                    BeanCopyFile.LOGGER.error(" Interrupted... stopping process", e);
-                    throw new RuntimeException(e);
-                }
-            },
-                () -> BeanCopyFile.LOGGER.error(
-                    " Unable to process offset {} of partition {} of topic {} ",
-                    f.getKafkaOffset(),
-                    f.getPartition(),
-                    this.kafkaProperties.getTopics()
-                        .topicDupFilteredFile()));
-        return f;
+        return cf.thenApply(collectionOfKmft -> {
+            collectionOfKmft.forEach(f -> {
+                f.getValue()
+                    .ifPresentOrElse((origin) -> {
+                        Future<RecordMetadata> result = producerForTopicWithFileToProcessOrEventValue.send(
+                            new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
+                                .topicEvent(),
+                                f.getHashKey(),
+                                WfEvents.builder()
+                                    .withDataId(f.getImageKey())
+                                    .withProducer("LOCAL_COPY")
+                                    .withEvents(Collections.singleton(f.createWfEvent()))
+                                    .build()));
+                        RecordMetadata data;
+                        try {
+                            data = result.get();
+                            BeanCopyFile.LOGGER.info(
+                                "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
+                                origin.getDataId(),
+                                f,
+                                data.partition(),
+                                data.offset(),
+                                data.topic(),
+                                data.timestamp());
+                        } catch (
+                            InterruptedException |
+                            ExecutionException e) {
+                            BeanCopyFile.LOGGER.error(" Interrupted... stopping process", e);
+                            throw new RuntimeException(e);
+                        }
+                    },
+                        () -> BeanCopyFile.LOGGER.error(
+                            " Unable to process offset {} of partition {} of topic {} ",
+                            f.getKafkaOffset(),
+                            f.getPartition(),
+                            this.kafkaProperties.getTopics()
+                                .topicDupFilteredFile()));
+            });
+            return new ArrayList(collectionOfKmft);
+        });
     }
 
-    private KafkaManagedFileToProcess copyToLocal(ConsumerRecord<String, FileToProcess> rec) {
+    private CompletableFuture<Collection<KafkaManagedFileToProcess>> sendToNext(
+        Collection<KafkaManagedFileToProcess> cf,
+        Producer<String, HbaseData> producerForTopicWithFileToProcessOrEventValue
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+            cf.forEach(f -> {
+                f.getValue()
+                    .ifPresentOrElse((origin) -> {
+                        Future<RecordMetadata> result = producerForTopicWithFileToProcessOrEventValue.send(
+                            new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
+                                .topicLocalFileCopy(), f.getHashKey(), origin));
+                        RecordMetadata data;
+                        try {
+                            data = result.get();
+                            BeanCopyFile.LOGGER.info(
+                                "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
+                                origin.getDataId(),
+                                f,
+                                data.partition(),
+                                data.offset(),
+                                data.topic(),
+                                data.timestamp());
+                        } catch (
+                            InterruptedException |
+                            ExecutionException e) {
+                            BeanCopyFile.LOGGER.error(" Interrupted... stopping process", e);
+                            throw new RuntimeException(e);
+                        }
+                    },
+                        () -> BeanCopyFile.LOGGER.error(
+                            " Unable to process offset {} of partition {} of topic {} ",
+                            f.getKafkaOffset(),
+                            f.getPartition(),
+                            this.kafkaProperties.getTopics()
+                                .topicDupFilteredFile()));
 
-        try {
-            InetAddress ip = InetAddress.getLocalHost();
-            String hostname = ip.getHostName();
-            FileToProcess origin = rec.value();
-            Path currentFolder = this.beanServicesFile
-                .getCurrentFolderInWhichCopyShouldBeDone(Paths.get(this.specificApplicationProperties.getRepository()));
-            Path destPath = Paths.get(this.specificApplicationProperties.getRepository())
-                .resolve(
-                    Paths.get(
-                        currentFolder.toString(),
-                        rec.key() + "-" + rec.value()
-                            .getName()));
+            });
+            return cf;
+        });
+    }
 
-            BeanCopyFile.LOGGER.info(
-                "[EVENT][{}] File {} copying to place {} ",
-                rec.key(),
-                rec.value(),
-                destPath.toAbsolutePath()
-                    .toString());
-            if (Files.exists(destPath)) {
-                BeanCopyFile.LOGGER.warn(
-                    "[EVENT][{}] File already created when processing {}: {}, overwriting it...",
+    private CompletableFuture<KafkaManagedFileToProcess> copyToLocal(ConsumerRecord<String, FileToProcess> rec) {
+        return CompletableFuture.supplyAsync(() -> {
+
+            try {
+                InetAddress ip = InetAddress.getLocalHost();
+                String hostname = ip.getHostName();
+                FileToProcess origin = rec.value();
+                Path currentFolder = this.beanServicesFile.getCurrentFolderInWhichCopyShouldBeDone(
+                    Paths.get(this.specificApplicationProperties.getRepository()));
+                Path destPath = Paths.get(this.specificApplicationProperties.getRepository())
+                    .resolve(
+                        Paths.get(
+                            currentFolder.toString(),
+                            rec.key() + "-" + rec.value()
+                                .getName()));
+
+                BeanCopyFile.LOGGER.info(
+                    "[EVENT][{}] File {} copying to place {} ",
                     rec.key(),
                     rec.value(),
                     destPath.toAbsolutePath()
                         .toString());
-            }
+                if (Files.exists(destPath)) {
+                    BeanCopyFile.LOGGER.warn(
+                        "[EVENT][{}] File already created when processing {}: {}, overwriting it...",
+                        rec.key(),
+                        rec.value(),
+                        destPath.toAbsolutePath()
+                            .toString());
+                }
 
-            this.beanServicesFile.copyRemoteToLocal(rec.value(), destPath.toFile());
-            BeanCopyFile.LOGGER.info(
-                "[EVENT][{}] File {} has been copied in local at place {} ",
-                rec.key(),
-                rec.value(),
-                destPath.toAbsolutePath()
-                    .toString());
+                this.beanServicesFile.copyRemoteToLocal(rec.value(), destPath.toFile());
+                BeanCopyFile.LOGGER.info(
+                    "[EVENT][{}] File {} has been copied in local at place {} ",
+                    rec.key(),
+                    rec.value(),
+                    destPath.toAbsolutePath()
+                        .toString());
+                return KafkaManagedFileToProcess.builder()
+                    .withHashKey(rec.key())
+                    .withValue(
+                        Optional.of(
+                            FileToProcess.builder()
+                                .withCompressedFile(origin.isCompressedFile())
+                                .withImportEvent(origin.getImportEvent())
+                                .withImageId(origin.getImageId())
+                                .withDataId(origin.getDataId())
+                                .withIsLocal(true)
+                                .withUrl(
+                                    "nfs://" + hostname + ":/"
+                                        + Paths.get(this.specificApplicationProperties.getRepository()) + "/"
+                                        + destPath.toAbsolutePath()
+                                            .subpath(1, destPath.getNameCount())
+                                            .toString())
+                                .withName(
+                                    rec.key() + "-" + FileUtils.getSimpleNameFromUrl(
+                                        rec.value()
+                                            .getUrl()))
+                                .build()))
+                    .withKafkaOffset(rec.offset())
+                    .withPartition(rec.partition())
+                    .build();
+            } catch (IOException e) {
+                BeanCopyFile.LOGGER.error(
+                    "[EVENT][{}] Unexpected error when processing value {} : {} ",
+                    rec.key(),
+                    rec.value(),
+                    ExceptionUtils.getStackTrace(e));
+            }
             return KafkaManagedFileToProcess.builder()
                 .withHashKey(rec.key())
-                .withValue(
-                    Optional.of(
-                        FileToProcess.builder()
-                            .withCompressedFile(origin.isCompressedFile())
-                            .withImportEvent(origin.getImportEvent())
-                            .withImageId(origin.getImageId())
-                            .withDataId(origin.getDataId())
-                            .withIsLocal(true)
-                            .withUrl(
-                                "nfs://" + hostname + ":/"
-                                    + Paths.get(this.specificApplicationProperties.getRepository()) + "/"
-                                    + destPath.toAbsolutePath()
-                                        .subpath(1, destPath.getNameCount())
-                                        .toString())
-                            .withName(
-                                rec.key() + "-" + FileUtils.getSimpleNameFromUrl(
-                                    rec.value()
-                                        .getUrl()))
-                            .build()))
                 .withKafkaOffset(rec.offset())
                 .withPartition(rec.partition())
+                .withValue(Optional.of(rec.value()))
                 .build();
-        } catch (IOException e) {
-            BeanCopyFile.LOGGER.error(
-                "[EVENT][{}] Unexpected error when processing value {} : {} ",
-                rec.key(),
-                rec.value(),
-                ExceptionUtils.getStackTrace(e));
-        }
-        return KafkaManagedFileToProcess.builder()
-            .withHashKey(rec.key())
-            .withKafkaOffset(rec.offset())
-            .withPartition(rec.partition())
-            .withValue(Optional.of(rec.value()))
-            .build();
-    }
+        });
 
+    }
 }

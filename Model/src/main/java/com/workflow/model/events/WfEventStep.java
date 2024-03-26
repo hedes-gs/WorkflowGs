@@ -9,6 +9,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
     public final static String      CREATED_FROM_STEP_IMAGE_FILE_READ             = "CREATED_FROM_STEP_EXTRACT_IMAGE_FILE";
     public final static String      CREATED_FROM_STEP_IMG_PROCESSOR               = "CREATED_FROM_STEP_IMG_PROCESSOR";
+    public final static String      CREATED_FROM_STEP_COMPUTE_HASH_KEY            = "CREATED_FROM_STEP_COMPUTE_HASH_KEY";
     public final static String      CREATED_FROM_STEP_PREPARE_FOR_PERSIST         = "CREATED_FROM_STEP_PREPARE_FOR_PERSISTENCE";
     public final static String      CREATED_FROM_STEP_RECORDED_IN_HBASE           = "CREATED_FROM_STEP_RECORDED_IN_HBASE";
     public final static String      CREATED_FROM_STEP_ARCHIVED_IN_HDFS            = "CREATED_FROM_STEP_ARCHIVED_IN_HDFS";
@@ -33,6 +34,9 @@ public class WfEventStep extends HbaseData implements Serializable {
         .build();
     public final static WfEventStep WF_STEP_CREATED_FROM_STEP_LOCAL_COPY          = WfEventStep.builder()
         .withStep(WfEventStep.CREATED_FROM_STEP_LOCAL_COPY)
+        .build();
+    public final static WfEventStep WF_CREATED_FROM_STEP_COMPUTE_HASH_KEY         = WfEventStep.builder()
+        .withStep(WfEventStep.CREATED_FROM_STEP_COMPUTE_HASH_KEY)
         .build();
 
     @Override
@@ -75,7 +79,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
     /**
      * Creates builder to build {@link WfEventStep}.
-     * 
+     *
      * @return created builder
      */
     public static Builder builder() { return new Builder(); }
@@ -92,7 +96,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataCreationDate parameter.
-         * 
+         *
          * @param dataCreationDate
          *            field to set
          * @return builder
@@ -104,7 +108,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
         /**
          * Builder method for dataId parameter.
-         * 
+         *
          * @param dataId
          *            field to set
          * @return builder
@@ -116,7 +120,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
         /**
          * Builder method for step parameter.
-         * 
+         *
          * @param step
          *            field to set
          * @return builder
@@ -128,7 +132,7 @@ public class WfEventStep extends HbaseData implements Serializable {
 
         /**
          * Builder method of the builder.
-         * 
+         *
          * @return built class
          */
         public WfEventStep build() { return new WfEventStep(this); }

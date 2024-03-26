@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -67,15 +65,10 @@ public class BeanScan implements IScan {
     @Autowired
     public String                                        createScanName;
 
-    @PostConstruct
-    protected void init() {
+    @Override
+    public void start() {
         BeanScan.LOGGER.info("init and this.scannedFolder are {}", this.applicationProperties.getScannedFolder());
-        // for (String element : this.scannedFolder)
-        {
-            BeanScan.LOGGER.info("Starting a scan task exeuctor for ");
-            this.beanTaskExecutor.execute(() -> this.scan());
-        }
-
+        this.beanTaskExecutor.execute(() -> this.scan());
         this.beanTaskExecutor.execute(() -> {
             try {
                 this.sendHeartBeat();

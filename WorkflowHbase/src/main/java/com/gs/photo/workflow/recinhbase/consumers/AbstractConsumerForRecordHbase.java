@@ -1,7 +1,6 @@
 package com.gs.photo.workflow.recinhbase.consumers;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,32 +47,32 @@ import com.workflow.model.events.WfEvents;
 
 public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
-    private static final String                                                     HBASE_RECORDER = "HBASE_RECORDER";
-    private static Logger                                                           LOGGER         = LoggerFactory
+    private static final String                                                                     HBASE_RECORDER = "HBASE_RECORDER";
+    private static Logger                                                                           LOGGER         = LoggerFactory
         .getLogger(AbstractConsumerForRecordHbase.class);
 
-    protected Producer<String, WfEvents>                                            producerForPublishingWfEvents;
+    protected Producer<String, WfEvents>                                                            producerForPublishingWfEvents;
 
     @Autowired
     @Qualifier("propertiesForPublishingWfEvents")
-    protected Properties                                                            propertiesForPublishingWfEvents;
+    protected Properties                                                                            propertiesForPublishingWfEvents;
 
     @Value("${topic.topicEvent}")
-    protected String                                                                topicEvent;
+    protected String                                                                                topicEvent;
 
     @Value("${kafka.consumer.batchSizeForParallelProcessingIncomingRecords}")
-    protected int                                                                   batchSizeForParallelProcessingIncomingRecords;
+    protected int                                                                                   batchSizeForParallelProcessingIncomingRecords;
 
     @Value("${kafka.pollTimeInMillisecondes}")
-    protected int                                                                   kafkaPollTimeInMillisecondes;
+    protected int                                                                                   kafkaPollTimeInMillisecondes;
 
     @Autowired
-    protected IBeanTaskExecutor                                                     beanTaskExecutor;
+    protected IBeanTaskExecutor                                                                     beanTaskExecutor;
 
-    protected static BlockingQueue<Map<String, List<GenericKafkaManagedObject<?>>>> eventsQueue    = new LinkedBlockingQueue<>();
+    protected static BlockingQueue<Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>>> eventsQueue    = new LinkedBlockingQueue<>();
 
     protected static class MetricsStatistics implements Runnable {
-        protected final BlockingQueue<Map<String, List<GenericKafkaManagedObject<?>>>> queue;
+        protected final BlockingQueue<Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>>> queue;
 
         @Override
         public void run() {
@@ -81,7 +80,7 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
             long nextPrint = System.currentTimeMillis() + (15 * 1000);
             while (true) {
                 try {
-                    Map<String, List<GenericKafkaManagedObject<?>>> lastEvent = this.queue
+                    Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>> lastEvent = this.queue
                         .poll(1000, TimeUnit.MILLISECONDS);
                     if (lastEvent != null) {
                         lastEvent.entrySet()
@@ -111,14 +110,18 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
             }
         }
 
-        private Integer compute(Entry<String, List<GenericKafkaManagedObject<?>>> e, String k, Integer v) {
+        private Integer compute(
+            Entry<String, List<GenericKafkaManagedObject<? extends WfEvent>>> e,
+            String k,
+            Integer v
+        ) {
             if (v == null) { return e.getValue()
                 .size(); }
             return v + e.getValue()
                 .size();
         }
 
-        public MetricsStatistics(BlockingQueue<Map<String, List<GenericKafkaManagedObject<?>>>> queue) {
+        public MetricsStatistics(BlockingQueue<Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>>> queue) {
             this.queue = queue;
         }
     }
@@ -146,13 +149,15 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
             try (
                 TimeMeasurement timeMeasurement = TimeMeasurement
                     .of("BATCH_PROCESS_FILES", (d) -> this.dummy(d), System.currentTimeMillis())) {
-                Stream<ConsumerRecord<String, T>> recordsToProcess = KafkaUtils.toStreamV2(
-                    this.kafkaPollTimeInMillisecondes,
-                    consumer,
-                    this.batchSizeForParallelProcessingIncomingRecords,
-                    true,
-                    (i) -> this.startTransactionForRecords(i),
-                    timeMeasurement);
+                Stream<ConsumerRecord<String, T>> recordsToProcess = KafkaUtils
+                    .buildParallelKafkaBatchStreamPerTopicAndPartition(
+                        this.producerForPublishingWfEvents,
+                        consumer,
+                        this.kafkaPollTimeInMillisecondes,
+                        this.batchSizeForParallelProcessingIncomingRecords,
+                        true,
+                        (i, p) -> this.startTransactionForRecords(i),
+                        timeMeasurement);
                 List<ConsumerRecord<String, T>> processedRecords = recordsToProcess.map((rec) -> this.record(rec))
                     .collect(Collectors.toList());
                 this.postRecord(
@@ -164,21 +169,12 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
                 Map<TopicPartition, OffsetAndMetadata> offsets = null;
                 if (this.eventsShouldBeProduced()) {
-                    Map<String, List<GenericKafkaManagedObject<?>>> eventsToSend = kafkaManagedDataToProcess
+                    Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>> eventsToSend = kafkaManagedDataToProcess
                         .map((kmo) -> this.buildEvent(kmo))
                         .collect(Collectors.groupingByConcurrent(GenericKafkaManagedObject::getImageKey));
                     long eventsNumber = eventsToSend.keySet()
                         .stream()
-                        .map(
-                            (img) -> WfEvents.builder()
-                                .withDataId(img)
-                                .withProducer(AbstractConsumerForRecordHbase.HBASE_RECORDER)
-                                .withEvents(
-                                    (Collection<WfEvent>) eventsToSend.get(img)
-                                        .stream()
-                                        .map(GenericKafkaManagedObject::getValue)
-                                        .collect(Collectors.toList()))
-                                .build())
+                        .map((img) -> this.buildEvent(eventsToSend, img))
                         .map((evts) -> this.send(evts))
                         .collect(Collectors.toList())
                         .stream()
@@ -244,6 +240,28 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
 
     }
 
+    private WfEvents buildEvent(
+        Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>> eventsToSend,
+        String img
+    ) {
+        return WfEvents.builder()
+            .withDataId(img)
+            .withProducer(AbstractConsumerForRecordHbase.HBASE_RECORDER)
+            .withEvents(this.extracted(eventsToSend, img))
+            .build();
+    }
+
+    private List<WfEvent> extracted(
+        Map<String, List<GenericKafkaManagedObject<? extends WfEvent>>> eventsToSend,
+        String img
+    ) {
+        return eventsToSend.get(img)
+            .stream()
+            .map(GenericKafkaManagedObject::getValue)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+    }
+
     protected abstract String getConsumer();
 
     private void dummy(List<Step> d) {
@@ -286,7 +304,7 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
         return this.producerForPublishingWfEvents.send(pr);
     }
 
-    private KafkaManagedWfEvent buildEvent(KafkaManagedHbaseData kmo) {
+    private KafkaManagedWfEvent<? extends WfEvent> buildEvent(KafkaManagedHbaseData kmo) {
         return KafkaManagedWfEvent.builder()
             .withImageKey(kmo.getImageKey())
             .withKafkaOffset(kmo.getKafkaOffset())
