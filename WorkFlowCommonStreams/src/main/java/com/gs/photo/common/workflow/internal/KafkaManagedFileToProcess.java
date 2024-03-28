@@ -14,7 +14,7 @@ import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.files.FileToProcess;
 
-public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToProcess> {
+public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToProcess, WfEvent> {
 
     protected static Logger LOGGER = LoggerFactory.getLogger(KafkaManagedFileToProcess.class);
     protected byte[]        rawFile;
@@ -73,7 +73,7 @@ public class KafkaManagedFileToProcess extends GenericKafkaManagedObject<FileToP
         }
     }
 
-    protected WfEvent buildCopyEvent(String imageKey, String parentDataId, String dataId, WfEventStep step) {
+    protected WfEventCopy buildCopyEvent(String imageKey, String parentDataId, String dataId, WfEventStep step) {
         return WfEventCopy.builder()
             .withImgId(imageKey)
             .withParentDataId(parentDataId)

@@ -95,8 +95,7 @@ public class BeanFileConsumer implements IBeanFileConsumer {
                                             .get("file-to-process")
                                             .batchSizeForParallelProcessingIncomingRecords(),
                                         true,
-                                        (i, p) -> this.startTransactionForRecords(i, p),
-                                        timeMeasurement)
+                                        (i, p) -> this.startTransactionForRecords(i, p))
                                     .map((rec) -> this.asyncProcessRecord(rec, hdfsFileSystem))
                                     .map((rec) -> this.asyncSendEvent(producerForPublishingWfEvents, rec))
                                     .map(CompletableFuture::join)

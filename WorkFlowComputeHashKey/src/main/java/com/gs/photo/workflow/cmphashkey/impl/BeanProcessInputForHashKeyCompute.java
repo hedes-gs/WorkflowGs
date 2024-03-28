@@ -68,6 +68,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
     public void start() { this.beanTaskExecutor.execute(() -> this.processIncomingFile()); }
 
     protected void processIncomingFile() {
+
         boolean stop = false;
         do {
             boolean ready = true;
@@ -81,6 +82,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
             } while (!this.igniteDAO.isReady());
             if (ready) {
                 this.LOGGER.info("Ignite is finally ready, let's go !!!");
+
                 try (
                     Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue = this.kafkaConsumerFactoryForFileToProcessValue
                         .get();
@@ -110,8 +112,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                                         .get(ApplicationConfig.CONSUMER_NAME)
                                         .batchSizeForParallelProcessingIncomingRecords(),
                                     true,
-                                    (i, p) -> this.startRecordsProcessing(i, p),
-                                    timeMeasurement)
+                                    (i, p) -> this.startRecordsProcessing(i, p))
                                 .map((r) -> this.asyncCreateKafkaManagedFileToProcess(r))
                                 .map((r) -> this.asyncSaveInIgnite(r))
                                 .map(CompletableFuture::join)

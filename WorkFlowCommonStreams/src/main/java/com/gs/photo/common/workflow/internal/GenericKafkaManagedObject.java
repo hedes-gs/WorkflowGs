@@ -5,7 +5,7 @@ import java.util.Optional;
 import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEvent;
 
-public class GenericKafkaManagedObject<T extends HbaseData> extends KafkaManagedObject {
+public class GenericKafkaManagedObject<T extends HbaseData, U extends WfEvent> extends KafkaManagedObject {
     protected Optional<T> value;
     protected String      topic;
     protected String      imageKey;
@@ -21,6 +21,6 @@ public class GenericKafkaManagedObject<T extends HbaseData> extends KafkaManaged
 
     public Optional<T> getObjectToSend() { return this.getValue(); }
 
-    public WfEvent createWfEvent() { return null; }
+    public U createWfEvent() { return null; }
 
 }

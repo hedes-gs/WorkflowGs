@@ -8,5 +8,12 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync
 public class WorkflowExtractImageInfo {
 
-    public static void main(String[] args) { SpringApplication.run(WorkflowExtractImageInfo.class, args); }
+    public static class GreetingInterceptor {
+        public Object greet(Object argument) { return "Herllo from " + argument; }
+    }
+
+    public static void main(String[] args) {
+
+        SpringApplication.run(WorkflowExtractImageInfo.class, args);
+    }
 }

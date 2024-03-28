@@ -6,8 +6,9 @@ import javax.annotation.Generated;
 
 import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
 import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
+import com.workflow.model.events.WfEvent;
 
-public class KafkaManagedTiffField extends GenericKafkaManagedObject<TiffFieldAndPath> {
+public class KafkaManagedTiffField extends GenericKafkaManagedObject<TiffFieldAndPath, WfEvent> {
 
     @Generated("SparkTools")
     private KafkaManagedTiffField(Builder builder) {

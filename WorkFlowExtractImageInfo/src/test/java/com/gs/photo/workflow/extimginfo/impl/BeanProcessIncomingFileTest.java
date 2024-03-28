@@ -64,8 +64,10 @@ import io.netty.util.concurrent.GenericFutureListener;
 @ActiveProfiles("test")
 @SpringBootTest(classes = { WorkflowExtractImageInfo.class })
 class BeanProcessIncomingFileTest {
-    protected static Logger                             LOGGER = LoggerFactory
-        .getLogger(BeanProcessIncomingFileTest.class);
+    protected static Logger LOGGER = LoggerFactory.getLogger(BeanProcessIncomingFileTest.class);
+    static {
+
+    }
 
     @MockBean
     private Ignite                                      ignite;
@@ -247,6 +249,7 @@ class BeanProcessIncomingFileTest {
 
     @BeforeEach
     public void setUp() throws Exception {
+
         ByteBuffer bb = this.readBufferOfImage();
         Mockito.when(this.iIgniteDAO.isReady())
             .thenReturn(true);

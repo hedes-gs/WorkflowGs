@@ -116,8 +116,7 @@ public class BeanCopyFile implements ICopyFile {
                                     .get(consumerType)
                                     .batchSizeForParallelProcessingIncomingRecords(),
                                 true,
-                                (i, p) -> this.startTransactionForRecords(i, p),
-                                timeMeasurement)
+                                (i, p) -> this.startTransactionForRecords(i, p))
                             .map((r) -> this.copyToLocal(r))
                             .map(CompletableFuture::join)
                             .collect(Collectors.groupingByConcurrent(k -> k.getObjectKey()))

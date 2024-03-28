@@ -156,8 +156,7 @@ public abstract class AbstractConsumerForRecordHbase<T extends HbaseData> {
                         this.kafkaPollTimeInMillisecondes,
                         this.batchSizeForParallelProcessingIncomingRecords,
                         true,
-                        (i, p) -> this.startTransactionForRecords(i),
-                        timeMeasurement);
+                        (i, p) -> this.startTransactionForRecords(i));
                 List<ConsumerRecord<String, T>> processedRecords = recordsToProcess.map((rec) -> this.record(rec))
                     .collect(Collectors.toList());
                 this.postRecord(

@@ -12,7 +12,7 @@ import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEventProduced;
 import com.workflow.model.events.WfEventStep;
 
-public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImageToSend> {
+public class KafkaManagedThumbImage extends GenericKafkaManagedObject<ThumbImageToSend, WfEvent> {
 
     @Override
     public WfEvent createWfEvent() {

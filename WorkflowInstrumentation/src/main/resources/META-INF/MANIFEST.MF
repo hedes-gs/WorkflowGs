@@ -1,0 +1,4 @@
+Agent-Class: comg.gs.instrumentation.TimerAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Premain-Class: comg.gs.instrumentation.TimerAgent

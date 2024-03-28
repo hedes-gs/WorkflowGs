@@ -1,3 +1,7 @@
+micrometer:
+  observations:
+    annotations:
+      enabled: true
 application-specific:
    batch-size-for-parallel-processing-incoming-records: 1
    exif-files:

@@ -474,16 +474,10 @@ public class KafkaUtils {
         int pollDurationInMs,
         int batchSize,
         boolean parallelStream,
-        BeforeProcessBatchAction<T> beforeProcessAction,
-        TimeMeasurement timeMeasurement
+        BeforeProcessBatchAction<T> beforeProcessAction
     ) {
         return StreamSupport.stream(
-            new ConsumerRecordsSpliterator<>(context,
-                consumer,
-                pollDurationInMs,
-                batchSize,
-                beforeProcessAction,
-                timeMeasurement),
+            new ConsumerRecordsSpliterator<>(context, consumer, pollDurationInMs, batchSize, beforeProcessAction, null),
             parallelStream);
 
     }

@@ -1,5 +1,3 @@
 package com.gs.photo.workflow.extimginfo;
 
-public interface IProcessIncomingFiles {
-	public void start();
-}
+public interface IProcessIncomingFiles { public void start(); }

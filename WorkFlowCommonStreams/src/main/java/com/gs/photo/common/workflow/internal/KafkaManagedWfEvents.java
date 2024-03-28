@@ -4,9 +4,10 @@ import java.util.Optional;
 
 import javax.annotation.Generated;
 
+import com.workflow.model.events.WfEvent;
 import com.workflow.model.events.WfEvents;
 
-public class KafkaManagedWfEvents extends GenericKafkaManagedObject<WfEvents> {
+public class KafkaManagedWfEvents extends GenericKafkaManagedObject<WfEvents, WfEvent> {
 
     @Generated("SparkTools")
     private KafkaManagedWfEvents(Builder builder) {
