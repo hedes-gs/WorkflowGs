@@ -35,6 +35,12 @@
   </build>
   <dependencies>
     <dependency>
+      <groupId>com.gs</groupId>
+      <artifactId>InstrumentationLibrary</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <version>1.12.3</version>

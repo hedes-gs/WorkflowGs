@@ -18,9 +18,9 @@ public class MetricInterceptor {
     @RuntimeType
     public Object intercept(@Origin Method method, @SuperCall Callable<Object> callable) throws Exception {
 
-        MetricInterceptor.LOGGER.info("Getting metrics");
         try {
             final Object call = callable.call();
+            MetricInterceptor.LOGGER.info("Getting metrics --> {} ", call);
             this.threadLocal.set((MeterRegistry) call);
             return call;
         } finally {

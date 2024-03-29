@@ -72,7 +72,6 @@ import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.annotation.Observed;
 
 @Component
 public class BeanProcessIncomingFile implements IProcessIncomingFiles {
@@ -244,11 +243,9 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
         while (!end) {
             try {
-                observation.observe(() -> {
-                    this.processRecords(
-                        consumerForTopicWithFileToProcessValue,
-                        producerForTransactionPublishingOnExifOrImageTopic);
-                });
+                this.processRecords(
+                    consumerForTopicWithFileToProcessValue,
+                    producerForTransactionPublishingOnExifOrImageTopic);
             } catch (
                 ProducerFencedException |
                 OutOfOrderSequenceException |
@@ -485,7 +482,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
             (f) -> f.getKafkaOffset());
     }
 
-    @Observed(contextualName = "mon-context")
     private void startRecordsProcessing(
         int i,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic

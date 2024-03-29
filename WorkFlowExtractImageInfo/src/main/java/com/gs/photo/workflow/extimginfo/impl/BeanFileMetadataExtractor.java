@@ -27,7 +27,6 @@ import com.gs.photos.workflow.extimginfo.metadata.exif.RootTiffTag;
 import com.workflow.model.files.FileToProcess;
 
 import io.micrometer.core.annotation.Timed;
-import io.micrometer.observation.annotation.Observed;
 
 @Service
 public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
@@ -43,7 +42,6 @@ public class BeanFileMetadataExtractor implements IFileMetadataExtractor {
     protected IAccessDirectlyFile accessDirectlyFile;
 
     @Override
-    @Observed(name = "sample")
     @Timed
     public Optional<Collection<IFD>> readIFDs(Optional<byte[]> image, FileToProcess fileToProcess) {
         Optional<Collection<IFD>> values = image.map((b) -> {
