@@ -11,6 +11,10 @@
 	<artifactId>WorkFlowExtractImageInfo</artifactId>
 	<dependencies>
 		<dependency>
+			<groupId>com.gs</groupId>
+			<artifactId>InstrumentationLibrary</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>net.bytebuddy</groupId>
 			<artifactId>byte-buddy</artifactId>
 		</dependency>

@@ -8,35 +8,34 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerGroupMetadata;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.MockConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.OffsetResetStrategy;
+import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.hamcrest.collection.IsIterableContainingInOrder;
 import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Captor;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,19 +45,17 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.gs.photo.common.workflow.IBeanTaskExecutor;
+import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.extimginfo.IFileMetadataExtractor;
 import com.gs.photo.workflow.extimginfo.WorkflowExtractImageInfo;
 import com.gs.photo.workflow.extimginfo.ports.IAccessDirectlyFile;
+import com.gs.photos.serializers.MultipleSerializers;
 import com.gs.photos.workflow.extimginfo.metadata.IFD;
 import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles("test")
@@ -73,19 +70,14 @@ class BeanProcessIncomingFileTest {
     private Ignite                                      ignite;
 
     @MockBean
-    protected IBeanTaskExecutor                         beanTaskExecutor;
-
-    @MockBean
     protected Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue;
 
     @MockBean
     protected Supplier<Producer<String, HbaseData>>     producerSupplierForTransactionPublishingOnExifTopic;
 
-    @Mock
-    protected Consumer<String, FileToProcess>           consumerForTopicWithFileToProcessValue;
+    protected MockConsumer<String, FileToProcess>       consumerForTopicWithFileToProcessValue;
 
-    @Mock
-    protected Producer<String, HbaseData>               producerForTransactionPublishingOnExifOrImageTopic;
+    protected MockProducer<String, HbaseData>           producerForTransactionPublishingOnExifOrImageTopic;
 
     @Autowired
     @MockBean
@@ -101,155 +93,24 @@ class BeanProcessIncomingFileTest {
     @Autowired
     protected IFileMetadataExtractor                    beanFileMetadataExtractor;
 
-    protected class LocalFuture<HbaseData> implements Future<HbaseData> {
+    @Autowired
+    protected IKafkaProperties                          kafkaProperties;
 
-        @Override
-        public boolean isCancelled() { // TODO Auto-generated method stub
-            return false;
-        }
+    private MockProducer                                producerForTransactionPublishingOnExifOrImageTopic2;
 
-        @Override
-        public boolean isDone() { // TODO Auto-generated method stub
-            return true;
-        }
-
-        @Override
-        public HbaseData get() throws InterruptedException, ExecutionException { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public HbaseData get(long timeout, TimeUnit unit)
-            throws InterruptedException, ExecutionException, TimeoutException {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> addListener(GenericFutureListener<? extends Future<? super HbaseData>> arg0) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> addListeners(GenericFutureListener<? extends Future<? super HbaseData>>... arg0) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> await() throws InterruptedException { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public boolean await(long arg0) throws InterruptedException { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public boolean await(long arg0, TimeUnit arg1) throws InterruptedException { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public Future<HbaseData> awaitUninterruptibly() { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public boolean awaitUninterruptibly(long arg0) { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public boolean awaitUninterruptibly(long arg0, TimeUnit arg1) { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public boolean cancel(boolean arg0) { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public Throwable cause() { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public HbaseData getNow() { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public boolean isCancellable() { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public boolean isSuccess() { // TODO Auto-generated method stub
-            return false;
-        }
-
-        @Override
-        public Future<HbaseData> removeListener(GenericFutureListener<? extends Future<? super HbaseData>> arg0) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> removeListeners(GenericFutureListener<? extends Future<? super HbaseData>>... arg0) {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> sync() throws InterruptedException { // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Future<HbaseData> syncUninterruptibly() { // TODO Auto-generated method stub
-            return null;
-        }
-
-    }
-
-    @Captor
-    protected ArgumentCaptor<ProducerRecord<String, HbaseData>> valueCaptor;
-
-    protected static class ExceptionEndOfTest extends RuntimeException {
-
-        public ExceptionEndOfTest() { this(new InterruptedException()); }
-
-        public ExceptionEndOfTest(
-            String message,
-            Throwable cause,
-            boolean enableSuppression,
-            boolean writableStackTrace
-        ) {
-            super(message,
-                cause,
-                enableSuppression,
-                writableStackTrace);
-        }
-
-        public ExceptionEndOfTest(
-            String message,
-            Throwable cause
-        ) { super(message,
-            cause); }
-
-        public ExceptionEndOfTest(String message) { super(message); }
-
-        public ExceptionEndOfTest(Throwable cause) { super(cause); }
-
-    }
+    @Autowired
+    @MockBean
+    protected Void                                      startConsumers;
 
     @BeforeEach
     public void setUp() throws Exception {
-
+        this.consumerForTopicWithFileToProcessValue = new MockConsumer<>(OffsetResetStrategy.EARLIEST);
+        this.producerForTransactionPublishingOnExifOrImageTopic = new MockProducer<>(false,
+            new StringSerializer(),
+            new MultipleSerializers());
+        this.producerForTransactionPublishingOnExifOrImageTopic2 = new MockProducer<>(false,
+            new StringSerializer(),
+            new MultipleSerializers());
         ByteBuffer bb = this.readBufferOfImage();
         Mockito.when(this.iIgniteDAO.isReady())
             .thenReturn(true);
@@ -259,13 +120,21 @@ class BeanProcessIncomingFileTest {
             .thenReturn(Optional.ofNullable(null));
         Mockito.when(this.iIgniteDAO.get("3"))
             .thenReturn(Optional.ofNullable(null));
-        Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
-            .thenReturn(new LocalFuture<>());
+
         Mockito.when(this.kafkaConsumerFactoryForFileToProcessValue.get())
             .thenReturn(this.consumerForTopicWithFileToProcessValue);
         Mockito.when(this.producerSupplierForTransactionPublishingOnExifTopic.get())
             .thenReturn(this.producerForTransactionPublishingOnExifOrImageTopic);
+        this.beanProcessIncomingFile.start();
+    }
 
+    @AfterEach
+    public void stop() throws Exception {
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(() -> {
+            BeanProcessIncomingFileTest.LOGGER.info("Stoping test");
+            throw new RuntimeException(new InterruptedException());
+
+        });
     }
 
     @Test
@@ -289,52 +158,48 @@ class BeanProcessIncomingFileTest {
         ByteBuffer bb = this.readBufferOfImage();
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
-            new ConsumerRecord<>("topic",
-                1,
+            new ConsumerRecord<>(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(),
+                0,
                 0,
                 "1",
                 FileToProcess.builder()
                     .withImageId("2")
                     .build()),
-            new ConsumerRecord<>("topic",
-                1,
+            new ConsumerRecord<>(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(),
                 0,
+                1,
                 "2",
                 FileToProcess.builder()
                     .withImageId("2")
                     .build()));
-        mapOfRecords.put(new TopicPartition("topic", 1), asList);
-        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
         Mockito.when(this.accessDirectlyFile.readFirstBytesOfFileRetry(ArgumentMatchers.any()))
             .thenReturn(Optional.of(bb.array()))
             .thenReturn(Optional.of(bb.array()));
-        Mockito.doAnswer(invocation -> {
-            Runnable arg = (Runnable) invocation.getArgument(0);
-            arg.run();
-            return null;
-        })
-            .when(this.beanTaskExecutor)
-            .execute((Runnable) ArgumentMatchers.any());
-        Mockito.when(this.consumerForTopicWithFileToProcessValue.poll(ArgumentMatchers.any()))
-            .thenReturn(records)
-            .thenThrow(new ExceptionEndOfTest());
-        Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
-            .thenReturn(new LocalFuture<>());
-        try {
-            this.beanProcessIncomingFile.start();
-        } catch (ExceptionEndOfTest e) {
-        }
 
-        try {
-            TimeUnit.SECONDS.sleep(5);
-        } catch (InterruptedException ie) {
-            Thread.currentThread()
-                .interrupt();
-        }
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(1))
-            .send(this.valueCaptor.capture());
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221 * 2))
-            .send(this.valueCaptor.capture(), ArgumentMatchers.any());
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.updateBeginningOffsets(
+                Collections.singletonMap(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0),
+                    0L)));
+
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.rebalance(
+                Collections.singleton(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0))));
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(() -> {
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(0));
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(1));
+        });
+        this.waitForEndOfTransaction();
+
+        Assert.assertEquals(
+            this.producerForTransactionPublishingOnExifOrImageTopic.history()
+                .size(),
+            2 + (221 * 2));
     }
 
     private ByteBuffer readBufferOfImage() throws IOException {
@@ -354,51 +219,45 @@ class BeanProcessIncomingFileTest {
             .thenReturn(Optional.of(bb.array()))
             .thenReturn(Optional.of(bb.array()));
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
-            new ConsumerRecord<>("topic",
-                1,
+            new ConsumerRecord<>(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(),
+                0,
                 0,
                 "1",
                 FileToProcess.builder()
                     .withImageId("1")
                     .build()),
-            new ConsumerRecord<>("topic",
-                1,
+            new ConsumerRecord<>(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(),
                 0,
+                1,
                 "2",
                 FileToProcess.builder()
                     .withImageId("2")
                     .build()));
-        mapOfRecords.put(new TopicPartition("topic", 1), asList);
-        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.updateBeginningOffsets(
+                Collections.singletonMap(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0),
+                    0L)));
 
-        Mockito.doAnswer(invocation -> {
-            Runnable arg = (Runnable) invocation.getArgument(0);
-            arg.run();
-            return null;
-        })
-            .when(this.beanTaskExecutor)
-            .execute((Runnable) ArgumentMatchers.any());
-        Mockito.when(this.consumerForTopicWithFileToProcessValue.poll(ArgumentMatchers.any()))
-            .thenReturn(records)
-            .thenThrow(new ExceptionEndOfTest());
-        Mockito.when(this.producerForTransactionPublishingOnExifOrImageTopic.send(ArgumentMatchers.any()))
-            .thenReturn(new LocalFuture<>());
-        try {
-            this.beanProcessIncomingFile.start();
-        } catch (ExceptionEndOfTest e) {
-        }
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.rebalance(
+                Collections.singleton(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0))));
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(() -> {
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(0));
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(1));
+        });
+        this.waitForEndOfTransaction();
 
-        try {
-            TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException ie) {
-            Thread.currentThread()
-                .interrupt();
-        }
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(2))
-            .send(this.valueCaptor.capture());
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221 * 2))
-            .send(this.valueCaptor.capture(), ArgumentMatchers.any());
-        List<String> foundValue = this.valueCaptor.getAllValues()
+        Assert.assertEquals(
+            2 + (221 * 2),
+            this.producerForTransactionPublishingOnExifOrImageTopic.history()
+                .size());
+        List<String> foundValue = this.producerForTransactionPublishingOnExifOrImageTopic.history()
             .stream()
             .filter((p) -> this.checkCopyrightOrArtist(p))
             .map((a) -> (ExchangedTiffData) a.value())
@@ -412,6 +271,17 @@ class BeanProcessIncomingFileTest {
                 new String(BeanProcessIncomingFile.NOT_FOUND_FOR_OPTIONAL_PARAMETER),
                 new String(BeanProcessIncomingFile.NOT_FOUND_FOR_OPTIONAL_PARAMETER),
                 new String(BeanProcessIncomingFile.NOT_FOUND_FOR_OPTIONAL_PARAMETER)));
+    }
+
+    private void waitForEndOfTransaction() {
+        do {
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException ie) {
+                Thread.currentThread()
+                    .interrupt();
+            }
+        } while (!this.producerForTransactionPublishingOnExifOrImageTopic.transactionCommitted());
     }
 
     private boolean checkCopyrightOrArtist(ProducerRecord<String, HbaseData> p) {
@@ -430,41 +300,34 @@ class BeanProcessIncomingFileTest {
     public void test002_shouldSend120MsgsWhenParsingARAWFile() throws IOException {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
-            new ConsumerRecord<>("topic",
-                1,
+            new ConsumerRecord<>(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(),
+                0,
                 0,
                 "1",
                 FileToProcess.builder()
                     .withImageId("1")
                     .build()));
-        mapOfRecords.put(new TopicPartition("topic", 1), asList);
-        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.updateBeginningOffsets(
+                Collections.singletonMap(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0),
+                    0L)));
 
-        Mockito.doAnswer(invocation -> {
-            Runnable arg = (Runnable) invocation.getArgument(0);
-            arg.run();
-            return null;
-        })
-            .when(this.beanTaskExecutor)
-            .execute((Runnable) ArgumentMatchers.any());
-        Mockito.when(this.consumerForTopicWithFileToProcessValue.poll(ArgumentMatchers.any()))
-            .thenReturn(records)
-            .thenThrow(new ExceptionEndOfTest());
-        try {
-            this.beanProcessIncomingFile.start();
-        } catch (ExceptionEndOfTest e) {
-        }
-
-        try {
-            TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException ie) {
-            Thread.currentThread()
-                .interrupt();
-        }
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(1))
-            .send(ArgumentMatchers.any());
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic, Mockito.times(221))
-            .send(ArgumentMatchers.any(), ArgumentMatchers.any());
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.rebalance(
+                Collections.singleton(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0))));
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(() -> {
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(0));
+        });
+        this.waitForEndOfTransaction();
+        Assert.assertEquals(
+            1 + (221 * 1),
+            this.producerForTransactionPublishingOnExifOrImageTopic.history()
+                .size());
 
     }
 
@@ -473,56 +336,57 @@ class BeanProcessIncomingFileTest {
         Map<TopicPartition, List<ConsumerRecord<String, FileToProcess>>> mapOfRecords = new HashMap<>();
         final List<ConsumerRecord<String, FileToProcess>> asList = Arrays.asList(
             new ConsumerRecord<>("topic-dup-filtered-file",
-                1,
+                0,
                 2,
                 "1",
                 FileToProcess.builder()
                     .withImageId("1")
                     .build()),
             new ConsumerRecord<>("topic-dup-filtered-file",
-                1,
+                0,
                 6,
                 "2",
                 FileToProcess.builder()
                     .withImageId("2")
                     .build()),
             new ConsumerRecord<>("topic-dup-filtered-file",
-                1,
+                0,
                 8,
                 "3",
                 FileToProcess.builder()
                     .withImageId("3")
                     .build()));
-        mapOfRecords.put(new TopicPartition("topic-dup-filtered-file", 1), asList);
-        ConsumerRecords<String, FileToProcess> records = new ConsumerRecords<>(mapOfRecords);
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.updateBeginningOffsets(
+                Collections.singletonMap(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0),
+                    0L)));
 
-        Mockito.doAnswer(invocation -> {
-            Runnable arg = (Runnable) invocation.getArgument(0);
-            arg.run();
-            return null;
-        })
-            .when(this.beanTaskExecutor)
-            .execute((Runnable) ArgumentMatchers.any());
-        Mockito.when(this.consumerForTopicWithFileToProcessValue.poll(ArgumentMatchers.any()))
-            .thenReturn(records)
-            .thenThrow(new ExceptionEndOfTest());
-        try {
-            this.beanProcessIncomingFile.start();
-        } catch (ExceptionEndOfTest e) {
-        }
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(
+            () -> this.consumerForTopicWithFileToProcessValue.rebalance(
+                Collections.singleton(
+                    new TopicPartition(this.kafkaProperties.getTopics()
+                        .topicDupFilteredFile(), 0))));
+        this.consumerForTopicWithFileToProcessValue.schedulePollTask(() -> {
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(0));
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(1));
+            this.consumerForTopicWithFileToProcessValue.addRecord(asList.get(2));
+        });
 
-        try {
-            TimeUnit.SECONDS.sleep(2);
-        } catch (InterruptedException ie) {
-            Thread.currentThread()
-                .interrupt();
-        }
+        this.waitForEndOfTransaction();
+
         Map<TopicPartition, OffsetAndMetadata> offsets = new HashMap<>();
-        offsets.put(new TopicPartition("topic-dup-filtered-file", 1), new OffsetAndMetadata(9));
+        offsets.put(
+            new TopicPartition(this.kafkaProperties.getTopics()
+                .topicDupFilteredFile(), 0),
+            new OffsetAndMetadata(9));
 
-        Mockito.verify(this.producerForTransactionPublishingOnExifOrImageTopic)
-            .sendOffsetsToTransaction(ArgumentMatchers.eq(offsets), (ConsumerGroupMetadata) ArgumentMatchers.any());
-
+        final Map<TopicPartition, OffsetAndMetadata> actual = this.producerForTransactionPublishingOnExifOrImageTopic
+            .consumerGroupOffsetsHistory()
+            .get(0)
+            .get("dummy.group.id");
+        Assert.assertEquals(offsets, actual);
     }
 
     private boolean checkIfOptionalParametersArePresent(TiffFieldAndPath ifdFieldAndPath) {
@@ -530,10 +394,6 @@ class BeanProcessIncomingFileTest {
         short currentTag = ifdFieldAndPath.getTiffField()
             .getTag()
             .getValue();
-        BeanProcessIncomingFileTest.LOGGER.info(
-            "... info tag : {}, copyright {} ",
-            Integer.toHexString(currentTag),
-            Integer.toHexString(BeanProcessIncomingFile.EXIF_COPYRIGHT));
         if (currentTag == BeanProcessIncomingFile.EXIF_COPYRIGHT) {
             BeanProcessIncomingFile.LOGGER.debug("Found Exif copyright");
         }

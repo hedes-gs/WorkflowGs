@@ -4,7 +4,7 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.HbaseData;
-import com.workflow.model.ImageAsByteArray;
+import com.workflow.model.HbaseImageAsByteArray;
 import com.workflow.model.events.ComponentEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
@@ -24,7 +24,7 @@ public class MultipleSerializers implements Serializer<HbaseData> {
             case ExchangedTiffData d -> this.exchangedDataSerializer.serialize(topic, d);
             case WfEvents d -> this.wfEventsSerializer.serialize(topic, d);
             case FileToProcess d -> this.fileToProcessSerializer.serialize(topic, d);
-            case ImageAsByteArray d -> this.imageAsByteArrayDataSerializer.serialize(topic, d);
+            case HbaseImageAsByteArray d -> this.imageAsByteArrayDataSerializer.serialize(topic, d);
             case ComponentEvent d -> this.componentEventSerializer.serialize(topic, d);
             default -> throw new IllegalArgumentException("Unexpected value: " + data);
         };

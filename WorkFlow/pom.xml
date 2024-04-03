@@ -70,6 +70,12 @@
 				<artifactId>commons-lang3</artifactId>
 				<version>3.11</version>
 			</dependency>
+			<dependency>
+				<groupId>com.gs</groupId>
+				<artifactId>InstrumentationLibrary</artifactId>
+				<version>0.0.1-SNAPSHOT</version>
+			</dependency>
+
 			<!--
 			https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
 			<dependency>

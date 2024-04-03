@@ -22,7 +22,7 @@
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>WorkFlowKafkaStreamsCommon</artifactId>
-		</dependency>		
+		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>WorkFlowCommonStreams</artifactId>
@@ -126,12 +126,6 @@
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-streams-test-utils</artifactId>
 			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.apache.kafka</groupId>
-					<artifactId>kafka-clients</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 	</dependencies>
 	<build>

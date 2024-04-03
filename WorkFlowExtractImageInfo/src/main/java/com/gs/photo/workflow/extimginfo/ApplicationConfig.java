@@ -28,6 +28,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesBindin
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.yaml.snakeyaml.Yaml;
 
 import com.gs.photo.common.workflow.AbstractApplicationConfig;
@@ -161,6 +162,18 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public Void startConsumers(IProcessIncomingFiles bean) {
         bean.start();
         return null;
+    }
+
+    @Bean(name = "threadPoolTaskExecutor")
+    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
+        final ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+
+        // threadPoolTaskExecutor.setDaemon(false);
+        threadPoolTaskExecutor.setCorePoolSize(6);
+        threadPoolTaskExecutor.setMaxPoolSize(64);
+        threadPoolTaskExecutor.setThreadNamePrefix("wf-task-executor");
+        threadPoolTaskExecutor.initialize();
+        return threadPoolTaskExecutor;
     }
 
 }

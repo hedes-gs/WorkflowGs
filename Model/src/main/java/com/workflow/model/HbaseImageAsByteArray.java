@@ -4,19 +4,19 @@ import java.io.Serializable;
 
 import org.apache.avro.reflect.Nullable;
 
-public class ImageAsByteArray extends HbaseData implements Serializable {
+public class HbaseImageAsByteArray extends HbaseData implements Serializable {
 
     private static final long serialVersionUID = 1L;
     @Nullable
     protected byte[]          dataAsByte       = {};
 
-    private ImageAsByteArray(Builder builder) {
+    private HbaseImageAsByteArray(Builder builder) {
         this.dataCreationDate = builder.dataCreationDate;
         this.dataId = builder.dataId;
         this.dataAsByte = builder.dataAsByte;
     }
 
-    public ImageAsByteArray() {}
+    public HbaseImageAsByteArray() {}
 
     public byte[] getDataAsByte() { return this.dataAsByte; }
 
@@ -72,7 +72,7 @@ public class ImageAsByteArray extends HbaseData implements Serializable {
          *
          * @return built class
          */
-        public ImageAsByteArray build() { return new ImageAsByteArray(this); }
+        public HbaseImageAsByteArray build() { return new HbaseImageAsByteArray(this); }
     }
 
 }

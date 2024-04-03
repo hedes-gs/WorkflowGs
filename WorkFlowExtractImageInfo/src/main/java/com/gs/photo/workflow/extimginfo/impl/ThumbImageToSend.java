@@ -1,7 +1,7 @@
 package com.gs.photo.workflow.extimginfo.impl;
 
 import com.workflow.model.HbaseData;
-import com.workflow.model.ImageAsByteArray;
+import com.workflow.model.HbaseImageAsByteArray;
 
 public class ThumbImageToSend extends HbaseData {
     /**
@@ -10,7 +10,7 @@ public class ThumbImageToSend extends HbaseData {
     private static final long  serialVersionUID = 1L;
     protected short            tag              = (short) 0x9003;
     protected String           imageKey;
-    protected ImageAsByteArray jpegImage;
+    protected HbaseImageAsByteArray jpegImage;
     protected short[]          path;
     protected int              currentNb;
 
@@ -26,7 +26,7 @@ public class ThumbImageToSend extends HbaseData {
 
     public String getImageKey() { return this.imageKey; }
 
-    public ImageAsByteArray getJpegImage() { return this.jpegImage; }
+    public HbaseImageAsByteArray getJpegImage() { return this.jpegImage; }
 
     public short[] getPath() { return this.path; }
 
@@ -39,7 +39,7 @@ public class ThumbImageToSend extends HbaseData {
     public static final class Builder {
         private short            tag = (short) 0x9003;
         private String           imageKey;
-        private ImageAsByteArray jpegImage;
+        private HbaseImageAsByteArray jpegImage;
         private short[]          path;
         private int              currentNb;
 
@@ -76,7 +76,7 @@ public class ThumbImageToSend extends HbaseData {
          *            field to set
          * @return builder
          */
-        public Builder withJpegImage(ImageAsByteArray jpegImage) {
+        public Builder withJpegImage(HbaseImageAsByteArray jpegImage) {
             this.jpegImage = jpegImage;
             return this;
         }

@@ -82,13 +82,13 @@ public class BeanMonitor implements IMonitor {
 
     }
 
-    private GenericKafkaManagedObject<?> send(GenericKafkaManagedObject<?> evts) {
+    private GenericKafkaManagedObject<?, ?> send(GenericKafkaManagedObject<?, ?> evts) {
         this.producerForPublishingOnStringTopic
             .send(new ProducerRecord<>(this.topicFullyProcessedImage, evts.getImageKey()));
         return evts;
     }
 
-    private GenericKafkaManagedObject<?> processEvent(ConsumerRecord<String, WfEvents> record) {
+    private GenericKafkaManagedObject<?, ?> processEvent(ConsumerRecord<String, WfEvents> record) {
         this.cacheNodeDAO.addOrCreate(record.key(), record.value());
         return KafkaManagedWfEvents.builder()
             .withKafkaOffset(record.offset())

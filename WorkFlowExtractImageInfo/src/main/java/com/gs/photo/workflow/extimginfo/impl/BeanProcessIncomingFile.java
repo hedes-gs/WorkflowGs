@@ -38,9 +38,10 @@ import org.apache.kafka.common.errors.ProducerFencedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
-import com.gs.photo.common.workflow.IBeanTaskExecutor;
+import com.gs.instrumentation.KafkaSpy;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.exif.IExifService;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
@@ -57,9 +58,10 @@ import com.gs.photos.workflow.extimginfo.metadata.TiffFieldAndPath;
 import com.workflow.model.ExchangedTiffData;
 import com.workflow.model.FieldType;
 import com.workflow.model.HbaseData;
-import com.workflow.model.ImageAsByteArray;
+import com.workflow.model.HbaseImageAsByteArray;
 import com.workflow.model.builder.KeysBuilder;
 import com.workflow.model.events.WfEvent;
+import com.workflow.model.events.WfEventError;
 import com.workflow.model.events.WfEventFinal;
 import com.workflow.model.events.WfEventInitial;
 import com.workflow.model.events.WfEventStep;
@@ -68,7 +70,6 @@ import com.workflow.model.files.FileToProcess;
 
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
@@ -147,7 +148,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     protected static Logger                             LOGGER = LoggerFactory.getLogger(BeanProcessIncomingFile.class);
 
     @Autowired
-    protected IBeanTaskExecutor                         beanTaskExecutor;
+    protected ThreadPoolTaskExecutor                    threadPoolTaskExecutor;
 
     @Autowired
     protected IExifService                              exifService;
@@ -182,7 +183,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
 
     @Override
     @Timed
-    public void start() { this.beanTaskExecutor.execute(() -> this.processInputFile()); }
+    public void start() { this.threadPoolTaskExecutor.execute(() -> this.processInputFile()); }
 
     protected void processInputFile() {
 
@@ -263,7 +264,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 if (!(e.getCause() instanceof InterruptedException)) {
                     BeanProcessIncomingFile.LOGGER.error("Unexpected error - closing  ", e);
                 }
-
                 end = true;
                 recover = false;
             }
@@ -272,6 +272,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     }
 
     @Timed
+    @KafkaSpy
     private void processRecords(
         Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
@@ -306,14 +307,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         producerForTransactionPublishingOnExifOrImageTopic
             .sendOffsetsToTransaction(offsets, consumerForTopicWithFileToProcessValue.groupMetadata());
         producerForTransactionPublishingOnExifOrImageTopic.commitTransaction();
-    }
-
-    private static <T, R> Function<T, R> getObservedFunction(String name, Function<T, R> f) {
-        return t -> {
-            Timer timer = BeanProcessIncomingFile.local.get()
-                .timer(name);
-            return timer.record(() -> f.apply(t));
-        };
     }
 
     private EventsAndGenericKafkaManagedObject toEventsAndGenericKafkaManagedObject(
@@ -405,37 +398,59 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         Collection<GenericKafkaManagedObject<?, ?>> kmoStream,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic
     ) {
-        BeanProcessIncomingFile.LOGGER.info(
-            "[EVENT][{}][{}] Kafka Sending {} objects on htread {}",
-            kmoStream.stream()
-                .map(t -> t.getImageKey())
-                .collect(Collectors.groupingBy(t -> t))
-                .keySet(),
-            Thread.currentThread(),
-            kmoStream.size());
         Collection<GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent>> returnValue = kmoStream.stream()
-            .map(kmo -> {
-                HbaseData objectToSend = switch (kmo) {
-                    case KafkaManagedThumbImage kti -> kti.getObjectToSend()
-                        .get()
-                        .getJpegImage();
-                    case KafkaManagedExchangedTiffData ketf -> ketf.getObjectToSend()
-                        .get();
-                    default -> throw new IllegalArgumentException("Unexpected value: " + kmo);
-                };
-                ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(kmo.getTopic(),
-                    kmo.getObjectKey(),
-                    objectToSend);
-                producerForTransactionPublishingOnExifOrImageTopic
-                    .send(pr, (r, e) -> this.processErrorWhileSending(kmo.getObjectKey(), r, e));
-                return this.buildEvent(kmo);
-            })
+            .map(kmo -> this.sendDataAndBuildWfEvent(producerForTransactionPublishingOnExifOrImageTopic, kmo))
             .collect(Collectors.toList());
         return returnValue;
     }
 
-    private GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent> buildEvent(
+    private GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent> sendDataAndBuildWfEvent(
+        Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic,
         GenericKafkaManagedObject<?, ?> kmo
+    ) {
+        GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent> defaultValue = this.buildEvent(
+            kmo,
+            WfEventError.builder()
+                .withDataId(kmo.getObjectKey())
+                .withError("File not found")
+                .withStep(WfEventStep.WF_STEP_CREATED_FROM_STEP_IMAGE_FILE_READ)
+                .build());
+        Optional<GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent>> retValue = Optional
+            .ofNullable(switch (kmo) {
+                case KafkaManagedThumbImage kti -> kti.getObjectToSend()
+                    .get()
+                    .getJpegImage();
+                case KafkaManagedExchangedTiffData ketf -> ketf.getObjectToSend()
+                    .get();
+                case GenericKafkaManagedObject<?, ?> gkmo -> null;
+            })
+            .map(o -> {
+                ProducerRecord<String, HbaseData> pr = new ProducerRecord<>(kmo.getTopic(), kmo.getObjectKey(), o);
+                producerForTransactionPublishingOnExifOrImageTopic
+                    .send(pr, (r, e) -> this.processErrorWhileSending(kmo.getObjectKey(), r, e));
+                return this.buildEvent(kmo);
+            });
+        return retValue.orElse(defaultValue);
+    }
+
+    private GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent> buildEvent(
+        GenericKafkaManagedObject<? extends HbaseData, ? extends WfEvent> kmo,
+        WfEvent ev
+    ) {
+        return KafkaManagedWfEvent.builder()
+            .withKafkaOffset(kmo.getKafkaOffset())
+            .withImageKey(kmo.getImageKey())
+            .withPartition(kmo.getPartition())
+            .withValue(ev)
+            .withTopic(
+                this.kafkaProperties.getTopics()
+                    .topicEvent())
+            .build();
+
+    }
+
+    private GenericKafkaManagedObject<? extends WfEvent, ? extends WfEvent> buildEvent(
+        GenericKafkaManagedObject<? extends HbaseData, ? extends WfEvent> kmo
     ) {
         return KafkaManagedWfEvent.builder()
             .withKafkaOffset(kmo.getKafkaOffset())
@@ -457,9 +472,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     }
 
     private void processErrorWhileSending(String imgId, RecordMetadata r, Exception e) {
-        if (e == null) {
-            BeanProcessIncomingFile.LOGGER.info("[EVENT][{}] send object to {} ", imgId, r.toString());
-        } else {
+        if (e != null) {
             BeanProcessIncomingFile.LOGGER
                 .error("Error detected when trying to send object {}  : {}", imgId, ExceptionUtils.getStackTrace(e));
         }
@@ -500,7 +513,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         try {
             Optional<byte[]> retValue = this.accessDirectlyFile.readFirstBytesOfFileRetry(fileToProcess);
             return retValue;
-
         } catch (Exception e) {
             BeanProcessIncomingFile.LOGGER.warn(
                 "[EVENT][{}]Unable to get key Ignite for {},  unexpected error {}",
@@ -543,6 +555,14 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         ConsumerRecord<String, FileToProcess> rec,
         Optional<Collection<IFD>> v
     ) {
+        if (v.isEmpty()) {
+            return List.of(
+                GenericKafkaManagedObject.genericKafkaManagedObjectBuilder()
+                    .withImageKey(rec.key())
+                    .withKafkaOffset(rec.offset())
+                    .withPartition(rec.partition())
+                    .build());
+        }
         return v.stream()
             .flatMap(t -> this.toStreamOfKMO(t, rec))
             .collect(Collectors.toList());
@@ -613,7 +633,7 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
                 (i) -> ThumbImageToSend.builder()
                     .withImageKey(rec.key())
                     .withJpegImage(
-                        ImageAsByteArray.builder()
+                        HbaseImageAsByteArray.builder()
                             .withDataAsByte(i.getJpegImage())
                             .build())
                     .withPath(i.getPath())

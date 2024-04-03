@@ -742,6 +742,25 @@
   } ]
 }, {
   "type" : "record",
+  "name" : "HbaseImageAsByteArray",
+  "namespace" : "com.workflow.model",
+  "fields" : [ {
+    "name" : "dataAsByte",
+    "type" : [ "null", {
+      "type" : "bytes",
+      "java-class" : "[B"
+    } ],
+    "default" : null
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "HbaseImageData",
   "namespace" : "com.workflow.model",
   "fields" : [ {

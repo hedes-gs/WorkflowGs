@@ -1,6 +1,7 @@
 package com.gs.instrumentation;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -36,7 +37,7 @@ import net.bytebuddy.matcher.StringMatcher;
 public class TimerAgent {
     private static final Logger LOGGER = LoggerFactory.getLogger(TimerAgent.class);
 
-    public static Map<String, Class<?>> premain(Instrumentation instrumentation) throws Exception {
+    public static Map<String, Class<?>> installThreadInterceptor(Instrumentation instrumentation) throws IOException {
         Listener.Filtering debuggingListener = new Listener.Filtering(
             new StringMatcher("java.lang.Thread", StringMatcher.Mode.CONTAINS),
             Listener.StreamWriting.toSystemOut());
@@ -80,14 +81,12 @@ public class TimerAgent {
 
     public static void premain(String arguments, Instrumentation instrumentation) {
         final InheritableThreadLocal<MeterRegistry> threadLocal = new InheritableThreadLocal<MeterRegistry>();
-        final ThreadLocal<Map<Thread, ChainedContext>> threadLocalForTree = new InheritableThreadLocal<>();
+        final ThreadLocal<Map<Thread, ChainedContext>> threadLocalForTree = ThreadInterceptor.threadLocal;
 
         RawMatcher ignoreMatcher = new RawMatcher.ForElementMatchers(ElementMatchers.nameStartsWith("net.bytebuddy.")
             .or(ElementMatchers.nameStartsWith("org"))
             .or(ElementMatchers.nameContainsIgnoreCase("test")));
-        Listener.Filtering debuggingListener = new Listener.Filtering(
-            new StringMatcher("java.lang.Thread", StringMatcher.Mode.CONTAINS),
-            Listener.StreamWriting.toSystemOut());
+
         final ElementMatcher<? super MethodDescription> anyOf = ElementMatchers.isAnnotatedWith(Timed.class);
         final ElementMatcher<? super MethodDescription> returnMetricObject = ElementMatchers
             .nameContains("meterRegistry");
@@ -95,11 +94,99 @@ public class TimerAgent {
         threadLocalForTree.set(new HashMap<>());
         Map<String, Class<?>> mapOfLoadedClasses;
         try {
-            mapOfLoadedClasses = TimerAgent.premain(instrumentation);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            mapOfLoadedClasses = TimerAgent.installThreadInterceptor(instrumentation);
+            ThreadLocal<Map<Thread, ChainedContext>> threadLocalOFChainedContext = (ThreadLocal<Map<Thread, ChainedContext>>) mapOfLoadedClasses
+                .get(ThreadInterceptor.class.getName())
+                .getDeclaredField("threadLocal")
+                .get(null);
+
+            TimerAgent.installMetricInterceptor(instrumentation, threadLocal, ignoreMatcher);
+            TimerAgent.installKafkaPollInterceptor(instrumentation, threadLocalOFChainedContext);
+            TimerAgent.installKafkaSendInterceptor(instrumentation, threadLocalOFChainedContext);
+            TimerAgent.installKafkaSpyInterceptor(instrumentation, threadLocalOFChainedContext);
+            TimerAgent.installtimingInterceptor(instrumentation, threadLocal, ignoreMatcher, anyOf, mapOfLoadedClasses);
+        } catch (
+            IllegalAccessException |
+            NoSuchFieldException |
+            IOException e) {
+            e.printStackTrace();
         }
 
+    }
+
+    private static void installKafkaPollInterceptor(
+        Instrumentation instrumentation,
+        final ThreadLocal<Map<Thread, ChainedContext>> threadLocal
+    ) {
+        RawMatcher ignoreMatcher = new RawMatcher.ForElementMatchers(ElementMatchers.nameStartsWith("net.bytebuddy."));
+        Listener.Filtering debuggingListener = new Listener.Filtering(
+            new StringMatcher("Kafka", StringMatcher.Mode.CONTAINS_IGNORE_CASE),
+            Listener.StreamWriting.toSystemOut());
+        final ElementMatcher<? super MethodDescription> pollMethod = ElementMatchers.nameContains("poll");
+        new AgentBuilder.Default().ignore(ignoreMatcher)
+            // .with(debuggingListener)
+            .type(
+                ElementMatchers.nameContains("KafkaConsumer")
+                    .or(ElementMatchers.nameContains("MockConsumer")))
+            .transform((builder, type, classLoader, module, protectionDomain) ->
+
+            {
+                return builder.method(pollMethod)
+                    .intercept(MethodDelegation.to(new KafkaPollInterceptor(threadLocal)));
+            })
+            .installOn(instrumentation);
+    }
+
+    private static void installKafkaSendInterceptor(
+        Instrumentation instrumentation,
+        final ThreadLocal<Map<Thread, ChainedContext>> threadLocal
+    ) {
+        RawMatcher ignoreMatcher = new RawMatcher.ForElementMatchers(ElementMatchers.nameStartsWith("net.bytebuddy."));
+        Listener.Filtering debuggingListener = new Listener.Filtering(
+            new StringMatcher("Kafka", StringMatcher.Mode.CONTAINS_IGNORE_CASE),
+            Listener.StreamWriting.toSystemOut());
+        final ElementMatcher<? super MethodDescription> pollMethod = ElementMatchers.nameContains("send");
+        new AgentBuilder.Default().ignore(ignoreMatcher)
+            // .with(debuggingListener)
+            .type(
+                ElementMatchers.nameContains("KafkaProducer")
+                    .or(ElementMatchers.nameContains("MockProducer")))
+            .transform((builder, type, classLoader, module, protectionDomain) ->
+
+            {
+                return builder.method(pollMethod)
+                    .intercept(MethodDelegation.to(new KafkaSendInterceptor(threadLocal)));
+            })
+            .installOn(instrumentation);
+    }
+
+    private static void installKafkaSpyInterceptor(
+        Instrumentation instrumentation,
+        final ThreadLocal<Map<Thread, ChainedContext>> threadLocal
+    ) {
+
+        RawMatcher ignoreMatcher = new RawMatcher.ForElementMatchers(ElementMatchers.nameStartsWith("net.bytebuddy."));
+        Listener.Filtering debuggingListener = new Listener.Filtering(
+            new StringMatcher("Kafka", StringMatcher.Mode.CONTAINS_IGNORE_CASE),
+            Listener.StreamWriting.toSystemOut());
+        final ElementMatcher<? super MethodDescription> kafkaSpyMethod = ElementMatchers
+            .isAnnotatedWith(KafkaSpy.class);
+        new AgentBuilder.Default().ignore(ignoreMatcher)
+            .type(ElementMatchers.nameContains("com.gs."))
+            .transform((builder, type, classLoader, module, protectionDomain) -> {
+                return builder.method(kafkaSpyMethod)
+                    .intercept(MethodDelegation.to(new KafkaSpyInterceptor(threadLocal)));
+            })
+            .installOn(instrumentation);
+    }
+
+    private static void installMetricInterceptor(
+        Instrumentation instrumentation,
+        final InheritableThreadLocal<MeterRegistry> threadLocal,
+        RawMatcher ignoreMatcher
+    ) {
+        final ElementMatcher<? super MethodDescription> returnMetricObject = ElementMatchers
+            .nameContains("meterRegistry");
         new AgentBuilder.Default().ignore(ignoreMatcher)
             // .with(debuggingListener)
             .type(ElementMatchers.nameContains("ObservationConfiguration"))
@@ -110,42 +197,34 @@ public class TimerAgent {
                     .intercept(MethodDelegation.to(new MetricInterceptor(threadLocal)));
             })
             .installOn(instrumentation);
+    }
 
-        try {
-            ThreadLocal<Map<Thread, ChainedContext>> threadLocalOFChainedContext = (ThreadLocal<Map<Thread, ChainedContext>>) mapOfLoadedClasses
-                .get(ThreadInterceptor.class.getName())
-                .getDeclaredField("threadLocal")
-                .get(null);
-            Thread initialThread = (Thread) mapOfLoadedClasses.get(ThreadInterceptor.class.getName())
-                .getDeclaredField("initialThread")
-                .get(null);
-            new AgentBuilder.Default().ignore(ignoreMatcher)
-                .type(ElementMatchers.nameContains("com.gs.photo.workflow.extimginfo.impl.BeanProcessIncomingFile"))
-                .transform((builder, type, classLoader, module, protectionDomain) -> {
-                    return builder.initializer(new LoadedTypeInitializer.ForStaticField("THREAD_LOCAL", threadLocal))
-                        .defineField("THREAD_LOCAL", java.lang.InheritableThreadLocal.class, Ownership.STATIC);
-                })
-                .transform((builder, type, classLoader, module, protectionDomain) -> {
-                    return builder.method(anyOf)
-                        .intercept(
-                            MethodDelegation.to(new TimingInterceptor(threadLocalOFChainedContext, threadLocal, type)));
-                })
-                .installOn(instrumentation);
-            TimerAgent.startShutdownHook(TimerAgent.class.getClassLoader(), threadLocalOFChainedContext, initialThread);
-        } catch (IllegalArgumentException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchFieldException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
+    private static void installtimingInterceptor(
+        Instrumentation instrumentation,
+        final InheritableThreadLocal<MeterRegistry> threadLocal,
+        RawMatcher ignoreMatcher,
+        final ElementMatcher<? super MethodDescription> anyOf,
+        Map<String, Class<?>> mapOfLoadedClasses
+    ) throws IllegalAccessException, NoSuchFieldException {
+        ThreadLocal<Map<Thread, ChainedContext>> threadLocalOFChainedContext = (ThreadLocal<Map<Thread, ChainedContext>>) mapOfLoadedClasses
+            .get(ThreadInterceptor.class.getName())
+            .getDeclaredField("threadLocal")
+            .get(null);
+        Thread initialThread = (Thread) mapOfLoadedClasses.get(ThreadInterceptor.class.getName())
+            .getDeclaredField("initialThread")
+            .get(null);
+        new AgentBuilder.Default().ignore(ignoreMatcher)
+            .type(ElementMatchers.nameContains("com.gs.photo.workflow.extimginfo.impl.BeanProcessIncomingFile"))
+            .transform((builder, type, classLoader, module, protectionDomain) -> {
+                return builder.initializer(new LoadedTypeInitializer.ForStaticField("THREAD_LOCAL", threadLocal))
+                    .defineField("THREAD_LOCAL", java.lang.InheritableThreadLocal.class, Ownership.STATIC);
+            })
+            .transform((builder, type, classLoader, module, protectionDomain) -> {
+                return builder.method(anyOf)
+                    .intercept(MethodDelegation.to(new TimingInterceptor(threadLocalOFChainedContext, threadLocal)));
+            })
+            .installOn(instrumentation);
+        TimerAgent.startShutdownHook(TimerAgent.class.getClassLoader(), threadLocalOFChainedContext, initialThread);
     }
 
     private static void startShutdownHook(

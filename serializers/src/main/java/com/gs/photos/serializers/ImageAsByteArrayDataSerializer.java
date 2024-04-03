@@ -2,13 +2,13 @@ package com.gs.photos.serializers;
 
 import org.apache.kafka.common.serialization.Serializer;
 
-import com.workflow.model.ImageAsByteArray;
+import com.workflow.model.HbaseImageAsByteArray;
 
-public class ImageAsByteArrayDataSerializer extends AbstractModelSerializerAndDeserializer<ImageAsByteArray>
-    implements Serializer<ImageAsByteArray> {
+public class ImageAsByteArrayDataSerializer extends AbstractModelSerializerAndDeserializer<HbaseImageAsByteArray>
+    implements Serializer<HbaseImageAsByteArray> {
 
     @Override
-    public byte[] serialize(String topic, ImageAsByteArray data) { return this.toBytesGeneric(topic, data); }
+    public byte[] serialize(String topic, HbaseImageAsByteArray data) { return this.toBytesGeneric(topic, data); }
 
     public ImageAsByteArrayDataSerializer() { super(); }
 
