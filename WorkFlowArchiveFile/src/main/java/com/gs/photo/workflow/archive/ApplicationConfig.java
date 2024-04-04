@@ -29,6 +29,7 @@ import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.archive.config.SpecificApplicationProperties;
 import com.gs.photo.workflow.archive.ports.IFileSystem;
+import com.gs.photo.workflow.archive.ports.IFileUtils;
 import com.gs.photos.serializers.FileToProcessDeserializer;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
@@ -36,11 +37,11 @@ import com.workflow.model.files.FileToProcess;
 @org.springframework.context.annotation.Configuration
 @ComponentScan(basePackages = "com.gs.photo")
 public class ApplicationConfig extends AbstractApplicationConfig {
-    private static final String CONSUMER_NAME                      = "file-to-process";
+    public static final String CONSUMER_TYPE_NAME                 = "file-to-process";
 
-    private static Logger       LOGGER                             = LoggerFactory.getLogger(ApplicationConfig.class);
+    private static Logger      LOGGER                             = LoggerFactory.getLogger(ApplicationConfig.class);
 
-    public final static String  KAFKA_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
+    public final static String KAFKA_FILE_TO_PROCESS_DESERIALIZER = FileToProcessDeserializer.class.getName();
 
     @Override
     @Bean
@@ -55,7 +56,20 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     }
 
     @Bean
-    public FileUtils fileUtils() { return new FileUtils(); }
+    public IFileUtils fileUtils() {
+        return new IFileUtils() {
+
+            @Override
+            public void copyRemoteToLocal(FileToProcess value, OutputStream fdsOs) throws IOException {
+                FileUtils.copyRemoteToLocal(value, fdsOs);
+            }
+
+            @Override
+            public boolean deleteIfLocal(FileToProcess value, String root) throws IOException {
+                return FileUtils.deleteIfLocal(value, root);
+            }
+        };
+    }
 
     @Bean
     public Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue(
@@ -63,11 +77,11 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         Map<String, KafkaClientConsumer> kafkaClientConsumers
     ) {
         return () -> defaultKafkaConsumerFactory.get(
-            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_TYPE_NAME)
                 .consumerType(),
-            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_TYPE_NAME)
                 .groupId(),
-            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_NAME)
+            kafkaClientConsumers.get(ApplicationConfig.CONSUMER_TYPE_NAME)
                 .instanceGroupId(),
             AbstractApplicationConfig.KAFKA_STRING_DESERIALIZER,
             AbstractApplicationConfig.KAFKA_FILE_TO_PROCESS_DESERIALIZER);

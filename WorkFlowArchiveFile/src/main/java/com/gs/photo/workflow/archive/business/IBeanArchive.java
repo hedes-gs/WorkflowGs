@@ -7,5 +7,5 @@ import com.gs.photo.workflow.archive.ports.IFileSystem;
 
 public interface IBeanArchive<T> {
 
-    public CompletableFuture<Optional<T>> archiveFile(IFileSystem hdfsFileSystem, T f);
+    public CompletableFuture<Optional<T>> asyncArchiveFile(IFileSystem hdfsFileSystem, T f);
 }

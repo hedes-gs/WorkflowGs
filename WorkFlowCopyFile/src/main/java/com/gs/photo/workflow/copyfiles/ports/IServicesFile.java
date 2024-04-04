@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.copyfiles;
+package com.gs.photo.workflow.copyfiles.ports;
 
 import java.io.File;
 import java.io.IOException;

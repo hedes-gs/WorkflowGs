@@ -113,7 +113,8 @@ public class FileUtils {
         }
     }
 
-    public byte[] readFirstBytesOfFile(String filePath, String coordinates, int nbOfBytesToRead) throws IOException {
+    public static byte[] readFirstBytesOfFile(String filePath, String coordinates, int nbOfBytesToRead)
+        throws IOException {
         byte[] retValue = new byte[nbOfBytesToRead];
         Nfs3 nfs3 = new Nfs3(coordinates, new CredentialUnix(0, 0, null), 3);
         Nfs3File file = new Nfs3File(nfs3, filePath);
@@ -126,7 +127,7 @@ public class FileUtils {
         return retValue;
     }
 
-    public long copyRemoteToLocal(String coordinates, String filePath, Path localPath, int bufferSize)
+    public static long copyRemoteToLocal(String coordinates, String filePath, Path localPath, int bufferSize)
         throws IOException {
         String[] tokens = coordinates.split("\\:");
         String remoteHostName = tokens[0];
@@ -161,20 +162,20 @@ public class FileUtils {
         return retValue;
     }
 
-    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
-        return this.readFirstBytesOfFile(file, FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+    public static byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
+        return FileUtils.readFirstBytesOfFile(file, FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
     }
 
-    public byte[] readFirstBytesOfFile(FileToProcess file, int bufferSize) throws IOException {
+    public static byte[] readFirstBytesOfFile(FileToProcess file, int bufferSize) throws IOException {
 
         if (!file.isCompressedFile()) {
-            return this.readFirstBytesOfFile(new URL(file.getUrl()), bufferSize);
+            return FileUtils.readFirstBytesOfFile(new URL(file.getUrl()), bufferSize);
         } else {
-            return this.readFirstBytesOfCompressedFile(new URL(file.getUrl()), bufferSize);
+            return FileUtils.readFirstBytesOfCompressedFile(new URL(file.getUrl()), bufferSize);
         }
     }
 
-    public byte[] readFirstBytesOfFileRetry(FileToProcess file) {
+    public static byte[] readFirstBytesOfFileRetry(FileToProcess file) {
         byte[] retValue = null;
         int nbOfRetries = 0;
         try {
@@ -186,7 +187,7 @@ public class FileUtils {
                         file.getImageId(),
                         file,
                         nbOfRetries);
-                    retValue = this.readFirstBytesOfFile(file);
+                    retValue = FileUtils.readFirstBytesOfFile(file);
                     if ((retValue == null)) {
                         FileUtils.LOGGER.warn(
                             " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
@@ -238,7 +239,8 @@ public class FileUtils {
                         file,
                         nbOfRetries,
                         20 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
-                    retValue = this.readFirstBytesOfFile(file, 20 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
+                    retValue = FileUtils
+                        .readFirstBytesOfFile(file, 20 * FileUtils.NB_OF_BYTES_ON_WHICH_KEY_IS_COMPUTED);
                     if ((retValue == null)) {
                         FileUtils.LOGGER.warn(
                             " Error when readFirstBytesOfFile of {} : unexpected read bytes value {}",
@@ -272,7 +274,7 @@ public class FileUtils {
         return retValue;
     }
 
-    public boolean deleteIfLocal(FileToProcess file, String root) throws IOException {
+    public static boolean deleteIfLocal(FileToProcess file, String root) throws IOException {
         InetAddress ip = InetAddress.getLocalHost();
         URL url = new URL(file.getUrl());
         String remoteHostName = url.getHost();
@@ -423,7 +425,7 @@ public class FileUtils {
         return this.toStream(url, extensions);
     }
 
-    public byte[] readFirstBytesOfFile(URL url, int bufferSize) throws IOException {
+    public static byte[] readFirstBytesOfFile(URL url, int bufferSize) throws IOException {
         byte[] retValue = new byte[bufferSize];
         int offset = 0;
         int nbOfBytes = 0;
@@ -448,7 +450,7 @@ public class FileUtils {
         return retValue;
     }
 
-    public byte[] readFirstBytesOfCompressedFile(URL url, int bufferSize) throws IOException {
+    public static byte[] readFirstBytesOfCompressedFile(URL url, int bufferSize) throws IOException {
         byte[] retValue = new byte[bufferSize];
         int offset = 0;
         try (
@@ -476,7 +478,7 @@ public class FileUtils {
         return file.length();
     }
 
-    public long copyRemoteToLocal(URL url, OutputStream os) throws IOException {
+    public static long copyRemoteToLocal(URL url, OutputStream os) throws IOException {
         try (
             InputStream is = url.openStream()) {
             return IOUtils.copyLarge(is, os);
@@ -500,12 +502,12 @@ public class FileUtils {
         return retValue;
     }
 
-    public long copyRemoteToLocal(FileToProcess fileToProcess, OutputStream localPath) throws IOException {
+    public static long copyRemoteToLocal(FileToProcess fileToProcess, OutputStream localPath) throws IOException {
         long retValue = -1;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         try {
-            retValue = this.copyRemoteToLocal(new URL(fileToProcess.getUrl()), localPath);
+            retValue = FileUtils.copyRemoteToLocal(new URL(fileToProcess.getUrl()), localPath);
         } finally {
             stopWatch.stop();
             FileUtils.LOGGER.info(

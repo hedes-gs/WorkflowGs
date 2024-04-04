@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.archive.business;
+package com.gs.photo.workflow.archive.business.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,12 +13,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.impl.FileUtils;
+import com.gs.photo.workflow.archive.business.IBeanArchive;
 import com.gs.photo.workflow.archive.config.SpecificApplicationProperties;
 import com.gs.photo.workflow.archive.ports.IFileSystem;
 import com.gs.photo.workflow.archive.ports.IFileUtils;
 import com.workflow.model.files.FileToProcess;
 
+import io.micrometer.core.annotation.Timed;
+
+@TimedBean
 public class BeanArchive implements IBeanArchive<FileToProcess> {
     private static Logger                   LOGGER = LoggerFactory.getLogger(BeanArchive.class);
 
@@ -29,17 +34,15 @@ public class BeanArchive implements IBeanArchive<FileToProcess> {
     protected IFileUtils                    fileUtils;
 
     @Override
-    public CompletableFuture<Optional<FileToProcess>> archiveFile(IFileSystem hdfsFileSystem, FileToProcess f) {
-        return CompletableFuture
-            .supplyAsync(() -> this.processRecord(hdfsFileSystem, f), Executors.newVirtualThreadPerTaskExecutor());
+    public CompletableFuture<Optional<FileToProcess>> asyncArchiveFile(IFileSystem hdfsFileSystem, FileToProcess f) {
+        return CompletableFuture.supplyAsync(
+            () -> this.doArchiveFileInHdfs(hdfsFileSystem, f),
+            Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    private Optional<FileToProcess> processRecord(IFileSystem hdfsFileSystem, FileToProcess value) {
-        BeanArchive.LOGGER.info("[EVENT {}] Process file to record in HDFS {} ", value.getDataId(), value);
-        return this.doArchiveFileInHdfs(hdfsFileSystem, value);
-    }
-
+    @Timed
     private Optional<FileToProcess> doArchiveFileInHdfs(IFileSystem hdfsFileSystem, FileToProcess value) {
+        BeanArchive.LOGGER.info("[EVENT {}] Process file to record in HDFS {} ", value.getDataId(), value);
         try {
             String importName = value.getImportEvent()
                 .getImportName();

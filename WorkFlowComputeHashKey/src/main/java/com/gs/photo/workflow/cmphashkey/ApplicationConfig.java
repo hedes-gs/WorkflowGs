@@ -40,6 +40,8 @@ import com.gs.photo.common.workflow.ports.IIgniteCacheFactory;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.common.workflow.ports.IgniteCacheFactory;
 import com.gs.photo.common.workflow.ports.IgniteDAO;
+import com.gs.photo.workflow.cmphashkey.ports.IFileUtils;
+import com.gs.photo.workflow.cmphashkey.ports.IProcessInputForHashKeyCompute;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
@@ -63,7 +65,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     }
 
     @Bean
-    public FileUtils fileUtils() { return new FileUtils(); }
+    public IFileUtils fileUtils() { return file -> FileUtils.readFirstBytesOfFileRetry(file); }
 
     @Bean
     public Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue(
@@ -160,4 +162,5 @@ public class ApplicationConfig extends AbstractApplicationConfig {
         bean.start();
         return null;
     }
+
 }

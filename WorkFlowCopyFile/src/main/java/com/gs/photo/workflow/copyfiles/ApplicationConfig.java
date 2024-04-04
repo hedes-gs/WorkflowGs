@@ -17,6 +17,7 @@ import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.workflow.copyfiles.config.ISpecificApplicationProperties;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
+import com.gs.photo.workflow.copyfiles.ports.ICopyFile;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 

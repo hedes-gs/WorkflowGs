@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.copyfiles.impl;
+package com.gs.photo.workflow.copyfiles.ports.impl;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -16,8 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.gs.photo.common.workflow.impl.FileUtils;
-import com.gs.photo.workflow.copyfiles.IServicesFile;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
+import com.gs.photo.workflow.copyfiles.ports.IServicesFile;
 import com.workflow.model.files.FileToProcess;
 
 @Service
@@ -32,14 +32,12 @@ public class BeanServicesFile implements IServicesFile {
     @Autowired
     protected SpecificApplicationProperties specificApplicationProperties;
 
-    protected FileUtils                     fileUtils = new FileUtils();
-
     @Override
     public void copyRemoteToLocal(FileToProcess file, File destFile) throws IOException {
 
         try (
             OutputStream os = new FileOutputStream(destFile)) {
-            this.fileUtils.copyRemoteToLocal(file, os);
+            FileUtils.copyRemoteToLocal(file, os);
             destFile.setWritable(true, false);
             destFile.setReadable(true, false);
         } catch (IOException e) {

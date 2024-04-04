@@ -36,7 +36,7 @@ import com.gs.photo.common.workflow.impl.MissingFileException;
 import com.gs.photo.workflow.archive.ApplicationConfig;
 import com.gs.photo.workflow.archive.IBeanFileConsumer;
 import com.gs.photo.workflow.archive.IUserGroupInformationAction;
-import com.gs.photo.workflow.archive.impl.BeanFileConsumer;
+import com.gs.photo.workflow.archive.ports.impl.BeanFileConsumer;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
@@ -54,7 +54,7 @@ public class TestBeanArchive {
     protected IBeanTaskExecutor               beanTaskExecutor;
 
     @Autowired
-    protected IBeanFileConsumer                    beanArchive;
+    protected IBeanFileConsumer               beanArchive;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {}

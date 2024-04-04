@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.cmphashkey.impl;
+package com.gs.photo.workflow.cmphashkey.ports.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,8 +35,9 @@ import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.common.workflow.ports.IIgniteDAO;
 import com.gs.photo.workflow.cmphashkey.ApplicationConfig;
-import com.gs.photo.workflow.cmphashkey.IBeanImageFileHelper;
-import com.gs.photo.workflow.cmphashkey.IProcessInputForHashKeyCompute;
+import com.gs.photo.workflow.cmphashkey.business.IBeanImageFileHelper;
+import com.gs.photo.workflow.cmphashkey.ports.IFileUtils;
+import com.gs.photo.workflow.cmphashkey.ports.IProcessInputForHashKeyCompute;
 import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.files.FileToProcess;
@@ -46,10 +47,9 @@ import io.micrometer.core.annotation.Timed;
 @Service
 @KafkaSpy
 @TimedBean
-public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
+public class BeanFileConsumer implements IProcessInputForHashKeyCompute {
 
-    protected final Logger                              LOGGER = LoggerFactory
-        .getLogger(BeanProcessInputForHashKeyCompute.class);
+    protected final Logger                              LOGGER = LoggerFactory.getLogger(BeanFileConsumer.class);
 
     @Autowired
     protected Supplier<Consumer<String, FileToProcess>> kafkaConsumerFactoryForFileToProcessValue;
@@ -68,6 +68,9 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
 
     @Autowired
     protected IBeanImageFileHelper                      beanImageFileHelper;
+
+    @Autowired
+    protected IFileUtils                                fileUtils;
 
     @Override
     public void start() { this.beanTaskExecutor.execute(() -> this.processIncomingFile()); }
@@ -111,13 +114,6 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                             } else {
                                 this.LOGGER.error("Unexpected error {} ", ExceptionUtils.getStackTrace(e));
                                 ready = false;
-                            }
-                            consumerForTopicWithFileToProcessValue.close();
-                            try {
-                                producerForTopicWithFileToProcessValue.close();
-                            } catch (Exception e1) {
-                                this.LOGGER.error("Unexpected error when aborting transaction {}", e1.getMessage());
-
                             }
                         }
                     }
@@ -295,7 +291,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
     @Timed
     private KafkaManagedObject doCreateKafkaManagedFileToProcess(ConsumerRecord<String, FileToProcess> f)
         throws IOException {
-        byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(f.value());
+        byte[] rawFile = this.fileUtils.readFirstBytesOfFileRetry(f.value());
         String key = "";
         if ((rawFile != null) && (rawFile.length > 0)) {
             key = this.beanImageFileHelper.computeHashKey(rawFile);

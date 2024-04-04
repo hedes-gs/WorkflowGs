@@ -1,6 +1,5 @@
-package com.gs.photo.workflow.cmphashkey.impl;
+package com.gs.photo.workflow.cmphashkey.business.impl;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -11,7 +10,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +18,8 @@ import org.springframework.stereotype.Component;
 import com.google.common.base.Strings;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.gs.photo.common.workflow.impl.FileUtils;
-import com.gs.photo.workflow.cmphashkey.IBeanImageFileHelper;
-import com.workflow.model.files.FileToProcess;
+import com.gs.photo.workflow.cmphashkey.business.IBeanImageFileHelper;
+import com.gs.photo.workflow.cmphashkey.ports.IFileUtils;
 
 @Component
 public class BeanImageFileHelper implements IBeanImageFileHelper {
@@ -30,7 +27,7 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
     protected static final Logger LOGGER = LoggerFactory.getLogger(BeanImageFileHelper.class);
 
     @Autowired
-    protected FileUtils           fileUtils;
+    protected IFileUtils          fileUtils;
 
     @Override
     public String computeHashKey(byte[] byteBuffer) {
@@ -62,21 +59,6 @@ public class BeanImageFileHelper implements IBeanImageFileHelper {
             BeanImageFileHelper.LOGGER.error("unable to getFullPathName for " + filePath, e);
             throw new RuntimeException("unable to getFullPathName for " + filePath, e);
         }
-    }
-
-    @Override
-    public byte[] readFirstBytesOfFile(FileToProcess file) throws IOException {
-        byte[] retValue = null;
-        try {
-            retValue = this.fileUtils.readFirstBytesOfFileRetry(file);
-        } catch (Exception e) {
-            BeanImageFileHelper.LOGGER.error(
-                " Error when readFirstBytesOfFileRetry of {} : unexpected read bytes value {}",
-                file,
-                ExceptionUtils.getStackTrace(e));
-            throw new RuntimeException(e);
-        }
-        return retValue;
     }
 
 }
