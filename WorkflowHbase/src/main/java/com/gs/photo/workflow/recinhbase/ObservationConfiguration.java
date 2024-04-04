@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.extimginfo;
+package com.gs.photo.workflow.recinhbase;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

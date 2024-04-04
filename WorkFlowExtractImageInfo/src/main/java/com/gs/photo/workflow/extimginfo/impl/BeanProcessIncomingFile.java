@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,9 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.gs.instrumentation.KafkaSpy;
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.exif.IExifService;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
@@ -71,59 +71,27 @@ import com.workflow.model.files.FileToProcess;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 
-@Component
+@Service
+@KafkaSpy
+@TimedBean
 public class BeanProcessIncomingFile implements IProcessIncomingFiles {
-    protected static final InheritableThreadLocal<MeterRegistry> local = new InheritableThreadLocal<MeterRegistry>();
-
-    protected static class ObservedFunction<T, R> implements Function<T, R> {
-        private final Function<T, R> f;
-
-        @Override
-        public R apply(T t) { return this.f.apply(t); }
-
-        public ObservedFunction(Function<T, R> f) { this.f = f; }
-
-    }
-
-    private static final ExecutorService NEW_VIRTUAL_THREAD_PER_TASK_EXECUTOR = Executors
+    protected static final InheritableThreadLocal<MeterRegistry> local                                = new InheritableThreadLocal<MeterRegistry>();
+    private static final ExecutorService                         NEW_VIRTUAL_THREAD_PER_TASK_EXECUTOR = Executors
         .newVirtualThreadPerTaskExecutor();
-    protected static final byte[]        NOT_FOUND_FOR_OPTIONAL_PARAMETER;
-    protected static final int[]         DEFAULT_SONY_LENS_NOT_FOUND_FOR_OPTIONAL_PARAMETER;
-    protected static final short         EXIF_COPYRIGHT                       = (short) 0x8298;
-    protected static final short         EXIF_ARTIST                          = (short) 0x13B;
-    protected static final short[]       EXIF_COPYRIGHT_PATH                  = { (short) 0 };
-    protected static final short[]       EXIF_ARTIST_PATH                     = { (short) 0 };
-    protected static final short         SONY_EXIF_LENS                       = (short) 0xB027;
-    protected static final short         EXIF_LENS                            = (short) 0xA434;
-    protected static final short[]       SONY_EXIF_LENS_PATH                  = {
+    protected static final byte[]                                NOT_FOUND_FOR_OPTIONAL_PARAMETER;
+    protected static final int[]                                 DEFAULT_SONY_LENS_NOT_FOUND_FOR_OPTIONAL_PARAMETER;
+    protected static final short                                 EXIF_COPYRIGHT                       = (short) 0x8298;
+    protected static final short                                 EXIF_ARTIST                          = (short) 0x13B;
+    protected static final short[]                               EXIF_COPYRIGHT_PATH                  = { (short) 0 };
+    protected static final short[]                               EXIF_ARTIST_PATH                     = { (short) 0 };
+    protected static final short                                 SONY_EXIF_LENS                       = (short) 0xB027;
+    protected static final short                                 EXIF_LENS                            = (short) 0xA434;
+    protected static final short[]                               SONY_EXIF_LENS_PATH                  = {
             (short) 0, (short) 0x8769, (short) 0x927c };
-    protected static final short[]       EXIF_LENS_PATH                       = { (short) 0, (short) 0x8769 };
-
-    public class SimpleLoggingHandler implements ObservationHandler<Observation.Context> {
-
-        private static final Logger log = LoggerFactory.getLogger(SimpleLoggingHandler.class);
-
-        @Override
-        public boolean supportsContext(Observation.Context context) { return true; }
-
-        @Override
-        public void onStart(Observation.Context context) { SimpleLoggingHandler.log.info("Starting"); }
-
-        @Override
-        public void onScopeOpened(Observation.Context context) { SimpleLoggingHandler.log.info("Scope opened"); }
-
-        @Override
-        public void onScopeClosed(Observation.Context context) { SimpleLoggingHandler.log.info("Scope closed"); }
-
-        @Override
-        public void onStop(Observation.Context context) { SimpleLoggingHandler.log.info("Stopping"); }
-
-        @Override
-        public void onError(Observation.Context context) { SimpleLoggingHandler.log.info("Error"); }
-    }
+    protected static final short[]                               EXIF_LENS_PATH                       = {
+            (short) 0, (short) 0x8769 };
 
     record EventsAndGenericKafkaManagedObject(
         WfEvents wfEvents,
@@ -232,7 +200,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
         return ready;
     }
 
-    @Timed
     protected boolean doProcessFile(
         Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue,
         Producer<String, HbaseData> producerForTransactionPublishingOnExifOrImageTopic

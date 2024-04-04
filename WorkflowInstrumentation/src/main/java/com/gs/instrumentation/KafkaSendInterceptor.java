@@ -3,6 +3,7 @@ package com.gs.instrumentation;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -29,10 +30,14 @@ public class KafkaSendInterceptor {
         try {
             return callable.call();
         } finally {
-            ((AtomicInteger) Data.getKafkaContext(
+            final Map<String, AtomicInteger> concurrentHashMap = new ConcurrentHashMap<String, AtomicInteger>();
+            final Map<String, Object> kafkaContext = Data.getKafkaContext(
                 this.threadLocal.get()
-                    .get(Thread.currentThread()))
-                .computeIfAbsent(record.topic(), (k) -> new AtomicInteger(0))).incrementAndGet();
+                    .get(Thread.currentThread()));
+            Map<String, AtomicInteger> topicsStats = (Map<String, AtomicInteger>) kafkaContext
+                .computeIfAbsent("output-topics", (k) -> concurrentHashMap);
+            topicsStats.computeIfAbsent(record.topic(), (k) -> new AtomicInteger(0))
+                .incrementAndGet();
         }
     }
 

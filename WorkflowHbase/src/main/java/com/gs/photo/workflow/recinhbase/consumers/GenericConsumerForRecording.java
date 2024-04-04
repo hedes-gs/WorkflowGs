@@ -1,6 +1,5 @@
 package com.gs.photo.workflow.recinhbase.consumers;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -25,9 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.gs.instrumentation.KafkaSpy;
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.KafkaConsumerProperties;
-import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
 import com.gs.photo.workflow.recinhbase.business.IProcessKafkaEvent;
 import com.gs.photo.workflow.recinhbase.consumers.config.SpecificApplicationProperties;
@@ -35,6 +34,10 @@ import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEvents;
 
+import io.micrometer.core.annotation.Timed;
+
+@KafkaSpy
+@TimedBean
 public class GenericConsumerForRecording<R extends WfEvents, U extends WfEventRecorded, T extends HbaseData>
     implements IGenericConsumerForRecording<R, T> {
     protected static Logger                 LOGGER = LoggerFactory.getLogger(GenericConsumerForRecording.class);
@@ -69,37 +72,8 @@ public class GenericConsumerForRecording<R extends WfEvents, U extends WfEventRe
                 kafkaConsumer.subscribe(Collections.singleton(topic));
                 kafkaProducer.initTransactions();
                 while (!end) {
-                    try (
-                        TimeMeasurement timeMeasurement = TimeMeasurement.of(
-                            "BATCH_PROCESS_FILES",
-                            (d) -> GenericConsumerForRecording.LOGGER.debug(" Perf. metrics {}", d),
-                            System.currentTimeMillis())) {
-
-                        Map<TopicPartition, OffsetAndMetadata> mapOfOffset = KafkaUtils
-                            .buildParallelKafkaBatchStream(
-                                kafkaProducer,
-                                kafkaConsumer,
-                                this.kafkaConsumerProperties.maxPollIntervallMs(),
-                                this.kafkaConsumerProperties.batchSizeForParallelProcessingIncomingRecords(),
-                                true,
-                                (i, p) -> this.startRecordsProcessing(i, p),
-                                timeMeasurement)
-                            .map(collection -> this.asyncProcess(cl, collection))
-                            .map(CompletableFuture::join)
-                            .map(t -> this.asyncSendEvent(kafkaProducer, t))
-                            .map(CompletableFuture::join)
-                            .flatMap((c) -> c.stream())
-                            .collect(
-                                () -> new HashMap<TopicPartition, OffsetAndMetadata>(),
-                                (o, t) -> this.updateMapOfOffset(o, t),
-                                (r, t) -> this.merge(r, t));
-                        kafkaProducer.sendOffsetsToTransaction(mapOfOffset, kafkaConsumer.groupMetadata());
-                        kafkaProducer.commitTransaction();
-                    } catch (IOException e) {
-                        GenericConsumerForRecording.LOGGER
-                            .error("Unexepcted error {}", ExceptionUtils.getStackTrace(e));
-                        recover = false;
-                        end = true;
+                    try {
+                        this.processsRecords(cl, kafkaConsumer, kafkaProducer);
                     } catch (
                         ProducerFencedException |
                         OutOfOrderSequenceException |
@@ -125,6 +99,30 @@ public class GenericConsumerForRecording<R extends WfEvents, U extends WfEventRe
             }
         }
 
+    }
+
+    @KafkaSpy
+    @Timed
+    private void processsRecords(Class<T> cl, Consumer<String, T> kafkaConsumer, Producer<String, R> kafkaProducer) {
+        Map<TopicPartition, OffsetAndMetadata> mapOfOffset = KafkaUtils
+            .buildParallelKafkaBatchStream(
+                kafkaProducer,
+                kafkaConsumer,
+                this.kafkaConsumerProperties.maxPollIntervallMs(),
+                this.kafkaConsumerProperties.batchSizeForParallelProcessingIncomingRecords(),
+                true,
+                (i, p) -> this.startRecordsProcessing(i, p))
+            .map(collection -> this.asyncProcess(cl, collection))
+            .map(CompletableFuture::join)
+            .map(t -> this.asyncSendEvent(kafkaProducer, t))
+            .map(CompletableFuture::join)
+            .flatMap((c) -> c.stream())
+            .collect(
+                () -> new HashMap<TopicPartition, OffsetAndMetadata>(),
+                (o, t) -> this.updateMapOfOffset(o, t),
+                (r, t) -> this.merge(r, t));
+        kafkaProducer.sendOffsetsToTransaction(mapOfOffset, kafkaConsumer.groupMetadata());
+        kafkaProducer.commitTransaction();
     }
 
     private Object startRecordsProcessing(Integer i, Producer<String, R> kafkaProducer) {
@@ -166,18 +164,25 @@ public class GenericConsumerForRecording<R extends WfEvents, U extends WfEventRe
         Producer<String, R> kafkaProducer,
         EventsAndConsumerRecords<U, T> eventsAndConsumerRecords
     ) {
-        return CompletableFuture.supplyAsync(() -> {
-            eventsAndConsumerRecords.events.stream()
-                .collect(Collectors.groupingBy(t -> t.getImgId()))
-                .entrySet()
-                .stream()
-                .forEach(e -> {
-                    kafkaProducer.send(
-                        new ProducerRecord<>(this.kafkaProperties.getTopics()
-                            .topicEvent(), e.getKey(), this.toEvents(e.getKey(), e.getValue())));
-                });
-            return eventsAndConsumerRecords.kafkaRecords;
-        });
+        return CompletableFuture
+            .supplyAsync(() -> { return this.doSendEvents(kafkaProducer, eventsAndConsumerRecords); });
+    }
+
+    @Timed
+    private Collection<ConsumerRecord<String, T>> doSendEvents(
+        Producer<String, R> kafkaProducer,
+        EventsAndConsumerRecords<U, T> eventsAndConsumerRecords
+    ) {
+        eventsAndConsumerRecords.events.stream()
+            .collect(Collectors.groupingBy(t -> t.getImgId()))
+            .entrySet()
+            .stream()
+            .forEach(e -> {
+                kafkaProducer.send(
+                    new ProducerRecord<>(this.kafkaProperties.getTopics()
+                        .topicEvent(), e.getKey(), this.toEvents(e.getKey(), e.getValue())));
+            });
+        return eventsAndConsumerRecords.kafkaRecords;
     }
 
     private R toEvents(String key, List<? extends WfEventRecorded> t) {

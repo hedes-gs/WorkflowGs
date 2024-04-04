@@ -22,6 +22,27 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
+		<!-- Observability-->
+		<dependency>
+			<groupId>net.bytebuddy</groupId>
+			<artifactId>byte-buddy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.gs</groupId>
+			<artifactId>InstrumentationLibrary</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>
 			<artifactId>WorkFlowCommonStreams</artifactId>
@@ -67,7 +88,8 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-yarn-server-nodemanager</artifactId>
 			<exclusions>
-				<!-- Exclude due to compatibility issue with ignite which is using cache-api.jar -->
+				<!-- Exclude due to compatibility issue with ignite which is
+				using cache-api.jar -->
 				<exclusion>
 					<groupId>org.apache.geronimo.specs</groupId>
 					<artifactId>geronimo-jcache_1.0_spec</artifactId>
@@ -149,7 +171,7 @@
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

@@ -33,18 +33,19 @@ public class TimingInterceptor {
 
         context.currentTimers()
             .add(timer);
-        return timer.record(() -> {
-            try {
-                return callable.call();
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                TimingInterceptor.LOGGER.error("Unexpected error ", e);
-                throw new RuntimeException(e);
-            } finally {
-
-            }
-        });
+        try {
+            return timer.record(() -> {
+                try {
+                    return callable.call();
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    TimingInterceptor.LOGGER.error("Unexpected error ", e);
+                    throw new RuntimeException(e);
+                }
+            });
+        } finally {
+        }
 
     }
 

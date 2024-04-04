@@ -11,13 +11,17 @@ import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.springframework.stereotype.Component;
 
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.hbase.HbaseDataInformation;
 import com.gs.photo.common.workflow.hbase.dao.AbstractDAO;
 import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseImageThumbnailDAO;
 import com.gs.photo.common.workflow.hbase.dao.GenericDAO;
 import com.workflow.model.HbaseExifData;
 
+import io.micrometer.core.annotation.Timed;
+
 @Component
+@TimedBean
 public class HbaseExifDataDAO extends GenericDAO<HbaseExifData> {
 
     public HbaseExifDataDAO(
@@ -67,9 +71,14 @@ public class HbaseExifDataDAO extends GenericDAO<HbaseExifData> {
 
     }
 
+    @Timed
     public void put(Collection<HbaseExifData> hbaseData) throws IOException {
         super.put(hbaseData, this.getHbaseDataInformation());
     }
+
+    @Override
+    @Timed
+    public void flush() throws IOException { super.flush(); }
 
     @Override
     public void put(HbaseExifData hbaseData) throws IOException {

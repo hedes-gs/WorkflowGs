@@ -1,11 +1,18 @@
 package com.gs.instrumentation;
 
 import java.lang.reflect.Method;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
@@ -21,16 +28,26 @@ public class KafkaSpyInterceptor {
         try {
             return callable.call();
         } finally {
-            final Map<String, Object> kafkaContext = Data.getKafkaContext(
+            final Map<String, Object> kafkaContext = Data.getKafkaContextWithPerformanceMetric(
                 this.threadLocal.get()
                     .get(Thread.currentThread()));
             if (kafkaContext.size() > 0) {
-                final long timeMillis = System.currentTimeMillis();
-                kafkaContext.put("END_PROCESS_TIME", timeMillis);
-                final double duration = (double)(timeMillis - (long) kafkaContext.get("START_PROCESS_TIME"));
-                kafkaContext
-                    .put("DURATION_TIME", duration / 1000.0f);
-                KafkaSpyInterceptor.LOGGER.info("-> After processing kafka records, stats are {}", kafkaContext);
+                Gson gson = new GsonBuilder().setPrettyPrinting()
+                    .create();
+                final Instant timeMillis = Instant.now();
+
+                final double duration = ((Instant) kafkaContext.get("start-process-time"))
+                    .until(timeMillis, ChronoUnit.MICROS) / 1000.0;
+                kafkaContext.put(
+                    "start-process-time",
+                    DateTimeFormatter.ISO_DATE_TIME
+                        .format(((Instant) kafkaContext.get("start-process-time")).atZone(ZoneId.systemDefault())));
+                kafkaContext.put(
+                    "end-process-time",
+                    DateTimeFormatter.ISO_DATE_TIME.format(timeMillis.atZone(ZoneId.systemDefault())));
+                kafkaContext.put("total-duration-time", duration);
+                KafkaSpyInterceptor.LOGGER
+                    .info("-> After processing kafka records, stats are: \n{}", gson.toJson(kafkaContext));
                 Data.deleteKafkaContext(
                     this.threadLocal.get()
                         .get(Thread.currentThread()));

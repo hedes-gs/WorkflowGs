@@ -1,6 +1,7 @@
 package com.gs.instrumentation;
 
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -26,18 +27,14 @@ public class KafkaPollInterceptor {
         try {
             final ConsumerRecords<?, ?> consumerRecords = (ConsumerRecords<?, ?>) callable.call();
             if (consumerRecords.count() > 0) {
-                String info = StreamSupport.stream(consumerRecords.spliterator(), false)
-                    .collect(Collectors.groupingBy(k -> new TopicPartition(k.topic(), k.partition())))
-                    .entrySet()
-                    .stream()
-                    .map(
-                        e -> e.getKey() + " [ " + e.getValue()
-                            .size() + " ] ")
-                    .collect(Collectors.joining(","));
+                Map<TopicPartition, Long> info = StreamSupport.stream(consumerRecords.spliterator(), false)
+                    .collect(
+                        Collectors
+                            .groupingBy(k -> new TopicPartition(k.topic(), k.partition()), Collectors.counting()));
                 KafkaPollInterceptor.LOGGER
                     .info("-> kafka consumer received {} records , creating kafka context", info);
                 Data.createKafkaContext(
-                    System.currentTimeMillis(),
+                    Instant.now(),
                     info,
                     this.threadLocal.get()
                         .get(Thread.currentThread()));

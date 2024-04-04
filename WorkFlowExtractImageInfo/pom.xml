@@ -11,8 +11,8 @@
 	<artifactId>WorkFlowExtractImageInfo</artifactId>
 	<dependencies>
 		<dependency>
-			<groupId>com.gs</groupId>
-			<artifactId>InstrumentationLibrary</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.bytebuddy</groupId>
@@ -20,15 +20,19 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-aop</artifactId>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.gs</groupId>
+			<artifactId>InstrumentationLibrary</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.gs.photos</groupId>

@@ -40,6 +40,8 @@
 		<module>../HbaseFilters</module>
 		<module>../comparators</module>
 		<module>../serializers</module>
+		<module>../InstrumentationLibrary</module>
+		<module>../WorkflowInstrumentation</module>
 		<module>../WorkFlowKafkaStreamsCommon</module>
 		<module>../WorkFlowCommonStreams</module>
 		<module>../WorkFlowCoprocessor</module>

@@ -1,5 +1,6 @@
 package com.gs.photo.workflow.cmphashkey.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,7 +14,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -26,8 +26,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import com.gs.instrumentation.KafkaSpy;
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.IKafkaProperties;
-import com.gs.photo.common.workflow.TimeMeasurement;
 import com.gs.photo.common.workflow.impl.KafkaUtils;
 import com.gs.photo.common.workflow.internal.GenericKafkaManagedObject;
 import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
@@ -40,7 +41,11 @@ import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEventStep;
 import com.workflow.model.files.FileToProcess;
 
+import io.micrometer.core.annotation.Timed;
+
 @Service
+@KafkaSpy
+@TimedBean
 public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKeyCompute {
 
     protected final Logger                              LOGGER = LoggerFactory
@@ -94,45 +99,10 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
                             (this.kafkaProperties.getTopics()
                                 .topicScanFile())));
                     while (ready) {
-                        try (
-                            TimeMeasurement timeMeasurement = TimeMeasurement.of(
-                                "BATCH_PROCESS_FILES",
-                                (d) -> this.LOGGER.info(" Perf. metrics {}", d),
-                                System.currentTimeMillis())) {
-                            Map<TopicPartition, OffsetAndMetadata> offsets = null;
-
-                            KafkaUtils
-                                .buildParallelKafkaBatchStreamPerTopicAndPartition(
-                                    producerForTopicWithFileToProcessValue,
-                                    consumerForTopicWithFileToProcessValue,
-                                    this.kafkaProperties.getConsumersType()
-                                        .get(ApplicationConfig.CONSUMER_NAME)
-                                        .maxPollIntervallMs(),
-                                    this.kafkaProperties.getConsumersType()
-                                        .get(ApplicationConfig.CONSUMER_NAME)
-                                        .batchSizeForParallelProcessingIncomingRecords(),
-                                    true,
-                                    (i, p) -> this.startRecordsProcessing(i, p))
-                                .map((r) -> this.asyncCreateKafkaManagedFileToProcess(r))
-                                .map((r) -> this.asyncSaveInIgnite(r))
-                                .map(CompletableFuture::join)
-                                .collect(Collectors.groupingByConcurrent(t -> this.getKey(t)))
-                                .entrySet()
-                                .stream()
-                                .map(t -> t.getValue())
-                                .map((r) -> this.asyncSendFileToProcess(producerForTopicWithFileToProcessValue, r))
-                                .map((r) -> this.asyncSendEvent(producerForTopicWithFileToProcessValue, r))
-                                .map(CompletableFuture::join)
-                                .flatMap(t -> t.stream())
-                                .collect(
-                                    () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
-                                    (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
-                                    (r, t) -> this.merge(r, t));
-                            this.LOGGER.info("Offset to commit {} ", offsets);
-                            producerForTopicWithFileToProcessValue.sendOffsetsToTransaction(
-                                offsets,
-                                consumerForTopicWithFileToProcessValue.groupMetadata());
-                            producerForTopicWithFileToProcessValue.commitTransaction();
+                        try {
+                            this.processRecords(
+                                consumerForTopicWithFileToProcessValue,
+                                producerForTopicWithFileToProcessValue);
                         } catch (Throwable e) {
                             if ((e instanceof InterruptedException) || (e.getCause() instanceof InterruptedException)) {
                                 this.LOGGER.info("Stopping process...");
@@ -155,6 +125,46 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
             }
         } while (!stop);
         this.LOGGER.info("!! END OF PROCESS !!");
+    }
+
+    @Timed
+    @KafkaSpy
+    private void processRecords(
+        Consumer<String, FileToProcess> consumerForTopicWithFileToProcessValue,
+        Producer<String, HbaseData> producerForTopicWithFileToProcessValue
+    ) {
+        Map<TopicPartition, OffsetAndMetadata> offsets = null;
+
+        KafkaUtils
+            .buildParallelKafkaBatchStreamPerTopicAndPartition(
+                producerForTopicWithFileToProcessValue,
+                consumerForTopicWithFileToProcessValue,
+                this.kafkaProperties.getConsumersType()
+                    .get(ApplicationConfig.CONSUMER_NAME)
+                    .maxPollIntervallMs(),
+                this.kafkaProperties.getConsumersType()
+                    .get(ApplicationConfig.CONSUMER_NAME)
+                    .batchSizeForParallelProcessingIncomingRecords(),
+                true,
+                (i, p) -> this.startRecordsProcessing(i, p))
+            .map((r) -> this.asyncCreateKafkaManagedFileToProcess(r))
+            .map((r) -> this.asyncSaveInIgnite(r))
+            .map(CompletableFuture::join)
+            .collect(Collectors.groupingByConcurrent(t -> this.getKey(t)))
+            .entrySet()
+            .stream()
+            .map(t -> t.getValue())
+            .map((r) -> this.asyncSendFileToProcess(producerForTopicWithFileToProcessValue, r))
+            .map((r) -> this.asyncSendEvent(producerForTopicWithFileToProcessValue, r))
+            .map(CompletableFuture::join)
+            .flatMap(t -> t.stream())
+            .collect(
+                () -> new ConcurrentHashMap<TopicPartition, OffsetAndMetadata>(),
+                (mapOfOffset, t) -> this.updateMapOfOffset(mapOfOffset, t),
+                (r, t) -> this.merge(r, t));
+        producerForTopicWithFileToProcessValue
+            .sendOffsetsToTransaction(offsets, consumerForTopicWithFileToProcessValue.groupMetadata());
+        producerForTopicWithFileToProcessValue.commitTransaction();
     }
 
     protected String getKey(KafkaManagedObject kmo) {
@@ -183,36 +193,41 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
         int nbOfRecords,
         Producer<String, HbaseData> producerForTopicWithFileToProcessValue
     ) {
-        this.LOGGER.info("Starting to process {} records", nbOfRecords);
         producerForTopicWithFileToProcessValue.beginTransaction();
     }
-
-    private void endRecordsProcessing(int nbOfRecords) { this.LOGGER.info("End to process {} records", nbOfRecords); }
 
     private CompletableFuture<Collection<KafkaManagedObject>> asyncSendFileToProcess(
         Producer<String, HbaseData> producerForTopicWithFileToProcessValue,
         Collection<KafkaManagedObject> kmos
     ) {
         return CompletableFuture.supplyAsync(() -> {
-            kmos.forEach(kmo -> {
-                if (kmo instanceof KafkaManagedFileToProcess fileToProcess) {
-                    fileToProcess.getValue()
-                        .ifPresentOrElse((o) -> {
-                            o.setImageId(fileToProcess.getHashKey());
-                            producerForTopicWithFileToProcessValue.send(
-                                new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
-                                    .topicHashKeyOutput(), fileToProcess.getHashKey(), o));
-                        },
-                            () -> this.LOGGER.warn(
-                                "Error : offset {} of partition {} of topic {} is not processed",
-                                fileToProcess.getKafkaOffset(),
-                                fileToProcess.getPartition(),
-                                this.kafkaProperties.getTopics()
-                                    .topicScanFile()));
-                }
-            });
-            return new ArrayList<>(kmos);
+            return this.doSendFileToProcess(producerForTopicWithFileToProcessValue, kmos);
         }, Executors.newVirtualThreadPerTaskExecutor());
+    }
+
+    @Timed
+    private Collection<KafkaManagedObject> doSendFileToProcess(
+        Producer<String, HbaseData> producerForTopicWithFileToProcessValue,
+        Collection<KafkaManagedObject> kmos
+    ) {
+        kmos.forEach(kmo -> {
+            if (kmo instanceof KafkaManagedFileToProcess fileToProcess) {
+                fileToProcess.getValue()
+                    .ifPresentOrElse((o) -> {
+                        o.setImageId(fileToProcess.getHashKey());
+                        producerForTopicWithFileToProcessValue.send(
+                            new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
+                                .topicHashKeyOutput(), fileToProcess.getHashKey(), o));
+                    },
+                        () -> this.LOGGER.warn(
+                            "Error : offset {} of partition {} of topic {} is not processed",
+                            fileToProcess.getKafkaOffset(),
+                            fileToProcess.getPartition(),
+                            this.kafkaProperties.getTopics()
+                                .topicScanFile()));
+            }
+        });
+        return new ArrayList<>(kmos);
     }
 
     private CompletableFuture<KafkaManagedObject> asyncSaveInIgnite(
@@ -221,26 +236,22 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
         return kmoAsCompletableFuture.thenApply((t) -> this.doSaveInIgnite(t));
     }
 
+    @Timed
     private KafkaManagedObject doSaveInIgnite(KafkaManagedObject kmo) {
         if (kmo instanceof KafkaManagedFileToProcess kafkaManagedFileToProcess) {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
             boolean saved = this.igniteDAO
                 .save(kafkaManagedFileToProcess.getHashKey(), kafkaManagedFileToProcess.getRawFile());
             kafkaManagedFileToProcess.setRawFile(null);
-            stopWatch.stop();
             if (saved) {
                 this.LOGGER.info(
-                    "[EVENT][{}] saved in ignite {} - duration is {}",
+                    "[EVENT][{}] saved in ignite",
                     kafkaManagedFileToProcess.getHashKey(),
-                    KafkaManagedFileToProcess.toString(kafkaManagedFileToProcess),
-                    stopWatch.formatTime());
+                    KafkaManagedFileToProcess.toString(kafkaManagedFileToProcess));
             } else {
                 this.LOGGER.warn(
-                    "[EVENT][{}] not saved in ignite {} : was already seen before... - duration is {} ",
+                    "[EVENT][{}] not saved in ignite {} : was already seen before... ",
                     kafkaManagedFileToProcess.getHashKey(),
-                    KafkaManagedFileToProcess.toString(kafkaManagedFileToProcess),
-                    stopWatch.formatTime());
+                    KafkaManagedFileToProcess.toString(kafkaManagedFileToProcess));
             }
         }
         return kmo;
@@ -253,6 +264,7 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
         return kmoCf.thenApply((kmos) -> this.doSendEvents(producerForTopicWithFileToProcessValue, kmos));
     }
 
+    @Timed
     private Collection<KafkaManagedObject> doSendEvents(
         Producer<String, HbaseData> producerForTopicWithFileToProcessValue,
         Collection<KafkaManagedObject> kmos
@@ -272,36 +284,41 @@ public class BeanProcessInputForHashKeyCompute implements IProcessInputForHashKe
     ) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(f.value());
-                String key = "";
-                if ((rawFile != null) && (rawFile.length > 0)) {
-                    key = this.beanImageFileHelper.computeHashKey(rawFile);
-
-                    this.LOGGER.info(
-                        "[EVENT][{}] getting bytes to compute hash key, length is {} [kafka : offset {}, topic {}] ",
-                        key,
-                        rawFile.length,
-                        f.offset(),
-                        f.topic());
-                    return KafkaManagedFileToProcess.builder()
-                        .withObjectKey(key)
-                        .withHashKey(key)
-                        .withRawFile(rawFile)
-                        .withValue(Optional.of(f.value()))
-                        .withKafkaOffset(f.offset())
-                        .withPartition(f.partition())
-                        .withStep(WfEventStep.WF_CREATED_FROM_STEP_COMPUTE_HASH_KEY)
-                        .build();
-                }
-                return KafkaManagedObject.builderForKafkaManagedObject()
-                    .withKafkaOffset(f.offset())
-                    .withPartition(f.partition())
-                    .build();
-
+                return this.doCreateKafkaManagedFileToProcess(f);
             } catch (Throwable e) {
                 this.LOGGER.warn("[EVENT][{}] Error {}", f, ExceptionUtils.getStackTrace(e));
                 throw new RuntimeException(e);
             }
         }, Executors.newVirtualThreadPerTaskExecutor());
+    }
+
+    @Timed
+    private KafkaManagedObject doCreateKafkaManagedFileToProcess(ConsumerRecord<String, FileToProcess> f)
+        throws IOException {
+        byte[] rawFile = this.beanImageFileHelper.readFirstBytesOfFile(f.value());
+        String key = "";
+        if ((rawFile != null) && (rawFile.length > 0)) {
+            key = this.beanImageFileHelper.computeHashKey(rawFile);
+
+            this.LOGGER.info(
+                "[EVENT][{}] getting bytes to compute hash key, length is {} [kafka : offset {}, topic {}] ",
+                key,
+                rawFile.length,
+                f.offset(),
+                f.topic());
+            return KafkaManagedFileToProcess.builder()
+                .withObjectKey(key)
+                .withHashKey(key)
+                .withRawFile(rawFile)
+                .withValue(Optional.of(f.value()))
+                .withKafkaOffset(f.offset())
+                .withPartition(f.partition())
+                .withStep(WfEventStep.WF_CREATED_FROM_STEP_COMPUTE_HASH_KEY)
+                .build();
+        }
+        return KafkaManagedObject.builderForKafkaManagedObject()
+            .withKafkaOffset(f.offset())
+            .withPartition(f.partition())
+            .build();
     }
 }

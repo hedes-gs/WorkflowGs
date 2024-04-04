@@ -88,9 +88,6 @@ public class TimerAgent {
             .or(ElementMatchers.nameContainsIgnoreCase("test")));
 
         final ElementMatcher<? super MethodDescription> anyOf = ElementMatchers.isAnnotatedWith(Timed.class);
-        final ElementMatcher<? super MethodDescription> returnMetricObject = ElementMatchers
-            .nameContains("meterRegistry");
-        final ElementMatcher<? super MethodDescription> startMetricObject = ElementMatchers.nameContains("start");
         threadLocalForTree.set(new HashMap<>());
         Map<String, Class<?>> mapOfLoadedClasses;
         try {
@@ -103,8 +100,8 @@ public class TimerAgent {
             TimerAgent.installMetricInterceptor(instrumentation, threadLocal, ignoreMatcher);
             TimerAgent.installKafkaPollInterceptor(instrumentation, threadLocalOFChainedContext);
             TimerAgent.installKafkaSendInterceptor(instrumentation, threadLocalOFChainedContext);
-            TimerAgent.installKafkaSpyInterceptor(instrumentation, threadLocalOFChainedContext);
             TimerAgent.installtimingInterceptor(instrumentation, threadLocal, ignoreMatcher, anyOf, mapOfLoadedClasses);
+            TimerAgent.installKafkaSpyInterceptor(instrumentation, threadLocalOFChainedContext);
         } catch (
             IllegalAccessException |
             NoSuchFieldException |
@@ -172,7 +169,7 @@ public class TimerAgent {
         final ElementMatcher<? super MethodDescription> kafkaSpyMethod = ElementMatchers
             .isAnnotatedWith(KafkaSpy.class);
         new AgentBuilder.Default().ignore(ignoreMatcher)
-            .type(ElementMatchers.nameContains("com.gs."))
+            .type(ElementMatchers.isAnnotatedWith(KafkaSpy.class))
             .transform((builder, type, classLoader, module, protectionDomain) -> {
                 return builder.method(kafkaSpyMethod)
                     .intercept(MethodDelegation.to(new KafkaSpyInterceptor(threadLocal)));
@@ -186,16 +183,12 @@ public class TimerAgent {
         RawMatcher ignoreMatcher
     ) {
         final ElementMatcher<? super MethodDescription> returnMetricObject = ElementMatchers
-            .nameContains("meterRegistry");
+            .returns(MeterRegistry.class);
         new AgentBuilder.Default().ignore(ignoreMatcher)
-            // .with(debuggingListener)
-            .type(ElementMatchers.nameContains("ObservationConfiguration"))
-            .transform((builder, type, classLoader, module, protectionDomain) ->
-
-            {
-                return builder.method(returnMetricObject)
-                    .intercept(MethodDelegation.to(new MetricInterceptor(threadLocal)));
-            })
+            .type(ElementMatchers.isAnnotatedWith(MicrometerConfiguration.class))
+            .transform(
+                (builder, type, classLoader, module, protectionDomain) -> builder.method(returnMetricObject)
+                    .intercept(MethodDelegation.to(new MetricInterceptor(threadLocal))))
             .installOn(instrumentation);
     }
 
@@ -214,7 +207,7 @@ public class TimerAgent {
             .getDeclaredField("initialThread")
             .get(null);
         new AgentBuilder.Default().ignore(ignoreMatcher)
-            .type(ElementMatchers.nameContains("com.gs.photo.workflow.extimginfo.impl.BeanProcessIncomingFile"))
+            .type(ElementMatchers.isAnnotatedWith(TimedBean.class))
             .transform((builder, type, classLoader, module, protectionDomain) -> {
                 return builder.initializer(new LoadedTypeInitializer.ForStaticField("THREAD_LOCAL", threadLocal))
                     .defineField("THREAD_LOCAL", java.lang.InheritableThreadLocal.class, Ownership.STATIC);

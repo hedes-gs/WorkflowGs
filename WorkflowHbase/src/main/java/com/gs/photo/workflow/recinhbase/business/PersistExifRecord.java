@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.workflow.recinhbase.dao.HbaseExifDataDAO;
 import com.workflow.model.HbaseExifData;
@@ -18,7 +19,10 @@ import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
+import io.micrometer.core.annotation.Timed;
+
 @Service(PersistExifRecord.MANAGED_CLASS)
+@TimedBean
 public class PersistExifRecord implements IPersistRecordsInDatabase<WfEvent, HbaseExifData> {
     static public final String MANAGED_CLASS = "HbaseExifData";
     @Autowired
@@ -30,6 +34,7 @@ public class PersistExifRecord implements IPersistRecordsInDatabase<WfEvent, Hba
             .supplyAsync(() -> this.recordCollectionOf(listOfRecords), Executors.newVirtualThreadPerTaskExecutor());
     }
 
+    @Timed
     private Collection<WfEvent> recordCollectionOf(Collection<HbaseExifData> listOfRecords) {
         try {
             listOfRecords = listOfRecords.stream()

@@ -273,6 +273,30 @@
   } ]
 }, {
   "type" : "record",
+  "name" : "WfEventError",
+  "namespace" : "com.workflow.model.events",
+  "fields" : [ {
+    "name" : "error",
+    "type" : "string"
+  }, {
+    "name" : "imgId",
+    "type" : "string"
+  }, {
+    "name" : "parentDataId",
+    "type" : "string"
+  }, {
+    "name" : "step",
+    "type" : "WfEventStep"
+  }, {
+    "name" : "dataCreationDate",
+    "type" : "long"
+  }, {
+    "name" : "dataId",
+    "type" : [ "null", "string" ],
+    "default" : null
+  } ]
+}, {
+  "type" : "record",
   "name" : "WfEventFinal",
   "namespace" : "com.workflow.model.events",
   "fields" : [ {

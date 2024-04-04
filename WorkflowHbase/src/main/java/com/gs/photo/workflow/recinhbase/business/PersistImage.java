@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.workflow.recinhbase.dao.HbaseImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
@@ -20,7 +21,10 @@ import com.workflow.model.events.WfEventRecorded;
 import com.workflow.model.events.WfEventRecorded.RecordedEventType;
 import com.workflow.model.events.WfEventStep;
 
+import io.micrometer.core.annotation.Timed;
+
 @Service(PersistImage.MANAGED_CLASS)
+@TimedBean
 public class PersistImage implements IPersistRecordsInDatabase<WfEvent, HbaseImageThumbnail> {
 
     static public final String       MANAGED_CLASS = "HbaseImageThumbnail";
@@ -64,6 +68,7 @@ public class PersistImage implements IPersistRecordsInDatabase<WfEvent, HbaseIma
         return f.thenCompose(future::thenApply);
     }
 
+    @Timed
     private Collection<WfEvent> recordCollectionBySimpleAppending(Collection<HbaseImageThumbnail> listOfRecords) {
         try {
             listOfRecords = listOfRecords.stream()
@@ -79,6 +84,7 @@ public class PersistImage implements IPersistRecordsInDatabase<WfEvent, HbaseIma
 
     }
 
+    @Timed
     private Collection<WfEvent> recordCollectionByAppendingToTableFamily(
         Collection<HbaseImageThumbnail> listOfRecords
     ) {

@@ -413,7 +413,6 @@ public class KafkaUtils {
         private boolean                             firstSplit = true;
         private int                                 nbOfProcessedRecords;
         final protected BeforeProcessBatchAction<T> beforeProcessAction;
-        protected Optional<TimeMeasurement>         timeMeasurement;
 
         @Override
         public Spliterator<Collection<ConsumerRecord<K, V>>> trySplit() {
@@ -431,7 +430,6 @@ public class KafkaUtils {
                         this.firstSplit = false;
                         this.beforeProcessAction.accept(t, this.context);
                         this.nbOfProcessedRecords = t;
-                        this.timeMeasurement.ifPresent(tm -> tm.addStep("Start of processing records " + t));
                     });
             }
             return nextRecords.map(t -> new ConsumerAllRecordsByBatchSpliterator<>(t, this.batchSize))
@@ -454,8 +452,7 @@ public class KafkaUtils {
             Consumer<K, V> consumer,
             int pollDurationInMs,
             int batchSize,
-            BeforeProcessBatchAction<T> beforeProcessAction,
-            TimeMeasurement timeMeasurement
+            BeforeProcessBatchAction<T> beforeProcessAction
         ) {
             this.context = context;
             this.pollDurationInMs = pollDurationInMs;
@@ -463,7 +460,6 @@ public class KafkaUtils {
             this.characteristics = Spliterator.IMMUTABLE;
             this.batchSize = batchSize;
             this.beforeProcessAction = beforeProcessAction;
-            this.timeMeasurement = Optional.ofNullable(timeMeasurement);
         }
 
     }
@@ -488,16 +484,10 @@ public class KafkaUtils {
         int pollDurationInMs,
         int batchSize,
         boolean parallelStream,
-        BeforeProcessBatchAction<T> beforeProcessAction,
-        TimeMeasurement timeMeasurement
+        BeforeProcessBatchAction<T> beforeProcessAction
     ) {
         return StreamSupport.stream(
-            new ConsumerBatchRecordsSpliterator<>(context,
-                consumer,
-                pollDurationInMs,
-                batchSize,
-                beforeProcessAction,
-                timeMeasurement),
+            new ConsumerBatchRecordsSpliterator<>(context, consumer, pollDurationInMs, batchSize, beforeProcessAction),
             parallelStream);
 
     }
