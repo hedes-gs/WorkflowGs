@@ -70,7 +70,6 @@ import com.workflow.model.files.FileToProcess;
 
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 
 @Service
@@ -206,9 +205,6 @@ public class BeanProcessIncomingFile implements IProcessIncomingFiles {
     ) throws Throwable {
         boolean end = false;
         boolean recover = true;
-        Observation observation = Observation.createNotStarted("sample", this.observationRegistry);
-        BeanProcessIncomingFile.local.set(this.meterRegistry);
-
         while (!end) {
             try {
                 this.processRecords(

@@ -1,4 +1,4 @@
-package com.gs.photo.workflow.archive;
+package com.gs.photo.workflow.archive.ports;
 
 import java.io.IOException;
 import java.security.PrivilegedAction;
