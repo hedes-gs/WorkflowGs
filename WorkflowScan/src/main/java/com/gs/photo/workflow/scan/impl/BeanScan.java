@@ -18,10 +18,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.gs.instrumentation.KafkaSpy;
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.common.workflow.impl.AbstractRemoteFile;
-import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.scan.IScan;
 import com.gs.photo.workflow.scan.business.IRetrieveFilesFromFolder;
 import com.gs.photo.workflow.scan.config.SpecificApplicationProperties;
@@ -31,6 +31,8 @@ import com.workflow.model.events.ComponentEvent.ComponentStatus;
 import com.workflow.model.events.ComponentEvent.ComponentType;
 import com.workflow.model.events.ImportEvent;
 import com.workflow.model.files.FileToProcess;
+
+import io.micrometer.core.annotation.Timed;
 
 @Component
 public class BeanScan implements IScan {
@@ -55,9 +57,6 @@ public class BeanScan implements IScan {
     private static final String                          EXTENSTION_EIP = "EIP";
     @Autowired
     protected IBeanTaskExecutor                          beanTaskExecutor;
-
-    @Autowired
-    protected FileUtils                                  fileUtils;
 
     @Autowired
     protected IRetrieveFilesFromFolder                   retrieveFilesFromFolder;
@@ -110,39 +109,7 @@ public class BeanScan implements IScan {
                         .topicImportEvent()));
             while (true) {
                 try {
-                    ConsumerRecords<String, ImportEvent> records = consumerForComponentEvent
-                        .poll(Duration.ofSeconds(this.applicationProperties.getHeartBeatTime()));
-                    Set<TopicPartition> partitions = consumerForComponentEvent.assignment();
-                    consumerForComponentEvent.commitSync();
-                    consumerForComponentEvent.pause(partitions);
-
-                    records.forEach(t -> {
-                        ImportEvent importEvent = t.value();
-                        BeanScan.LOGGER.info(
-                            "Start scan for {}, url is {} -  test mode is {} - nb max {}",
-                            this.createScanName,
-                            importEvent.getUrlScanFolder(),
-                            importEvent.isForTest(),
-                            importEvent.getNbMaxOfImages());
-                        if (importEvent.isForTest()) {
-                            this.retrieveFilesFromFolder.process(
-                                importEvent.getUrlScanFolder(),
-                                (f) -> this.publishMainFile(producerForPublishingOnFileTopic, importEvent, f),
-                                (associatedFile, f) -> this
-                                    .publishSubFile(producerForPublishingOnFileTopic, importEvent, associatedFile, f),
-                                importEvent.getNbMaxOfImages());
-
-                        } else {
-                            this.retrieveFilesFromFolder.process(
-                                importEvent.getUrlScanFolder(),
-                                (f) -> this.publishMainFile(producerForPublishingOnFileTopic, importEvent, f),
-                                (associatedFile, f) -> this
-                                    .publishSubFile(producerForPublishingOnFileTopic, importEvent, associatedFile, f));
-                        }
-                        BeanScan.LOGGER.info("End of Scan ");
-                    });
-                    consumerForComponentEvent.resume(partitions);
-
+                    this.processRecords(producerForPublishingOnFileTopic, consumerForComponentEvent);
                 } catch (RuntimeException e) {
                     BeanScan.LOGGER.warn("Unexpected error ", e);
                 } catch (Exception e) {
@@ -155,6 +122,46 @@ public class BeanScan implements IScan {
 
             }
         }
+    }
+
+    @KafkaSpy
+    @Timed
+    private void processRecords(
+        Producer<String, FileToProcess> producerForPublishingOnFileTopic,
+        Consumer<String, ImportEvent> consumerForComponentEvent
+    ) {
+        ConsumerRecords<String, ImportEvent> records = consumerForComponentEvent
+            .poll(Duration.ofSeconds(this.applicationProperties.getHeartBeatTime()));
+        Set<TopicPartition> partitions = consumerForComponentEvent.assignment();
+        consumerForComponentEvent.commitSync();
+        consumerForComponentEvent.pause(partitions);
+
+        records.forEach(t -> {
+            ImportEvent importEvent = t.value();
+            BeanScan.LOGGER.info(
+                "Start scan for {}, url is {} -  test mode is {} - nb max {}",
+                this.createScanName,
+                importEvent.getUrlScanFolder(),
+                importEvent.isForTest(),
+                importEvent.getNbMaxOfImages());
+            if (importEvent.isForTest()) {
+                this.retrieveFilesFromFolder.process(
+                    importEvent.getUrlScanFolder(),
+                    (f) -> this.publishMainFile(producerForPublishingOnFileTopic, importEvent, f),
+                    (associatedFile, f) -> this
+                        .publishSubFile(producerForPublishingOnFileTopic, importEvent, associatedFile, f),
+                    importEvent.getNbMaxOfImages());
+
+            } else {
+                this.retrieveFilesFromFolder.process(
+                    importEvent.getUrlScanFolder(),
+                    (f) -> this.publishMainFile(producerForPublishingOnFileTopic, importEvent, f),
+                    (associatedFile, f) -> this
+                        .publishSubFile(producerForPublishingOnFileTopic, importEvent, associatedFile, f));
+            }
+            BeanScan.LOGGER.info("End of Scan ");
+        });
+        consumerForComponentEvent.resume(partitions);
     }
 
     private void publishMainFile(

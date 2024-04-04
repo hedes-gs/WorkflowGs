@@ -16,11 +16,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.gs.instrumentation.TimedBean;
 import com.gs.photo.common.workflow.impl.AbstractRemoteFile;
 import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.scan.config.SpecificApplicationProperties;
 
+import io.micrometer.core.annotation.Timed;
+
 @Service
+@TimedBean
 public class RetrieveFilesFromFolder implements IRetrieveFilesFromFolder {
 
     protected static final org.slf4j.Logger LOGGER                  = LoggerFactory
@@ -42,6 +46,7 @@ public class RetrieveFilesFromFolder implements IRetrieveFilesFromFolder {
     protected ReentrantReadWriteLock        lock                    = new ReentrantReadWriteLock();
 
     @Override
+    @Timed
     public void process(
         String url,
         Consumer<AbstractRemoteFile> consumerMainFile,
@@ -97,6 +102,7 @@ public class RetrieveFilesFromFolder implements IRetrieveFilesFromFolder {
     }
 
     @Override
+    @Timed
     public void process(
         String url,
         Consumer<AbstractRemoteFile> consumerMainFile,

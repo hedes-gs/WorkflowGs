@@ -20,9 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.gs.photo.common.workflow.IKafkaStreamProperties;
 import com.gs.photo.common.workflow.IStream;
 import com.gs.photo.workflow.dupcheck.IDuplicateCheck;
-import com.gs.photo.workflow.dupcheck.config.IKafkaStreamProperties;
 import com.gs.photos.serializers.FileToProcessSerDe;
 import com.workflow.model.files.FileToProcess;
 

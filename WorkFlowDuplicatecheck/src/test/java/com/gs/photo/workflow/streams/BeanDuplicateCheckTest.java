@@ -23,9 +23,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.gs.photo.common.workflow.IKafkaStreamProperties;
 import com.gs.photo.workflow.dupcheck.ApplicationConfig;
 import com.gs.photo.workflow.dupcheck.IDuplicateCheck;
-import com.gs.photo.workflow.dupcheck.config.IKafkaStreamProperties;
 import com.gs.photos.serializers.FileToProcessDeserializer;
 import com.gs.photos.serializers.FileToProcessSerializer;
 import com.workflow.model.events.ImportEvent;
@@ -41,7 +41,7 @@ public class BeanDuplicateCheckTest {
 
     @Autowired
     @MockBean
-    public Void                      duplicateCheckInit;
+    public Void                      processAndPublishExifDataInit;
 
     @Autowired
     @Qualifier("kafkaStreamTopologyProperties")

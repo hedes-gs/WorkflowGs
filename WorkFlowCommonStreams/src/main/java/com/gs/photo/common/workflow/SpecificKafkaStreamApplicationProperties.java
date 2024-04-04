@@ -1,8 +1,6 @@
-package com.gs.photo.workflow.dupcheck.config;
+package com.gs.photo.common.workflow;
 
-import com.gs.photo.common.workflow.AbstractApplicationKafkaProperties;
-
-public class ApplicationSpecificProperties extends AbstractApplicationKafkaProperties
+public class SpecificKafkaStreamApplicationProperties extends AbstractApplicationKafkaProperties
     implements IKafkaStreamProperties {
 
     protected String  kafkaStreamDir;

@@ -1,6 +1,4 @@
-package com.gs.photo.workflow.dupcheck.config;
-
-import com.gs.photo.common.workflow.IKafkaProperties;
+package com.gs.photo.common.workflow;
 
 public interface IKafkaStreamProperties extends IKafkaProperties {
     public String getKafkaStreamDir();
