@@ -942,12 +942,6 @@
     "name" : "path",
     "type" : "string"
   }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
     "name" : "originalWidth",
     "type" : "long"
   }, {
@@ -1066,12 +1060,6 @@
   }, {
     "name" : "path",
     "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
   }, {
     "name" : "originalWidth",
     "type" : "long"
@@ -1192,12 +1180,6 @@
     "name" : "path",
     "type" : "string"
   }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
     "name" : "originalWidth",
     "type" : "long"
   }, {
@@ -1313,12 +1295,6 @@
   }, {
     "name" : "path",
     "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
   }, {
     "name" : "originalWidth",
     "type" : "long"
@@ -1439,12 +1415,6 @@
     "name" : "path",
     "type" : "string"
   }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
     "name" : "originalWidth",
     "type" : "long"
   }, {
@@ -1564,12 +1534,6 @@
     "name" : "path",
     "type" : "string"
   }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
     "name" : "originalWidth",
     "type" : "long"
   }, {
@@ -1677,27 +1641,6 @@
     "name" : "thumbName",
     "type" : "string"
   }, {
-    "name" : "path",
-    "type" : "string"
-  }, {
-    "name" : "width",
-    "type" : "long"
-  }, {
-    "name" : "height",
-    "type" : "long"
-  }, {
-    "name" : "originalWidth",
-    "type" : "long"
-  }, {
-    "name" : "originalHeight",
-    "type" : "long"
-  }, {
-    "name" : "importDate",
-    "type" : "long"
-  }, {
-    "name" : "orientation",
-    "type" : "long"
-  }, {
     "name" : "thumbnail",
     "type" : {
       "type" : "array",
@@ -1715,6 +1658,21 @@
       },
       "java-class" : "java.util.HashMap"
     }
+  }, {
+    "name" : "path",
+    "type" : "string"
+  }, {
+    "name" : "originalWidth",
+    "type" : "long"
+  }, {
+    "name" : "originalHeight",
+    "type" : "long"
+  }, {
+    "name" : "importDate",
+    "type" : "long"
+  }, {
+    "name" : "orientation",
+    "type" : "long"
   }, {
     "name" : "lens",
     "type" : [ "null", {

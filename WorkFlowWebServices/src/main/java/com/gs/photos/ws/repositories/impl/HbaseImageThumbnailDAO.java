@@ -61,7 +61,6 @@ import com.gs.photo.common.workflow.hbase.dao.GenericDAO;
 import com.gs.photo.common.workflow.hbase.dao.PageDescription;
 import com.gs.photos.ws.repositories.IHbaseImageThumbnailDAO;
 import com.workflow.model.HbaseImageThumbnail;
-import com.workflow.model.HbaseImagesOfMetadata;
 import com.workflow.model.ModelConstants;
 import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.dtos.ImageDto;
@@ -832,30 +831,6 @@ public class HbaseImageThumbnailDAO extends AbstractHbaseImageThumbnailDAO imple
             .withImageId(instance.getImageId())
             .withVersion(1);
         return builderImageKeyDto.build();
-    }
-
-    private ImageDto toImageDTO(HbaseImagesOfMetadata instance) {
-        ImageDto.Builder builderImageDto = ImageDto.builder();
-        ImageKeyDto.Builder builderImageKeyDto = ImageKeyDto.builder();
-        builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
-            .withImageId(instance.getImageId());
-
-        builderImageDto.withData(builderImageKeyDto.build())
-            .withOrientation((int) instance.getOrientation())
-            .withCreationDateAsString(DateTimeHelper.toDateTimeAsString(instance.getCreationDate()))
-            .withThumbnailHeight((int) instance.getHeight())
-            .withThumbnailWidth((int) instance.getWidth())
-            .withOriginalHeight((int) instance.getOriginalHeight())
-            .withOriginalWidth((int) instance.getOriginalWidth())
-            .withSpeed(this.exifService.toString(FieldType.RATIONAL, instance.getSpeed()))
-            .withAperture(this.exifService.toString(FieldType.RATIONAL, instance.getAperture()))
-            .withIso(Short.toString(instance.getIsoSpeed()))
-            .withCamera(instance.getCamera())
-            .withLens(new String(instance.getLens()))
-
-            .withImageName(instance.getImageName());
-
-        return builderImageDto.build();
     }
 
     @Override

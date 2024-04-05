@@ -63,7 +63,6 @@ import com.gs.photos.ws.repositories.impl.IHbaseImagesOfKeywordsDAO;
 import com.gs.photos.ws.repositories.impl.IHbaseImagesOfPersonsDAO;
 import com.gs.photos.ws.repositories.impl.IHbaseImagesOfRatingsDAO;
 import com.workflow.model.HbaseImageThumbnail;
-import com.workflow.model.HbaseImagesOfMetadata;
 import com.workflow.model.SizeAndJpegContent;
 import com.workflow.model.dtos.ImageDto;
 import com.workflow.model.dtos.ImageKeyDto;
@@ -643,30 +642,6 @@ public class HbaseImageThumbnailService implements IHbaseImageThumbnailService {
             .withCamera(instance.getCamera())
             .withLens(instance.getLens() != null ? new String(instance.getLens()) : "Lens is unknown")
             // .withRatings(instance.getRatings())
-            .withImageName(instance.getImageName());
-
-        return builderImageDto.build();
-    }
-
-    private ImageDto toImageDTO(HbaseImagesOfMetadata instance) {
-        ImageDto.Builder builderImageDto = ImageDto.builder();
-        ImageKeyDto.Builder builderImageKeyDto = ImageKeyDto.builder();
-        builderImageKeyDto.withCreationDate(DateTimeHelper.toLocalDateTime(instance.getCreationDate()))
-            .withImageId(instance.getImageId());
-
-        builderImageDto.withData(builderImageKeyDto.build())
-            .withOrientation((int) instance.getOrientation())
-            .withCreationDateAsString(DateTimeHelper.toDateTimeAsString(instance.getCreationDate()))
-            .withThumbnailHeight((int) instance.getHeight())
-            .withThumbnailWidth((int) instance.getWidth())
-            .withOriginalHeight((int) instance.getOriginalHeight())
-            .withOriginalWidth((int) instance.getOriginalWidth())
-            .withSpeed(this.exifService.toString(FieldType.RATIONAL, instance.getSpeed()))
-            .withAperture(this.exifService.toString(FieldType.RATIONAL, instance.getAperture()))
-            .withIso(Short.toString(instance.getIsoSpeed()))
-            .withCamera(instance.getCamera())
-            .withLens(new String(instance.getLens()))
-
             .withImageName(instance.getImageName());
 
         return builderImageDto.build();

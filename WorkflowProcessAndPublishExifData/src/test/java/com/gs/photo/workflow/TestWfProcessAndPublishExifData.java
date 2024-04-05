@@ -328,8 +328,6 @@ public class TestWfProcessAndPublishExifData {
         map.put(2, sizeAndJpegContent);
         HbaseImageThumbnail.Builder builder = HbaseImageThumbnail.builder();
         builder.withCreationDate(TestWfProcessAndPublishExifData.CREATION_DATE)
-            .withHeight(TestWfProcessAndPublishExifData.HEIGHT)
-            .withWidth(TestWfProcessAndPublishExifData.WIDTH)
             .withImageId(TestWfProcessAndPublishExifData.IMGID)
             .withImageName(TestWfProcessAndPublishExifData.IMG_NAME)
             .withDataId(TestWfProcessAndPublishExifData.ID)
