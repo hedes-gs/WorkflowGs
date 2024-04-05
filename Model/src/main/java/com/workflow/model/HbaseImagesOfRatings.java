@@ -21,8 +21,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
         this.imageName = builder.imageName;
         this.thumbName = builder.thumbName;
         this.path = builder.path;
-        this.width = builder.width;
-        this.height = builder.height;
         this.originalWidth = builder.originalWidth;
         this.originalHeight = builder.originalHeight;
         this.importDate = builder.importDate;
@@ -81,10 +79,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
         builder2.append(this.thumbName);
         builder2.append(", path=");
         builder2.append(this.path);
-        builder2.append(", width=");
-        builder2.append(this.width);
-        builder2.append(", height=");
-        builder2.append(this.height);
         builder2.append(", originalWidth=");
         builder2.append(this.originalWidth);
         builder2.append(", originalHeight=");
@@ -196,7 +190,6 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
                 .withCreationDate(hbi.getCreationDate())
                 .withDataId(hbi.getDataId())
                 .withFocalLens(hbi.getFocalLens())
-                .withHeight(hbi.getHeight())
                 .withImageId(hbi.getImageId())
                 .withImageName(hbi.getImageName())
                 .withImportDate(hbi.getImportDate())
@@ -209,8 +202,7 @@ public class HbaseImagesOfRatings extends HbaseImagesOfMetadata {
                 .withPath(hbi.getPath())
                 .withShiftExpo(hbi.getShiftExpo())
                 .withSpeed(hbi.getSpeed())
-                .withThumbName(hbi.getThumbName())
-                .withWidth(hbi.getWidth());
+                .withThumbName(hbi.getThumbName());
         }
 
         private Builder() {}

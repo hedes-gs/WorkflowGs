@@ -22,8 +22,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
         this.imageName = builder.imageName;
         this.thumbName = builder.thumbName;
         this.path = builder.path;
-        this.width = builder.width;
-        this.height = builder.height;
         this.originalWidth = builder.originalWidth;
         this.originalHeight = builder.originalHeight;
         this.importDate = builder.importDate;
@@ -57,10 +55,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
         builder2.append(this.thumbName);
         builder2.append(", path=");
         builder2.append(this.path);
-        builder2.append(", width=");
-        builder2.append(this.width);
-        builder2.append(", height=");
-        builder2.append(this.height);
         builder2.append(", originalWidth=");
         builder2.append(this.originalWidth);
         builder2.append(", originalHeight=");
@@ -174,8 +168,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
         private String          imageName;
         private String          thumbName;
         private String          path;
-        private long            width;
-        private long            height;
         private long            originalWidth;
         private long            originalHeight;
         private long            importDate;
@@ -202,7 +194,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
                 .withCreationDate(hbi.getCreationDate())
                 .withDataId(hbi.getDataId())
                 .withFocalLens(hbi.getFocalLens())
-                .withHeight(hbi.getHeight())
                 .withImageId(hbi.getImageId())
                 .withImageName(hbi.getImageName())
                 .withImportDate(hbi.getImportDate())
@@ -216,7 +207,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
                 .withShiftExpo(hbi.getShiftExpo())
                 .withSpeed(hbi.getSpeed())
                 .withThumbName(hbi.getThumbName())
-                .withWidth(hbi.getWidth())
                 .withImportActualName(
                     hbi.getImportName() != null ? hbi.getImportName()
                         .stream()
@@ -310,30 +300,6 @@ public class HbaseImagesOfImport extends HbaseImagesOfMetadata {
          */
         public Builder withPath(String path) {
             this.path = path;
-            return this;
-        }
-
-        /**
-         * Builder method for width parameter.
-         *
-         * @param width
-         *            field to set
-         * @return builder
-         */
-        public Builder withWidth(long width) {
-            this.width = width;
-            return this;
-        }
-
-        /**
-         * Builder method for height parameter.
-         *
-         * @param height
-         *            field to set
-         * @return builder
-         */
-        public Builder withHeight(long height) {
-            this.height = height;
             return this;
         }
 

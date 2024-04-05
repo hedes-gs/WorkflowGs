@@ -58,8 +58,6 @@ public class TestHbaseImageThumbnailSerDeUT {
                 .withWidth(768)
                 .build());
         HbaseImageThumbnail hbaseImageThumbnail = builder.withCreationDate(100)
-            .withHeight(768)
-            .withWidth(1024)
             .withImageId("<img>")
             .withPath("/test")
             .withDataId("<dataId>")

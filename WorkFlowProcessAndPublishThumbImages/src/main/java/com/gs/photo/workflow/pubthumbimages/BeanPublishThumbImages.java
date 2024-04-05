@@ -37,6 +37,7 @@ import com.gs.photo.common.ks.transformers.AdvancedMapCollector;
 import com.gs.photo.common.ks.transformers.MapCollector;
 import com.gs.photo.common.workflow.DateTimeHelper;
 import com.gs.photo.common.workflow.IKafkaStreamProperties;
+import com.gs.photo.common.workflow.LoggerWrapper;
 import com.gs.photo.common.workflow.exif.FieldType;
 import com.gs.photo.common.workflow.exif.IExifService;
 import com.gs.photo.common.workflow.hbase.dao.AbstractHbaseStatsDAO;
@@ -59,11 +60,12 @@ import com.workflow.model.events.WfEvents;
 import com.workflow.model.files.FileToProcess;
 import com.workflow.model.storm.FinalImage;
 
-@Service 
+@Service
 public class BeanPublishThumbImages implements IBeanPublishThumbImages {
 
-    private static Logger                   LOGGER  = LoggerFactory.getLogger(BeanPublishThumbImages.class);
-    private static final String             NOT_SET = "<not set>";
+    private static Logger                   LOGGER         = LoggerFactory.getLogger(BeanPublishThumbImages.class);
+    private static LoggerWrapper            LOGGER_WRAPPER = new LoggerWrapper(BeanPublishThumbImages.LOGGER);
+    private static final String             NOT_SET        = "<not set>";
 
     @Autowired
     protected SpecificApplicationProperties specificApplicationProperties;
@@ -168,7 +170,8 @@ public class BeanPublishThumbImages implements IBeanPublishThumbImages {
     }
 
     private boolean isARecordedField(String key, ExchangedTiffData hbaseExifData) {
-
+        BeanPublishThumbImages.LOGGER
+            .info("Received {} ", IBeanPublishThumbImages.ALL_EXIFS.get(hbaseExifData.getTag()));
         return ((hbaseExifData.getTag() == IBeanPublishThumbImages.EXIF_CREATION_DATE_ID)
             && (Objects.deepEquals(hbaseExifData.getPath(), IBeanPublishThumbImages.EXIF_CREATION_DATE_ID_PATH)))
 
@@ -214,6 +217,19 @@ public class BeanPublishThumbImages implements IBeanPublishThumbImages {
     }
 
     private boolean isComplete(String k, Collection<ExchangedTiffData> values) {
+
+        BeanPublishThumbImages.LOGGER_WRAPPER.debug((logger) -> {
+            Collection<Short> all = values.stream()
+                .map(t -> t.getTag())
+                .collect(Collectors.toSet());
+            logger.info(
+                "Remaining {}",
+                IBeanPublishThumbImages.ALL_EXIFS.entrySet()
+                    .stream()
+                    .filter(t -> !all.contains(t.getKey()))
+                    .collect(Collectors.toList()));
+        });
+
         if (values.size() == 14) {
             BeanPublishThumbImages.LOGGER.info("[EVENT}[{}] Found {} values, key is completed", k, values.size());
         } else if (values.size() > 14) {
@@ -399,7 +415,7 @@ public class BeanPublishThumbImages implements IBeanPublishThumbImages {
         String topicTransformedThumb
     ) {
         BeanPublishThumbImages.LOGGER
-            .info("building ktable from topic topicTransformedThumb {}", topicTransformedThumb);
+            .info("building kstream from topic topicTransformedThumb {}", topicTransformedThumb);
 
         KStream<String, FinalImage> stream = streamsBuilder
             .stream(topicTransformedThumb, Consumed.with(Serdes.String(), new FinalImageSerDe()))
@@ -414,9 +430,13 @@ public class BeanPublishThumbImages implements IBeanPublishThumbImages {
         StreamsBuilder streamsBuilder,
         String topicExif
     ) {
-        BeanPublishThumbImages.LOGGER.info("building ktable from topic topicExif {}", topicExif);
+        BeanPublishThumbImages.LOGGER.info("building kstream from topic topicExif {}", topicExif);
         KStream<String, ExchangedTiffData> stream = streamsBuilder
-            .stream(topicExif, Consumed.with(Serdes.String(), new ExchangedDataSerDe()));
+            .stream(topicExif, Consumed.with(Serdes.String(), new ExchangedDataSerDe()))
+            .peek((key, exif) -> {
+                BeanPublishThumbImages.LOGGER
+                    .info("[EVENT][{}] received the exif with version {} ", key, exif.getTag());
+            });
         return stream;
     }
 
@@ -425,7 +445,8 @@ public class BeanPublishThumbImages implements IBeanPublishThumbImages {
         String topicImageDataToPersist
     ) {
         BeanPublishThumbImages.LOGGER.info("building finalStream to publish in  {}", topicImageDataToPersist);
-        finalStream.to(topicImageDataToPersist, Produced.with(Serdes.String(), new HbaseImageThumbnailSerDe()));
+        finalStream.peek((k, v) -> BeanPublishThumbImages.LOGGER_WRAPPER.info((l) -> l.info("Publishing {},{} ", k, v)))
+            .to(topicImageDataToPersist, Produced.with(Serdes.String(), new HbaseImageThumbnailSerDe()));
     }
 
     private void publishEventInEventTopic(KStream<String, WfEvents> eventStream, String topicEvent) {

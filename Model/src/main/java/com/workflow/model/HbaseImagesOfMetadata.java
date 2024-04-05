@@ -29,17 +29,13 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
 
     @Column(hbaseName = "path", rowKeyNumber = 103, toByte = ToByteString.class, columnFamily = "img")
     protected String          path             = "";
-    @Column(hbaseName = "width", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            width;
-    @Column(hbaseName = "height", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
-    protected long            height;
-    @Column(hbaseName = "originalWidth", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "originalWidth", rowKeyNumber = 104, toByte = ToByteLong.class, columnFamily = "sz")
     protected long            originalWidth;
-    @Column(hbaseName = "originalHeight", rowKeyNumber = 107, toByte = ToByteLong.class, columnFamily = "sz")
+    @Column(hbaseName = "originalHeight", rowKeyNumber = 105, toByte = ToByteLong.class, columnFamily = "sz")
     protected long            originalHeight;
-    @Column(hbaseName = "importDate", rowKeyNumber = 108, toByte = ToByteLong.class, columnFamily = "img")
+    @Column(hbaseName = "importDate", rowKeyNumber = 106, toByte = ToByteLong.class, columnFamily = "img")
     protected long            importDate;
-    @Column(hbaseName = "orientation", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 109)
+    @Column(hbaseName = "orientation", toByte = ToByteLong.class, columnFamily = "img", rowKeyNumber = 107)
     protected long            orientation;
 
     @Nullable
@@ -99,14 +95,6 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
     public String getPath() { return this.path; }
 
     public void setPath(String path) { this.path = path; }
-
-    public long getWidth() { return this.width; }
-
-    public void setWidth(long width) { this.width = width; }
-
-    public long getHeight() { return this.height; }
-
-    public void setHeight(long height) { this.height = height; }
 
     public long getOriginalWidth() { return this.originalWidth; }
 
@@ -182,10 +170,6 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
         builder.append(this.thumbName);
         builder.append(", path=");
         builder.append(this.path);
-        builder.append(", width=");
-        builder.append(this.width);
-        builder.append(", height=");
-        builder.append(this.height);
         builder.append(", originalWidth=");
         builder.append(this.originalWidth);
         builder.append(", originalHeight=");
@@ -244,7 +228,6 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
             this.camera,
             this.copyright,
             this.creationDate,
-            this.height,
             this.imageId,
             this.imageName,
             this.importDate,
@@ -254,8 +237,7 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
             this.originalHeight,
             this.originalWidth,
             this.path,
-            this.thumbName,
-            this.width);
+            this.thumbName);
         return result;
     }
 
@@ -268,14 +250,13 @@ public class HbaseImagesOfMetadata extends HbaseData implements Comparable<Hbase
         return Arrays.equals(this.aperture, other.aperture) && Objects.equals(this.artist, other.artist)
             && Objects.equals(this.camera, other.camera) && Objects.equals(this.copyright, other.copyright)
             && (this.creationDate == other.creationDate) && Arrays.equals(this.focalLens, other.focalLens)
-            && (this.height == other.height) && Objects.equals(this.imageId, other.imageId)
-            && Objects.equals(this.imageName, other.imageName) && (this.importDate == other.importDate)
-            && Objects.equals(this.importName, other.importName) && (this.isoSpeed == other.isoSpeed)
-            && Arrays.equals(this.lens, other.lens) && (this.orientation == other.orientation)
-            && (this.originalHeight == other.originalHeight) && (this.originalWidth == other.originalWidth)
-            && Objects.equals(this.path, other.path) && Arrays.equals(this.shiftExpo, other.shiftExpo)
-            && Arrays.equals(this.speed, other.speed) && Objects.equals(this.thumbName, other.thumbName)
-            && (this.width == other.width);
+            && Objects.equals(this.imageId, other.imageId) && Objects.equals(this.imageName, other.imageName)
+            && (this.importDate == other.importDate) && Objects.equals(this.importName, other.importName)
+            && (this.isoSpeed == other.isoSpeed) && Arrays.equals(this.lens, other.lens)
+            && (this.orientation == other.orientation) && (this.originalHeight == other.originalHeight)
+            && (this.originalWidth == other.originalWidth) && Objects.equals(this.path, other.path)
+            && Arrays.equals(this.shiftExpo, other.shiftExpo) && Arrays.equals(this.speed, other.speed)
+            && Objects.equals(this.thumbName, other.thumbName);
     }
 
     private String toString(Collection<?> collection, int maxLen) {

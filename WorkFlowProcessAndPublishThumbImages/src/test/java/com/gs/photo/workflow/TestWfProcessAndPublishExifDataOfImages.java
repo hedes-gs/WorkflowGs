@@ -11,9 +11,9 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.TestOutputTopic;
+import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.test.TestRecord;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterEach;
@@ -70,6 +70,9 @@ public class TestWfProcessAndPublishExifDataOfImages {
     // .build();
     private static final FileToProcess                     FILE_TO_PROCESS = FileToProcess.builder()
         .withUrl("nfs://ipc3:/path")
+        .withName("Mon file")
+        .withIsLocal(false)
+        .withImageId(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY)
         .withImportEvent(
             ImportEvent.builder()
                 .withAlbum("album")
@@ -107,17 +110,21 @@ public class TestWfProcessAndPublishExifDataOfImages {
 
     public static void setUpBeforeClass() throws Exception {}
 
-    @After
-    public void close() { this.testDriver.close(); }
-
     @BeforeEach
     public void setUp() {
         final File directoryToBeDeleted = new File(this.specificKafkaStreamApplicationProperties.getKafkaStreamDir());
-        if (directoryToBeDeleted.exists()) {
+        if ((directoryToBeDeleted.exists() && directoryToBeDeleted.getName()
+            .startsWith("./tmp")) || directoryToBeDeleted.getName()
+                .startsWith(".\\tmp")) {
             this.deleteDirectory(directoryToBeDeleted);
         }
-        this.testDriver = new TopologyTestDriver(this.beanPublishThumbImages.buildKafkaStreamsTopology(),
-            this.kafkaStreamTopologyProperties);
+        final Topology kafkaStreamsTopology = this.beanPublishThumbImages.buildKafkaStreamsTopology();
+        this.testDriver = new TopologyTestDriver(kafkaStreamsTopology, this.kafkaStreamTopologyProperties);
+        TestWfProcessAndPublishExifDataOfImages.LOGGER.info(
+            "... {} - {}",
+            this.testDriver.producedTopicNames(),
+            kafkaStreamsTopology.describe()
+                .toString());
 
         this.inputExifForExchangedTiffDataTopic = this.testDriver.createInputTopic(
             this.specificKafkaStreamApplicationProperties.getTopics()
@@ -126,12 +133,12 @@ public class TestWfProcessAndPublishExifDataOfImages {
             new ExchangedDataSerializer());
         this.inputTopicTransformedThumb = this.testDriver.createInputTopic(
             this.specificKafkaStreamApplicationProperties.getTopics()
-                .topicImageDataToPersist(),
+                .topicTransformedThumb(),
             new StringSerializer(),
             new FinalImageSerializer());
         this.inputTopicDupFilteredFile = this.testDriver.createInputTopic(
             this.specificKafkaStreamApplicationProperties.getTopics()
-                .topicImageDataToPersist(),
+                .topicDupFilteredFile(),
             new StringSerializer(),
             new FileToProcessSerializer());
         this.outputTopicExifImageDataToPerist = this.testDriver.createOutputTopic(
@@ -149,7 +156,17 @@ public class TestWfProcessAndPublishExifDataOfImages {
     }
 
     @AfterEach
-    public void closeAll() {}
+    public void closeAll() {
+
+        final File directoryToBeDeleted = new File(this.specificKafkaStreamApplicationProperties.getKafkaStreamDir());
+        TestWfProcessAndPublishExifDataOfImages.LOGGER.info("deleting {} ", directoryToBeDeleted);
+        if ((directoryToBeDeleted.exists() && directoryToBeDeleted.getName()
+            .startsWith("./tmp")) || directoryToBeDeleted.getName()
+                .startsWith(".\\tmp")) {
+            this.deleteDirectory(directoryToBeDeleted);
+        }
+        this.testDriver.close();
+    }
 
     @Test
     public void test001_shouldRetrieveOneHbaseImageThumbnailWhenOneExifOneImagePathAndOneFinalImageArePublished() {
@@ -233,6 +250,12 @@ public class TestWfProcessAndPublishExifDataOfImages {
             new short[] { (short) 0 },
             "A9".getBytes());
 
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
+
         FinalImage inputFinalImage = this.createConsumerRecordForTopicTransformedThumb(key);
 
         this.inputTopicDupFilteredFile
@@ -265,12 +288,14 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
+        Assert.assertTrue(!this.outputTopicExifImageDataToPerist.isEmpty());
         KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
         Assert.assertNotNull(outputRecord);
         Assert.assertEquals("1234", outputRecord.key);
-        outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
     }
 
     @Test
@@ -357,6 +382,12 @@ public class TestWfProcessAndPublishExifDataOfImages {
             IBeanPublishThumbImages.EXIF_CAMERA_MODEL,
             new short[] { (short) 0 },
             "A9".getBytes());
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
+
         this.inputTopicDupFilteredFile
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile));
         this.inputExifForExchangedTiffDataTopic
@@ -387,18 +418,19 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
         KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
         Assert.assertEquals("1234", outputRecord.key);
         Assert.assertEquals(
             DateTimeHelper.toEpochMillis(TestWfProcessAndPublishExifDataOfImages.EXIF_DATE),
             outputRecord.value.getCreationDate());
-        Assert.assertEquals(
+        Assert.assertArrayEquals(
             TestWfProcessAndPublishExifDataOfImages.COMPRESSED_DATA,
             outputRecord.value.getThumbnail()
-                .get(1));
-        Assert.assertEquals(TestWfProcessAndPublishExifDataOfImages.WIDTH, outputRecord.value.getWidth());
-        Assert.assertEquals(TestWfProcessAndPublishExifDataOfImages.HEIGHT, outputRecord.value.getHeight());
+                .get(1)
+                .getJpegContent());
         Assert.assertEquals(
             TestWfProcessAndPublishExifDataOfImages.FILE_TO_PROCESS.getUrl(),
             outputRecord.value.getPath());
@@ -422,8 +454,8 @@ public class TestWfProcessAndPublishExifDataOfImages {
         this.inputTopicTransformedThumb
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputFinalImage));
 
-        KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
+
     }
 
     @Test
@@ -441,8 +473,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
         this.inputTopicTransformedThumb
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputFinalImage));
 
-        KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
 
     }
 
@@ -462,8 +493,8 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputExchangedTiffData));
         this.inputTopicDupFilteredFile
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile));
-        KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
+
     }
 
     @Test
@@ -551,6 +582,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
             IBeanPublishThumbImages.EXIF_CAMERA_MODEL,
             new short[] { (short) 0 },
             "A9".getBytes());
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
 
         this.inputTopicDupFilteredFile
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile));
@@ -584,12 +620,13 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
         KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
         Assert.assertNotNull(outputRecord);
         Assert.assertEquals("1234", outputRecord.key);
-        KeyValue<String, HbaseImageThumbnail> outputRecord2 = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord2);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
     }
 
     @Test
@@ -676,6 +713,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
             IBeanPublishThumbImages.EXIF_CAMERA_MODEL,
             new short[] { (short) 0 },
             "A9".getBytes());
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
 
         FinalImage inputFinalImageWithSalt = this.createConsumerRecordForTopicTransformedThumb(
             KeysBuilder.topicThumbKeyBuilder()
@@ -693,8 +735,7 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdWidth));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdHeight));
-        this.inputTopicTransformedThumb
-            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputFinalImageWithSalt));
+        this.inputTopicTransformedThumb.pipeInput(new TestRecord<>("1235", inputFinalImageWithSalt));
         this.inputTopicTransformedThumb
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputFinalImage));
         this.inputExifForExchangedTiffDataTopic
@@ -715,12 +756,13 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
         KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
         Assert.assertNotNull(outputRecord);
         Assert.assertEquals("1234", outputRecord.key);
-        outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
     }
 
     @Test
@@ -808,10 +850,15 @@ public class TestWfProcessAndPublishExifDataOfImages {
             IBeanPublishThumbImages.EXIF_CAMERA_MODEL,
             new short[] { (short) 0 },
             "A9".getBytes());
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
+
         this.inputTopicDupFilteredFile
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile));
-        this.inputTopicDupFilteredFile
-            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile2));
+        this.inputTopicDupFilteredFile.pipeInput(new TestRecord<>("1235", inputDupFilteredFile2));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdCreationDate));
         this.inputExifForExchangedTiffDataTopic
@@ -840,12 +887,14 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
         KeyValue<String, HbaseImageThumbnail> outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
         Assert.assertNotNull(outputRecord);
         Assert.assertEquals("1234", outputRecord.key);
-        outputRecord = this.outputTopicExifImageDataToPerist.readKeyValue();
-        Assert.assertNull(outputRecord);
+        Assert.assertTrue(this.outputTopicExifImageDataToPerist.isEmpty());
+
     }
 
     @Test
@@ -931,6 +980,11 @@ public class TestWfProcessAndPublishExifDataOfImages {
             IBeanPublishThumbImages.EXIF_CAMERA_MODEL,
             new short[] { (short) 0 },
             "A9".getBytes());
+        ExchangedTiffData inputSonyExifLens = this.createConsumerRecordForTopicExifData(
+            key,
+            IBeanPublishThumbImages.SONY_EXIF_LENS,
+            IBeanPublishThumbImages.SONY_EXIF_LENS_PATH,
+            "A9".getBytes());
 
         this.inputTopicDupFilteredFile
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputDupFilteredFile));
@@ -962,20 +1016,21 @@ public class TestWfProcessAndPublishExifDataOfImages {
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdAperture));
         this.inputExifForExchangedTiffDataTopic
             .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputEtdSpeed));
+        this.inputExifForExchangedTiffDataTopic
+            .pipeInput(new TestRecord<>(TestWfProcessAndPublishExifDataOfImages.IMAGE_KEY, inputSonyExifLens));
 
         this.testDriver.advanceWallClockTime(Duration.ofMillis(101));
-        KeyValue<String, WfEvents> outputRecord = this.outputTopicEvent.readKeyValue();
+        KeyValue<String, WfEvents> outputRecord = null;
         boolean end = false;
 
         do {
+            outputRecord = this.outputTopicEvent.readKeyValue();
             Assert.assertEquals(outputRecord.key, "1234");
             Assert.assertEquals(
                 outputRecord.value.getEvents()
                     .size(),
                 1);
-            outputRecord = this.outputTopicEvent.readKeyValue();
-            end = outputRecord == null;
-
+            end = this.outputTopicEvent.isEmpty();
         } while (!end);
     }
 
