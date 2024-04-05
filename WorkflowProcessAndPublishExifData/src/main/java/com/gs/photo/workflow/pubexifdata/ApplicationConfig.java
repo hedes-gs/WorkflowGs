@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
+import com.gs.photo.common.workflow.AbstractApplicationConfig;
 import com.gs.photo.common.workflow.AbstractKafkaStreamApplication;
 import com.gs.photo.common.workflow.IKafkaStreamProperties;
 import com.gs.photo.common.workflow.SpecificKafkaStreamApplicationProperties;
@@ -40,7 +41,7 @@ public class ApplicationConfig extends AbstractKafkaStreamApplication {
     }
 
     @Bean
-    @ConfigurationProperties(prefix = "application-specific", ignoreUnknownFields = false)
+    @ConfigurationProperties(prefix = AbstractApplicationConfig.CONFIG_PREIFX_APPLICATION_SPECIFIC, ignoreUnknownFields = false)
     public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
 
     @Bean

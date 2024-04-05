@@ -80,7 +80,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     }
 
     @Bean
-    @ConfigurationProperties(prefix = "application-specific", ignoreUnknownFields = false)
+    @ConfigurationProperties(prefix = AbstractApplicationConfig.CONFIG_PREIFX_APPLICATION_SPECIFIC, ignoreUnknownFields = false)
     public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
 
     @Bean

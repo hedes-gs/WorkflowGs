@@ -260,7 +260,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public Map<String, KafkaClientConsumer> kafkaClientConsumers() { return new HashMap<>(); }
 
     @Bean
-    @ConfigurationProperties(prefix = "application-specific", ignoreUnknownFields = false)
+    @ConfigurationProperties(prefix = AbstractApplicationConfig.CONFIG_PREIFX_APPLICATION_SPECIFIC, ignoreUnknownFields = false)
     public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
 
     @Bean

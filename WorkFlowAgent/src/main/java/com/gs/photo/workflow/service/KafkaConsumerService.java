@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,7 +45,6 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
-import org.springframework.util.concurrent.ListenableFuture;
 
 import com.gs.photo.common.workflow.IBeanTaskExecutor;
 import com.gs.photo.workflow.KafkaConsumerConfig;
@@ -132,7 +132,7 @@ public class KafkaConsumerService implements ConsumerSeekAware {
 
     @KafkaListener(topics = "${topic.topicUpdate}", containerFactory = "kafkaListenerContainerFactoryForTopicUpdate")
     public void updateImagesFile(
-        @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String emettor,
+        @Header(KafkaHeaders.RECEIVED_KEY) String emettor,
         @Payload(required = false) String file
     ) {
         if (!emettor.startsWith(this.computeEmettorId())) {
@@ -400,7 +400,7 @@ public class KafkaConsumerService implements ConsumerSeekAware {
         return true;
     }
 
-    protected ListenableFuture<SendResult<String, String>> doSend(String x) {
+    protected CompletableFuture<SendResult<String, String>> doSend(String x) {
         return this.kafkaTemplateForTopicUpdate.send(this.topicUpdate, this.computeEmettorId(), x);
     }
 

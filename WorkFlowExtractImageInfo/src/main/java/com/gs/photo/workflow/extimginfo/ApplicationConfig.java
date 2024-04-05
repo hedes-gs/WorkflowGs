@@ -150,7 +150,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     public IAccessDirectlyFile accessDirectlyFile() { return new AccessDirectlyFile(); }
 
     @Bean
-    @ConfigurationProperties(prefix = "application-specific")
+    @ConfigurationProperties(prefix = AbstractApplicationConfig.CONFIG_PREIFX_APPLICATION_SPECIFIC)
     public SpecificApplicationProperties specificApplicationProperties() { return new SpecificApplicationProperties(); }
 
     @Bean

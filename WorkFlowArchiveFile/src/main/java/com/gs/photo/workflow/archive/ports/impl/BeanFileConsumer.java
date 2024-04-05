@@ -44,9 +44,7 @@ import io.micrometer.core.annotation.Timed;
 @KafkaSpy
 public class BeanFileConsumer implements IBeanFileConsumer {
 
-    private static final int                            BUFFER_SIZE = 2 * 1024 * 1024;
-
-    private static Logger                               LOGGER      = LoggerFactory.getLogger(BeanFileConsumer.class);
+    private static Logger                               LOGGER = LoggerFactory.getLogger(BeanFileConsumer.class);
 
     @Autowired
     protected ThreadPoolTaskExecutor                    beanTaskExecutor;
@@ -196,15 +194,15 @@ public class BeanFileConsumer implements IBeanFileConsumer {
     @Timed
     private ConsumerRecord<String, FileToProcess> doSendEvents(
         Producer<String, WfEvents> producerForPublishingWfEvents,
-        ConsumerRecord<String, FileToProcess> r
+        ConsumerRecord<String, FileToProcess> fileToProcessKafkaRecord
     ) {
         BeanFileConsumer.LOGGER.info(
             "[EVENT][{}] End of process file to record in HDFS",
-            r.value()
+            fileToProcessKafkaRecord.value()
                 .getImageId());
         final WfEvents eventsToSend = WfEvents.builder()
             .withDataId(
-                r.value()
+                fileToProcessKafkaRecord.value()
                     .getImageId())
             .withProducer("ARCHIVE")
             .withEvents(
@@ -217,10 +215,10 @@ public class BeanFileConsumer implements IBeanFileConsumer {
         producerForPublishingWfEvents.send(
             new ProducerRecord<String, WfEvents>(this.kafkaProperties.getTopics()
                 .topicEvent(),
-                r.value()
+                fileToProcessKafkaRecord.value()
                     .getImageId(),
                 eventsToSend));
-        return r;
+        return fileToProcessKafkaRecord;
     }
 
     private CompletableFuture<ConsumerRecord<String, FileToProcess>> asyncProcessRecord(
