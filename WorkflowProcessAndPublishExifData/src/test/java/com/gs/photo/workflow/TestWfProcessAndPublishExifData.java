@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Properties;
 
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KeyValue;
@@ -25,7 +24,6 @@ import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
@@ -46,7 +44,6 @@ import com.workflow.model.HbaseData;
 import com.workflow.model.HbaseExifData;
 import com.workflow.model.HbaseImageThumbnail;
 import com.workflow.model.SizeAndJpegContent;
-import com.workflow.model.events.WfEvents;
 
 @RunWith(SpringRunner.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -129,15 +126,11 @@ public class TestWfProcessAndPublishExifData {
     @Autowired
     protected IKafkaStreamProperties        specificKafkaStreamApplicationProperties;
 
-    @MockBean
-    @Qualifier("producerForPublishingWfEvents")
-    protected Producer<String, WfEvents>    producerForPublishingWfEvents;
-
     protected TopologyTestDriver            testDriver;
 
     @Autowired
     @MockBean
-    public Void                             duplicateCheckInit;
+    public Void                             processAndPublishExifDataInit;
 
     public static void setUpBeforeClass() throws Exception {}
 
