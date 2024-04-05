@@ -17,7 +17,7 @@ import com.gs.photo.common.workflow.IKafkaProducerFactory;
 import com.gs.photo.common.workflow.IKafkaProperties;
 import com.gs.photo.workflow.copyfiles.config.ISpecificApplicationProperties;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
-import com.gs.photo.workflow.copyfiles.ports.ICopyFile;
+import com.gs.photo.workflow.copyfiles.ports.IBeanConsumerFile;
 import com.workflow.model.HbaseData;
 import com.workflow.model.files.FileToProcess;
 
@@ -73,7 +73,7 @@ public class ApplicationConfig extends AbstractApplicationConfig {
     }
 
     @Bean
-    public Void startConsumers(ICopyFile bean) {
+    public Void startConsumers(IBeanConsumerFile bean) {
         bean.start();
         return null;
     }

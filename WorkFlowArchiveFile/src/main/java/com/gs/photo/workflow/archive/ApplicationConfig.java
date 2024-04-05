@@ -70,6 +70,11 @@ public class ApplicationConfig extends AbstractApplicationConfig {
             public boolean deleteIfLocal(FileToProcess value, String root) throws IOException {
                 return FileUtils.deleteIfLocal(value, root);
             }
+
+            @Override
+            public String getSimpleNameFromUrl(String url) { // TODO Auto-generated method stub
+                return FileUtils.getSimpleNameFromUrl(url);
+            }
         };
     }
 

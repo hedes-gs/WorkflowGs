@@ -11,4 +11,6 @@ public interface IFileUtils {
 
     boolean deleteIfLocal(FileToProcess value, String string) throws IOException;
 
+    String getSimpleNameFromUrl(String url);
+
 }

@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.gs.instrumentation.TimedBean;
-import com.gs.photo.common.workflow.impl.FileUtils;
 import com.gs.photo.workflow.archive.business.IBeanArchive;
 import com.gs.photo.workflow.archive.config.SpecificApplicationProperties;
 import com.gs.photo.workflow.archive.ports.IFileSystem;
@@ -53,7 +52,7 @@ public class BeanArchive implements IBeanArchive<FileToProcess> {
             boolean dirIsCreated = hdfsFileSystem.mkdirs(folderWhereRecord);
             if (dirIsCreated) {
                 final Path hdfsFilePath = this
-                    .build(folderWhereRecord, "/" + FileUtils.getSimpleNameFromUrl(value.getUrl()));
+                    .build(folderWhereRecord, "/" + this.fileUtils.getSimpleNameFromUrl(value.getUrl()));
                 try (
                     OutputStream fdsOs = hdfsFileSystem.create(hdfsFilePath, true)) {
                     try {

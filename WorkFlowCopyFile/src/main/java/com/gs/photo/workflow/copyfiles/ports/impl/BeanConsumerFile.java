@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -24,7 +22,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.AuthorizationException;
@@ -46,7 +43,7 @@ import com.gs.photo.common.workflow.internal.KafkaManagedFileToProcess;
 import com.gs.photo.common.workflow.internal.KafkaManagedObject;
 import com.gs.photo.workflow.copyfiles.ApplicationConfig;
 import com.gs.photo.workflow.copyfiles.config.SpecificApplicationProperties;
-import com.gs.photo.workflow.copyfiles.ports.ICopyFile;
+import com.gs.photo.workflow.copyfiles.ports.IBeanConsumerFile;
 import com.gs.photo.workflow.copyfiles.ports.IServicesFile;
 import com.workflow.model.HbaseData;
 import com.workflow.model.events.WfEvents;
@@ -57,10 +54,9 @@ import io.micrometer.core.annotation.Timed;
 @Component
 @TimedBean
 @KafkaSpy
-public class BeanConsumerFile implements ICopyFile {
+public class BeanConsumerFile implements IBeanConsumerFile {
 
-    protected static Logger                             LOGGER      = LoggerFactory.getLogger(ICopyFile.class);
-    private static final int                            BUFFER_COPY = 4 * 1024 * 1024;
+    protected static Logger                             LOGGER = LoggerFactory.getLogger(BeanConsumerFile.class);
 
     @Autowired
     protected IBeanTaskExecutor                         beanTaskExecutor;
@@ -207,7 +203,7 @@ public class BeanConsumerFile implements ICopyFile {
             collectionOfKmft.forEach(f -> {
                 f.getValue()
                     .ifPresentOrElse((origin) -> {
-                        Future<RecordMetadata> result = producerForTopicWithFileToProcessOrEventValue.send(
+                        producerForTopicWithFileToProcessOrEventValue.send(
                             new ProducerRecord<String, HbaseData>(this.kafkaProperties.getTopics()
                                 .topicEvent(),
                                 f.getHashKey(),
@@ -216,23 +212,6 @@ public class BeanConsumerFile implements ICopyFile {
                                     .withProducer("LOCAL_COPY")
                                     .withEvents(Collections.singleton(f.createWfEvent()))
                                     .build()));
-                        RecordMetadata data;
-                        try {
-                            data = result.get();
-                            BeanConsumerFile.LOGGER.info(
-                                "[EVENT][{}] Recorded file [{}] at [part={},offset={},topic={},time={}]",
-                                origin.getDataId(),
-                                f,
-                                data.partition(),
-                                data.offset(),
-                                data.topic(),
-                                data.timestamp());
-                        } catch (
-                            InterruptedException |
-                            ExecutionException e) {
-                            BeanConsumerFile.LOGGER.error(" Interrupted... stopping process", e);
-                            throw new RuntimeException(e);
-                        }
                     },
                         () -> BeanConsumerFile.LOGGER.error(
                             " Unable to process offset {} of partition {} of topic {} ",
@@ -241,7 +220,7 @@ public class BeanConsumerFile implements ICopyFile {
                             this.kafkaProperties.getTopics()
                                 .topicDupFilteredFile()));
             });
-            return new ArrayList(collectionOfKmft);
+            return new ArrayList<>(collectionOfKmft);
         });
     }
 
